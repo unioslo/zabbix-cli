@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2014 Rafael Martinez Guerrero / PostgreSQL-es
+# Authors:
 # rafael@postgresql.org.es / http://www.postgresql.org.es/
 #
 # Copyright (c) 2014 USIT-University of Oslo
