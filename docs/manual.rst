@@ -472,6 +472,38 @@ This command can be run only without parameters. e.g.:
    [4]: show_history
 
 
+show_usergroups
+---------------
+
+This command shows user groups information.
+
+::
+
+   show_usergroups
+
+This command can be run only without parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ show_usergroups
+   +---------+---------------------------+--------------------+-------------+
+   | GroupID | Name                      |     GUI access     |    Status   |
+   +---------+---------------------------+--------------------+-------------+
+   |      50 | aaa                       | System default (0) |  Enable (0) |
+   |       9 | Disabled                  | System default (0) | Disable (1) |
+   |      11 | Enabled debug mode        | System default (0) |  Enable (0) |
+   |       8 | Guests                    |    Disable (2)     | Disable (1) |
+   |      12 | No access to the frontend |    Disable (2)     |  Enable (0) |
+   |      52 | Test-core group           | System default (0) |  Enable (0) |
+   |      49 | testgroup                 | System default (0) |  Enable (0) |
+   |      53 | test group                | System default (0) |  Enable (0) |
+   |      51 | Testgroup                 | System default (0) |  Enable (0) |
+   |      15 | Test users                | System default (0) |  Enable (0) |
+   |       7 | Zabbix administrators     |    Internal (1)    |  Enable (0) |
+   +---------+---------------------------+--------------------+-------------+
+
+
+
 show_users
 ----------
 
