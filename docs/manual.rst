@@ -472,6 +472,32 @@ This command can be run only without parameters. e.g.:
    [4]: show_history
 
 
+show_users
+----------
+
+This command shows users information.
+
+::
+
+   show_users
+
+This command can be run only without parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ show_users
+   +--------+-------------+----------------------+-------------+------------+-----------------+
+   | UserID |    Alias    | Name                 |  Autologin  | Autologout | Type            |
+   +--------+-------------+----------------------+-------------+------------+-----------------+
+   |     18 |   aaa-test  | aaa bbb              | Disable (0) |   86400    | User (1)        |
+   |      1 |  Admin-user | Zabbix Administrator |  Enable (1) |     0      | Super admin (3) |
+   |      2 |    guest    |                      | Disable (0) |    900     | User (1)        |
+   |     21 |     qqq     | aaa aa               | Disable (0) |   86400    | User (1)        |
+   |     19 |  user-test  | Test User            | Disable (0) |   86400    | User (1)        |
+   |     20 |  user-test2 | test user2           | Disable (0) |    600     | User (1)        |
+   +--------+-------------+----------------------+-------------+------------+-----------------+
+
+
 
 Authors
 =======
