@@ -46,6 +46,7 @@ class configuration():
         self.usergroups_to_sync = ''
 
         # Logging section
+        self.logging = 'OFF'
         self.log_level = 'ERROR'
         self.log_file = '/var/log/zabbix-cli/zabbix-cli.log'
 
@@ -67,6 +68,11 @@ class configuration():
                 self.config_file = file 
                 break
 
+        if self.config_file == '':
+            
+            print '\n[ERROR]: No config file found. Exiting.\n'
+            sys.exit(1)
+
 
     # ############################################
     # Method
@@ -80,11 +86,17 @@ class configuration():
             config = ConfigParser.RawConfigParser()
             config.read(self.config_file)
             
+            #
             # Zabbix APIsection
+            #
+            
             if config.has_option('zabbix_api','zabbix_api_url'):
                 self.zabbix_api_url = config.get('zabbix_api','zabbix_api_url')
     
+            #
             # LDAP section
+            #
+
             if config.has_option('ldap','ldap_uri'):
                 self.ldap_uri = config.get('ldap','ldap_uri')    
                 
@@ -96,8 +108,14 @@ class configuration():
 
             if config.has_option('ldap','usergroups_to_sync'):
                 self.usergroups_to_sync = config.get('ldap','usergroups_to_sync')
-                   
+             
+            #
             # Logging section
+            #
+
+            if config.has_option('logging','logging'):
+                self.logging = config.get('logging','logging')
+
             if config.has_option('logging','log_level'):
                 self.log_level = config.get('logging','log_level')
 

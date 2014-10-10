@@ -24,15 +24,38 @@
 import sys
 import os
 import getpass
- 
+
+from zabbix_cli.config import *
+from zabbix_cli.logs import * 
 from zabbix_cli.cli import * 
 
 if __name__ == '__main__':
 
     try:
 
+        conf = configuration()
+
+        #
+        # If logging is activated, start logging to the file defined
+        # with log_file in the config file.
+        #
+
+        if conf.logging == 'ON':
+            logs = logs("zabbix-cli")
+        else:
+            logs = None
+            
+        if conf.logging == 'ON':
+            logs.logger.debug('**** Zabbix-CLI startet. ****')
+
         #
         # Non-interactive authentication procedure
+        # 
+        # If the file .zabbix_cli_auth exists at $HOME, use the
+        # information in this file to authenticate into Zabbix API
+        #
+        # Format:
+        # <Zabbix username>::<password>
         #
 
         zabbix_auth_file = os.getenv('HOME') + '/.zabbix_cli_auth'
@@ -45,12 +68,17 @@ if __name__ == '__main__':
                 with open(zabbix_auth_file,'r') as file:
                     for line in file:
                         (username, password) = line.split('::')
-                        
+
                 password = password.replace('\n','')
+                
+                if conf.logging == 'ON':
+                    logs.logger.debug('File %s exists. Using this file to get authentication information',zabbix_auth_file)
 
             except Exception as e:
-                print 'ERROR: %s',e
-            
+                print '\n[ERROR]: %s\n',e
+
+                if conf.logging == 'ON':
+                    logs.logger.error('Problems using file %s - %s',zabbix_auth_file,e)
 
         #
         # Interactive authentication procedure
@@ -72,20 +100,47 @@ if __name__ == '__main__':
 
 
         #
+        # Check that username and password have some values
+        #
+
+        if username == '' or password == '':
+            print '\n[ERROR]: Username or password are empty\n'
+                                    
+            if conf.logging == 'ON':
+                logs.logger.error('Username or password are empty')
+                
+                sys.exit(1)
+                
+        if conf.logging == 'ON':
+         
+            #
+            # Activate the username information in the log
+            # name as soon as we have this information
+            #
+            
+            logs.formatter = logging.Formatter("%(asctime)s [%(name)s][" +  username + "][%(process)d][%(levelname)s]: %(message)s")
+            logs.fh.setFormatter(logs.formatter)
+            logs.logger.addHandler(logs.fh)
+
+
+        #
         # Zabbix-CLI in non-interactive modus(command line)
         # 
         
         if len(sys.argv) > 1:
             
+            if conf.logging == 'ON':
+                logs.logger.debug('Zabbix-CLI running in non-interactive modus')
+                
             if sys.argv[1] =='--use-csv-format':
                 
-                cli = zabbix_cli(username,password)
+                cli = zabbix_cli(username,password,logs)
                 cli.output_format = 'csv'
                               
                 cli.onecmd(' '.join(sys.argv[2:]))
                 
             else:
-                cli = zabbix_cli(username,password)
+                cli = zabbix_cli(username,password,logs)
                 cli.onecmd(' '.join(sys.argv[1:]))
             
         #
@@ -93,15 +148,26 @@ if __name__ == '__main__':
         # 
         
         elif len(sys.argv) == 1:
+
+            if conf.logging == 'ON':
+                logs.logger.debug('Zabbix-CLI running in interactive modus')
+        
             os.system('clear')
             
-            cli = zabbix_cli(username,password)
+            cli = zabbix_cli(username,password,logs)
             cli.cmdloop()
+
         else:
             raise NotImplementedError
+            
+        if conf.logging == 'ON':
+            logs.logger.debug('**** Zabbix-CLI stopped. ****')
         
     except KeyboardInterrupt:
         print
         print "\nDone, thank you for using Zabbix-CLI"
+        
+        if conf.logging == 'ON':
+            logs.logger.debug('**** Zabbix-CLI stopped. ****')
 
         sys.exit(0)

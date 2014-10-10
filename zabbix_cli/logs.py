@@ -49,7 +49,7 @@ class logs(logging.Logger):
             self.fh = logging.FileHandler(self.conf.log_file)
             self.fh.setLevel(level)
             
-            self.formatter = logging.Formatter("%(asctime)s [%(name)s][%(process)d][%(levelname)s]: %(message)s")
+            self.formatter = logging.Formatter("%(asctime)s [%(name)s][None][%(process)d][%(levelname)s]: %(message)s")
             self.fh.setFormatter(self.formatter)
             self.logger.addHandler(self.fh)
             

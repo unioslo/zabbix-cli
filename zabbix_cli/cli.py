@@ -58,34 +58,49 @@ class zabbix_cli(cmd.Cmd):
     # Constructor
     # ###############################
 
-    def __init__(self,username,password):
+    def __init__(self,username,password,logs):
         cmd.Cmd.__init__(self)
         
         self.version = self.get_version()
 
         self.intro =  '\n#############################################################\n' + \
-            'Welcome to the Zabbix command-line interface (v.' + self.version + ')\n' + \
-            '#############################################################\n' + \
-            'Type help or \? to list commands.\n'
+                      'Welcome to the Zabbix command-line interface (v.' + self.version + ')\n' + \
+                      '#############################################################\n' + \
+                      'Type help or \? to list commands.\n'
         
         self.prompt = '[zabbix-CLI]$ '
         self.file = None
 
-        self.conf = configuration() 
-        self.logs = logs('zabbix-cli')
+        self.conf = configuration()
+        self.logs = logs
 
         self.api_username = username
         self.api_password = password
         self.output_format = 'table'
 
+        if self.conf.logging == 'ON':
+            self.logs.logger.debug('Zabbix API url: %s',self.conf.zabbix_api_url)
+
         try:
+
+            #
+            # Connecting to the Zabbix JSON-API
+            #
+
             self.zapi = ZabbixAPI(self.conf.zabbix_api_url)
             self.zapi.session.verify = False
             self.zapi.login(self.api_username,self.api_password)
         
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Connected to Zabbix JSON-API')
+
         except Exception as e:        
             print '\n[ERROR]: ',e
             print
+        
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems logging to %s',self.conf.zabbix_api_url)
+            
             sys.exit(1)
 
     # ############################################  
@@ -94,7 +109,12 @@ class zabbix_cli(cmd.Cmd):
 
     def do_show_hostgroups(self,args):
         '''
+        DESCRIPTION: 
+        This command shows all hostgroups defined in the system.
+
+        COMMAND:
         show_hostgroups
+
         '''
 
         result_columns = {}
@@ -107,9 +127,16 @@ class zabbix_cli(cmd.Cmd):
             result = self.zapi.hostgroup.get(output='extend',
                                              sortfield='name',
                                              sortorder='ASC')
-             
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Command show_hostgroups executed')
+
         except Exception as e: 
-            print '\n[Error] Problems getting hostgroup information - ',e
+            print '\n[Error] Problems getting hostgroups information - ',e
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting hostgroups information - %s',e)
+
             return False   
 
         #
@@ -135,11 +162,15 @@ class zabbix_cli(cmd.Cmd):
 
 
     # ############################################                                                                                                                                    
-    # Method show_host
+    # Method show_hosts
     # ############################################
 
     def do_show_hosts(self,args):
         '''
+        DESCRIPTION:
+        This command shows all hosts defined in the system.
+
+        COMMAND:
         show_hosts
         '''
 
@@ -153,7 +184,7 @@ class zabbix_cli(cmd.Cmd):
     def do_show_host(self,args):
         '''
         DESCRIPTION:
-        This command shows host information
+        This command shows hosts information
 
         COMMAND:
         show_host [HostID / Hostname]
@@ -166,14 +197,23 @@ class zabbix_cli(cmd.Cmd):
             
         [Filter]:
         --------
-        * Zabbix agent ('available'): 0=Unknown / 1=Available / 2=Unavailable
-        * Maintenance ('maintenance_status'): 0:No maintenance / 1:In progress
-        * Status ('status'): 0:Monitored/ 1: Not monitored
+        * Zabbix agent: 'available': 0=Unknown  
+                                     1=Available  
+                                     2=Unavailable
+        
+        * Maintenance: 'maintenance_status': 0:No maintenance
+                                             1:In progress
+        
+        * Status: 'status': 0:Monitored
+                            1: Not monitored
         
         e.g.: Show all hosts with Zabbix agent: Available AND Status: Monitored:
               show_host * "'available':'1','status':'0'"
         
         '''
+
+        result_columns = {}
+        result_columns_key = 0
 
         try: 
             arg_list = shlex.split(args)
@@ -209,7 +249,7 @@ class zabbix_cli(cmd.Cmd):
             filter = ''
 
         #
-        # Command tith filters attributes
+        # Command with filters attributes
         #
             
         elif len(arg_list) == 2:
@@ -244,29 +284,33 @@ class zabbix_cli(cmd.Cmd):
         except Exception as e:
             print '\n[ERROR]: Problems generating query - ',e
             print
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems generating query - %s',e)
+
             return False
 
         #
-        # Generate output
+        # Get result from Zabbix API
         #
-
-        if self.output_format == 'table':
-
-            x = PrettyTable(['HostID','Name','Hostgroups','Templates','Applications','Zabbix agent','Maintenance','Status'],header = True)
-            x.align['GroupID'] = 'r'
-            x.align['Name'] = 'l'
-            x.align['Hostgroups'] = 'l'
-            x.align['Templates'] = 'l'
-            x.align['Applications'] = 'l'
-            x.padding_width = 1
-            x.hrules = ALL
 
         try:
             result = self.zapi.host.get(**query)
         
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Command show_host executed.')
+            
         except Exception as e:
             print '\n[Error] Problems getting host information - ',e
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting host information - %s',e)
+
             return False   
+
+        #
+        # Get the columns we want to show from result 
+        #
 
         for host in result:
         
@@ -301,31 +345,27 @@ class zabbix_cli(cmd.Cmd):
 
                 elif self.output_format == 'csv':
                     application_list = application_list + '[' + application['name'] + ','
-                                        
-            if self.output_format == 'table':
-                x.add_row([host['hostid'],
-                           host['name'],
-                           hostgroup_list[:-1],
-                           template_list[:-1],
-                           application_list[:-1],
-                           self.get_zabbix_agent_status(int(host['available'])),
-                           self.get_maintenance_status(int(host['maintenance_status'])),
-                           self.get_monitoring_status(int(host['status']))
-                       ])
-                
-            elif self.output_format == 'csv':
-                print '"' + str(host['hostid']) + \
-                      '","' + host['name'] + \
-                      '","' + hostgroup_list[:-1] + \
-                      '","' + template_list[:-1] + \
-                      '","' + application_list[:-1] + \
-                      '","' + self.get_zabbix_agent_status(int(host['available'])) + \
-                      '","' + self.get_maintenance_status(int(host['maintenance_status'])) + \
-                      '","' + self.get_monitoring_status(int(host['status'])) + '"'
 
-        if self.output_format == 'table':
-            print x
-            print
+
+            result_columns [result_columns_key] = [host['hostid'],
+                                                   host['name'],
+                                                   hostgroup_list[:-1],
+                                                   template_list[:-1],
+                                                   application_list[:-1],
+                                                   self.get_zabbix_agent_status(int(host['available'])),
+                                                   self.get_maintenance_status(int(host['maintenance_status'])),
+                                                   self.get_monitoring_status(int(host['status']))]
+
+            result_columns_key = result_columns_key + 1
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['HostID','Name','Hostgroups','Templates','Applications','Zabbix agent','Maintenance','Status'],
+                             ['Name','Hostgroups','Templates','Applications'],
+                             ['HostID'],
+                             ALL)
 
 
     # ############################################  
@@ -334,6 +374,10 @@ class zabbix_cli(cmd.Cmd):
 
     def do_show_usergroups(self,args):
         '''
+        DESCRIPTION:
+        This command shows user groups information.
+        
+        COMMAND:
         show_usergroups
         '''
 
@@ -348,9 +392,16 @@ class zabbix_cli(cmd.Cmd):
                                              sortfield='name',
                                              sortorder='ASC',
                                              selectUsers=['alias'])
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Command show_usergroups executed')
                      
         except Exception as e:
             print '\n[Error] Problems getting usergroup information - ',e
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting usergroup information - %s',e)
+
             return False   
        
         #
@@ -381,6 +432,10 @@ class zabbix_cli(cmd.Cmd):
 
     def do_show_users(self,args):
         '''
+        DESCRIPTION:
+        This command shows users information.
+
+        COMMAND:
         show_users
         '''
 
@@ -395,9 +450,16 @@ class zabbix_cli(cmd.Cmd):
                                          getAccess=True,
                                          sortfield='alias',
                                          sortorder='ASC')
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Command show_users executed')
                      
         except Exception as e:
             print '\n[Error] Problems getting users information - ',e
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting users information - %s',e)
+
             return False   
        
         #
@@ -432,6 +494,10 @@ class zabbix_cli(cmd.Cmd):
 
     def do_show_alarms(self,args):
         '''
+        DESCRIPTION:
+        This command shows all active alarms.
+
+        COMMAND:
         show_alarms
         '''
 
@@ -450,12 +516,18 @@ class zabbix_cli(cmd.Cmd):
                                            expandDescription=1,
                                            expandData='host',
                                            sortfield='lastchange',
-                                           sortorder='DESC'
-                                         )
+                                           sortorder='DESC')
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Command show_alarms executed')
+
         except Exception as e:
             print '\n[Error] Problems getting alarm information - ',e
-            return False   
 
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting alarm information - %s',e)
+
+            return False   
 
         #
         # Get the columns we want to show from result 
@@ -484,97 +556,34 @@ class zabbix_cli(cmd.Cmd):
                              FRAME)
 
 
-
-    # ############################################
-    # Method synchronize_usergroups
-    # ############################################
-    
-    def do_synchronize_usergroups(self,args):
-        '''
-        DESCRIPTION:
-        This command synchronize a list og usergroups
-        defined in the zabbix-cli.conf file between LDAP
-        and Zabbix internal.
-
-        COMMAND:
-        synchronize_usergroups
-        '''
-
-        usergroups =  self.conf.usergroups_to_sync.split(' ')
-        print usergroups
-        
-        #
-        # Connect abd bind to LDAP server
-        #
-        try:
-            print self.conf.ldap_uri
-            ld = ldap.initialize(self.conf.ldap_uri)
-            ld.protocol_version = ldap.VERSION3
-
-            ld.simple_bind_s()
-            print "# Connected to ldap server"
-
-        except Exception as e:
-            print '[ERROR]: ',e
-            return False
-
-        for usergroup in usergroups:
-
-            ldap_users = []
-            zabbix_users = []
-
-            #
-            # Create usergroup if they do not exist in Zabbix.
-            # They are created with "System default (0)" GUI access
-            #
-            cmd.Cmd.onecmd(self,'create_usergroup "' + usergroup + '" "0"')
-
-            #
-            # Get LDAP users in usergroup
-            #
-
-            basedn = 'cn=' + usergroup + ',' + self.conf.ldap_usergroups_tree
-            filter = "(objectClass=*)"
-
-            results = ld.search_s(basedn,ldap.SCOPE_SUBTREE,filter)
-            
-            for dn,entry in results:
-                for values in entry['nisNetgroupTriple']:
-                    ldap_users.append(values.replace('(','').replace(',','').replace(')',''))
-                         
-            #
-            # Get Zabbix users in usergroup
-            #
-
-            #
-            # Create Zabbix user if it does not exist
-            #
-
-            #
-            # Update Zabbix group with information from LDAP
-            #
-            
-            #
-            # Delete users from Zabbix group if they do not exist in
-            # the LDAP group.
-            #
-
-
-
-
-
-
-
     # ############################################
     # Method do_create_usergroup
     # ############################################
 
     def do_create_usergroup(self,args):
         '''
-        COMMAND
+        DESCRIPTION:
+        This command creates an usergroup.
+
+        COMMAND:
         create_usergroup [group name]
                          [GUI access]
                          [Status]
+
+        [group name]
+        ------------
+        Usergroup name
+
+        [GUI access]
+        ------------
+        0:'System default' [*]
+        1:'Internal'
+        2:'Disable'        
+
+        [Status]
+        --------
+        0:'Enable' [*]
+        1:'Disable'
 
         '''
         
@@ -628,6 +637,10 @@ class zabbix_cli(cmd.Cmd):
             return False
 
 
+        #
+        # Sanity check
+        #
+
         if gui_access == '' or gui_access not in ('0','1','2'):
             gui_access = gui_access_default
 
@@ -642,8 +655,15 @@ class zabbix_cli(cmd.Cmd):
             
             result = self.zapi.usergroup.exists(name=groupname)
 
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Cheking if usergroup (%s) exists',groupname)
+
         except Exception as e:
             print '\n[ERROR] Problems checking if usergroup (' + groupname + ') exists \n',e
+         
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems checking if usergroup (%s) exists',groupname)
+
             return False   
         
         #
@@ -654,6 +674,10 @@ class zabbix_cli(cmd.Cmd):
 
             if result == True:
                 print '\n[Warning] This usergroup (' + groupname + ') already exists.\n'
+
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('Usergroup (%s) already exists',groupname)
+                
                 return False   
                 
             elif result == False:
@@ -663,8 +687,15 @@ class zabbix_cli(cmd.Cmd):
                 
                 print '\n[Done]: Usergroup (' + groupname + ') with ID: ' + str(result['usrgrpids'][0]) + ' created.\n'
         
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('Usergroup (%s) with ID: %s created',groupname,str(result['usrgrpids'][0]))
+
         except Exception as e:
             print '\n[Error] Problems creating usergroup (' + groupname + ')\n',e
+
+            if self.conf.logging == 'ON':
+                    self.logs.logger.error('Problems creating Usergroup (%s)',groupname)
+
             return False   
             
 
@@ -675,27 +706,71 @@ class zabbix_cli(cmd.Cmd):
 
     def do_create_user(self,args):
         '''
-        COMMAND
+        DESCRIPTION:
+        This command creates an user.
+
+        COMMAND:
         create_user [alias]
                     [name]
                     [surname]
                     [passwd]
                     [type]
+                    [autologin]
                     [autologout]
                     [groups]
                     
+        [alias]
+        -------
+        User alias (account name)
+            
+        [name]
+        ------
+        Name
+
+        [surname]
+        ---------
+        Surname
+
+        [passwd]
+        --------
+        Password. 
+
+        The system will generate an automatic password if this value
+        is not defined.
+
+        [type]
+        ------
+        1:'User' [*]
+        2:'Admin'
+        3:'Super admin'
+        
+        [autologin]
+        -----------
+        0:'Disable' [*]
+        1:'Enable'        
+        
+        [autologout]
+        ------------
+        In seconds [86400]
+
+        [groups]
+        --------   
+        User groups ID
 
         '''
         
-        # Default md5 value of a random int >1 and <1000000 
+        # Default: md5 value of a random int >1 and <1000000 
         x = hashlib.md5()
         x.update(str(random.randint(1,1000000)))
         passwd_default = x.hexdigest()
         
-        # Default 1: Zabbix user
+        # Default: 1: Zabbix user
         type_default = '1'
 
-        # Default 1 day: 86400s
+        # Default: 0: Disable
+        autologin_default = '0'
+
+        # Default: 1 day: 86400s
         autologout_default = '86400'
 
         try: 
@@ -718,6 +793,7 @@ class zabbix_cli(cmd.Cmd):
                 surname = raw_input('# Surname []: ')
                 passwd = raw_input('# Password []: ')
                 type = raw_input('# User type [' + type_default + ']: ')
+                autologin = raw_input('# Autologin [' + autologin_default + ']: ')
                 autologout = raw_input('# Autologout [' + autologout_default + ']: ')
                 usrgrps = raw_input('# Usergroups []: ')
                 print '--------------------------------------------------------'
@@ -728,18 +804,19 @@ class zabbix_cli(cmd.Cmd):
                 return False   
 
         #
-        # Command without filters attributes
+        # Command with parameters
         #
 
-        elif len(arg_list) == 7:
+        elif len(arg_list) == 8:
 
             alias = arg_list[0]
             name = arg_list[1]
             surname = arg_list[2]
             passwd = arg_list[3]
             type = arg_list[4]
-            autologout = arg_list[5]
-            usrgrps = arg_list[6]
+            autologin = arg_list[5]
+            autologout = arg_list[6]
+            usrgrps = arg_list[7]
 
         #
         # Command with the wrong number of parameters
@@ -748,6 +825,10 @@ class zabbix_cli(cmd.Cmd):
         else:
             print '\n[Error] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
             return False
+
+        #
+        # Sanity check
+        #
 
         if alias == '':
             print '\n[Error]: User Alias is empty\n'
@@ -758,6 +839,9 @@ class zabbix_cli(cmd.Cmd):
 
         if type == '' or type not in ('1','2','3'):
             type = type_default
+
+        if autologin == '':
+            autologin = autologin_default
 
         if autologout == '':
             autologout = autologout_default
@@ -774,8 +858,15 @@ class zabbix_cli(cmd.Cmd):
             
             result = self.zapi.user.get(search={'alias':alias},output='extend',searchWildcardsEnabled=True)
 
+            if self.conf.logging == 'ON':
+                    self.logs.logger.debug('Checking if user (%s) exists',alias)
+
         except Exception as e:
             print '\n[ERROR] Problems checking if user (' + alias + ') exists \n',e
+
+            if self.conf.logging == 'ON':
+                    self.logs.logger.error('Problems checking if user (%s) exists',alias)
+
             return False   
 
         #
@@ -787,6 +878,10 @@ class zabbix_cli(cmd.Cmd):
             if result != []:
 
                 print '\n[Warning] This user (' + alias + ') already exists.\n'
+
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('This user (%s) already exists',alias)
+
                 return False   
                 
             else:
@@ -795,13 +890,21 @@ class zabbix_cli(cmd.Cmd):
                                                surname=surname,
                                                passwd=passwd,
                                                type=type,
+                                               autologin=autologin,
                                                autologout=autologout,
                                                usrgrps=usrgrps.strip().split(','))
                 
                 print '\n[Done]: User (' + alias + ') with ID: ' + str(result['userids'][0]) + ' created.\n'
 
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('User (%s) with ID: %s created',alias,str(result['userids'][0]))
+
         except Exception as e:
             print '\n[Error] Problems creating user (' + alias + '\n',e
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems creating user (%s)',alias)
+
             return False   
             
 
@@ -810,6 +913,9 @@ class zabbix_cli(cmd.Cmd):
     # ############################################
     
     def get_trigger_severity(self,code):
+        '''
+        Get trigger severity from code
+        '''
 
         trigger_severity = {0:'Not classified',1:'Information',2:'Warning',3:'Average',4:'High',5:'Disaster'}
 
@@ -825,6 +931,9 @@ class zabbix_cli(cmd.Cmd):
     # ############################################
     
     def get_maintenance_status(self,code):
+        '''
+        Get maintenance status from code
+        '''
 
         maintenance_status = {0:'No maintenance',1:'In progress'}
 
@@ -840,6 +949,9 @@ class zabbix_cli(cmd.Cmd):
     # ############################################
     
     def get_monitoring_status(self,code):
+        '''
+        Get monitoring status from code
+        '''
 
         monitoring_status = {0:'Monitored',1:'Not monitored'}
 
@@ -855,6 +967,9 @@ class zabbix_cli(cmd.Cmd):
     # ############################################
     
     def get_zabbix_agent_status(self,code):
+        '''
+        Get zabbix agent status from code
+        '''
 
         zabbix_agent_status = {1:'Available',2:'Unavailable'}
 
@@ -870,6 +985,9 @@ class zabbix_cli(cmd.Cmd):
     # ############################################
     
     def get_gui_access(self,code):
+        '''
+        Get GUI access from code
+        '''
 
         gui_access = {0:'System default',1:'Internal',2:'Disable'}
 
@@ -884,6 +1002,9 @@ class zabbix_cli(cmd.Cmd):
     # ############################################
     
     def get_usergroup_status(self,code):
+        '''
+        Get usergroup status from code
+        '''
 
         usergroup_status = {0:'Enable',1:'Disable'}
 
@@ -899,6 +1020,9 @@ class zabbix_cli(cmd.Cmd):
     # ############################################
     
     def get_hostgroup_flag(self,code):
+        '''
+        Get hostgroup flag from code
+        '''
 
         hostgroup_flag = {0:'Plain',4:'Discover'}
 
@@ -914,6 +1038,9 @@ class zabbix_cli(cmd.Cmd):
     # ############################################
     
     def get_hostgroup_type(self,code):
+        '''
+        Get hostgroup type from code
+        '''
 
         hostgroup_type = {0:'Not internal',1:'Internal'}
 
@@ -924,13 +1051,14 @@ class zabbix_cli(cmd.Cmd):
             return 'Unknown' + " (" + str(code) +")"
 
 
-
-
     # ############################################
     # Method get_user_type
     # ############################################
     
     def get_user_type(self,code):
+        '''
+        Get user type from code
+        '''
 
         user_type = {1:'User',2:'Admin',3:'Super admin'}
 
@@ -946,6 +1074,9 @@ class zabbix_cli(cmd.Cmd):
     # ############################################
     
     def get_autologin_type(self,code):
+        '''
+        Get autologin type from code
+        '''
 
         autologin_type = {0:'Disable',1:'Enable'}
 
@@ -960,9 +1091,10 @@ class zabbix_cli(cmd.Cmd):
     # Method generate_output
     # ############################################
 
-
     def generate_output(self,result,colnames,left_col,right_col,hrules):
-        '''A function to generate the result output'''
+        '''
+        Generate the result output
+        '''
 
         try:
         
@@ -993,6 +1125,8 @@ class zabbix_cli(cmd.Cmd):
         except Exception as e: 
             print '\n[Error] Problems generating the output ',e
 
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems generating the output')
 
 
     # ############################################
@@ -1115,7 +1249,7 @@ class zabbix_cli(cmd.Cmd):
     def do_EOF(self, line):
         '''
         DESCRIPTION: 
-        Quits/terminate the Zabbix-CLI shell.
+        Quit/terminate the Zabbix-CLI shell.
 
         COMMAND: 
         EOF
@@ -1123,7 +1257,7 @@ class zabbix_cli(cmd.Cmd):
         '''
 
         print
-        print '\nDone, thank you for using PgBackMan'
+        print '\nDone, thank you for using Zabbix-CLI'
         return True
 
 
@@ -1171,7 +1305,9 @@ class zabbix_cli(cmd.Cmd):
     # ############################################
 
     def help_shortcuts(self):
-        '''Help information about shortcuts in Zabbix-CLI'''
+        '''
+        Help information about shortcuts in Zabbix-CLI
+        '''
         
         print '''
         Shortcuts in Zabbix-CLI:
@@ -1186,57 +1322,21 @@ class zabbix_cli(cmd.Cmd):
           
         '''
 
+
     # ############################################
     # Method help_shortcuts
     # ############################################
 
     def help_support(self):
-        '''Help information about Zabbix-CLI support'''
+        '''
+        Help information about Zabbix-CLI support
+        '''
         
         print '''
         The latest information and versions of Zabbix-CLI can be obtained 
-        from: http:///
-
+        from: http://
           
         '''
-
-    # ############################################
-    # Method 
-    # ############################################
-            
-    def print_results_table(self,cur,colnames,left_columns):
-        '''A function to print a table with command results'''
-        
-        if self.output_format == 'table':
-        
-            x = PrettyTable(colnames)
-            x.padding_width = 1
-            
-            for column in left_columns:
-                x.align[column] = "l"
-        
-            for records in cur:
-                columns = []
-
-                for index in range(len(colnames)):
-                    columns.append(records[index])
-
-                x.add_row(columns)
-            
-            print x.get_string()
-            print
-
-        elif self.output_format == 'csv':
-            
-            for records in cur:
-                columns = []
-                
-                for index in range(len(colnames)):
-                    columns.append(str(records[index]))
-                    
-                print ','.join(columns)
-
-
 
 
     # ############################################
@@ -1248,14 +1348,14 @@ class zabbix_cli(cmd.Cmd):
         sys.exit(0)
 
 
-
-
     # ############################################
     # Method get_version
     # ############################################
 
     def get_version(self):
-        '''Get Zabbix-CLI version'''
+        '''
+        Get Zabbix-CLI version
+        '''
         
         try:
             return zabbix_cli.version.__version__
