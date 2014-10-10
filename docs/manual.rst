@@ -3,7 +3,7 @@ Zabbix-CLI
 =====================================
 
 |
-| Version-1.1.0
+| Version-1.0.0
 |
 | Authors: 
 | .....
@@ -114,7 +114,7 @@ file in this order:
 * ``/etc/zabbix-cli.conf``
 
 A default configuration file can be found in ``etc/zabbix-cli.conf``
-in the source code.
+in the source code. Use it to create your configuration file.
 
 The parameter ``zabbix_api_url`` must be defined in the configuration
 file. Without this parameter, ``zabbix-cli`` will not know where to
@@ -304,18 +304,17 @@ Parameters:
 * **[name]:** Name of the user
 * **[surname]:** Surname of the user
 * **[passwd]:** Password
-* **[type]:** Type of the user. 
 
-  Possible values: 
-  1 - (default) Zabbix user; 
-  2 - Zabbix admin; 
-  3 - Zabbix super admin.
+* **[type]:** Type of the user. Possible values:
+  
+  - 1 - (default) Zabbix user; 
+  - 2 - Zabbix admin; 
+  - 3 - Zabbix super admin.
 
-* **[autologin]:** Whether to enable auto-login. 
-
-  Possible values: 
-  0 - (default) auto-login disabled; 
-  1 - auto-login enabled.
+* **[autologin]:** Whether to enable auto-login. Possible values: 
+  
+  - 0 - (default) auto-login disabled; 
+  - 1 - auto-login enabled.
 
 * **[autologout]:** User session life time in seconds. If set to 0,
   the session will never expire. Default: 86400
@@ -347,6 +346,51 @@ command can be run with or without parameters. e.g.:
    
    [Done]: User (user-test2) with ID: 20 created.
 
+create_usergroup
+----------------
+
+This command creates an usergroup
+
+::
+
+   create_usergroup [group name]
+                    [GUI access]
+                    [Status]
+
+Parameters:
+
+* **[group name]:** Name of the usergroup
+* **[GUI access]:** Frontend authentication method of the users in the
+  group. Possible values:
+
+  - 0 - (default) use the system default authentication method; 
+  - 1 - use internal authentication; 
+  - 2 - disable access to the frontend.
+
+* **[status]:** Whether the user group is enabled or
+  disabled. Possible values are:
+
+  - 0 - (default) enabled; 
+  - 1 - disabled.
+ 
+The default value for a parameter is shown between brackets []. If the
+user does not define any value, the default value will be used. This
+command can be run with or without parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ create_usergroup
+   --------------------------------------------------------
+   # Name: Testgroup
+   # GUI access [0]: 
+   # Status [0]: 
+   --------------------------------------------------------
+   
+   [Done]: Usergroup (Testgroup) with ID: 51 created.
+
+
+   [zabbix-CLI]$ create_usergroup "Test group" "" ""
+   [Done]: Usergroup (test group) with ID: 53 created.
 
 
 quit
