@@ -471,6 +471,47 @@ This command can be run only without parameters. e.g.:
    [3]: help
    [4]: show_history
 
+show_hostgroups
+---------------
+
+This command shows host groups information.
+
+::
+
+   show_hostgroups
+
+This command can be run only without parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ show_hostgroups
+   +---------+----------------------+-----------+------------------+
+   | GroupID | Name                 |    Flag   |       Type       |
+   +---------+----------------------+-----------+------------------+
+   |       8 | Database servers     | Plain (0) | Not internal (0) |
+   |       5 | Discovered hosts     | Plain (0) |   Internal (1)   |
+   |      20 | FTP servers          | Plain (0) | Not internal (0) |
+   |       7 | Hypervisors          | Plain (0) | Not internal (0) |
+   |      15 | Laptops              | Plain (0) | Not internal (0) |
+   |       2 | Linux servers        | Plain (0) | Not internal (0) |
+   |      16 | Log managing servers | Plain (0) | Not internal (0) |
+   |      17 | MySQL servers        | Plain (0) | Not internal (0) |
+   |      14 | Oracle servers       | Plain (0) | Not internal (0) |
+   |      13 | PostgreSQL servers   | Plain (0) | Not internal (0) |
+   |      22 | Printers             | Plain (0) | Not internal (0) |
+   |      10 | Routers              | Plain (0) | Not internal (0) |
+   |      21 | ssh servers          | Plain (0) | Not internal (0) |
+   |      11 | Switches             | Plain (0) | Not internal (0) |
+   |       1 | Templates            | Plain (0) | Not internal (0) |
+   |      23 | Template test        | Plain (0) | Not internal (0) |
+   |       6 | Virtual machines     | Plain (0) | Not internal (0) |
+   |      18 | Webmail servers      | Plain (0) | Not internal (0) |
+   |      12 | Web servers          | Plain (0) | Not internal (0) |
+   |       9 | Windows servers      | Plain (0) | Not internal (0) |
+   |       4 | Zabbix servers       | Plain (0) | Not internal (0) |
+   +---------+----------------------+-----------+------------------+
+
+
 
 show_usergroups
 ---------------
