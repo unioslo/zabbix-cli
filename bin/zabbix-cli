@@ -104,10 +104,10 @@ if __name__ == '__main__':
         #
 
         if username == '' or password == '':
-            print '\n[ERROR]: Username or password are empty\n'
+            print '\n[ERROR]: Username or password is empty\n'
                                     
             if conf.logging == 'ON':
-                logs.logger.error('Username or password are empty')
+                logs.logger.error('Username or password is empty')
                 
                 sys.exit(1)
                 
