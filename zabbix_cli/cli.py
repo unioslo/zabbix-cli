@@ -908,6 +908,7 @@ class zabbix_cli(cmd.Cmd):
             return False   
             
 
+        
     # ############################################
     # Method get_trigger_severity
     # ############################################
@@ -1284,6 +1285,99 @@ class zabbix_cli(cmd.Cmd):
             cnt = cnt +1
 
         print
+
+
+    # ########################################################
+    # Method get_hostgroupid
+    # ########################################################
+
+    def get_hostgroup_id(self, hostgroup):
+        '''
+        DESCRIPTION:
+        Get the hostgroup_id for a hostgroup
+        '''
+
+        try:
+            data = self.zapi.hostgroup.get(output='extend', filter={"name":hostgroup})
+            if not data:
+                hostgroupid = 0
+            else:
+                hostgroupid = data[0]['groupid']
+
+        except Exception as e:
+            raise e
+
+        return hostgroupid
+
+
+    # #################################################
+    # Method get_host_id
+    # #################################################
+    
+    def get_host_id(self, host):
+        '''
+        DESCRIPTION:
+        Get the hostid for a host
+        '''
+        
+        try:
+            data = self.zapi.host.get(output='extend', filter={"host":host})
+            if not data:
+                hostid = 0
+            else:
+                hostid = data[0]['hostid']
+            
+        except Exception as e:
+            raise e
+
+        return hostid
+    
+
+    # ###############################################
+    # Method get_template_id
+    # ###############################################
+    
+    def get_template_id(self, template):
+        '''
+        DESCRIPTION:
+        Get the templateid for a template
+        '''
+
+        try:
+            data = self.zapi.template.get(output='extend', filter={"host":template})
+            if not data:
+                templateid = 0
+            else:
+                templateid = data[0]['templateid']
+
+        except Exception as e:
+            raise e
+
+        return templateid
+
+
+    # ##########################################
+    # Method get_usergroup_id
+    # ##########################################
+    
+    def get_usergroup_id(self, usergroup):
+        '''
+        DESCRIPTION:
+        Get the usergroupid for a usergroup
+        '''
+
+        try:
+            data = self.zapi.usergroup.get(output='extend', filter={"name":usergroup})
+            if not data:
+                usergroupid = 0
+            else:
+                usergroupid = data[0]['usrgrpid']
+
+        except Exception as e:
+            raise e
+
+        return usergroupid
+    
 
     # ############################################
     # Method preloop
