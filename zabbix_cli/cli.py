@@ -906,8 +906,74 @@ class zabbix_cli(cmd.Cmd):
                 self.logs.logger.error('Problems creating user (%s)',alias)
 
             return False   
-            
 
+            
+    # ############################################
+    # Method do_create_hostgroup
+    # ############################################
+
+    def do_create_hostgroup(self, args):
+        '''
+        DESCRIPTION
+        This command creates a hostgroup
+        '''
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                name = raw_input('# Name: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 1:
+            name = arg_list[0]
+        
+        else:
+            print '\n[Error] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
+            return False
+    
+
+        try:
+
+            if self.get_hostgroup_id(name) == 0:
+                data = self.zapi.hostgroup.create(name=name)
+                hostgroupid = data['groupids'][0]
+                
+                print '\n[Done]: Hostgroup (' + name + ') with ID: ' + hostgroupid + ' created.\n'
+
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('Hostgroup (%s) with ID: %s created',name,hostgroupid)
+                    
+
+            else:
+                print '\n[Warning] This hostgroup (' + name + ') already exists.\n'
+
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('This hostgroup (%s) already exists',name)
+
+                return False
+
+        except Exception as e:
+            print '\n[Error] Problems creating hostgroup (' + name + '\n',e
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems creating hostgroup (%s)',name)
+
+                return False 
+
+                   
         
     # ############################################
     # Method get_trigger_severity
