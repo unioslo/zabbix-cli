@@ -393,6 +393,22 @@ command can be run with or without parameters. e.g.:
    [Done]: Usergroup (test group) with ID: 53 created.
 
 
+create_hostgroup
+----------------
+
+This command creates a hostgroup
+
+::
+
+  create_hostgroup [group name]
+
+
+Parameters:
+
+* **[group name]:** Name of the hostgroup
+
+
+
 quit
 ----
 
