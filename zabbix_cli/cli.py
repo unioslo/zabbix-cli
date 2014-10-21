@@ -973,8 +973,29 @@ class zabbix_cli(cmd.Cmd):
 
                 return False 
 
-                   
+
+    # ########################################
+    # do_show_templates
+    # ########################################
+    
+    def do_show_templates(self, args):
+        '''
+        DESCRITION
+        This command shows all templates
+        '''
+
+        try:
+            result = self.zapi.template.get(output='extend', searchWildcardsEnabled=True, search={"host":'*'})
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
         
+        for template in result:
+            print template['templateid'], template['name']
+
+
     # ############################################
     # Method get_trigger_severity
     # ############################################

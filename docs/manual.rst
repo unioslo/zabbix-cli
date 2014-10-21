@@ -15,7 +15,6 @@ Zabbix-CLI
 | Rafael Martinez Guerrero (University of Oslo)
 | E-mail: rafael@postgresql.org.es
 | 
-| Carl  
 |
 | Source: https://github.com/usit-gd/zabbix-cli
 |
@@ -585,6 +584,19 @@ This command can be run only without parameters. e.g.:
    |     19 |  user-test  | Test User            | Disable (0) |   86400    | User (1)        |
    |     20 |  user-test2 | test user2           | Disable (0) |    600     | User (1)        |
    +--------+-------------+----------------------+-------------+------------+-----------------+
+
+
+
+show_templates
+---------------
+
+This command shows all templates and their id
+
+::
+
+    show_templates
+
+This command runs without parameters
 
 
 
