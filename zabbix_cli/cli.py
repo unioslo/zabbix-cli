@@ -34,6 +34,7 @@ import ast
 import ldap
 import random
 import hashlib
+from pprint import pprint
 
 from zabbix_cli.config import *
 from zabbix_cli.logs import *
@@ -995,6 +996,154 @@ class zabbix_cli(cmd.Cmd):
         for template in result:
             print template['templateid'], template['name']
 
+
+    # ########################################
+    # do_show_global_macros 
+    # ########################################
+    def do_show_global_macros(self, args):
+        '''
+        DESCRITION
+        This command shows all globalmacros
+        '''
+
+        try:
+            result = self.zapi.usermacro.get(output='extend', globalmacro=True)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        print result
+
+
+    # #######################################
+    # do_show_items
+    # #######################################
+    def do_show_items(self, args):
+        '''
+        DESCRIPTION
+        This command shows items that belong to a template
+        '''
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                templateid = raw_input('# Templateid: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 1:
+            templateid = arg_list[0]
+
+        else:
+            print '\n[Error] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
+            return False
+        
+        try:
+            result = self.zapi.item.get(output='extend', templateids=templateid)
+        
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+        
+        itemids = []
+
+        for item in result:
+            itemids.append(item['itemid'])
+        
+        items = []
+   
+        for itemid in itemids:
+            item = {}
+            data = self.zapi.item.get(output='extend', filter={"itemid":itemid})
+            item['itemid'] = itemid
+            item['delay'] = data[0]['delay']
+            item['hostid'] = data[0]['hostid']
+            item['interfaceid'] = data[0]['interfaceid']
+            item['key'] = data[0]['key_']
+            item['name'] = data[0]['name']
+            item['type'] = data[0]['type']
+            item['value_type'] = data[0]['value_type']
+            items.append(item)
+
+        pprint (items)
+
+
+    # ##########################################
+    # do_show_triggers
+    # ##########################################
+
+    def do_show_triggers(self, args):
+        '''
+        DESCRIPTION
+        This command shows triggers that belong to a template
+        '''
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                templateid = raw_input('# Templateid: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 1:
+            templateid = arg_list[0]
+
+        else:
+            print '\n[Error] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
+            return False
+
+        try:
+            result = self.zapi.trigger.get(output='extend', templateids=templateid)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+ 
+        triggerids = []
+
+        for item in result:
+            triggerids.append(item['triggerid'])
+        
+        triggers = []
+
+        for triggerid in triggerids:
+            trigger = {}
+            data = self.zapi.trigger.get(output='extend', filter={"triggerid":triggerid})
+            trigger['triggerid'] = triggerid
+            trigger['description'] = data[0]['description']
+            trigger['expression'] = data[0]['expression']
+            trigger['priority'] = data[0]['priority']
+            trigger['status'] = data[0]['status']
+            trigger['value'] = data[0]['value']
+            triggers.append(trigger)
+    
+        pprint (triggers)
+        
 
     # ############################################
     # Method get_trigger_severity
