@@ -345,11 +345,11 @@ class zabbix_cli(cmd.Cmd):
                     application_list = application_list + application['name'] + '\n'
 
                 elif self.output_format == 'csv':
-                    application_list = application_list + '[' + application['name'] + ','
+                    application_list = application_list + application['name'] + ','
 
 
             result_columns [result_columns_key] = [host['hostid'],
-                                                   host['name'],
+                                                   host['host'],
                                                    hostgroup_list[:-1],
                                                    template_list[:-1],
                                                    application_list[:-1],
@@ -556,6 +556,139 @@ class zabbix_cli(cmd.Cmd):
                              ['TriggerID'],
                              FRAME)
 
+
+    # ############################################
+    # Method do_add_host_to_hostgroup
+    # ############################################
+
+    def do_add_host_to_hostgroup(self,args):
+        '''
+        DESCRIPTION:
+        This command adds one/several hosts to
+        one/several hostgroups
+
+        COMMAND:
+        add_host_to_hostgroup [hostnames]
+                              [hostgroups]
+
+
+        [hostnames]
+        -----------
+        Hostnames or IDs.
+        One can define several values in a comma separated list.
+
+        [hostgroups]
+        ------------
+        Hostgroup names or IDs.
+        One can define several values in a comma separated list.
+
+        '''
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                hostnames = raw_input('# Hostnames: ')
+                hostgroups = raw_input('# Hostgroups: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 2:
+
+            hostnames = arg_list[0]
+            hostgroups = arg_list[1]
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('ERROR',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if hostgroups == '':
+            
+            self.generate_feedback('Error','Hostgroups information is empty')
+            return False
+
+        if hostnames == '':
+            self.generate_feedback('Error','Hostnames information is empty')
+            return False
+        
+        #
+        # Generate hosts and hostgroups IDs
+        #
+        
+        hostgroups_list = []
+
+        for hostgroup in hostgroups.strip().split(','):
+
+            if hostgroup.isdigit():
+                hostgroups_list.append('{"groupid":"' + str(hostgroup) + '"}')
+                
+            else:
+                hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup)) + '"}')
+
+        hostnames_list = []
+
+        for hostname in hostnames.strip().split(','):
+
+            if hostname.isdigit():
+                hostnames_list.append('{"hostid":"' + str(hostname) + '"}')
+                
+            else:
+                hostnames_list.append('{"hostid":"' + str(self.get_host_id(hostname)) + '"}')
+        
+        hostgroup_ids = ','.join(hostgroups_list)
+        host_ids = ','.join(hostnames_list)
+
+        query=ast.literal_eval("{\"groups\":[" + hostgroup_ids + "],\"hosts\":[" + host_ids + "]}")
+        
+        #
+        # Add hosts to hostgroups
+        #
+
+        try:
+            
+            result = self.zapi.hostgroup.massadd(**query)
+
+            self.generate_feedback('Done','Hosts ' + hostnames + ' added to these groups: ' + hostgroups)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Hosts: %s added to these groups: %s',hostnames,hostgroups)
+
+        except Exception as e:
+           
+            self.generate_feedback('Error','Problems adding hosts to groups')
+
+            if self.conf.logging == 'ON':
+                    self.logs.logger.error('Problems adding hosts to groups - %s',e)
+
+            return False   
+            
 
     # ############################################
     # Method do_create_usergroup
@@ -1367,6 +1500,22 @@ class zabbix_cli(cmd.Cmd):
 
 
     # ############################################
+    # Method generate_feedback
+    # ############################################
+
+    def generate_feedback(self,return_code,message):
+        '''
+        Generate feedback messages
+        '''
+        
+        if self.output_format == 'table':
+            print '\n[' + return_code.title() + ']: ' + message + '\n'   
+
+        elif self.output_format == 'csv':
+            print '"' + return_code.title() + '","' + message + '"\n'   
+            
+
+    # ############################################
     # Method do_clear
     # ############################################
 
@@ -1558,6 +1707,7 @@ class zabbix_cli(cmd.Cmd):
         
         try:
             data = self.zapi.host.get(output='extend', filter={"host":host})
+
             if not data:
                 hostid = 0
             else:
