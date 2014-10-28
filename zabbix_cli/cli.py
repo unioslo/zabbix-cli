@@ -1048,8 +1048,12 @@ class zabbix_cli(cmd.Cmd):
 
     def do_create_hostgroup(self, args):
         '''
-        DESCRIPTION
+        DESCRIPTION:
         This command creates a hostgroup
+    
+        COMMAND:
+        create_hostgroup [hostgroup name]
+
         '''
 
         try:
@@ -1075,24 +1079,23 @@ class zabbix_cli(cmd.Cmd):
             name = arg_list[0]
         
         else:
-            print '\n[Error] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
             return False
     
-
         try:
 
             if self.get_hostgroup_id(name) == 0:
+
                 data = self.zapi.hostgroup.create(name=name)
                 hostgroupid = data['groupids'][0]
                 
-                print '\n[Done]: Hostgroup (' + name + ') with ID: ' + hostgroupid + ' created.\n'
+                self.generate_feedback('Done','Hostgroup (' + name + ') with ID: ' + hostgroupid + ' created.')
 
                 if self.conf.logging == 'ON':
                     self.logs.logger.debug('Hostgroup (%s) with ID: %s created',name,hostgroupid)
-                    
-
+            
             else:
-                print '\n[Warning] This hostgroup (' + name + ') already exists.\n'
+                self.generate_feedback('Warning','This hostgroup (' + name + ') already exists.')
 
                 if self.conf.logging == 'ON':
                     self.logs.logger.debug('This hostgroup (%s) already exists',name)
@@ -1100,12 +1103,12 @@ class zabbix_cli(cmd.Cmd):
                 return False
 
         except Exception as e:
-            print '\n[Error] Problems creating hostgroup (' + name + '\n',e
+            self.generate_feedback('Error','Problems creating hostgroup (' + name + ')')
 
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems creating hostgroup (%s)',name)
+                self.logs.logger.error('Problems creating hostgroup (%s) - %s',name,e)
 
-                return False 
+            return False 
 
 
     # ########################################
