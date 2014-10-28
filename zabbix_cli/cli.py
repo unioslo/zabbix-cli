@@ -955,7 +955,137 @@ class zabbix_cli(cmd.Cmd):
             return False   
             
 
+    # ############################################
+    # Method do_unlink_template_from_host
+    # ############################################
 
+    def do_unlink_template_from_host(self,args):
+        '''
+        DESCRIPTION:
+        This command unlink one/several templates from
+        one/several hosts
+
+        COMMAND:
+        unlink_template_from_host [templates]
+                                  [hostnames]
+
+        [templates]
+        ------------
+        Templates names or IDs.
+        One can define several values in a comma separated list.
+
+        [hostnames]
+        -----------
+        Hostnames or IDs.
+        One can define several values in a comma separated list.
+
+        '''
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                templates = raw_input('# Templates: ')
+                hostnames = raw_input('# Hostnames: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 2:
+
+            templates = arg_list[0]
+            hostnames = arg_list[1]
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('ERROR',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if templates == '':
+            
+            self.generate_feedback('Error','Templates information is empty')
+            return False
+
+        if hostnames == '':
+            self.generate_feedback('Error','Hostnames information is empty')
+            return False
+        
+        #
+        # Generate templates and hosts IDs
+        #
+        
+        templates_list = []
+
+        for template in templates.strip().split(','):
+
+            if template.isdigit():
+                templates_list.append(template)
+                
+            else:
+                templates_list.append(self.get_template_id(template))
+
+        hostnames_list = []
+
+        for hostname in hostnames.strip().split(','):
+
+            if hostname.isdigit():
+                hostnames_list.append(hostname)
+                
+            else:
+                hostnames_list.append(self.get_host_id(hostname))
+        
+        template_ids = ','.join(templates_list)
+        host_ids = ','.join(hostnames_list)
+
+        query=ast.literal_eval("{\"templateids\":[" + template_ids + "],\"hostids\":[" + host_ids + "]}")
+        
+        #
+        # Unlink templates from hosts
+        #
+
+        try:
+            
+            result = self.zapi.template.massremove(**query)
+
+            self.generate_feedback('Done','Templates ' + templates + ' unlinked from these hosts: ' + hostnames)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Templates: %s unlinked from these hosts: %s',templates,hostnames)
+
+        except Exception as e:
+           
+            self.generate_feedback('Error','Problems unlinking templates from hosts')
+
+            if self.conf.logging == 'ON':
+                    self.logs.logger.error('Problems unlinking templates from hosts - %s',e)
+
+            return False   
+            
 
     # ############################################
     # Method do_create_usergroup
