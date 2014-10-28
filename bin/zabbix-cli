@@ -58,7 +58,7 @@ if __name__ == '__main__':
         # <Zabbix username>::<password>
         #
 
-        zabbix_auth_file = os.getenv('HOME') + '/.zabbix_cli_auth'
+        zabbix_auth_file = os.getenv('HOME') + '/.zabbix-cli_auth'
 
         if os.path.isfile(zabbix_auth_file):
 
