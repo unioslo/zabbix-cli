@@ -331,11 +331,11 @@ This command creates a host.
 Parameters:
 
 * **[Hostname]:** Hostname
-* **[hostgroups]:** Host groups to add the host to. One can define
-  several values in a comma separated list.
-* **[proxy]:** Proxy name or ID of the proxy that is used to monitor
-  the host. If this parameter is not defined, the system will assign a
-  random proxy from the list of available proxies.
+* **[hostgroups]:** Hostgroup name or zabbix-hostgroupID to add the
+  host to. One can define several values in a comma separated list.
+* **[proxy]:** Proxy name or zabbix-proxyID of the proxy that is used
+  to monitor the host. If this parameter is not defined, the system
+  will assign a random proxy from the list of available proxies.
 * **[status]:** Status of the host. If this parameter is not defined,
   the system will use the default.
 
