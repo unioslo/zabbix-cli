@@ -316,7 +316,7 @@ This command can be run only without parameters. e.g.:
    
    [zabbix-CLI]$ 
 
-create_user
+create_host
 -----------
 
 This command creates a host.
