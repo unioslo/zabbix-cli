@@ -444,6 +444,40 @@ Parameters:
 * **[group name]:** Name of the hostgroup
 
 
+link_template_to_host
+---------------------
+
+This command links one/several templates to one/several hosts
+
+::
+
+   link_template_to_host [templates]
+                         [hostnames]
+
+Parameters:
+
+* **[templates]:** Template or zabbix-templateID. One can define several
+  values in a comma separated list.
+
+* **[hostnames]:** Hostname or zabbix-hostID. One can define several
+  values in a comma separated list.
+ 
+This command can be run only with parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ link_template_to_host
+   --------------------------------------------------------
+   # Templates: Template App FTP Service
+   # Hostnames: 10108,dbpg-cere-utv.uio.no
+   --------------------------------------------------------
+   
+   [Done]: Templates Template App FTP Service linked to these hosts: 10108,dbpg-cere-utv.uio.no
+
+
+   [user@server]# zabbix-cli --use-csv-format link_template_to_host 10103 10108
+   "Done","Templates 10103 linked to these hosts: 10108"
+
 
 quit
 ----
