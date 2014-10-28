@@ -822,6 +822,140 @@ class zabbix_cli(cmd.Cmd):
             return False   
             
 
+    # ############################################
+    # Method do_link_template_to_host
+    # ############################################
+
+    def do_link_template_to_host(self,args):
+        '''
+        DESCRIPTION:
+        This command links one/several templates to
+        one/several hosts
+
+        COMMAND:
+        add_host_to_hostgroup [templates]
+                              [hostnames]
+
+
+        [templates]
+        ------------
+        Template names or IDs.
+        One can define several values in a comma separated list.
+
+        [hostnames]
+        -----------
+        Hostnames or IDs.
+        One can define several values in a comma separated list.
+
+        '''
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                templates = raw_input('# Templates: ')
+                hostnames = raw_input('# Hostnames: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 2:
+
+            templates = arg_list[0]
+            hostnames = arg_list[1]
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('ERROR',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if templates == '':
+            
+            self.generate_feedback('Error','Templates information is empty')
+            return False
+
+        if hostnames == '':
+            self.generate_feedback('Error','Hostnames information is empty')
+            return False
+        
+        #
+        # Generate templates and hosts IDs
+        #
+        
+        templates_list = []
+
+        for template in templates.strip().split(','):
+
+            if template.isdigit():
+                templates_list.append('{"templateid":"' + str(template) + '"}')
+                
+            else:
+                templates_list.append('{"templateid":"' + str(self.get_template_id(template)) + '"}')
+
+        hostnames_list = []
+
+        for hostname in hostnames.strip().split(','):
+
+            if hostname.isdigit():
+                hostnames_list.append('{"hostid":"' + str(hostname) + '"}')
+                
+            else:
+                hostnames_list.append('{"hostid":"' + str(self.get_host_id(hostname)) + '"}')
+        
+        template_ids = ','.join(templates_list)
+        host_ids = ','.join(hostnames_list)
+
+        query=ast.literal_eval("{\"templates\":[" + template_ids + "],\"hosts\":[" + host_ids + "]}")
+        
+        #
+        # Link templates to hosts
+        #
+
+        try:
+            
+            result = self.zapi.template.massadd(**query)
+
+            self.generate_feedback('Done','Templates ' + templates + ' linked to these hosts: ' + hostnames)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Templates: %s linked to these hosts: %s',templates,hostnames)
+
+        except Exception as e:
+           
+            self.generate_feedback('Error','Problems linking templates to hosts')
+
+            if self.conf.logging == 'ON':
+                    self.logs.logger.error('Problems linking templates to hosts - %s',e)
+
+            return False   
+            
+
+
 
     # ############################################
     # Method do_create_usergroup
