@@ -258,6 +258,42 @@ or special characters for the shell.e.g.
    +--------+----------------------+-------------------------+-----------------------------------+--------------------+-----------------+-----------------+---------------+
 
 
+add_host_to_hostgroup
+---------------------
+
+This command adds one/several hosts to one/several hostgroups
+
+::
+
+   add_host_to_hostgroup [hostnames]
+                         [hostgroups]
+
+Parameters:
+
+* **[hostnames]:** Hostname or zabbix-hostID. One can define several
+  values in a comma separated list.
+
+* **[hostgroups]:** Hostgroup name or zabbix-hostgroupID. One can define several
+  values in a comma separated list.
+ 
+This command can be run only with parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ add_host_to_hostgroup
+   --------------------------------------------------------
+   # Hostnames: dbpg-test02.uio.no
+   # Hostgroups: Database servers
+   --------------------------------------------------------
+   
+   [Done]: Hosts dbpg-test02.uio.no added to these groups: Database servers
+   
+
+   [user@server]# zabbix-cli --use-csv-format add_host_to_hostgroup dbpg-test02.uio.no \"Database servers,Linux servers\"
+   "Done","Hosts dbpg-test02.uio.no added to these groups: Database servers,Linux servers"
+
+
+   
 clear
 -----
 
@@ -344,6 +380,7 @@ command can be run with or without parameters. e.g.:
    [zabbix-CLI]$ create_user user-test2 Test User2 "" "" "" 600 16
    
    [Done]: User (user-test2) with ID: 20 created.
+
 
 create_usergroup
 ----------------
