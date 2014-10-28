@@ -691,6 +691,139 @@ class zabbix_cli(cmd.Cmd):
             
 
     # ############################################
+    # Method do_remove_host_from_hostgroup
+    # ############################################
+
+    def do_remove_host_from_hostgroup(self,args):
+        '''
+        DESCRIPTION:
+        This command removes one/several hosts from
+        one/several hostgroups
+
+        COMMAND:
+        remove_host_from_hostgroup [hostnames]
+                                   [hostgroups]
+
+        [hostnames]
+        -----------
+        Hostnames or IDs.
+        One can define several values in a comma separated list.
+
+        [hostgroups]
+        ------------
+        Hostgroup names or IDs.
+        One can define several values in a comma separated list.
+
+        '''
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                hostnames = raw_input('# Hostnames: ')
+                hostgroups = raw_input('# Hostgroups: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 2:
+
+            hostnames = arg_list[0]
+            hostgroups = arg_list[1]
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('ERROR',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if hostgroups == '':
+            
+            self.generate_feedback('Error','Hostgroups information is empty')
+            return False
+
+        if hostnames == '':
+            self.generate_feedback('Error','Hostnames information is empty')
+            return False
+        
+        #
+        # Generate hosts and hostgroups IDs
+        #
+        
+        hostgroups_list = []
+
+        for hostgroup in hostgroups.strip().split(','):
+
+            if hostgroup.isdigit():
+                hostgroups_list.append(hostgroup)
+                
+            else:
+                hostgroups_list.append(self.get_hostgroup_id(hostgroup))
+
+        hostnames_list = []
+
+        for hostname in hostnames.strip().split(','):
+
+            if hostname.isdigit():
+                hostnames_list.append(hostname)
+                
+            else:
+                hostnames_list.append(self.get_host_id(hostname))
+        
+        hostgroup_ids = ','.join(hostgroups_list)
+        host_ids = ','.join(hostnames_list)
+
+        query=ast.literal_eval("{\"groupids\":[" + hostgroup_ids + "],\"hostids\":[" + host_ids + "]}")
+        
+        #
+        # Remove hosts from hostgroups
+        #
+
+        try:
+            
+            result = self.zapi.hostgroup.massremove(**query)
+
+            self.generate_feedback('Done','Hosts ' + hostnames + ' removed from these groups: ' + hostgroups)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Hosts: %s removed from these groups: %s',hostnames,hostgroups)
+
+        except Exception as e:
+           
+            self.generate_feedback('Error','Problems removing hosts from groups')
+
+            if self.conf.logging == 'ON':
+                    self.logs.logger.error('Problems removing hosts from groups - %s',e)
+
+            return False   
+            
+
+
+    # ############################################
     # Method do_create_usergroup
     # ############################################
 
