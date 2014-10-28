@@ -467,6 +467,41 @@ This command can be run only without parameters. e.g.:
    Done, thank you for using Zabbix-CLI
 
 
+remove_host_from_hostgroup
+--------------------------
+
+This command removes one/several hosts from one/several hostgroups
+
+::
+
+   remove_host_from_hostgroup [hostnames]
+                              [hostgroups]
+
+Parameters:
+
+* **[hostnames]:** Hostname or zabbix-hostID. One can define several
+  values in a comma separated list.
+
+* **[hostgroups]:** Hostgroup name or zabbix-hostgroupID. One can define several
+  values in a comma separated list.
+ 
+This command can be run only with parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ remove_host_from_hostgroup
+   --------------------------------------------------------
+   # Hostnames: dbpg-test02.uio.no
+   # Hostgroups: Oracle servers,17,20,24,28,foor,54
+   --------------------------------------------------------
+   
+   [Done]: Hosts dbpg-test02.uio.no removed from these groups: Oracle servers,17,20,24,28,foor,54
+   
+   
+   [user@server]# zabbix-cli --use-csv-format remove_host_from_hostgroup \"dbpg-test02.uio.no,10110\" \"FTP servers,48\"
+   "Done","Hosts dbpg-test02.uio.no,10110 removed from these groups: FTP servers,48"
+
+
 shell
 -----
 
