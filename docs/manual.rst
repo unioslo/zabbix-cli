@@ -282,15 +282,15 @@ This command can be run only with parameters. e.g.:
 
    [zabbix-CLI]$ add_host_to_hostgroup
    --------------------------------------------------------
-   # Hostnames: dbpg-test02.uio.no
+   # Hostnames: test.example.net
    # Hostgroups: Database servers
    --------------------------------------------------------
    
-   [Done]: Hosts dbpg-test02.uio.no added to these groups: Database servers
+   [Done]: Hosts test.example.net added to these groups: Database servers
    
 
-   [user@server]# zabbix-cli --use-csv-format add_host_to_hostgroup dbpg-test02.uio.no \"Database servers,Linux servers\"
-   "Done","Hosts dbpg-test02.uio.no added to these groups: Database servers,Linux servers"
+   [user@server]# zabbix-cli --use-csv-format add_host_to_hostgroup test.example.net \"Database servers,Linux servers\"
+   "Done","Hosts test.example.net added to these groups: Database servers,Linux servers"
 
 
    
@@ -469,10 +469,10 @@ This command can be run only with parameters. e.g.:
    [zabbix-CLI]$ link_template_to_host
    --------------------------------------------------------
    # Templates: Template App FTP Service
-   # Hostnames: 10108,dbpg-cere-utv.uio.no
+   # Hostnames: 10108,test01.example.net
    --------------------------------------------------------
    
-   [Done]: Templates Template App FTP Service linked to these hosts: 10108,dbpg-cere-utv.uio.no
+   [Done]: Templates Template App FTP Service linked to these hosts: 10108,test01.example.net
 
 
    [user@server]# zabbix-cli --use-csv-format link_template_to_host 10103 10108
@@ -525,15 +525,15 @@ This command can be run only with parameters. e.g.:
 
    [zabbix-CLI]$ remove_host_from_hostgroup
    --------------------------------------------------------
-   # Hostnames: dbpg-test02.uio.no
+   # Hostnames: test.example.net
    # Hostgroups: Oracle servers,17,20,24,28,foor,54
    --------------------------------------------------------
    
-   [Done]: Hosts dbpg-test02.uio.no removed from these groups: Oracle servers,17,20,24,28,foor,54
+   [Done]: Hosts test.example.net removed from these groups: Oracle servers,17,20,24,28,foor,54
    
    
-   [user@server]# zabbix-cli --use-csv-format remove_host_from_hostgroup \"dbpg-test02.uio.no,10110\" \"FTP servers,48\"
-   "Done","Hosts dbpg-test02.uio.no,10110 removed from these groups: FTP servers,48"
+   [user@server]# zabbix-cli --use-csv-format remove_host_from_hostgroup \"test.example.net,10110\" \"FTP servers,48\"
+   "Done","Hosts test.example.net,10110 removed from these groups: FTP servers,48"
 
 
 shell
@@ -705,6 +705,40 @@ This command shows all templates and their id
 This command runs without parameters
 
 
+ulink_template_from_host
+------------------------
+
+This command unlinks one/several templates from one/several hosts
+
+::
+
+   unlink_template_from_host [templates]
+                             [hostnames]
+
+Parameters:
+
+* **[templates]:** Template or zabbix-templateID. One can define several
+  values in a comma separated list.
+
+* **[hostnames]:** Hostname or zabbix-hostID. One can define several
+  values in a comma separated list.
+ 
+This command can be run only with parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ unlink_template_from_host
+   --------------------------------------------------------
+   # Templates: Template App FTP Service,10103
+   # Hostnames: test.example.net
+   --------------------------------------------------------
+   
+   [Done]: Templates Template App FTP Service,10103 unlinked from these hosts: test.example.net
+   
+   
+   [user@server]# zabbix-cli --use-csv-format unlink_template_from_host 10102 10108
+   "Done","Templates 10102 unlinked from these hosts: 10108"
+   
 
 Authors
 =======
