@@ -1230,6 +1230,218 @@ class zabbix_cli(cmd.Cmd):
             return False   
             
 
+    # ############################################
+    # Method do_create_host
+    # ############################################
+
+    def do_create_host(self,args):
+        '''
+        DESCRIPTION:
+        This command creates a host.
+
+        COMMAND:
+        create_host [hostname]
+                    [hostgroups]
+                    [proxy]
+                    [status]
+
+        [hostname]
+        ----------
+        Hostname
+
+        [hostgroups]
+        ------------
+        Hostgroup names or IDs.
+        One can define several values in a comma 
+        separated list.
+
+        [proxy]
+        -------
+        Proxy name or ID of the zabbix-proxy used 
+        to monitor this host. Default: random proxy.
+
+        [Status]
+        --------
+        0:'Monitored' [*]
+        1:'Unmonitored'
+
+        '''
+        
+        #
+        # All host get a default Agent type interface
+        # with DNS information
+        #
+        
+        # We use DNS not IP
+        interface_ip_default = ''
+        
+        # This interface is the default one
+        interface_main_default = '1'
+
+        # Port used by the interface
+        interface_port_default = '10050'
+
+        # Interface type. 1:agent
+        interface_type_default = '1'
+        
+        # Interface connection. 0:DNS
+        interface_useip_default = '0'
+
+        # Proxy server to use to monitor this
+        try:
+            proxy_default = self.get_random_proxyid()
+
+        except Exception as e:
+            self.generate_feedback('Error',e)
+         
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('%s',e)
+
+            return False
+
+        # Default 0: Enable
+        host_status_default = '0'
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                hostname = raw_input('# Hostname: ')
+                hostgroups = raw_input('# Hostgroups: ')
+                proxy = raw_input('# Proxy ['+ proxy_default + ']: ')
+                host_status = raw_input('# Status ['+ host_status_default + ']: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 4:
+
+            hostname = arg_list[0]
+            hostgroups = arg_list[1]
+            proxy = arg_list[2]
+            host_status = arg_list[3]
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if hostname == '':
+            self.generate_feedback('Error','Hostname value is empty')
+            return False
+
+        if hostgroups == '':
+            self.generate_feedback('Error','Hostgroups value is empty')
+            return False
+
+        if proxy == '':
+            proxy = proxy_default
+
+        if host_status == '' or host_status not in ('0','1'):
+            host_status = host_status_default
+
+        # Generate interface definition
+
+        interfaces_def = '"interfaces":[{"type":' + interface_type_default + \
+                         ',"main":' + interface_main_default + \
+                         ',"useip":' + interface_useip_default + \
+                         ',"ip":"' + interface_ip_default + \
+                         '","dns":"' + hostname + \
+                         '","port":"' + interface_port_default + '"}]'
+
+        #
+        # Generate hostgroups IDs
+        #
+        
+        hostgroups_list = []
+
+        for hostgroup in hostgroups.strip().split(','):
+
+            if hostgroup.isdigit():
+                hostgroups_list.append('{"groupid":"' + str(hostgroup) + '"}')
+                
+            else:
+                hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup)) + '"}')
+
+        hostgroup_ids = ','.join(hostgroups_list)
+
+        #
+        # Checking if hostname exists
+        #
+
+        try:
+            
+            result = self.zapi.host.exists(name=hostname)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Cheking if host (%s) exists',hostname)
+
+        except Exception as e:
+            self.generate_feedback('Error','Problems checking if host (' + hostname + ') exists')
+         
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems checking if usergroup (%s) exists - %s',hostname,e)
+
+            return False   
+        
+        #
+        # Create host if it does not exist
+        #
+
+        try:
+
+            if result == True:
+                self.generate_feedback('Warning','This host (' + hostname + ') already exists.')
+
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('Host (%s) already exists',hostname)
+                
+                return False   
+                
+            elif result == False:
+
+                query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + "\"proxy_hostid\":\"" + proxy + "\"," + "\"status\":" + host_status + "," + interfaces_def + "}")
+
+                result = self.zapi.host.create(**query)
+                
+                self.generate_feedback('Done','Host (' + hostname + ') with ID: ' + str(result['hostids'][0]) + ' created')
+        
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('Host (%s) with ID: %s created',hostname,str(result['hostids'][0]))
+
+        except Exception as e:
+            self.generate_feedback('Error','Problems creating host (' + hostname + ')')
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems creating host (%s)',hostname)
+                
+            return False   
+            
 
     # ############################################
     # Method do_create_user
@@ -1909,10 +2121,10 @@ class zabbix_cli(cmd.Cmd):
         '''
         
         if self.output_format == 'table':
-            print '\n[' + return_code.title() + ']: ' + message + '\n'   
+            print '\n[' + return_code.title() + ']: ' + str(message) + '\n'   
 
         elif self.output_format == 'csv':
-            print '"' + return_code.title() + '","' + message + '"\n'   
+            print '"' + return_code.title() + '","' + str(message) + '"\n'   
             
 
     # ############################################
@@ -2164,6 +2376,36 @@ class zabbix_cli(cmd.Cmd):
 
         return usergroupid
     
+
+    # ##########################################
+    # Method get_random_proxy
+    # ##########################################
+    
+    def get_random_proxyid(self):
+        '''
+        Return a random proxyID from the list of existing proxies 
+        '''
+
+        proxy_list = []
+
+        try:
+            data = self.zapi.proxy.get(output='extend')
+        
+            for proxy in data:
+                proxy_list.append(proxy['proxyid'])
+            
+        except Exception as e:
+            raise e
+
+        proxy_list_len = len(proxy_list)
+
+        if proxy_list_len > 0:
+            get_random_index = random.randint(0,proxy_list_len - 1)
+            return proxy_list[get_random_index]
+
+        else:
+            raise "The proxy list is empty"
+            
 
     # ############################################
     # Method preloop
