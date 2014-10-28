@@ -316,6 +316,54 @@ This command can be run only without parameters. e.g.:
    
    [zabbix-CLI]$ 
 
+create_user
+-----------
+
+This command creates a host.
+
+::
+
+   create_host [hostname]
+               [hostgroups]
+               [proxy]
+               [status]
+
+Parameters:
+
+* **[Hostname]:** Hostname
+* **[hostgroups]:** Host groups to add the host to. One can define
+  several values in a comma separated list.
+* **[proxy]:** Proxy name or ID of the proxy that is used to monitor
+  the host. If this parameter is not defined, the system will assign a
+  random proxy from the list of available proxies.
+* **[status]:** Status of the host. If this parameter is not defined,
+  the system will use the default.
+
+  - 0 - (default) monitored host 
+  - 1 - unmonitored host
+
+All host created with this function will get assigned a default
+interface of type 'Agent' using the port 10050.
+
+The default value for a parameter is shown between brackets []. If the
+user does not define any value, the default value will be used. This
+command can be run with or without parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ create_host
+   --------------------------------------------------------
+   # Hostname: test.example.net
+   # Hostgroups: 8
+   # Proxy [10106]: 
+   # Status [0]: 
+   --------------------------------------------------------
+   
+   [Done]: Host (test.example.net) with ID: 10514 created
+
+   [user@server]# zabbix-cli --use-csv-format create_host test.example.net 8 \"''\" \"''\"
+   "Done","Host (test.example.net) with ID: 10515 created"
+
 
 create_user
 -----------
