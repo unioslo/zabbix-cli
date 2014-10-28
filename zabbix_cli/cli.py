@@ -1375,7 +1375,7 @@ class zabbix_cli(cmd.Cmd):
                          '","port":"' + interface_port_default + '"}]'
 
         #
-        # Generate hostgroups IDs
+        # Generate hostgroups and proxy IDs
         #
         
         hostgroups_list = []
@@ -1388,8 +1388,15 @@ class zabbix_cli(cmd.Cmd):
             else:
                 hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup)) + '"}')
 
-        hostgroup_ids = ','.join(hostgroups_list)
 
+        hostgroup_ids = ','.join(hostgroups_list)
+ 
+        if proxy.isdigit() == False:
+            proxy_id = str(self.get_proxy_id(proxy))
+               
+        else:
+            proxy_id = proxy
+ 
         #
         # Checking if hostname exists
         #
@@ -1405,7 +1412,7 @@ class zabbix_cli(cmd.Cmd):
             self.generate_feedback('Error','Problems checking if host (' + hostname + ') exists')
          
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems checking if usergroup (%s) exists - %s',hostname,e)
+                self.logs.logger.error('Problems checking if host (%s) exists - %s',hostname,e)
 
             return False   
         
@@ -1425,7 +1432,7 @@ class zabbix_cli(cmd.Cmd):
                 
             elif result == False:
 
-                query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + "\"proxy_hostid\":\"" + proxy + "\"," + "\"status\":" + host_status + "," + interfaces_def + "}")
+                query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + "\"proxy_hostid\":\"" + proxy_id + "\"," + "\"status\":" + host_status + "," + interfaces_def + "}")
 
                 result = self.zapi.host.create(**query)
                 
@@ -1438,7 +1445,7 @@ class zabbix_cli(cmd.Cmd):
             self.generate_feedback('Error','Problems creating host (' + hostname + ')')
 
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems creating host (%s)',hostname)
+                self.logs.logger.error('Problems creating host (%s) - %s',hostname,e)
                 
             return False   
             
@@ -2375,7 +2382,30 @@ class zabbix_cli(cmd.Cmd):
             raise e
 
         return usergroupid
+
     
+    # ##########################################
+    # Method get_proxy_id
+    # ##########################################
+    
+    def get_proxy_id(self, proxy):
+        '''
+        DESCRIPTION:
+        Get the proxyid for a proxy server
+        '''
+
+        try:
+            data = self.zapi.proxy.get(output='extend', filter={"host":proxy})
+            if not data:
+                proxyid = 0
+            else:
+                proxyid = data[0]['proxyid']
+
+        except Exception as e:
+            raise e
+
+        return proxyid
+
 
     # ##########################################
     # Method get_random_proxy
