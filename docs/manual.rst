@@ -799,13 +799,60 @@ This command can be run only without parameters. e.g.:
 show_templates
 ---------------
 
-This command shows all templates and their id
+This command shows all templates
 
 ::
 
     show_templates
 
-This command runs without parameters
+This command can be run only without parameters.e.g.:
+
+::
+
+   [zabbix-CLI]$ show_templates
+   +------------+---------------------------------+
+   | TemplateID | Name                            |
+   +------------+---------------------------------+
+   |      10116 | Inventory                       |
+   |      10093 | Template App FTP Service        |
+   |      10094 | Template App HTTP Service       |
+   |      10095 | Template App HTTPS Service      |
+   |      10096 | Template App IMAP Service       |
+   |      10097 | Template App LDAP Service       |
+   |      10073 | Template App MySQL              |
+   |      10098 | Template App NNTP Service       |
+   |      10099 | Template App NTP Service        |
+   |      10100 | Template App POP Service        |
+   |      10101 | Template App SMTP Service       |
+   |      10102 | Template App SSH Service        |
+   |      10103 | Template App Telnet Service     |
+   |      10050 | Template App Zabbix Agent       |
+   |      10048 | Template App Zabbix Proxy       |
+   |      10047 | Template App Zabbix Server      |
+   |      10104 | Template ICMP Ping              |
+   |      10071 | Template IPMI Intel SR1530      |
+   |      10072 | Template IPMI Intel SR1630      |
+   |      10082 | Template JMX Generic            |
+   |      10083 | Template JMX Tomcat             |
+   |      10076 | Template OS AIX                 |
+   |      10075 | Template OS FreeBSD             |
+   |      10077 | Template OS HP-UX               |
+   |      10001 | Template OS Linux               |
+   |      10079 | Template OS Mac OS X            |
+   |      10074 | Template OS OpenBSD             |
+   |      10078 | Template OS Solaris             |
+   |      10081 | Template OS Windows             |
+   |      10066 | Template SNMP Device            |
+   |      10068 | Template SNMP Disks             |
+   |      10065 | Template SNMP Generic           |
+   |      10060 | Template SNMP Interfaces        |
+   |      10069 | Template SNMP OS Linux          |
+   |      10067 | Template SNMP OS Windows        |
+   |      10070 | Template SNMP Processors        |
+   |      10088 | Template Virt VMware            |
+   |      10089 | Template Virt VMware Guest      |
+   |      10091 | Template Virt VMware Hypervisor |
+   +------------+---------------------------------+
 
 
 ulink_template_from_host
