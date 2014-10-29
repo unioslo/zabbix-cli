@@ -1433,7 +1433,7 @@ class zabbix_cli(cmd.Cmd):
             elif result == False:
 
                 query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + "\"proxy_hostid\":\"" + proxy_id + "\"," + "\"status\":" + host_status + "," + interfaces_def + "}")
-
+                
                 result = self.zapi.host.create(**query)
                 
                 self.generate_feedback('Done','Host (' + hostname + ') with ID: ' + str(result['hostids'][0]) + ' created')
@@ -1446,6 +1446,97 @@ class zabbix_cli(cmd.Cmd):
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems creating host (%s) - %s',hostname,e)
+                
+            return False   
+            
+    # ############################################
+    # Method do_remove_host
+    # ############################################
+
+    def do_remove_host(self,args):
+        '''
+        DESCRIPTION:
+        This command removes a host.
+
+        COMMAND:
+        remove_host [hostname]
+
+        [hostname]
+        ----------
+        Hostname
+
+        '''
+        
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                hostname = raw_input('# Hostname: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 1:
+
+            hostname = arg_list[0]
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if hostname == '':
+            self.generate_feedback('Error','Hostname value is empty')
+            return False
+
+        #
+        # Generate hostnames IDs
+        #
+        
+        if hostname.isdigit() == False:
+            hostid = str(self.get_host_id(hostname))
+            
+        else:
+            hostid = str(hostname)
+            
+        try:
+            result = self.zapi.host.delete(hostid)
+            
+            self.generate_feedback('Done','Hosts (' + hostname + ') with IDs: ' + str(result['hostids'][0]) + ' removed')
+            
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('Hosts (%s) with IDs: %s removed',hostname,str(result['hostids'][0]))
+
+        except Exception as e:
+            self.generate_feedback('Error','Problems removing hosts (' + hostname + ')')
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems removing hosts (%s) - %s',hostname,e)
                 
             return False   
             
