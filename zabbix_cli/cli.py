@@ -2027,10 +2027,11 @@ class zabbix_cli(cmd.Cmd):
         for item in result:
                 
             result_columns [result_columns_key] =[item['itemid'],
-                                                  item['hostid'],
                                                   item['name'],
                                                   item['key_'],
                                                   self.get_item_type(int(item['type'])),
+                                                  item['delay'],
+                                                  item['history'],
                                                   '\n'.join(textwrap.wrap(item['description'],60))]
 
             result_columns_key = result_columns_key + 1
@@ -2039,9 +2040,9 @@ class zabbix_cli(cmd.Cmd):
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['ItemID','TemplateID','Name','Key','Type','Description'],
+                             ['ItemID','Name','Key','Type','Interval','History','Description'],
                              ['Name','Name','Key','Description'],
-                             ['ItemID','TemplateID'],
+                             ['ItemID'],
                              FRAME)
         
 
