@@ -1290,16 +1290,8 @@ class zabbix_cli(cmd.Cmd):
         interface_useip_default = '0'
 
         # Proxy server to use to monitor this
-        try:
-            proxy_default = self.get_random_proxyid('*')
-
-        except Exception as e:
-            self.generate_feedback('Error',e)
-         
-            if self.conf.logging == 'ON':
-                self.logs.logger.error('%s',e)
-
-            return False
+        
+        proxy_default = '*'
 
         # Default 0: Enable
         host_status_default = '0'
@@ -1766,7 +1758,7 @@ class zabbix_cli(cmd.Cmd):
         This command creates a hostgroup
     
         COMMAND:
-        create_hostgroup [hostgroup name]
+        create_hostgroup [hostgroup]
 
         '''
 
@@ -1806,7 +1798,7 @@ class zabbix_cli(cmd.Cmd):
                 self.generate_feedback('Done','Hostgroup (' + name + ') with ID: ' + hostgroupid + ' created.')
 
                 if self.conf.logging == 'ON':
-                    self.logs.logger.debug('Hostgroup (%s) with ID: %s created',name,hostgroupid)
+                    self.logs.logger.info('Hostgroup (%s) with ID: %s created',name,hostgroupid)
             
             else:
                 self.generate_feedback('Warning','This hostgroup (' + name + ') already exists.')
@@ -1835,16 +1827,41 @@ class zabbix_cli(cmd.Cmd):
         This command shows all templates
         '''
 
+        result_columns = {}
+        result_columns_key = 0
+
         try:
-            result = self.zapi.template.get(output='extend', searchWildcardsEnabled=True, search={"host":'*'})
+            result = self.zapi.template.get(output='extend',
+                                            sortfield='host',
+                                            sortorder='ASC')
 
-        except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+        except Exception as e:
+            self.generate_feedback('Error','Problems getting the template list')
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting the template list - %s',e)
+            
             return False
-
         
+        #
+        # Get the columns we want to show from result 
+        #
+
         for template in result:
-            print template['templateid'], template['name']
+
+            result_columns [result_columns_key] =[template['templateid'],
+                                                  template['host']]
+            
+            result_columns_key = result_columns_key + 1
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['TemplateID','Name'],
+                             ['Name'],
+                             ['TemplateID'],
+                             FRAME)
 
 
     # ########################################
