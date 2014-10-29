@@ -34,6 +34,8 @@ import ast
 import ldap
 import random
 import hashlib
+import textwrap
+
 from pprint import pprint
 
 from zabbix_cli.config import *
@@ -1885,8 +1887,12 @@ class zabbix_cli(cmd.Cmd):
                                              sortfield='macro',
                                              sortorder='ASC')
 
-        except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+        except Exception as e:
+            self.generate_feedback('Error','Problems getting globalmacros list')
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting globalmacros list - %s',e)
+
             return False
 
         #
@@ -1917,9 +1923,20 @@ class zabbix_cli(cmd.Cmd):
     # #######################################
     def do_show_items(self, args):
         '''
-        DESCRIPTION
+        DESCRIPTION:
         This command shows items that belong to a template
+
+        COMMAND:
+        show_items [template]
+
+        [template]
+        ----------
+        Template name or zabbix-templateID
+
         '''
+
+        result_columns = {}
+        result_columns_key = 0
 
         try:
             arg_list = shlex.split(args)
@@ -1928,11 +1945,14 @@ class zabbix_cli(cmd.Cmd):
             print '\n[ERROR]: ',e,'\n'
             return False
 
+        #
+        # Command without parameters
+        #
 
         if len(arg_list) == 0:
             try:
                 print '--------------------------------------------------------'
-                templateid = raw_input('# Templateid: ')
+                template = raw_input('# Template: ')
                 print '--------------------------------------------------------'
 
             except Exception as e:
@@ -1940,41 +1960,90 @@ class zabbix_cli(cmd.Cmd):
                 print '\n[Aborted] Command interrupted by the user.\n'
                 return False
 
+        #
+        # Command with parameters
+        #
+
         elif len(arg_list) == 1:
-            templateid = arg_list[0]
+            template = arg_list[0]
+
+        #
+        # Command with the wrong number of parameters
+        #
 
         else:
-            print '\n[Error] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
             return False
-        
+
+        #
+        # Sanity check
+        #
+
+        if template == '':
+            self.generate_feedback('Error','Template value is empty')
+            return False
+
+        #
+        # Getting template ID
+        #
+
+        if template.isdigit() == False:
+
+            try:
+                templateid = self.get_template_id(template)
+            
+            except Exception as e:
+                self.generate_feedback('Error',e)
+                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.error('%s',e)
+                    
+                return False
+                
+        else:
+            templateid = template
+
+        #
+        # Getting items
+        #
         try:
-            result = self.zapi.item.get(output='extend', templateids=templateid)
+            result = self.zapi.item.get(output='extend', 
+                                        templateids=templateid,
+                                        sortfield='name',
+                                        sortorder='ASC')
         
-        except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+        except Exception as e:
+            self.generate_feedback('Error','Problems getting items list for template (' + template + ')')
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting items list for template (%s) - %s',template,e)
+
             return False
-        
-        itemids = []
 
+        #
+        # Get the columns we want to show from result 
+        #
+        
         for item in result:
-            itemids.append(item['itemid'])
-        
-        items = []
-   
-        for itemid in itemids:
-            item = {}
-            data = self.zapi.item.get(output='extend', filter={"itemid":itemid})
-            item['itemid'] = itemid
-            item['delay'] = data[0]['delay']
-            item['hostid'] = data[0]['hostid']
-            item['interfaceid'] = data[0]['interfaceid']
-            item['key'] = data[0]['key_']
-            item['name'] = data[0]['name']
-            item['type'] = data[0]['type']
-            item['value_type'] = data[0]['value_type']
-            items.append(item)
+                
+            result_columns [result_columns_key] =[item['itemid'],
+                                                  item['hostid'],
+                                                  item['name'],
+                                                  item['key_'],
+                                                  self.get_item_type(int(item['type'])),
+                                                  '\n'.join(textwrap.wrap(item['description'],60))]
 
-        pprint (items)
+            result_columns_key = result_columns_key + 1
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['ItemID','TemplateID','Name','Key','Type','Description'],
+                             ['Name','Name','Key','Description'],
+                             ['ItemID','TemplateID'],
+                             FRAME)
+        
 
 
     # ##########################################
@@ -2221,6 +2290,40 @@ class zabbix_cli(cmd.Cmd):
 
 
     # ############################################
+    # Method get_item_type
+    # ############################################
+    
+    def get_item_type(self,code):
+        '''
+        Get item type from code
+        '''
+        item_type = {0:'Zabbix agent',
+                     1:'SNMPv1 agent',
+                     2:'Zabbix trapper',
+                     3:'simple check',
+                     4:'SNMPv2 agent',
+                     5:'Zabbix internal',
+                     6:'SNMPv3 agent',
+                     7:'Zabbix agent (active)',
+                     8:'Zabbix aggregate',
+                     9:'web item',
+                     10:'external check',
+                     11:'database monitor',
+                     12:'IPMI agent',
+                     13:'SSH agent',
+                     14:'TELNET agent',
+                     15:'calculated',
+                     16:'JMX agent',
+                     17:'SNMP trap'}
+        
+        if code in item_type:
+            return item_type[code] + " (" + str(code) +")"
+
+        else:
+            return 'Unknown' + " (" + str(code) +")"
+
+
+    # ############################################
     # Method generate_output
     # ############################################
 
@@ -2236,6 +2339,8 @@ class zabbix_cli(cmd.Cmd):
                 x = PrettyTable(colnames)
                 x.header = True
                 x.padding_width = 1
+
+                # FRAME, ALL, NONE
                 x.hrules = hrules
             
                 for column in left_col:
@@ -2322,7 +2427,7 @@ class zabbix_cli(cmd.Cmd):
             split_line = line_in.split()
             
             if split_line[0] not in ['EOF','shell','SHELL','\!']:
-                line_out = line_in.lower()
+                line_out = split_line[0].lower() + ' ' + ' '.join(split_line[1:])
             else:
                 line_out = line_in
 
