@@ -1869,18 +1869,47 @@ class zabbix_cli(cmd.Cmd):
     # ########################################
     def do_show_global_macros(self, args):
         '''
-        DESCRITION
-        This command shows all globalmacros
+        DESCRITION:
+        This command shows all global macros
+
+        COMMAND:
+        show global_macros
         '''
 
+        result_columns = {}
+        result_columns_key = 0
+
         try:
-            result = self.zapi.usermacro.get(output='extend', globalmacro=True)
+            result = self.zapi.usermacro.get(output='extend', 
+                                             globalmacro=True,
+                                             sortfield='macro',
+                                             sortorder='ASC')
 
         except ValueError as e:
             print '\n[ERROR]: ',e,'\n'
             return False
 
-        print result
+        #
+        # Get the columns we want to show from result 
+        #
+
+        for global_macro in result:
+
+            result_columns [result_columns_key] =[global_macro['globalmacroid'],
+                                                  global_macro['macro'],
+                                                  global_macro['value']]
+
+            result_columns_key = result_columns_key + 1
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['MacroID','Name','Value'],
+                             ['Name','Value'],
+                             ['MacroID'],
+                             FRAME)
+
 
 
     # #######################################
