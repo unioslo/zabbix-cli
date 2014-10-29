@@ -735,6 +735,113 @@ This command can be run only without parameters. e.g.:
    |       4 | Zabbix servers       | Plain (0) | Not internal (0) |
    +---------+----------------------+-----------+------------------+
 
+show_items
+----------
+
+This command shows items that belong to a template.
+
+::
+
+   show_items [template]
+
+Parameters:
+
+* **[templates]:** Template or zabbix-templateID.
+ 
+This command can be run only with parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ show_items "Template OS Linux"
+   +--------+------------------------------------------+-------------------------------+------------------+----------+---------+--------------------------------------------------------------+
+   | ItemID | Name                                     | Key                           |       Type       | Interval | History | Description                                                  |
+   +--------+------------------------------------------+-------------------------------+------------------+----------+---------+--------------------------------------------------------------+
+   |  10020 | Agent ping                               | agent.ping                    | Zabbix agent (0) |    60    |    7    | The agent always returns 1 for this item. It could be used   |
+   |        |                                          |                               |                  |          |         | in combination with nodata() for availability check.         |
+   |  22181 | Available memory                         | vm.memory.size[available]     | Zabbix agent (0) |    60    |    7    | Available memory is defined as free+cached+buffers memory.   |
+   |  10019 | Checksum of $1                           | vfs.file.cksum[/etc/passwd]   | Zabbix agent (0) |   3600   |    7    |                                                              |
+   |  22680 | Context switches per second              | system.cpu.switches           | Zabbix agent (0) |    60    |    7    |                                                              |
+   |  22668 | CPU $2 time                              | system.cpu.util[,softirq]     | Zabbix agent (0) |    60    |    7    | The amount of time the CPU has been servicing software       |
+   |        |                                          |                               |                  |          |         | interrupts.                                                  |
+   |  22665 | CPU $2 time                              | system.cpu.util[,steal]       | Zabbix agent (0) |    60    |    7    | The amount of CPU 'stolen' from this virtual machine by the  |
+   |        |                                          |                               |                  |          |         | hypervisor for other tasks (such as running another virtual  |
+   |        |                                          |                               |                  |          |         | machine).                                                    |
+   |  17354 | CPU $2 time                              | system.cpu.util[,idle]        | Zabbix agent (0) |    60    |    7    | The time the CPU has spent doing nothing.                    |
+   |  22671 | CPU $2 time                              | system.cpu.util[,interrupt]   | Zabbix agent (0) |    60    |    7    | The amount of time the CPU has been servicing hardware       |
+   |        |                                          |                               |                  |          |         | interrupts.                                                  |
+   |  17362 | CPU $2 time                              | system.cpu.util[,iowait]      | Zabbix agent (0) |    60    |    7    | Amount of time the CPU has been waiting for I/O to complete. |
+   |  17358 | CPU $2 time                              | system.cpu.util[,nice]        | Zabbix agent (0) |    60    |    7    | The time the CPU has spent running users' processes that     |
+   |        |                                          |                               |                  |          |         | have been niced.                                             |
+   |  17356 | CPU $2 time                              | system.cpu.util[,user]        | Zabbix agent (0) |    60    |    7    | The time the CPU has spent running users' processes that are |
+   |        |                                          |                               |                  |          |         | not niced.                                                   |
+   |  17360 | CPU $2 time                              | system.cpu.util[,system]      | Zabbix agent (0) |    60    |    7    | The time the CPU has spent running the kernel and its        |
+   |        |                                          |                               |                  |          |         | processes.                                                   |
+   |  10014 | Free swap space                          | system.swap.size[,free]       | Zabbix agent (0) |    60    |    7    |                                                              |
+   |  17350 | Free swap space in %                     | system.swap.size[,pfree]      | Zabbix agent (0) |    60    |    7    |                                                              |
+   |  17318 | Host boot time                           | system.boottime               | Zabbix agent (0) |   600    |    7    |                                                              |
+   |  17352 | Host local time                          | system.localtime              | Zabbix agent (0) |    60    |    7    |                                                              |
+   |  10057 | Host name                                | system.hostname               | Zabbix agent (0) |   3600   |    7    | System host name.                                            |
+   |  23319 | Host name of zabbix_agentd running       | agent.hostname                | Zabbix agent (0) |   3600   |    7    |                                                              |
+   |  22683 | Interrupts per second                    | system.cpu.intr               | Zabbix agent (0) |    60    |    7    |                                                              |
+   |  10056 | Maximum number of opened files           | kernel.maxfiles               | Zabbix agent (0) |   3600   |    7    | It could be increased by using sysctrl utility or modifying  |
+   |        |                                          |                               |                  |          |         | file /etc/sysctl.conf.                                       |
+   |  10055 | Maximum number of processes              | kernel.maxproc                | Zabbix agent (0) |   3600   |    7    | It could be increased by using sysctrl utility or modifying  |
+   |        |                                          |                               |                  |          |         | file /etc/sysctl.conf.                                       |
+   |  10016 | Number of logged in users                | system.users.num              | Zabbix agent (0) |    60    |    7    | Number of users who are currently logged in.                 |
+   |  10009 | Number of processes                      | proc.num[]                    | Zabbix agent (0) |    60    |    7    | Total number of processes in any state.                      |
+   |  10013 | Number of running processes              | proc.num[,,run]               | Zabbix agent (0) |    60    |    7    | Number of processes in running state.                        |
+   |  22677 | Processor load (15 min average per core) | system.cpu.load[percpu,avg15] | Zabbix agent (0) |    60    |    7    | The processor load is calculated as system CPU load divided  |
+   |        |                                          |                               |                  |          |         | by number of CPU cores.                                      |
+   |  10010 | Processor load (1 min average per core)  | system.cpu.load[percpu,avg1]  | Zabbix agent (0) |    60    |    7    | The processor load is calculated as system CPU load divided  |
+   |        |                                          |                               |                  |          |         | by number of CPU cores.                                      |
+   |  22674 | Processor load (5 min average per core)  | system.cpu.load[percpu,avg5]  | Zabbix agent (0) |    60    |    7    | The processor load is calculated as system CPU load divided  |
+   |        |                                          |                               |                  |          |         | by number of CPU cores.                                      |
+   |  24633 | System OS full                           | system.sw.os[full]            | Zabbix agent (0) |    60    |    90   |                                                              |
+   |  10058 | System OS short                          | system.sw.os[name]            | Zabbix agent (0) |    60    |    7    | The information as normally returned by 'uname -a'.          |
+   |  10025 | System uptime                            | system.uptime                 | Zabbix agent (0) |   600    |    7    |                                                              |
+   |  10026 | Total memory                             | vm.memory.size[total]         | Zabbix agent (0) |   3600   |    7    |                                                              |
+   |  10030 | Total swap space                         | system.swap.size[,total]      | Zabbix agent (0) |   3600   |    7    |                                                              |
+   |  10059 | Version of zabbix_agent(d) running       | agent.version                 | Zabbix agent (0) |   3600   |    7    |                                                              |
+   +--------+------------------------------------------+-------------------------------+------------------+----------+---------+--------------------------------------------------------------+
+
+
+show_triggers
+-------------
+
+This command shows triggers that belong to a template.
+
+::
+
+   show_triggers [template]
+
+Parameters:
+
+* **[templates]:** Template or zabbix-templateID.
+ 
+This command can be run only with parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ show_triggers "Template OS Linux"
+   +-----------+------------------------------------------------------------+-----------------------------------------------------------------+-----------------+------------+
+   | TriggerID | Expression                                                 | Description                                                     |     Priority    |   Status   |
+   +-----------+------------------------------------------------------------+-----------------------------------------------------------------+-----------------+------------+
+   |     10010 | {Template OS Linux:system.cpu.load[percpu,avg1].avg(5m)}>5 | Processor load is too high on {HOST.NAME}                       |   Warning (2)   | Enable (0) |
+   |     10011 | {Template OS Linux:proc.num[,,run].avg(5m)}>30             | Too many processes running on {HOST.NAME}                       |   Warning (2)   | Enable (0) |
+   |     10012 | {Template OS Linux:system.swap.size[,pfree].last(0)}<50    | Lack of free swap space on {HOST.NAME}                          |   Warning (2)   | Enable (0) |
+   |     10016 | {Template OS Linux:vfs.file.cksum[/etc/passwd].diff(0)}>0  | /etc/passwd has been changed on {HOST.NAME}                     |   Warning (2)   | Enable (0) |
+   |     10021 | {Template OS Linux:system.uptime.change(0)}<0              | {HOST.NAME} has just been restarted                             | Information (1) | Enable (0) |
+   |     10041 | {Template OS Linux:kernel.maxproc.last(0)}<256             | Configured max number of processes is too low on {HOST.NAME}    | Information (1) | Enable (0) |
+   |     10042 | {Template OS Linux:kernel.maxfiles.last(0)}<1024           | Configured max number of opened files is too low on {HOST.NAME} | Information (1) | Enable (0) |
+   |     10043 | {Template OS Linux:system.hostname.diff(0)}>0              | Hostname was changed on {HOST.NAME}                             | Information (1) | Enable (0) |
+   |     10044 | {Template OS Linux:system.sw.os[name].diff(0)}>0           | Host information was changed on {HOST.NAME}                     | Information (1) | Enable (0) |
+   |     10045 | {Template OS Linux:agent.version.diff(0)}>0                | Version of zabbix_agent(d) was changed on {HOST.NAME}           | Information (1) | Enable (0) |
+   |     10047 | {Template OS Linux:agent.ping.nodata(5m)}=1                | Zabbix agent on {HOST.NAME} is unreachable for 5 minutes        |   Average (3)   | Enable (0) |
+   |     10190 | {Template OS Linux:proc.num[].avg(5m)}>300                 | Too many processes on {HOST.NAME}                               |   Warning (2)   | Enable (0) |
+   |     13000 | {Template OS Linux:vm.memory.size[available].last(0)}<20M  | Lack of available memory on server {HOST.NAME}                  |   Average (3)   | Enable (0) |
+   |     13243 | {Template OS Linux:system.cpu.util[,iowait].avg(5m)}>20    | Disk I/O is overloaded on {HOST.NAME}                           |   Warning (2)   | Enable (0) |
+   |     13508 | {Template OS Linux:agent.hostname.diff(0)}>0               | Host name of zabbix_agentd was changed on {HOST.NAME}           | Information (1) | Enable (0) |
+   +-----------+------------------------------------------------------------+-----------------------------------------------------------------+-----------------+------------+
 
 
 show_usergroups
