@@ -549,6 +549,30 @@ This command can be run only without parameters. e.g.:
    Done, thank you for using Zabbix-CLI
 
 
+remove_host
+-----------
+
+This command removes a hosts
+
+::
+
+   remove_host  [hostname]
+
+Parameters:
+
+* **[hostname]:** Hostname or zabbix-hostID.
+ 
+This command can be run only with parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ remove_host test.example.net
+   [Done]: Hosts (test.example.net) with IDs: 10522 removed
+
+   [user@server]# zabbix-cli --use-csv-format remove_host test.example.net
+   "Done","Hosts (test.example.net) with IDs: 10523 removed"
+
+
 remove_host_from_hostgroup
 --------------------------
 
