@@ -35,6 +35,7 @@ import ldap
 import random
 import hashlib
 import textwrap
+import json
 
 from pprint import pprint
 
@@ -369,6 +370,143 @@ class zabbix_cli(cmd.Cmd):
                              ['Name','Hostgroups','Templates','Applications'],
                              ['HostID'],
                              ALL)
+
+
+ # ############################################                                                                                                                                    
+    # Method show_host_inventory
+    # ############################################
+    
+    def do_show_host_inventory(self,args):
+        '''
+        DESCRIPTION:
+        This command shows hosts inventory as json data
+
+        COMMAND:
+        show_host [HostID / Hostname]
+
+        [HostID / Hostname]:
+        -------------------
+        One can search by HostID or by Hostname. We can use wildcards 
+        if we search by Hostname
+            
+        [Filter]:
+        --------
+        * Zabbix agent: 'available': 0=Unknown  
+                                     1=Available  
+                                     2=Unavailable
+        
+        * Maintenance: 'maintenance_status': 0:No maintenance
+                                             1:In progress
+        
+        * Status: 'status': 0:Monitored
+                            1: Not monitored
+        
+        e.g.: Show all hosts with Zabbix agent: Available AND Status: Monitored:
+              show_host * "'available':'1','status':'0'"
+        
+        '''
+
+        result_columns = {}
+        result_columns_key = 0
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                host = raw_input('# Host: ')
+                filter = raw_input('# Filter: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+        #
+
+        elif len(arg_list) == 1:
+
+            host = arg_list[0]
+            filter = ''
+
+        #
+        # Command with filters attributes
+        #
+            
+        elif len(arg_list) == 2:
+            
+            host = arg_list[0]
+            filter = arg_list[1]
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            print '\n[ERROR] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
+            return False
+
+        #
+        # Check if we are searching by hostname or hostID
+        #
+
+        if host.isdigit():
+            search_host = '\'hostids\':\'' + host + '\'' 
+        else:
+            search_host = '\'search\':{\'host\':\'' + host + '\'}' 
+        
+        #
+        # Generate query
+        #
+
+        try:
+            query=ast.literal_eval("{'output':['host']," + search_host  + ",'selectParentTemplates':['templateid','name'],'selectInventory':'extend','sortfield':'host','sortorder':'ASC','searchWildcardsEnabled':'True','filter':{" + filter + "}}")
+        
+        except Exception as e:
+            print '\n[ERROR]: Problems generating query - ',e
+            print
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems generating query - %s',e)
+
+            return False
+
+        #
+        # Get result from Zabbix API
+        #
+
+        try:
+            result = self.zapi.host.get(**query)
+
+        
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Command show_host_inventory executed.')
+            
+        except Exception as e:
+            print '\n[Error] Problems getting host inventory information - ',e
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting host inventory information - %s',e)
+
+            return False   
+        ret = {} 
+        for host in result:
+            ret.update({host['host']:host['inventory']})
+        print json.dumps(ret,sort_keys=True,indent=2)
 
 
     # ############################################  
