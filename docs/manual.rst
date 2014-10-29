@@ -333,9 +333,13 @@ Parameters:
 * **[Hostname]:** Hostname
 * **[hostgroups]:** Hostgroup name or zabbix-hostgroupID to add the
   host to. One can define several values in a comma separated list.
-* **[proxy]:** Proxy name or zabbix-proxyID of the proxy that is used
-  to monitor the host. If this parameter is not defined, the system
-  will assign a random proxy from the list of available proxies.
+
+* **[proxy]:** Proxy server used to monitor this host. One can use
+  wildcards to define a group of proxy servers from where the system
+  will choose a random proxy. If this parameter is not defined, the
+  system will assign a random proxy from the list of all available
+  proxies.
+ 
 * **[status]:** Status of the host. If this parameter is not defined,
   the system will use the default.
 
@@ -361,7 +365,7 @@ command can be run with or without parameters. e.g.:
    
    [Done]: Host (test.example.net) with ID: 10514 created
 
-   [user@server]# zabbix-cli --use-csv-format create_host test.example.net 8 \"''\" \"''\"
+   [user@server]# zabbix-cli --use-csv-format create_host test.example.net 8 \"'*.example.net'\" \"''\"
    "Done","Host (test.example.net) with ID: 10515 created"
 
 
