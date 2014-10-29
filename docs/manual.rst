@@ -162,15 +162,19 @@ The Zabbix-CLI interactive shell can be started by running the program
    
    Documented commands (type help <topic>):
    ========================================
-   EOF               quit          show_host        show_users            
-   clear             shell         show_hostgroups  
-   create_user       show_alarms   show_hosts     
-   create_usergroup  show_history  show_usergroups
+   EOF                    quit                        show_hostgroups          
+   add_host_to_hostgroup  remove_host                 show_hosts               
+   clear                  remove_host_from_hostgroup  show_items               
+   create_host            shell                       show_templates           
+   create_hostgroup       show_alarms                 show_triggers            
+   create_user            show_global_macros          show_usergroups          
+   create_usergroup       show_history                show_users               
+   link_template_to_host  show_host                   unlink_template_from_host
    
    Miscellaneous help topics:
    ==========================
    shortcuts  support
-
+   
    Undocumented commands:
    ======================
    help
@@ -641,6 +645,28 @@ of ``shell``. This command can be run only with parameters. e.g.:
    drwxrwxr-x. 4 vagrant vagrant  4096 May 30 10:03 vagrant
 
 
+show_global_macros
+------------------
+
+This command shows all global macros
+
+::
+
+   show_global_macros
+
+This command can be run only without parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ show_global_macros
+   +---------+-------------------+--------+
+   | MacroID | Name              | Value  |
+   +---------+-------------------+--------+
+   |       2 | {$SNMP_COMMUNITY} | public |
+   +---------+-------------------+--------+
+
+
+
 show_history
 ------------
 
@@ -667,6 +693,7 @@ This command can be run only without parameters. e.g.:
    [2]: show_history
    [3]: help
    [4]: show_history
+
 
 show_hostgroups
 ---------------
