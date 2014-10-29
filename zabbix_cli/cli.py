@@ -521,6 +521,7 @@ class zabbix_cli(cmd.Cmd):
                                            sortfield='lastchange',
                                            sortorder='DESC')
 
+            print result
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Command show_alarms executed')
 
@@ -2053,9 +2054,20 @@ class zabbix_cli(cmd.Cmd):
 
     def do_show_triggers(self, args):
         '''
-        DESCRIPTION
+        DESCRIPTION:
         This command shows triggers that belong to a template
+
+        COMMAND:
+        show_triggers [template]
+
+        [template]
+        ----------
+        Template name or zabbix-templateID
+
         '''
+
+        result_columns = {}
+        result_columns_key = 0
 
         try:
             arg_list = shlex.split(args)
@@ -2064,11 +2076,14 @@ class zabbix_cli(cmd.Cmd):
             print '\n[ERROR]: ',e,'\n'
             return False
 
+        #
+        # Command without parameters
+        #
 
         if len(arg_list) == 0:
             try:
                 print '--------------------------------------------------------'
-                templateid = raw_input('# Templateid: ')
+                template = raw_input('# Template: ')
                 print '--------------------------------------------------------'
 
             except Exception as e:
@@ -2076,40 +2091,96 @@ class zabbix_cli(cmd.Cmd):
                 print '\n[Aborted] Command interrupted by the user.\n'
                 return False
 
+        #
+        # Command with parameters
+        #
+
         elif len(arg_list) == 1:
-            templateid = arg_list[0]
+            template = arg_list[0]
+
+        #
+        # Command with the wrong number of parameters
+        #
 
         else:
-            print '\n[Error] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
             return False
 
-        try:
-            result = self.zapi.trigger.get(output='extend', templateids=templateid)
+        #
+        # Sanity check
+        #
+
+        if template == '':
+            self.generate_feedback('Error','Template value is empty')
+            return False
+
+        #
+        # Getting template ID
+        #
+
+        if template.isdigit() == False:
+
+            try:
+                templateid = self.get_template_id(template)
             
-        except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            except Exception as e:
+                self.generate_feedback('Error',e)
+                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.error('%s',e)
+                    
+                return False
+                
+        else:
+            templateid = template
+
+        #
+        # Getting triggers
+        #
+        try:
+            result = self.zapi.trigger.get(output='triggerid', 
+                                           templateids=templateid,
+                                           sortfield='triggerid',
+                                           sortorder='ASC')
+        
+        except Exception as e:
+            self.generate_feedback('Error','Problems getting trigger list for template (' + template + ')')
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting trigger list for template (%s) - %s',template,e)
+
             return False
- 
-        triggerids = []
 
-        for item in result:
-            triggerids.append(item['triggerid'])
+        #
+        # Get the columns we want to show from result 
+        #
         
-        triggers = []
+        for trigger in result:
 
-        for triggerid in triggerids:
-            trigger = {}
-            data = self.zapi.trigger.get(output='extend', filter={"triggerid":triggerid})
-            trigger['triggerid'] = triggerid
-            trigger['description'] = data[0]['description']
-            trigger['expression'] = data[0]['expression']
-            trigger['priority'] = data[0]['priority']
-            trigger['status'] = data[0]['status']
-            trigger['value'] = data[0]['value']
-            triggers.append(trigger)
-    
-        pprint (triggers)
+            trigger_data = self.zapi.trigger.get(output='extend', 
+                                                 expandExpression=1,                                                 
+                                                 triggerids=trigger['triggerid'])
         
+
+            for data in trigger_data:
+
+                result_columns [result_columns_key] = [data['triggerid'],
+                                                       data['expression'],
+                                                       data['description'],
+                                                       self.get_trigger_severity(int(data['priority'])),
+                                                       self.get_trigger_status(int(data['status']))]
+                
+                result_columns_key = result_columns_key + 1
+                
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['TriggerID','Expression','Description','Priority','Status'],
+                             ['Expression','Description'],
+                             ['TriggerID'],
+                             FRAME)
+
 
     # ############################################
     # Method get_trigger_severity
@@ -2127,6 +2198,25 @@ class zabbix_cli(cmd.Cmd):
 
         else:
             return 'Unknown' + " (" + str(code) +")"
+
+
+    # ############################################
+    # Method get_trigger_status
+    # ############################################
+    
+    def get_trigger_status(self,code):
+        '''
+        Get trigger status from code
+        '''
+
+        trigger_status = {0:'Enable',1:'Disable'}
+
+        if code in trigger_status:
+            return trigger_status[code] + " (" + str(code) +")"
+
+        else:
+            return 'Unknown' + " (" + str(code) +")"
+
 
 
     # ############################################
