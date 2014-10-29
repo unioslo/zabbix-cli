@@ -1257,8 +1257,10 @@ class zabbix_cli(cmd.Cmd):
 
         [proxy]
         -------
-        Proxy name or ID of the zabbix-proxy used 
-        to monitor this host. Default: random proxy.
+        Proxy server used to monitor this host. One can use wildcards
+        to define a group of proxy servers from where the system
+        will choose a random proxy. 
+        Default: random proxy from all proxies defined in the system.
 
         [Status]
         --------
@@ -1289,7 +1291,7 @@ class zabbix_cli(cmd.Cmd):
 
         # Proxy server to use to monitor this
         try:
-            proxy_default = self.get_random_proxyid()
+            proxy_default = self.get_random_proxyid('*')
 
         except Exception as e:
             self.generate_feedback('Error',e)
@@ -1390,13 +1392,18 @@ class zabbix_cli(cmd.Cmd):
 
 
         hostgroup_ids = ','.join(hostgroups_list)
- 
-        if proxy.isdigit() == False:
-            proxy_id = str(self.get_proxy_id(proxy))
-               
-        else:
-            proxy_id = proxy
- 
+             
+        try:
+            proxy_id = str(self.get_random_proxyid(proxy))
+            
+        except Exception as e:
+            self.generate_feedback('Error',e)
+            
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('%s',e)
+                
+            return False
+
         #
         # Checking if hostname exists
         #
@@ -2502,7 +2509,7 @@ class zabbix_cli(cmd.Cmd):
     # Method get_random_proxy
     # ##########################################
     
-    def get_random_proxyid(self):
+    def get_random_proxyid(self,proxy):
         '''
         Return a random proxyID from the list of existing proxies 
         '''
@@ -2510,8 +2517,11 @@ class zabbix_cli(cmd.Cmd):
         proxy_list = []
 
         try:
-            data = self.zapi.proxy.get(output='extend')
-        
+            search_proxy = '\'search\':{\'host\':\'' + proxy + '\'}' 
+            query=ast.literal_eval("{'output':'extend'," + search_proxy  + ",'searchWildcardsEnabled':'True'}")
+
+            data = self.zapi.proxy.get(**query)
+            
             for proxy in data:
                 proxy_list.append(proxy['proxyid'])
             
@@ -2525,7 +2535,7 @@ class zabbix_cli(cmd.Cmd):
             return proxy_list[get_random_index]
 
         else:
-            raise "The proxy list is empty"
+            raise Exception('The proxy list is empty')
             
 
     # ############################################
