@@ -2431,17 +2431,17 @@ class zabbix_cli(cmd.Cmd):
             else:
                 line_out = line_in
 
-            if split_line[0] == '\h':
+            if split_line[0] == '\h ':
                 line_out = line_out.replace('\h','help')
-            elif split_line[0] == '\?':
+            elif split_line[0] == '\? ':
                 line_out = line_out.replace('\?','help')
-            elif split_line[0] == '\!':
+            elif split_line[0] == '\! ':
                 line_out = line_out.replace('\!','shell')
-            elif line_out == '\s':
+            elif line_out == '\s ':
                 line_out = 'show_history'    
-            elif line_out == '\q':
+            elif line_out == '\q ':
                 line_out = 'quit' 
-                
+
             self._hist += [ line_out.strip() ]
           
         else:
