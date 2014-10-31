@@ -1495,6 +1495,19 @@ class zabbix_cli(cmd.Cmd):
         # Interface connection. 0:DNS
         interface_useip_default = '0'
 
+        # Default hostgroup
+        try:
+            hostgroup_default = self.get_hostgroup_id(self.conf.default_hostgroup)
+
+        except Exception as e:
+ 
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('%s',e)
+                
+            self.generate_feedback('Error',e)
+            return False
+            
+
         # Proxy server to use to monitor this host        
         proxy_default = '*'
 
@@ -1517,7 +1530,7 @@ class zabbix_cli(cmd.Cmd):
             try:
                 print '--------------------------------------------------------'
                 hostname = raw_input('# Hostname: ')
-                hostgroups = raw_input('# Hostgroups: ')
+                hostgroups = raw_input('# Hostgroups[' + self.conf.default_hostgroup + ']: ')
                 proxy = raw_input('# Proxy ['+ proxy_default + ']: ')
                 host_status = raw_input('# Status ['+ host_status_default + ']: ')
                 print '--------------------------------------------------------'
@@ -1555,8 +1568,7 @@ class zabbix_cli(cmd.Cmd):
             return False
 
         if hostgroups == '':
-            self.generate_feedback('Error','Hostgroups value is empty')
-            return False
+            hostgroups = hostgroup_default
 
         if proxy == '':
             proxy = proxy_default
@@ -1585,8 +1597,16 @@ class zabbix_cli(cmd.Cmd):
                 hostgroups_list.append('{"groupid":"' + str(hostgroup) + '"}')
                 
             else:
-                hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup)) + '"}')
+                try:
+                    hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup)) + '"}')
 
+                except Exception as e:
+ 
+                    if self.conf.logging == 'ON':
+                        self.logs.logger.error('%s',e)
+                
+                    self.generate_feedback('Error',e)
+                    return False
 
         hostgroup_ids = ','.join(hostgroups_list)
              
@@ -2903,11 +2923,12 @@ class zabbix_cli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.hostgroup.get(output='extend', filter={"name":hostgroup})
-            if not data:
-                hostgroupid = 0
-            else:
+            data = self.zapi.hostgroup.get(output='extend', filter={'name':hostgroup})
+            
+            if data != []:
                 hostgroupid = data[0]['groupid']
+            else:
+                raise Exception('Could not find hostgroupID')
 
         except Exception as e:
             raise e

@@ -46,6 +46,9 @@ class configuration():
         self.ldap_usergroups_tree = ''
         self.usergroups_to_sync = ''
 
+        # Zabbix_config section
+        self.default_hostgroup = '0'
+
         # Logging section
         self.logging = 'OFF'
         self.log_level = 'ERROR'
@@ -110,6 +113,13 @@ class configuration():
             if config.has_option('ldap','usergroups_to_sync'):
                 self.usergroups_to_sync = config.get('ldap','usergroups_to_sync')
              
+            #
+            # Zabbix configuration
+            #
+
+            if config.has_option('zabbix_config','default_hostgroup'):
+                self.default_hostgroup = config.get('zabbix_config','default_hostgroup')
+
             #
             # Logging section
             #
