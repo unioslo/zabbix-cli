@@ -136,10 +136,11 @@ class zabbix_cli(cmd.Cmd):
                 self.logs.logger.debug('Command show_hostgroups executed')
 
         except Exception as e: 
-            print '\n[Error] Problems getting hostgroups information - ',e
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems getting hostgroups information - %s',e)
+
+            self.generate_feedback('Error','Problems getting hostgroups information')
 
             return False   
 
@@ -147,11 +148,19 @@ class zabbix_cli(cmd.Cmd):
         # Get the columns we want to show from result 
         #
         for group in result:
+
+            if self.output_format == 'json':
+                result_columns [result_columns_key] = {'groupid':group['groupid'],
+                                                       'name':group['name'],
+                                                       'flags':self.get_hostgroup_flag(int(group['flags'])),
+                                                       'type':self.get_hostgroup_type(int(group['internal']))}
             
-            result_columns [result_columns_key] = [group['groupid'],
-                                                   group['name'],
-                                                   self.get_hostgroup_flag(int(group['flags'])),
-                                                   self.get_hostgroup_type(int(group['internal']))]
+            else:
+                result_columns [result_columns_key] = {'1':group['groupid'],
+                                                       '2':group['name'],
+                                                       '3':self.get_hostgroup_flag(int(group['flags'])),
+                                                       '4':self.get_hostgroup_type(int(group['internal']))}
+                
 
             result_columns_key = result_columns_key + 1
 
@@ -266,7 +275,7 @@ class zabbix_cli(cmd.Cmd):
         #
 
         else:
-            print '\n[ERROR] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
             return False
 
         #
@@ -286,12 +295,11 @@ class zabbix_cli(cmd.Cmd):
             query=ast.literal_eval("{'output':'extend'," + search_host  + ",'selectParentTemplates':['templateid','name'],'selectGroups':['groupid','name'],'selectApplications':['name'],'sortfield':'host','sortorder':'ASC','searchWildcardsEnabled':'True','filter':{" + filter + "}}")
         
         except Exception as e:
-            print '\n[ERROR]: Problems generating query - ',e
-            print
-
+            
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems generating query - %s',e)
+                self.logs.logger.error('Problems generating show_host query - %s',e)
 
+            self.generate_feedback('Error','Problems generating show_host query')
             return False
 
         #
@@ -305,11 +313,11 @@ class zabbix_cli(cmd.Cmd):
                 self.logs.logger.debug('Command show_host executed.')
             
         except Exception as e:
-            print '\n[Error] Problems getting host information - ',e
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems getting host information - %s',e)
 
+            self.generate_feddback('Error','Problems getting host information')
             return False   
 
         #
@@ -318,47 +326,46 @@ class zabbix_cli(cmd.Cmd):
 
         for host in result:
         
-            hostgroup_list = ''
-            template_list = ''
-            application_list = ''
+            if self.output_format == 'json':
+                result_columns [result_columns_key] = {'hostid':host['hostid'],
+                                                       'host':host['host'],
+                                                       'groups':host['groups'],
+                                                       'templates':host['parentTemplates'],
+                                                       'applications':host['applications'],
+                                                       'zabbix_agent':self.get_zabbix_agent_status(int(host['available'])),
+                                                       'maintenance_status':self.get_maintenance_status(int(host['maintenance_status'])),
+                                                       'status':self.get_monitoring_status(int(host['status']))}
 
-            host['groups'].sort()
-            host['parentTemplates'].sort()
-            host['applications'].sort()
-                        
-            for hostgroup in host['groups']:
-
-                if self.output_format == 'table':
-                    hostgroup_list = hostgroup_list + '[' + hostgroup['groupid'] + '] ' + hostgroup['name'] + '\n'
+            else:
+                
+                hostgroup_list = []
+                template_list = []
+                application_list = []
+                
+                host['groups'].sort()
+                host['parentTemplates'].sort()
+                host['applications'].sort()
+                
+                for hostgroup in host['groups']:
+                    hostgroup_list.append(hostgroup['name'])
                     
-                elif self.output_format == 'csv':
-                    hostgroup_list = hostgroup_list + '[' + hostgroup['groupid'] + '] ' + hostgroup['name'] + ','
+                for template in host['parentTemplates']:
+                    template_list.append(template['name'])
+                        
+                for application in host['applications']:
+                    application_list.append(application['name'])
 
-            for template in host['parentTemplates']:
-                
-                if self.output_format == 'table':
-                    template_list = template_list + '[' + template['templateid'] + '] ' + template['name'] + '\n'
-
-                elif self.output_format == 'csv':
-                    template_list = template_list + '[' + template['templateid'] + '] ' + template['name'] + ','
-            
-            for application in host['applications']:
-                
-                if self.output_format == 'table':
-                    application_list = application_list + application['name'] + '\n'
-
-                elif self.output_format == 'csv':
-                    application_list = application_list + application['name'] + ','
+                    
+                result_columns [result_columns_key] = {'1':host['hostid'],
+                                                       '2':host['host'],
+                                                       '3':'\n'.join(hostgroup_list),
+                                                       '4':'\n'.join(template_list),
+                                                       '5':'\n'.join(application_list),
+                                                       '6':self.get_zabbix_agent_status(int(host['available'])),
+                                                       '7':self.get_maintenance_status(int(host['maintenance_status'])),
+                                                       '8':self.get_monitoring_status(int(host['status']))}
 
 
-            result_columns [result_columns_key] = [host['hostid'],
-                                                   host['host'],
-                                                   hostgroup_list[:-1],
-                                                   template_list[:-1],
-                                                   application_list[:-1],
-                                                   self.get_zabbix_agent_status(int(host['available'])),
-                                                   self.get_maintenance_status(int(host['maintenance_status'])),
-                                                   self.get_monitoring_status(int(host['status']))]
 
             result_columns_key = result_columns_key + 1
 
@@ -372,7 +379,7 @@ class zabbix_cli(cmd.Cmd):
                              ALL)
 
 
- # ############################################                                                                                                                                    
+    # ############################################                                                                                                                                    
     # Method show_host_inventory
     # ############################################
     
@@ -457,7 +464,7 @@ class zabbix_cli(cmd.Cmd):
         #
 
         else:
-            print '\n[ERROR] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
             return False
 
         #
@@ -477,12 +484,11 @@ class zabbix_cli(cmd.Cmd):
             query=ast.literal_eval("{'output':['host']," + search_host  + ",'selectParentTemplates':['templateid','name'],'selectInventory':'extend','sortfield':'host','sortorder':'ASC','searchWildcardsEnabled':'True','filter':{" + filter + "}}")
         
         except Exception as e:
-            print '\n[ERROR]: Problems generating query - ',e
-            print
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems generating query - %s',e)
 
+            self.generate_feedback('Error','Problems generating query')
             return False
 
         #
@@ -491,24 +497,47 @@ class zabbix_cli(cmd.Cmd):
 
         try:
             result = self.zapi.host.get(**query)
-
         
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Command show_host_inventory executed.')
             
         except Exception as e:
-            print '\n[Error] Problems getting host inventory information - ',e
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems getting host inventory information - %s',e)
-
+                
+            self.generate_feedback('Error','Problems getting host inventory information')
             return False   
-        ret = {} 
+
+        #
+        # Get the columns we want to show from result 
+        #
         for host in result:
-            ret.update({host['host']:host['inventory']})
-        print json.dumps(ret,sort_keys=True,indent=2)
 
+            if host['inventory'] != []:
+            
+                if self.output_format == 'json':
+                    result_columns [result_columns_key] = dict({"hostname":host['host']}.items() + host['inventory'].items()) 
+                
+                else:
+                    result_columns [result_columns_key] = {'1':host['host'],
+                                                           '2':host['inventory']['vendor'],
+                                                           '3':host['inventory']['chassis'],
+                                                           '4':host['inventory']['macaddress_a'],
+                                                           '5':host['inventory']['host_networks'],
+                                                           '6':host['inventory']['poc_1_email']}
+                
+                result_columns_key = result_columns_key + 1
 
+            #
+            # Generate output
+            #
+            self.generate_output(result_columns,
+                                 ['Hostname','Vendor','Chassis','MAC address','Networks','Contact'],
+                                 ['Hostname','Chassis','MAC address','Contact'],
+                                 [],
+                                 FRAME)
+        
     # ############################################  
     # Method show_usergroups
     # ############################################  
@@ -538,11 +567,11 @@ class zabbix_cli(cmd.Cmd):
                 self.logs.logger.debug('Command show_usergroups executed')
                      
         except Exception as e:
-            print '\n[Error] Problems getting usergroup information - ',e
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems getting usergroup information - %s',e)
 
+            self.generate_feedback('Error','Problems getting usergroup information')
             return False   
        
         #
@@ -550,10 +579,25 @@ class zabbix_cli(cmd.Cmd):
         #
         for group in result:
 
-            result_columns [result_columns_key] =[group['usrgrpid'],
-                                                  group['name'],
-                                                  self.get_gui_access(int(group['gui_access'])),
-                                                  self.get_usergroup_status(int(group['users_status']))]
+            if self.output_format == 'json':
+                result_columns [result_columns_key] ={'usrgrpid':group['usrgrpid'],
+                                                      'name':group['name'],
+                                                      'gui_access':self.get_gui_access(int(group['gui_access'])),
+                                                      'user_status':self.get_usergroup_status(int(group['users_status'])),
+                                                      'users':group['users']}
+            
+            else:
+
+                users = []
+
+                for user in group['users']:
+                    users.append(user['alias'])
+
+                result_columns [result_columns_key] ={'1':group['usrgrpid'],
+                                                      '2':group['name'],
+                                                      '3':self.get_gui_access(int(group['gui_access'])),
+                                                      '4':self.get_usergroup_status(int(group['users_status'])),
+                                                      '5':'\n'.join(textwrap.wrap(', '.join(users),60))}
             
             result_columns_key = result_columns_key + 1
 
@@ -561,8 +605,8 @@ class zabbix_cli(cmd.Cmd):
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['GroupID','Name','GUI access','Status'],
-                             ['Name'],
+                             ['GroupID','Name','GUI access','Status','Users'],
+                             ['Name','Users'],
                              ['GroupID'],
                              FRAME)
 
@@ -588,19 +632,20 @@ class zabbix_cli(cmd.Cmd):
         #
         try:
             result = self.zapi.user.get(output='extend',
-                                         getAccess=True,
-                                         sortfield='alias',
-                                         sortorder='ASC')
+                                        getAccess=True,
+                                        selectUsrgrps=['name'],
+                                        sortfield='alias',
+                                        sortorder='ASC')
 
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Command show_users executed')
                      
         except Exception as e:
-            print '\n[Error] Problems getting users information - ',e
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems getting users information - %s',e)
 
+            self.generate_feedback('Error','Problems getting users information')
             return False   
        
         #
@@ -608,23 +653,38 @@ class zabbix_cli(cmd.Cmd):
         #
         for user in result:
 
-            result_columns [result_columns_key] =[user['userid'],
-                                                  user['alias'],
-                                                  user['name'] + ' ' + user['surname'],
-                                                  self.get_autologin_type(int(user['autologin'])),
-                                                  user['autologout'],
-                                                  self.get_user_type(int(user['type']))]
+            if self.output_format == 'json':
+                result_columns [result_columns_key] ={'userid':user['userid'],
+                                                      'alias':user['alias'],
+                                                      'name':user['name'] + ' ' + user['surname'],
+                                                      'autologin':self.get_autologin_type(int(user['autologin'])),
+                                                      'autologout':user['autologout'],
+                                                      'type':self.get_user_type(int(user['type'])),
+                                                      'usrgrps':user['usrgrps']}
 
-                                                  
-            
+            else:
+                
+                usrgrps = []
+
+                for group in user['usrgrps']:
+                    usrgrps.append(group['name'])
+                              
+                result_columns [result_columns_key] ={'1':user['userid'],
+                                                      '2':user['alias'],
+                                                      '3':user['name'] + ' ' + user['surname'],
+                                                      '4':self.get_autologin_type(int(user['autologin'])),
+                                                      '5':user['autologout'],
+                                                      '6':self.get_user_type(int(user['type'])),
+                                                      '7':'\n'.join(textwrap.wrap(', '.join(usrgrps),60))}
+
             result_columns_key = result_columns_key + 1
 
         #
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['UserID','Alias','Name','Autologin','Autologout','Type'],
-                             ['Name','Type'],
+                             ['UserID','Alias','Name','Autologin','Autologout','Type','Usrgrps'],
+                             ['Name','Type','Usrgrps'],
                              ['UserID'],
                              FRAME)
 
@@ -659,16 +719,15 @@ class zabbix_cli(cmd.Cmd):
                                            sortfield='lastchange',
                                            sortorder='DESC')
 
-            print result
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Command show_alarms executed')
 
         except Exception as e:
-            print '\n[Error] Problems getting alarm information - ',e
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems getting alarm information - %s',e)
 
+            self.generate_feedback('Error','Problems getting alarm information')
             return False   
 
         #
@@ -679,13 +738,24 @@ class zabbix_cli(cmd.Cmd):
             lastchange = datetime.datetime.fromtimestamp(int(trigger['lastchange']))
             age = datetime.datetime.now() - lastchange
 
-            result_columns [result_columns_key] = [trigger['triggerid'],
-                                                   trigger['hostname'],
-                                                   trigger['description'],
-                                                   self.get_trigger_severity(int(trigger['priority'])),
-                                                   str(lastchange),
-                                                   str(age)]
+            if self.output_format == 'json':
+
+                result_columns [result_columns_key] = {'triggerid':trigger['triggerid'],
+                                                       'hostname':trigger['hostname'],
+                                                       'description':trigger['description'],
+                                                       'severity':self.get_trigger_severity(int(trigger['priority'])),
+                                                       'lastchange':str(lastchange),
+                                                       'age':str(age)}
             
+            else:
+                
+                result_columns [result_columns_key] = {'1':trigger['triggerid'],
+                                                       '2':trigger['hostname'],
+                                                       '3':trigger['description'],
+                                                       '4':self.get_trigger_severity(int(trigger['priority'])),
+                                                       '5':str(lastchange),
+                                                       '6':str(age)}
+
             result_columns_key = result_columns_key + 1
 
         #
@@ -763,7 +833,7 @@ class zabbix_cli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('ERROR',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
             return False
 
         #
@@ -822,12 +892,11 @@ class zabbix_cli(cmd.Cmd):
                 self.logs.logger.debug('Hosts: %s added to these groups: %s',hostnames,hostgroups)
 
         except Exception as e:
-           
-            self.generate_feedback('Error','Problems adding hosts to groups')
 
             if self.conf.logging == 'ON':
                     self.logs.logger.error('Problems adding hosts to groups - %s',e)
-
+           
+            self.generate_feedback('Error','Problems adding hosts to groups')
             return False   
             
 
@@ -948,18 +1017,17 @@ class zabbix_cli(cmd.Cmd):
             
             result = self.zapi.hostgroup.massremove(**query)
 
-            self.generate_feedback('Done','Hosts ' + hostnames + ' removed from these groups: ' + hostgroups)
-
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Hosts: %s removed from these groups: %s',hostnames,hostgroups)
 
+            self.generate_feedback('Done','Hosts ' + hostnames + ' removed from these groups: ' + hostgroups)
+
         except Exception as e:
            
-            self.generate_feedback('Error','Problems removing hosts from groups')
-
             if self.conf.logging == 'ON':
                     self.logs.logger.error('Problems removing hosts from groups - %s',e)
 
+            self.generate_feedback('Error','Problems removing hosts from groups')
             return False   
             
 
@@ -1035,8 +1103,7 @@ class zabbix_cli(cmd.Cmd):
         # Sanity check
         #
 
-        if templates == '':
-            
+        if templates == '':            
             self.generate_feedback('Error','Templates information is empty')
             return False
 
@@ -1081,18 +1148,17 @@ class zabbix_cli(cmd.Cmd):
             
             result = self.zapi.template.massadd(**query)
 
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('Templates: %s linked to these hosts: %s',templates,hostnames)
+
             self.generate_feedback('Done','Templates ' + templates + ' linked to these hosts: ' + hostnames)
 
-            if self.conf.logging == 'ON':
-                self.logs.logger.debug('Templates: %s linked to these hosts: %s',templates,hostnames)
-
         except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems linking templates to hosts - %s',e)
            
             self.generate_feedback('Error','Problems linking templates to hosts')
-
-            if self.conf.logging == 'ON':
-                    self.logs.logger.error('Problems linking templates to hosts - %s',e)
-
             return False   
             
 
@@ -1160,7 +1226,7 @@ class zabbix_cli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('ERROR',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
             return False
 
         #
@@ -1168,7 +1234,6 @@ class zabbix_cli(cmd.Cmd):
         #
 
         if templates == '':
-            
             self.generate_feedback('Error','Templates information is empty')
             return False
 
@@ -1213,18 +1278,17 @@ class zabbix_cli(cmd.Cmd):
             
             result = self.zapi.template.massremove(**query)
 
-            self.generate_feedback('Done','Templates ' + templates + ' unlinked from these hosts: ' + hostnames)
-
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Templates: %s unlinked from these hosts: %s',templates,hostnames)
 
+            self.generate_feedback('Done','Templates ' + templates + ' unlinked from these hosts: ' + hostnames)
+
         except Exception as e:
-           
-            self.generate_feedback('Error','Problems unlinking templates from hosts')
 
             if self.conf.logging == 'ON':
                     self.logs.logger.error('Problems unlinking templates from hosts - %s',e)
-
+           
+            self.generate_feedback('Error','Problems unlinking templates from hosts')
             return False   
             
 
@@ -1305,7 +1369,7 @@ class zabbix_cli(cmd.Cmd):
         #
 
         else:
-            print '\n[ERROR] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
             return False
 
 
@@ -1331,11 +1395,11 @@ class zabbix_cli(cmd.Cmd):
                 self.logs.logger.debug('Cheking if usergroup (%s) exists',groupname)
 
         except Exception as e:
-            print '\n[ERROR] Problems checking if usergroup (' + groupname + ') exists \n',e
-         
-            if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems checking if usergroup (%s) exists',groupname)
 
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems checking if usergroup (%s) exists - %s',groupname,e)
+                
+            self.generate_feedback('Error','Problems checking if usergroup (' + groupname + ') exists')
             return False   
         
         #
@@ -1345,11 +1409,11 @@ class zabbix_cli(cmd.Cmd):
         try:
 
             if result == True:
-                print '\n[Warning] This usergroup (' + groupname + ') already exists.\n'
-
+                
                 if self.conf.logging == 'ON':
                     self.logs.logger.debug('Usergroup (%s) already exists',groupname)
-                
+
+                self.generate_feedback('Warning','This usergroup (' + groupname + ') already exists.')
                 return False   
                 
             elif result == False:
@@ -1357,17 +1421,18 @@ class zabbix_cli(cmd.Cmd):
                                                     gui_access=gui_access,
                                                     users_status=users_status)
                 
-                print '\n[Done]: Usergroup (' + groupname + ') with ID: ' + str(result['usrgrpids'][0]) + ' created.\n'
-        
-                if self.conf.logging == 'ON':
-                    self.logs.logger.debug('Usergroup (%s) with ID: %s created',groupname,str(result['usrgrpids'][0]))
 
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('Usergroup (%s) with ID: %s created',groupname,str(result['usrgrpids'][0]))
+
+                self.generate_feedback('Done','Usergroup (' + groupname + ') with ID: ' + str(result['usrgrpids'][0]) + ' created.')
+        
         except Exception as e:
-            print '\n[Error] Problems creating usergroup (' + groupname + ')\n',e
 
             if self.conf.logging == 'ON':
-                    self.logs.logger.error('Problems creating Usergroup (%s)',groupname)
+                    self.logs.logger.error('Problems creating Usergroup (%s) - %s',groupname,e)
 
+            self.generate_feedback('Error','Problems creating usergroup (' + groupname + ')')
             return False   
             
 
@@ -1430,8 +1495,7 @@ class zabbix_cli(cmd.Cmd):
         # Interface connection. 0:DNS
         interface_useip_default = '0'
 
-        # Proxy server to use to monitor this
-        
+        # Proxy server to use to monitor this host        
         proxy_default = '*'
 
         # Default 0: Enable
@@ -1530,11 +1594,11 @@ class zabbix_cli(cmd.Cmd):
             proxy_id = str(self.get_random_proxyid(proxy))
             
         except Exception as e:
-            self.generate_feedback('Error',e)
-            
+ 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('%s',e)
                 
+            self.generate_feedback('Error',e)
             return False
 
         #
@@ -1549,11 +1613,11 @@ class zabbix_cli(cmd.Cmd):
                 self.logs.logger.debug('Cheking if host (%s) exists',hostname)
 
         except Exception as e:
-            self.generate_feedback('Error','Problems checking if host (' + hostname + ') exists')
-         
+
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems checking if host (%s) exists - %s',hostname,e)
 
+            self.generate_feedback('Error','Problems checking if host (' + hostname + ') exists')
             return False   
         
         #
@@ -1563,31 +1627,32 @@ class zabbix_cli(cmd.Cmd):
         try:
 
             if result == True:
-                self.generate_feedback('Warning','This host (' + hostname + ') already exists.')
 
                 if self.conf.logging == 'ON':
                     self.logs.logger.debug('Host (%s) already exists',hostname)
-                
+
+                self.generate_feedback('Warning','This host (' + hostname + ') already exists.')
                 return False   
                 
             elif result == False:
 
-                query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + "\"proxy_hostid\":\"" + proxy_id + "\"," + "\"status\":" + host_status + "," + interfaces_def + "}")
+                query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + "\"proxy_hostid\":\"" + proxy_id + "\"," + "\"status\":" + host_status + "," + interfaces_def + ",\"inventory_mode\":1}")
                 
                 result = self.zapi.host.create(**query)
-                
-                self.generate_feedback('Done','Host (' + hostname + ') with ID: ' + str(result['hostids'][0]) + ' created')
-        
+
                 if self.conf.logging == 'ON':
                     self.logs.logger.info('Host (%s) with ID: %s created',hostname,str(result['hostids'][0]))
+                
+                self.generate_feedback('Done','Host (' + hostname + ') with ID: ' + str(result['hostids'][0]) + ' created')
 
         except Exception as e:
-            self.generate_feedback('Error','Problems creating host (' + hostname + ')')
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems creating host (%s) - %s',hostname,e)
-                
+
+            self.generate_feedback('Error','Problems creating host (' + hostname + ')')
             return False   
+
             
     # ############################################
     # Method do_remove_host
@@ -1667,17 +1732,17 @@ class zabbix_cli(cmd.Cmd):
         try:
             result = self.zapi.host.delete(hostid)
             
-            self.generate_feedback('Done','Hosts (' + hostname + ') with IDs: ' + str(result['hostids'][0]) + ' removed')
-            
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Hosts (%s) with IDs: %s removed',hostname,str(result['hostids'][0]))
 
+            self.generate_feedback('Done','Hosts (' + hostname + ') with IDs: ' + str(result['hostids'][0]) + ' removed')
+
         except Exception as e:
-            self.generate_feedback('Error','Problems removing hosts (' + hostname + ')')
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems removing hosts (%s) - %s',hostname,e)
-                
+
+            self.generate_feedback('Error','Problems removing hosts (' + hostname + ')')
             return False   
             
 
@@ -1804,7 +1869,7 @@ class zabbix_cli(cmd.Cmd):
         #
 
         else:
-            print '\n[Error] - Wrong number of parameters used.\n          Type help or \? to list commands\n'
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
             return False
 
         #
@@ -1812,7 +1877,7 @@ class zabbix_cli(cmd.Cmd):
         #
 
         if alias == '':
-            print '\n[Error]: User Alias is empty\n'
+            self.generate_feedback('Error','User Alias is empty')
             return False
 
         if passwd == '':
@@ -1828,7 +1893,7 @@ class zabbix_cli(cmd.Cmd):
             autologout = autologout_default
         
         if usrgrps == '':
-            print '\n[Error]: Group list is empty\n'
+            self.generate_feedback('Error','Group list is empty')
             return False
 
         #
@@ -1840,14 +1905,14 @@ class zabbix_cli(cmd.Cmd):
             result = self.zapi.user.get(search={'alias':alias},output='extend',searchWildcardsEnabled=True)
 
             if self.conf.logging == 'ON':
-                    self.logs.logger.debug('Checking if user (%s) exists',alias)
+                self.logs.logger.debug('Checking if user (%s) exists',alias)
 
         except Exception as e:
-            print '\n[ERROR] Problems checking if user (' + alias + ') exists \n',e
-
+            
             if self.conf.logging == 'ON':
-                    self.logs.logger.error('Problems checking if user (%s) exists',alias)
+                self.logs.logger.error('Problems checking if user (%s) exists - %s',alias,e)
 
+            self.generate_feedback('Error','Problems checking if user (' + alias + ') exists')
             return False   
 
         #
@@ -1858,11 +1923,10 @@ class zabbix_cli(cmd.Cmd):
 
             if result != []:
 
-                print '\n[Warning] This user (' + alias + ') already exists.\n'
-
                 if self.conf.logging == 'ON':
                     self.logs.logger.debug('This user (%s) already exists',alias)
 
+                self.generate_feedback('Warning','This user (' + alias + ') already exists.')
                 return False   
                 
             else:
@@ -1875,17 +1939,17 @@ class zabbix_cli(cmd.Cmd):
                                                autologout=autologout,
                                                usrgrps=usrgrps.strip().split(','))
                 
-                print '\n[Done]: User (' + alias + ') with ID: ' + str(result['userids'][0]) + ' created.\n'
-
                 if self.conf.logging == 'ON':
-                    self.logs.logger.debug('User (%s) with ID: %s created',alias,str(result['userids'][0]))
+                    self.logs.logger.info('User (%s) with ID: %s created',alias,str(result['userids'][0]))
+                
+                self.generate_feedback('Done','User (' + alias + ') with ID: ' + str(result['userids'][0]) + ' created.')
 
         except Exception as e:
-            print '\n[Error] Problems creating user (' + alias + '\n',e
-
+            
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems creating user (%s)',alias)
+                self.logs.logger.error('Problems creating user (%s) - %s',alias,e)
 
+            self.generate_feedback('Error','Problems creating user (' + alias + ')')
             return False   
 
             
@@ -1936,25 +2000,25 @@ class zabbix_cli(cmd.Cmd):
                 data = self.zapi.hostgroup.create(name=name)
                 hostgroupid = data['groupids'][0]
                 
-                self.generate_feedback('Done','Hostgroup (' + name + ') with ID: ' + hostgroupid + ' created.')
-
                 if self.conf.logging == 'ON':
                     self.logs.logger.info('Hostgroup (%s) with ID: %s created',name,hostgroupid)
+
+                self.generate_feedback('Done','Hostgroup (' + name + ') with ID: ' + hostgroupid + ' created.')
             
             else:
-                self.generate_feedback('Warning','This hostgroup (' + name + ') already exists.')
 
                 if self.conf.logging == 'ON':
                     self.logs.logger.debug('This hostgroup (%s) already exists',name)
 
+                self.generate_feedback('Warning','This hostgroup (' + name + ') already exists.')
                 return False
 
         except Exception as e:
-            self.generate_feedback('Error','Problems creating hostgroup (' + name + ')')
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems creating hostgroup (%s) - %s',name,e)
-
+            
+            self.generate_feedback('Error','Problems creating hostgroup (' + name + ')')
             return False 
 
 
@@ -1977,11 +2041,11 @@ class zabbix_cli(cmd.Cmd):
                                             sortorder='ASC')
 
         except Exception as e:
-            self.generate_feedback('Error','Problems getting the template list')
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems getting the template list - %s',e)
-            
+
+            self.generate_feedback('Error','Problems getting the template list')
             return False
         
         #
@@ -1990,9 +2054,15 @@ class zabbix_cli(cmd.Cmd):
 
         for template in result:
 
-            result_columns [result_columns_key] =[template['templateid'],
-                                                  template['host']]
+            if self.output_format == 'json':
+                result_columns [result_columns_key] ={'templateid':template['templateid'],
+                                                      'name':template['host']}
             
+            else:
+                result_columns [result_columns_key] ={'1':template['templateid'],
+                                                      '2':template['host']}
+            
+                
             result_columns_key = result_columns_key + 1
 
         #
@@ -2027,11 +2097,11 @@ class zabbix_cli(cmd.Cmd):
                                              sortorder='ASC')
 
         except Exception as e:
-            self.generate_feedback('Error','Problems getting globalmacros list')
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems getting globalmacros list - %s',e)
-
+                
+            self.generate_feedback('Error','Problems getting globalmacros list')
             return False
 
         #
@@ -2040,10 +2110,16 @@ class zabbix_cli(cmd.Cmd):
 
         for global_macro in result:
 
-            result_columns [result_columns_key] =[global_macro['globalmacroid'],
-                                                  global_macro['macro'],
-                                                  global_macro['value']]
+            if self.output_format == 'json':
+                result_columns [result_columns_key] ={'globalmacroid':global_macro['globalmacroid'],
+                                                      'name':global_macro['macro'],
+                                                      'value':global_macro['value']}
 
+            else:
+                result_columns [result_columns_key] ={'1':global_macro['globalmacroid'],
+                                                      '2':global_macro['macro'],
+                                                      '3':global_macro['value']}
+                
             result_columns_key = result_columns_key + 1
 
         #
@@ -2054,7 +2130,6 @@ class zabbix_cli(cmd.Cmd):
                              ['Name','Value'],
                              ['MacroID'],
                              FRAME)
-
 
 
     # #######################################
@@ -2132,11 +2207,11 @@ class zabbix_cli(cmd.Cmd):
                 templateid = self.get_template_id(template)
             
             except Exception as e:
-                self.generate_feedback('Error',e)
-                
+
                 if self.conf.logging == 'ON':
                     self.logs.logger.error('%s',e)
                     
+                self.generate_feedback('Error',e)
                 return False
                 
         else:
@@ -2152,11 +2227,11 @@ class zabbix_cli(cmd.Cmd):
                                         sortorder='ASC')
         
         except Exception as e:
-            self.generate_feedback('Error','Problems getting items list for template (' + template + ')')
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems getting items list for template (%s) - %s',template,e)
 
+            self.generate_feedback('Error','Problems getting items list for template (' + template + ')')
             return False
 
         #
@@ -2165,13 +2240,22 @@ class zabbix_cli(cmd.Cmd):
         
         for item in result:
                 
-            result_columns [result_columns_key] =[item['itemid'],
-                                                  item['name'],
-                                                  item['key_'],
-                                                  self.get_item_type(int(item['type'])),
-                                                  item['delay'],
-                                                  item['history'],
-                                                  '\n'.join(textwrap.wrap(item['description'],60))]
+            if self.output_format == 'json':
+                result_columns [result_columns_key] ={'itemid':item['itemid'],
+                                                      'name':item['name'],
+                                                      'key':item['key_'],
+                                                      'type':self.get_item_type(int(item['type'])),
+                                                      'interval':item['delay'],
+                                                      'history':item['history'],
+                                                      'description':'\n'.join(textwrap.wrap(item['description'],60))}
+            else:
+                result_columns [result_columns_key] ={'1':item['itemid'],
+                                                      '2':item['name'],
+                                                      '3':item['key_'],
+                                                      '4':self.get_item_type(int(item['type'])),
+                                                      '5':item['delay'],
+                                                      '6':item['history'],
+                                                      '7':'\n'.join(textwrap.wrap(item['description'],60))}
 
             result_columns_key = result_columns_key + 1
 
@@ -2262,11 +2346,11 @@ class zabbix_cli(cmd.Cmd):
                 templateid = self.get_template_id(template)
             
             except Exception as e:
-                self.generate_feedback('Error',e)
-                
+
                 if self.conf.logging == 'ON':
-                    self.logs.logger.error('%s',e)
-                    
+                    self.logs.logger.error('Problems getting templateID - %s',e)
+
+                self.generate_feedback('Error','Problems getting templateID')
                 return False
                 
         else:
@@ -2282,11 +2366,10 @@ class zabbix_cli(cmd.Cmd):
                                            sortorder='ASC')
         
         except Exception as e:
-            self.generate_feedback('Error','Problems getting trigger list for template (' + template + ')')
-
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems getting trigger list for template (%s) - %s',template,e)
 
+            self.generate_feedback('Error','Problems getting trigger list for template (' + template + ')')
             return False
 
         #
@@ -2302,12 +2385,20 @@ class zabbix_cli(cmd.Cmd):
 
             for data in trigger_data:
 
-                result_columns [result_columns_key] = [data['triggerid'],
-                                                       data['expression'],
-                                                       data['description'],
-                                                       self.get_trigger_severity(int(data['priority'])),
-                                                       self.get_trigger_status(int(data['status']))]
+                if self.output_format == 'json':
+                    result_columns [result_columns_key] = {'triggerid':data['triggerid'],
+                                                           'expression':data['expression'],
+                                                           'description':data['description'],
+                                                           'priority':self.get_trigger_severity(int(data['priority'])),
+                                                           'status':self.get_trigger_status(int(data['status']))}
                 
+                else:
+                    result_columns [result_columns_key] = {'1':data['triggerid'],
+                                                           '2':data['expression'],
+                                                           '3':data['description'],
+                                                           '4':self.get_trigger_severity(int(data['priority'])),
+                                                           '5':self.get_trigger_status(int(data['status']))}
+
                 result_columns_key = result_columns_key + 1
                 
         #
@@ -2577,18 +2668,35 @@ class zabbix_cli(cmd.Cmd):
         
                 for column in right_col:
                     x.align[column] = "r"
-
+                
                 for records in result:
-                    x.add_row(result[records])
+                    columns = []
+
+                    for column in sorted(result[records]):
+                        columns.append(result[records][column])
+                    
+                    x.add_row(columns)
             
                 print x.get_string()
                 print
 
             elif self.output_format == 'csv':
-            
+
+                print ",".join(colnames)
+
                 for records in result:
-                    print '"' +  '","'.join(result[records]) + '"'
+                    columns = []
+
+                    for column in sorted(result[records]):
+                        columns.append(result[records][column])
+
+                    print '"' +  '","'.join(columns) + '"'
              
+            elif self.output_format == 'json':
+                
+                print json.dumps(result,sort_keys=True,indent=2)
+
+
         except Exception as e: 
             print '\n[Error] Problems generating the output ',e
 
@@ -2607,10 +2715,25 @@ class zabbix_cli(cmd.Cmd):
         
         if self.output_format == 'table':
             print '\n[' + return_code.title() + ']: ' + str(message) + '\n'   
+            print 
 
         elif self.output_format == 'csv':
-            print '"' + return_code.title() + '","' + str(message) + '"\n'   
+            print '"' + return_code.lower() + '","' + str(message) + '"\n'   
             
+            if return_code.lower() == 'done':
+                sys.exit(0)
+            elif return_code.lower() == 'error':
+                sys.exit(1)
+    
+        elif self.output_format == 'json':
+            output = {"return_code":return_code.lower(),"message":str(message)}
+            print json.dumps(output,sort_keys=True,indent=2)
+
+            if return_code.lower() == 'done':
+                sys.exit(0)
+            elif return_code.lower() == 'error':
+                sys.exit(1)
+
 
     # ############################################
     # Method do_clear
@@ -2635,7 +2758,7 @@ class zabbix_cli(cmd.Cmd):
     # ############################################
 
     def default(self,line):
-        print '\n[ERROR] - Unknown command: %s.\n          Type help or \? to list commands\n' % line
+        self.generate_feedback('Error',' Unknown command: %s.\n          Type help or \? to list commands' % line)
 
 
     # ############################################
@@ -2704,7 +2827,7 @@ class zabbix_cli(cmd.Cmd):
             print
 
         except Exception as e:
-            print '\n[ERROR]: Problems running %s' % line
+            self.generate_feedback('Error','Problems running %s' % line)
 
 
     # ############################################
