@@ -1004,7 +1004,7 @@ class zabbix_cli(cmd.Cmd):
                 if hostgroup.isdigit():
                     hostgroups_list.append(str(hostgroup).strip())
                 else:
-                    hostgroups_list.append(str(self.get_hostgroup_id(hostgroup)).strip())
+                    hostgroups_list.append(str(self.get_hostgroup_id(hostgroup.strip())))
 
             hostgroup_ids = ','.join(hostgroups_list)
 
@@ -1013,7 +1013,7 @@ class zabbix_cli(cmd.Cmd):
                 if hostname.isdigit():
                     hostnames_list.append(str(hostname).strip())
                 else:
-                    hostnames_list.append(str(self.get_host_id(hostname)).strip())
+                    hostnames_list.append(str(self.get_host_id(hostname.strip())))
         
             host_ids = ','.join(hostnames_list)
 
