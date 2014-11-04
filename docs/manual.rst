@@ -297,6 +297,42 @@ This command can be run only with parameters. e.g.:
    "Done","Hosts test.example.net added to these groups: Database servers,Linux servers"
 
 
+add_user_to_usergroup
+---------------------
+
+This command adds one/several users to one/several usergroups
+
+::
+
+   add_host_to_hostgroup [usernames]
+                         [usergroups]
+
+Parameters:
+
+* **[usernames]:** Usrname or zabbix-userID. One can define several
+  values in a comma separated list.
+
+* **[usergroups]:** usergroup name or zabbix-usergroupID. One can define several
+  values in a comma separated list.
+ 
+This command can be run only with parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ add_user_to_usergroup
+   --------------------------------------------------------
+   # Usernames: AAA-user
+   # Usergroups: DBA
+   --------------------------------------------------------
+   
+   [Done]: Users AAA-user added to these usergroups: DBA
+
+   [user@server]# zabbix-cli --use-json-format add_user_to_usergroup \"AAA-user\" \"DBA\"
+   {
+   "message": "Users AAA-user added to these usergroups: DBA", 
+   "return_code": "done"
+   }
+
    
 clear
 -----
