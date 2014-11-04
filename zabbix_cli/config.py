@@ -49,7 +49,8 @@ class configuration():
         # Zabbix_config section
         self.default_hostgroup = 'All-hosts'
         self.default_admin_usergroup = 'Zabbix-root'
-        
+        self.default_directory_exports = os.getenv('HOME') + '/zabbix_exports' 
+
         # Logging section
         self.logging = 'OFF'
         self.log_level = 'ERROR'
@@ -123,6 +124,9 @@ class configuration():
 
             if config.has_option('zabbix_config','default_admin_usergroup'):
                 self.default_admin_usergroup = config.get('zabbix_config','default_admin_usergroup')
+
+            if config.has_option('zabbix_config','default_directory_exports'):
+                self.default_directory_exports = config.get('zabbix_config','default_directory_exports')
 
             #
             # Logging section
