@@ -1040,6 +1040,131 @@ class zabbix_cli(cmd.Cmd):
 
             self.generate_feedback('Error','Problems removing hosts ' + hostnames + ' (' + host_ids + ') from groups (' + hostgroups + ' (' + hostgroup_ids + ')' )
             return False   
+
+
+    # ############################################
+    # Method do_add_user_to_usergroup
+    # ############################################
+
+    def do_add_user_to_usergroup(self,args):
+        '''
+        DESCRIPTION:
+        This command adds one/several users to
+        one/several usergroups
+
+        COMMAND:
+        add_user_to_usergroup [usernames]
+                              [usergroups]
+
+
+        [usernames]
+        -----------
+        Usernames or IDs.
+        One can define several values in a comma separated list.
+
+        [usergroups]
+        ------------
+        Usergroup names or IDs.
+        One can define several values in a comma separated list.
+
+        '''
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                usernames = raw_input('# Usernames: ').strip()
+                usergroups = raw_input('# Usergroups: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 2:
+
+            usernames = arg_list[0].strip()
+            usergroups = arg_list[1].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if usergroups == '':
+            
+            self.generate_feedback('Error','Usergroups information is empty')
+            return False
+
+        if usernames == '':
+            self.generate_feedback('Error','Usernames information is empty')
+            return False
+        
+        try:
+            
+            #
+            # Generate hosts and hostgroups IDs
+            #
+        
+            usergroups_list = []
+            usernames_list = []
+            
+            for usergroup in usergroups.split(','):
+
+                if usergroup.isdigit():
+                    usergroups_list.append(str(usergroup).strip())
+                else:
+                    usergroups_list.append(str(self.get_usergroup_id(usergroup.strip())))
+
+            for username in usernames.split(','):
+
+                if username.isdigit():
+                    usernames_list.append(str(username).strip())
+                else:
+                    usernames_list.append(str(self.get_user_id(username.strip())))
+        
+
+            #
+            # Add users to usergroups
+            #
+
+            result = self.zapi.usergroup.massadd(usrgrpids=usergroups_list,userids=usernames_list)
+
+            self.generate_feedback('Done','Users ' + usernames + ' added to these usergroups: ' + usergroups)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Users: %s added to these usergroups: %s',usernames,usergroups)
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                    self.logs.logger.error('Problems adding users %s to usergroups %s - %s',usernames,usergroups,e)
+           
+            self.generate_feedback('Error','Problems adding users ' + usernames + ' to usergroups ' + usergroups)
+            return False   
             
 
     # ############################################
@@ -3058,6 +3183,30 @@ class zabbix_cli(cmd.Cmd):
             raise e
 
         return str(usergroupid)
+
+
+    # ##########################################
+    # Method get_user_id
+    # ##########################################
+    
+    def get_user_id(self, user):
+        '''
+        DESCRIPTION:
+        Get the userid for a user
+        '''
+
+        try:
+            data = self.zapi.user.get(search={'alias':user})
+
+            if data != []:
+                userid = data[0]['userid']
+            else:
+                raise Exception('Could not find userID for: ' + user)
+
+        except Exception as e:
+            raise e
+
+        return str(userid)
 
     
     # ##########################################

@@ -372,10 +372,105 @@ else
 fi
 
 
+# return: error
+${ZABBIX_CLI} --use-json-format create_usergroup \"\" \"\"
+
+RETVAL=$?
+if [ $RETVAL -eq 1 ]; then
+    echo -e  "TEST 37: OK\n"
+else
+    echo -e  "TEST 37: ERROR\n"
+fi
 
 
+# return: ok
+${ZABBIX_CLI} --use-json-format create_usergroup \"AAA-usergroup\" \"\" \"\"
+
+RETVAL=$?
+if [ $RETVAL -eq 0 ]; then
+    echo -e  "TEST 38: OK\n"
+else
+    echo -e  "TEST 38: ERROR\n"
+fi
+
+# return: ok
+${ZABBIX_CLI} --use-json-format create_usergroup \"BBB-usergroup\" \"0\" \"0\"
+
+RETVAL=$?
+if [ $RETVAL -eq 0 ]; then
+    echo -e  "TEST 39: OK\n"
+else
+    echo -e  "TEST 39: ERROR\n"
+fi
+
+# return: ok
+${ZABBIX_CLI} --use-json-format create_user \"AAA-user\" \"AAA\" \"user\" \"\" \"\" \"\" \"\" \"13\" 
+
+RETVAL=$?
+if [ $RETVAL -eq 0 ]; then
+    echo -e  "TEST 40: OK\n"
+else
+    echo -e  "TEST 40: ERROR\n"
+fi
+
+# return: ok
+${ZABBIX_CLI} --use-json-format create_user \"BBB-user\" \"BBB\" \"user\" \"\" \"\" \"\" \"\" \"13\" 
+
+RETVAL=$?
+if [ $RETVAL -eq 0 ]; then
+    echo -e  "TEST 41: OK\n"
+else
+    echo -e  "TEST 41: ERROR\n"
+fi
+
+# return: ok
+${ZABBIX_CLI} --use-json-format create_user \"AAA-user\" \"AAA\" \"user\" \"\" \"\" \"\" \"\" \"13\" 
+
+RETVAL=$?
+if [ $RETVAL -eq 0 ]; then
+    echo -e  "TEST 42: OK\n"
+else
+    echo -e  "TEST 42: ERROR\n"
+fi
 
 
+# return: error
+${ZABBIX_CLI} --use-json-format add_user_to_usergroup \"\" \"AAA-usergroup, BBB-usergroup\"
 
+RETVAL=$?
+if [ $RETVAL -eq 1 ]; then
+    echo -e  "TEST 43: OK\n"
+else
+    echo -e  "TEST 43: ERROR\n"
+fi
 
+# return: error
+${ZABBIX_CLI} --use-json-format add_user_to_usergroup \"AAA-user\" \"\"
+
+RETVAL=$?
+if [ $RETVAL -eq 1 ]; then
+    echo -e  "TEST 44: OK\n"
+else
+    echo -e  "TEST 44: ERROR\n"
+fi
+
+# return: error
+${ZABBIX_CLI} --use-json-format add_user_to_usergroup \"AAA-user\" \"asdsad\"
+
+RETVAL=$?
+if [ $RETVAL -eq 1 ]; then
+    echo -e  "TEST 45: OK\n"
+else
+    echo -e  "TEST 45: ERROR\n"
+fi
+
+# return: ok
+${ZABBIX_CLI} --use-json-format add_user_to_usergroup \"AAA-user, BBB-user \" \"AAA-usergroup, BBB-usergroup\"
+
+RETVAL=$?
+if [ $RETVAL -eq 0 ]; then
+    echo -e  "TEST 46: OK\n"
+else
+    echo -e  "TEST 46: ERROR\n"
+fi
 
