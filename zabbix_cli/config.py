@@ -51,6 +51,7 @@ class configuration():
         self.default_admin_usergroup = 'Zabbix-root'
         self.default_directory_exports = os.getenv('HOME') + '/zabbix_exports' 
         self.default_export_format = 'JSON'
+        self.include_timestamp_export_filename = 'ON'
 
         # Logging section
         self.logging = 'OFF'
@@ -131,6 +132,9 @@ class configuration():
 
             if config.has_option('zabbix_config','default_export_format'):
                 self.default_export_format = config.get('zabbix_config','default_export_format')
+
+            if config.has_option('zabbix_config','include_timestamp_export_filename'):
+                self.include_timestamp_export_filename = config.get('zabbix_config','include_timestamp_export_filename')
 
             #
             # Logging section
