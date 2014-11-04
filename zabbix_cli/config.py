@@ -47,8 +47,9 @@ class configuration():
         self.usergroups_to_sync = ''
 
         # Zabbix_config section
-        self.default_hostgroup = '0'
-
+        self.default_hostgroup = 'All-hosts'
+        self.default_admin_usergroup = 'Zabbix-root'
+        
         # Logging section
         self.logging = 'OFF'
         self.log_level = 'ERROR'
@@ -119,6 +120,9 @@ class configuration():
 
             if config.has_option('zabbix_config','default_hostgroup'):
                 self.default_hostgroup = config.get('zabbix_config','default_hostgroup')
+
+            if config.has_option('zabbix_config','default_admin_usergroup'):
+                self.default_admin_usergroup = config.get('zabbix_config','default_admin_usergroup')
 
             #
             # Logging section

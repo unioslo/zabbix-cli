@@ -1608,7 +1608,7 @@ class zabbix_cli(cmd.Cmd):
                 if hostgroup.isdigit():
                     hostgroups_list.append('{"groupid":"' + str(hostgroup).strip() + '"}')
                 else:
-                    hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup)).strip() + '"}')
+                    hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup.strip())) + '"}')
 
             hostgroup_ids = ','.join(hostgroups_list)
 
@@ -1987,13 +1987,15 @@ class zabbix_cli(cmd.Cmd):
 
         '''
 
+        # Default values
+        admin_usergroup_default = self.conf.default_admin_usergroup
+
         try:
             arg_list = shlex.split(args)
 
         except ValueError as e:
             print '\n[ERROR]: ',e,'\n'
             return False
-
 
         if len(arg_list) == 0:
             try:
@@ -2055,7 +2057,28 @@ class zabbix_cli(cmd.Cmd):
                     self.logs.logger.info('Hostgroup (%s) with ID: %s created',hostgroup,hostgroupid)
 
                 self.generate_feedback('Done','Hostgroup (' + hostgroup + ') with ID: ' + hostgroupid + ' created.')
+
+                
+                #
+                # Give RW access to the new group to the default admin usergroup
+                # defined in zabbix-cli.conf
+                #
+
+                try:
+                    usrgrpid = self.get_usergroup_id(admin_usergroup_default)
+
+                    result = self.zapi.usergroup.massadd(usrgrpids=[usrgrpid],rights={'id':hostgroupid,'permission':3})
+                    
+                    if self.conf.logging == 'ON':
+                        self.logs.logger.debug('Admin usergroup (%s) has got RW permissions on hostgroup (%s) ',admin_usergroup_default,hostgroup)
+                        
+                except Exception as e:
+
+                    if self.conf.logging == 'ON':
+                        self.logs.logger.error('Problems giving the admin usergroup %s RW access to %s - %s',admin_usergroup_default,hostgroup,e)
             
+                    self.generate_feedback('Error','Problems giving the admin usergroup ' + admin_usergroup_default +' RW access to ' + hostgroup)
+                    return False 
             else:
 
                 if self.conf.logging == 'ON':
@@ -3024,12 +3047,12 @@ class zabbix_cli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.usergroup.get(output='extend', filter={"name":usergroup})
-            
+            data = self.zapi.usergroup.getobjects(name=usergroup)
+
             if data != []:
                 usergroupid = data[0]['usrgrpid']
             else:
-                raise Exception('Could not find usergroupID for:' + usergroup)
+                raise Exception('Could not find usergroupID for: ' + usergroup)
 
         except Exception as e:
             raise e
