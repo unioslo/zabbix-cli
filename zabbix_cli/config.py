@@ -50,6 +50,7 @@ class configuration():
         self.default_hostgroup = 'All-hosts'
         self.default_admin_usergroup = 'Zabbix-root'
         self.default_directory_exports = os.getenv('HOME') + '/zabbix_exports' 
+        self.default_export_format = 'JSON'
 
         # Logging section
         self.logging = 'OFF'
@@ -127,6 +128,9 @@ class configuration():
 
             if config.has_option('zabbix_config','default_directory_exports'):
                 self.default_directory_exports = config.get('zabbix_config','default_directory_exports')
+
+            if config.has_option('zabbix_config','default_export_format'):
+                self.default_export_format = config.get('zabbix_config','default_export_format')
 
             #
             # Logging section
