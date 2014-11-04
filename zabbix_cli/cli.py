@@ -379,7 +379,90 @@ class zabbix_cli(cmd.Cmd):
                              ALL)
 
 
-    # ############################################                                                                                                                                    
+    # ############################################ 
+    # Method update_host_inventory
+    # ############################################
+    
+    def do_update_host_inventory(self,args):
+        '''
+        DESCRIPTION:
+        This command updates one hosts' inventory 
+
+        COMMAND:
+        update_host_inventory hostname inventory_key "inventory value"
+
+        Inventory key is not the same as seen in web-gui. To
+        look at possible keys and their current values, use 
+        "zabbix-cli --use-json-format show_host_inventory <hostname>"  
+
+            
+        '''
+
+        result_columns = {}
+        result_columns_key = 0
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+
+        if len(arg_list) != 3:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        try:
+            host_id = str(self.get_host_id(arg_list[0]))
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+        
+        #
+        # Generate query
+        #
+
+        if host_id == '0':
+            self.generate_feedback('Error','Host id for "' + arg_list[0] + '" not found')
+            return False
+
+        update_id = "'hostid': '" + host_id +"'"
+        update_value = "'inventory':  {'" + arg_list[1] + "':'" + arg_list[2] +"'}" 
+
+        try:
+          query = ast.literal_eval("{" + update_id + "," + update_value + "}")
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems generating query - %s',e)
+
+            self.generate_feedback('Error','Problems generating query')
+            return False
+
+        #
+        # Get result from Zabbix API
+        #
+
+        try:
+            result = self.zapi.host.update(**query)
+        
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Command show_host_inventory executed.')
+            
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems updating host inventory information - %s',e)
+                
+            self.generate_feedback('Error','Problems updating host inventory information')
+            return False
+
+
+
+    # ############################################
     # Method show_host_inventory
     # ############################################
     
