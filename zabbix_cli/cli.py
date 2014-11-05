@@ -36,8 +36,7 @@ import random
 import hashlib
 import textwrap
 import json
-
-from pprint import pprint
+import xml.dom.minidom
 
 from zabbix_cli.config import *
 from zabbix_cli.logs import *
@@ -845,7 +844,6 @@ class zabbix_cli(cmd.Cmd):
         #
 
         if hostgroups == '':
-            
             self.generate_feedback('Error','Hostgroups information is empty')
             return False
 
@@ -1126,7 +1124,7 @@ class zabbix_cli(cmd.Cmd):
         try:
             
             #
-            # Generate hosts and hostgroups IDs
+            # Generate users and usergroups IDs
             #
         
             usergroups_list = []
@@ -2610,6 +2608,316 @@ class zabbix_cli(cmd.Cmd):
                              FRAME)
 
 
+
+    # ############################################
+    # Method export_configuration
+    # ############################################
+
+    def do_export_configuration(self,args):
+        '''
+        DESCRIPTION:
+        This command exports the configuration of different 
+        Zabbix components 
+
+        COMMAND:
+        export_configuration [export_directory]
+                             [object to export]
+                             [object name]
+
+        [export directory]
+        ------------------
+        Directory where the export files will be saved.
+
+        [object type]
+        ------------------
+        Possible values: groups, hosts, images, maps, screens, templates
+        One can use the special value #ALL# to export all object type groups.
+
+
+        [object name]
+        -------------
+        Object name or Zabbix-ID. One can define several values in a comma 
+        separated list. 
+
+        One can use the special value #ALL# to export all objects in a object
+        type group. This parameter will be defined automatically as #ALL# if [object type] == #ALL#
+
+        '''
+
+        #
+        # Default values
+        #
+
+        # Object type
+        object_type_list = ['groups', 'hosts', 'images', 'maps', 'screens', 'templates']
+        object_type_to_export = []
+
+        # Default object type
+        default_object_type = '#all#'
+        
+        # Default object name
+        default_object_name = '#all#'
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                directory_exports = raw_input('# Directory [' + self.conf.default_directory_exports + ']: ').strip()
+                object_type = raw_input('# Object type [' + default_object_type + ']: ').strip().lower()
+                object_name = raw_input('# Object name [' + default_object_name + ']: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        #
+        # Command with parameters
+        #
+
+        elif len(arg_list) == 3:
+            directory_exports = arg_list[0].strip()
+            object_type = arg_list[1].strip().lower()
+            object_name = arg_list[2].strip()
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if directory_exports == '':
+            directory_exports = self.conf.default_directory_exports
+
+        
+        for obj_type in object_type_list:
+        
+            if os.path.exists(directory_exports + '/' + obj_type) == False:
+
+                try:
+                    os.makedirs(directory_exports + '/' + obj_type,0700)
+
+                    if self.conf.logging == 'ON':
+                        self.logs.logger.info('Export directory created: %s',directory_exports + '/' + obj_type)
+                
+                except OSError as e:
+
+                    if self.conf.logging == 'ON':
+                        self.logs.logger.error('OS error when creating export directory %s - %s',directory_exports + '/' + obj_type,e)
+
+                    self.generate_feedback('Error','OS error when creating export directory ' + directory_exports + '/' + obj_type)
+                    return False
+
+        if object_type == '':
+            object_type = default_object_type
+
+        if object_type not in object_type_list + ['#all#']:
+            self.generate_feedback('Error','Object type is not a valid value')
+            return False
+
+        if object_type.lower() == '#all#':
+            object_type_to_export = object_type_list
+        else:
+            object_type_to_export.append(object_type)
+
+        if object_name == '' or object_type.lower() == '#all#':
+            object_name = default_object_name
+
+            
+        #
+        # Generate export files for all defined object types
+        #
+
+        for obj_type in object_type_to_export:
+            
+            object_name_list = {}
+
+            if object_name.lower() == '#all#':
+
+                try:
+
+                    if obj_type == 'groups':
+
+                        data = self.zapi.hostgroup.get(output="extend")
+                        
+                        for object in data:
+                            object_name_list[object['groupid']] = object['name']
+                        
+                    elif obj_type == 'hosts':
+
+                        data = self.zapi.host.get(output="extend")
+                        
+                        for object in data:
+                            object_name_list[object['hostid']] = object['host']
+
+                    elif obj_type == 'images':
+
+                        data = self.zapi.image.get(output="extend")
+                        
+                        for object in data:
+                            object_name_list[object['imageid']] = object['name']
+                        
+                    elif obj_type == 'maps':
+
+                        data = self.zapi.map.get(output="extend")
+                        
+                        for object in data:
+                            object_name_list[object['sysmapid']] = object['name']
+                        
+                    elif obj_type == 'screens':
+
+                        data = self.zapi.screen.get(output="extend")
+                        
+                        for object in data:
+                            object_name_list[object['screenid']] = object['name']
+                    
+                    elif obj_type == 'templates':
+
+                        data = self.zapi.template.get(output="extend")
+                        
+                        for object in data:
+                            object_name_list[object['templateid']] = object['host']
+
+                    
+                except Exception as e:
+
+                    if self.conf.logging == 'ON':
+                        self.logs.logger.error('Problems getting all [%s] objects - %s',obj_type,e)
+                        
+                    self.generate_feedback('Error','Problems getting all [' + obj_type + '] objects')
+                    return False
+                
+            else:
+                for name in object_name.split(','):
+                    
+                    if name.strip().isdigit() == True and name.strip() != '':
+                        object_name_list[str(name).strip()] = str(name).strip()
+
+                    elif name.strip().isdigit() == False and name.strip() != '':
+    
+                        try:
+                            if obj_type == 'groups':
+                                id = str(self.get_hostgroup_id(name.strip()))
+
+                            elif obj_type == 'hosts':
+                                id = str(self.get_host_id(name.strip()))
+
+                            elif obj_type == 'images':
+                                id = str(self.get_image_id(name.strip()))
+
+                            elif obj_type == 'maps':
+                                id = str(self.get_map_id(name.strip()))
+
+                            elif obj_type == 'screens':
+                                id = str(self.get_screen_id(name.strip()))
+
+                            elif obj_type == 'templates':
+                                id = str(self.get_template_id(name.strip()))
+
+                            object_name_list[id] = name.strip()
+
+                        except Exception as e:
+
+                            if self.conf.logging == 'ON':
+                                self.logs.logger.error('Problems getting ID for object type [%s] and object name [%s] - %s',obj_type,name,e)
+
+                            self.generate_feedback('Error','Problems getting ID for object type [' + obj_type + '] and object name [' + name + ']')
+                            return False
+
+            
+            #
+            # Generate export files for all defined object names
+            #
+                                         
+            for obj_name_key in object_name_list.keys():
+
+                try:
+                    data = self.zapi.configuration.export(format=self.conf.default_export_format.lower(), 
+                                                          options={obj_type:[obj_name_key]})
+
+
+                    #
+                    # Formating and indenting the export data 
+                    #
+
+                    if self.conf.default_export_format.upper() == 'JSON':
+                        output= json.dumps(json.JSONDecoder().decode(data),sort_keys=True,indent=2)
+                    else:
+                        xml_code = xml.dom.minidom.parseString(data)
+                        output= xml_code.toprettyxml(indent='  ')
+
+                    #
+                    # Writing to the export file
+                    #
+
+                    filename = self.generate_export_filename(directory_exports,obj_type,obj_name_key,object_name_list[obj_name_key])
+                    
+                    with open(filename,'w') as export_filename:
+                        export_filename.write(output)
+
+                    if self.conf.logging == 'ON':
+                        self.logs.logger.info('Export file/s for object type [%s] and object name [%s] generated',obj_type,object_name_list[obj_name_key])
+
+                except Exception as e:
+                    
+                    if self.conf.logging == 'ON':
+                        self.logs.logger.error('Problems generating export file for object type [%s] and object name [%s] - %s',obj_type,object_name_list[obj_name_key],e)
+                        
+                    self.generate_feedback('Error','Problems generating export file for object type [' + obj_type+ '] and object name [' + object_name_list[obj_name_key] + ']')
+                    return False
+
+        if self.conf.logging == 'ON':
+            self.logs.logger.info('Export file/s for object type [%s] and object name [%s] generated',object_type,object_name)
+            
+        self.generate_feedback('Done','Export file/s for object type [' + object_type+ '] and object name [' + object_name + '] generated')
+ 
+
+    # ############################################
+    # Method generate_export_filename
+    # ############################################
+    def generate_export_filename(self,directory_exports,obj_type, obj_id, obj_name):
+        '''
+        Generate filename to export the configuration
+        '''
+
+        if self.conf.default_export_format.upper() == 'JSON':
+            file_ext = 'json'
+
+        elif self.conf.default_export_format.upper() == 'XML':
+            file_ext = 'xml'
+
+        else:
+            file_ext = 'json'
+
+        if self.conf.include_timestamp_export_filename.upper() == 'ON':
+            timestamp = '_' + datetime.datetime.now().strftime('%Y-%m-%dT%H%M%S%Z')
+
+        elif self.conf.include_timestamp_export_filename.upper() == 'OFF':
+            timestamp = ''
+
+        else:
+            timestamp = '_' + datetime.datetime.now().strftime('%Y-%m-%dT%H%M%S%Z')
+
+        filename = directory_exports + '/' + obj_type + '/zabbix_export_' + obj_type + '_' + obj_name.replace(' ','_') + '_' + obj_id + timestamp + '.' + file_ext
+        return filename
+
+
     # ############################################
     # Method get_trigger_severity
     # ############################################
@@ -3122,7 +3430,7 @@ class zabbix_cli(cmd.Cmd):
         DESCRIPTION:
         Get the hostid for a host
         '''
-        
+
         try:
             data = self.zapi.host.get(output='extend', filter={"host":host})
 
@@ -3136,6 +3444,84 @@ class zabbix_cli(cmd.Cmd):
 
         return str(hostid)
     
+
+    # #################################################
+    # Method get_image_id
+    # #################################################
+    
+    def get_image_id(self, image):
+        '''
+        DESCRIPTION:
+        Get the imageid for a image
+        '''
+
+        print image
+
+        try:
+            data = self.zapi.image.get(output='extend', filter={"name":image})
+
+            print data
+
+            if data != []:
+                imageid = data[0]['imageid']
+            else:
+                raise Exception('Could not find imageID for:' + image)
+
+        except Exception as e:
+            raise e
+
+        return str(imageid)
+
+
+    # #################################################
+    # Method get_map_id
+    # #################################################
+    
+    def get_map_id(self, map):
+        '''
+        DESCRIPTION:
+        Get the mapid for a map
+        '''
+
+        try:
+            data = self.zapi.map.getobjects(name=map)
+
+            if data != []:
+                mapid = data[0]['sysmapid']
+            else:
+                raise Exception('Could not find mapID for:' + map)
+
+        except Exception as e:
+            raise e
+
+        return str(mapid)
+
+
+
+    # #################################################
+    # Method get_screen_id
+    # #################################################
+    
+    def get_screen_id(self, screen):
+        '''
+        DESCRIPTION:
+        Get the screenid for a screen
+        '''
+
+        try:
+            data = self.zapi.screen.get(output='extend', filter={"name":screen})
+
+            if data != []:
+                screenid = data[0]['screenid']
+            else:
+                raise Exception('Could not find screenID for:' + screen)
+
+        except Exception as e:
+            raise e
+
+        return str(screenid)
+
+
 
     # ###############################################
     # Method get_template_id
