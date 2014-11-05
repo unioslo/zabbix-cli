@@ -408,13 +408,61 @@ class zabbix_cli(cmd.Cmd):
             print '\n[ERROR]: ',e,'\n'
             return False
 
+        #
+        # Command without parameters
+        #
 
-        if len(arg_list) != 3:
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                host = raw_input('# Host: ')
+                inventory_key = raw_input('# Inventory key: ')
+                inventory_value = raw_input('# Inventory value: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without inventory_key and inventory value  attributes
+        #
+
+        elif len(arg_list) == 1:
+
+            host = arg_list[0]
+            inventory_key = raw_input('# Inventory key: ')
+            inventory_value = raw_input('# Inventory value: ')
+
+        #
+        # Command cithout inventory value attribute
+        #
+            
+        elif len(arg_list) == 2:
+            
+            host = arg_list[0]
+            inventory_key = arg_list[1]
+            inventory_value = raw_input('# Inventory value: ')
+
+        elif len(arg_list) == 3:
+            
+            host = arg_list[0]
+            inventory_key = arg_list[1]
+            inventory_value = arg_list[2]
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
             self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
             return False
 
+
         try:
-            host_id = str(self.get_host_id(arg_list[0]))
+            host_id = str(self.get_host_id(host))
 
         except ValueError as e:
             print '\n[ERROR]: ',e,'\n'
@@ -425,11 +473,11 @@ class zabbix_cli(cmd.Cmd):
         #
 
         if host_id == '0':
-            self.generate_feedback('Error','Host id for "' + arg_list[0] + '" not found')
+            self.generate_feedback('Error','Host id for "' + host + '" not found')
             return False
 
         update_id = "'hostid': '" + host_id +"'"
-        update_value = "'inventory':  {'" + arg_list[1] + "':'" + arg_list[2] +"'}" 
+        update_value = "'inventory':  {'" + inventory_key + "':'" + inventory_value +"'}" 
 
         try:
           query = ast.literal_eval("{" + update_id + "," + update_value + "}")
