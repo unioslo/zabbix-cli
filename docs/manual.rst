@@ -536,6 +536,61 @@ Parameters:
 * **[group name]:** Name of the hostgroup
 
 
+export_configuration
+--------------------
+
+This command exports the configuration of different Zabbix components
+to a JSON or XML file. This files can be used to import or restore
+these objects in a Zabbix system. Several parameters in the
+zabbix-cli.conf configuration file can be used to control some export
+options.
+
+::
+
+   export_configuration [export_directory]
+                        [object type]
+			[object name]
+
+
+Parameters:
+
+* **[export directory]:** Directory where the export files will be
+  saved.
+
+* **[object type]:** Possible values: ``groups``, ``hosts``,
+  ``images``, ``maps``, ``screens``, ``templates`` One can use the
+  special value ``#all#`` to export all object type groups.
+
+* **[object name]:** Object name or Zabbix-ID. One can define several
+  values in a comma separated list.
+
+  One can use the special value #all# to export all objects in a
+  object type group. This parameter will be defined automatically as
+  #all# if [object type] == #all#
+ 
+This command can be run only with parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ export_configuration
+   --------------------------------------------------------
+   # Directory [/root/zabbix_exports]: 
+   # Object type [#all#]: hosts
+   # Object name [#all#]: profil.uio.no
+   --------------------------------------------------------
+   
+   [Done]: Export file/s for object type [hosts] and object name [profil.uio.no] generated
+
+   [zabbix-CLI]$ export_configuration
+   --------------------------------------------------------
+   # Directory [/root/zabbix_exports]: 
+   # Object type [#all#]: hosts
+   # Object name [#all#]: #All#
+   --------------------------------------------------------
+
+   [Done]: Export file/s for object type [hosts] and object name [#all#] generated
+
+
 link_template_to_host
 ---------------------
 
