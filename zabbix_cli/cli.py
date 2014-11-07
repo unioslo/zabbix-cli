@@ -380,7 +380,138 @@ class zabbix_cli(cmd.Cmd):
                              ALL)
 
 
-    # ############################################                                                                                                                                    
+    # ############################################ 
+    # Method update_host_inventory
+    # ############################################
+    
+    def do_update_host_inventory(self,args):
+        '''
+        DESCRIPTION:
+        This command updates one hosts' inventory 
+
+        COMMAND:
+        update_host_inventory hostname inventory_key "inventory value"
+
+        Inventory key is not the same as seen in web-gui. To
+        look at possible keys and their current values, use 
+        "zabbix-cli --use-json-format show_host_inventory <hostname>"  
+
+            
+        '''
+
+        result_columns = {}
+        result_columns_key = 0
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                host = raw_input('# Host: ')
+                inventory_key = raw_input('# Inventory key: ')
+                inventory_value = raw_input('# Inventory value: ')
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without inventory_key and inventory value  attributes
+        #
+
+        elif len(arg_list) == 1:
+
+            host = arg_list[0]
+            inventory_key = raw_input('# Inventory key: ')
+            inventory_value = raw_input('# Inventory value: ')
+
+        #
+        # Command cithout inventory value attribute
+        #
+            
+        elif len(arg_list) == 2:
+            
+            host = arg_list[0]
+            inventory_key = arg_list[1]
+            inventory_value = raw_input('# Inventory value: ')
+
+        elif len(arg_list) == 3:
+            
+            host = arg_list[0]
+            inventory_key = arg_list[1]
+            inventory_value = arg_list[2]
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+
+        try:
+            host_id = str(self.get_host_id(host))
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+        
+        #
+        # Generate query
+        #
+
+        if host_id == '0':
+            self.generate_feedback('Error','Host id for "' + host + '" not found')
+            return False
+
+        update_id = "'hostid': '" + host_id +"'"
+        update_value = "'inventory':  {'" + inventory_key + "':'" + inventory_value +"'}" 
+
+        try:
+          query = ast.literal_eval("{" + update_id + "," + update_value + "}")
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems generating query - %s',e)
+
+            self.generate_feedback('Error','Problems generating query')
+            return False
+
+        #
+        # Get result from Zabbix API
+        #
+
+        try:
+            result = self.zapi.host.update(**query)
+        
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Command show_host_inventory executed.')
+            
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems updating host inventory information - %s',e)
+                
+            self.generate_feedback('Error','Problems updating host inventory information')
+            return False
+
+
+
+    # ############################################
     # Method show_host_inventory
     # ############################################
     
