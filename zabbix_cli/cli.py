@@ -3043,14 +3043,19 @@ class zabbix_cli(cmd.Cmd):
     def do_import_configuration(self,args):
         '''DESCRIPTION:
         This command imports the configuration of a 
-        Zabbix component
+        Zabbix component.
+
+        We use the options createMissing=True and updateExisting=True
+        when importing data. This means that new objects will be
+        created if they do not exists and that existing objects will
+        be updated if they exist.
 
         COMMAND:
         import_configuration [import file]
                              [dry run]
 
         [import file]
-        ------------------
+        -------------
         File with the JSON or XML code to import. This command will 
         use the file extension (.json or .xml) to find out the import format.
         
@@ -3161,6 +3166,21 @@ class zabbix_cli(cmd.Cmd):
         if expanded_files == []:
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Files %s do not exists',files)
+
+                
+        if dry_run == '1':
+                        
+            #
+            # Dry run. Show files that would be imported
+            # without running the import process.
+            #
+            
+            print 
+            print '# -----------------------------------------------'
+            print '# Dry run: ON'
+            print '# These files would be imported with dry run: OFF'
+            print '# -----------------------------------------------'
+            print
 
         for file in expanded_files:
             if os.path.exists(file):

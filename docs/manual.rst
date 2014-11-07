@@ -591,6 +591,68 @@ This command can be run only with parameters. e.g.:
    [Done]: Export file/s for object type [hosts] and object name [#all#] generated
 
 
+import_configuration
+--------------------
+
+This command imports the configuration of a Zabbix component. 
+
+We use the options ``createMissing=True`` and ``updateExisting=True``
+when importing data. This means that new objects will be created if
+they do not exists and that existing objects will be updated if they
+exist.
+
+::
+
+   import_configuration [import file]
+                        [dry run]
+
+
+Parameters:
+
+* **[import file]:** File with the JSON or XML code to import. This
+  command will use the file extension (.json or .xml) to find out the
+  import format.
+        
+  This command finds all the pathnames matching a specified pattern
+  according to the rules used by the Unix shell.  Tilde expansion
+  ``~``, ``*``, ``?``, and character ranges expressed with ``[]`` will
+  be correctly matched. For a literal match, wrap the meta-characters
+  in brackets. For example, '[?]' matches the character '?'.
+
+* **[dry run]:** If this parameter is used, the command will only show
+  the files that would be imported without running the import process.
+
+  - 0 - Dry run deactivated
+  - 1 (default) - Dry run activated
+
+This command can be run only with parameters. e.g.:
+
+::
+
+   [zabbix-CLI]$ import_configuration
+   --------------------------------------------------------
+   # Import file []: ~/zabbix_exports/hosts/zabbix_export_hosts_w3utv-dspace01.uio.no_10395_2014-11-05T040209.json
+   # Dry run [1]: 
+   --------------------------------------------------------
+
+   # -----------------------------------------------
+   # Dry run: ON
+   # These files would be imported with dry run: OFF
+   # -----------------------------------------------
+   # File: /root/zabbix_exports/hosts/zabbix_export_hosts_w3utv-dspace01.uio.no_10395_2014-11-05T040209.json
+   
+   [Done]: Total files Imported [0] / Not imported [0]
+
+
+   [zabbix-CLI]$ import_configuration
+   --------------------------------------------------------
+   # Import file []: ~/zabbix_exports/hosts/zabbix_export_hosts_w3utv-dspace01.uio.no_10395_2014-11-05T040209.json
+   # Dry run [1]: 0
+   --------------------------------------------------------
+   
+   [Done]: Total files Imported [1] / Not imported [0]
+
+
 link_template_to_host
 ---------------------
 
