@@ -37,6 +37,7 @@ import hashlib
 import textwrap
 import json
 import xml.dom.minidom
+import glob
 
 from zabbix_cli.config import *
 from zabbix_cli.logs import *
@@ -92,6 +93,7 @@ class zabbix_cli(cmd.Cmd):
 
             self.zapi = ZabbixAPI(self.conf.zabbix_api_url)
             self.zapi.session.verify = False
+
             self.zapi.login(self.api_username,self.api_password)
         
             if self.conf.logging == 'ON':
@@ -2617,11 +2619,13 @@ class zabbix_cli(cmd.Cmd):
         '''
         DESCRIPTION:
         This command exports the configuration of different 
-        Zabbix components 
+        Zabbix components to a JSON or XML file. Several 
+        parameters in the zabbix-cli.conf configuration file 
+        can be used to control some export options.
 
         COMMAND:
         export_configuration [export_directory]
-                             [object to export]
+                             [object type]
                              [object name]
 
         [export directory]
@@ -2631,8 +2635,7 @@ class zabbix_cli(cmd.Cmd):
         [object type]
         ------------------
         Possible values: groups, hosts, images, maps, screens, templates
-        One can use the special value #ALL# to export all object type groups.
-
+        One can use the special value #all# to export all object type groups.
 
         [object name]
         -------------
@@ -2640,7 +2643,7 @@ class zabbix_cli(cmd.Cmd):
         separated list. 
 
         One can use the special value #ALL# to export all objects in a object
-        type group. This parameter will be defined automatically as #ALL# if [object type] == #ALL#
+        type group. This parameter will be defined automatically as #all# if [object type] == #all#
 
         '''
 
@@ -2748,6 +2751,11 @@ class zabbix_cli(cmd.Cmd):
             
             object_name_list = {}
 
+            #
+            # Generate object IDs list to export if the special value #all#
+            # has been defined.
+            #
+
             if object_name.lower() == '#all#':
 
                 try:
@@ -2802,7 +2810,12 @@ class zabbix_cli(cmd.Cmd):
                         
                     self.generate_feedback('Error','Problems getting all [' + obj_type + '] objects')
                     return False
-                
+             
+            #
+            # Generate object IDs list to export for all defined
+            # object names.
+            #
+   
             else:
                 for name in object_name.split(','):
                     
@@ -2851,7 +2864,6 @@ class zabbix_cli(cmd.Cmd):
                     data = self.zapi.configuration.export(format=self.conf.default_export_format.lower(), 
                                                           options={obj_type:[obj_name_key]})
 
-
                     #
                     # Formating and indenting the export data 
                     #
@@ -2859,8 +2871,13 @@ class zabbix_cli(cmd.Cmd):
                     if self.conf.default_export_format.upper() == 'JSON':
                         output= json.dumps(json.JSONDecoder().decode(data),sort_keys=True,indent=2)
                     else:
+                        '''
+                        We have problems importing xml files that have been formatting with toprettyxml.
+                        This has to be investigated.
                         xml_code = xml.dom.minidom.parseString(data)
                         output= xml_code.toprettyxml(indent='  ')
+                        '''
+                        output = data
 
                     #
                     # Writing to the export file
@@ -2887,6 +2904,215 @@ class zabbix_cli(cmd.Cmd):
             
         self.generate_feedback('Done','Export file/s for object type [' + object_type+ '] and object name [' + object_name + '] generated')
  
+
+    # ############################################
+    # Method import_configuration
+    # ############################################
+
+    def do_import_configuration(self,args):
+        '''DESCRIPTION:
+        This command imports the configuration of a 
+        Zabbix component
+
+        COMMAND:
+        import_configuration [import file]
+                             [dry run]
+
+        [import file]
+        ------------------
+        File with the JSON or XML code to import. This command will 
+        use the file extension (.json or .xml) to find out the import format.
+        
+        This command finds all the pathnames matching a specified
+        pattern according to the rules used by the Unix shell.  Tilde
+        expansion, *, ?, and character ranges expressed with [] will
+        be correctly matched. For a literal match, wrap the
+        meta-characters in brackets. For example, '[?]' matches the
+        character '?'.
+
+        [dry run]
+        ---------
+        If this parameter is used, the command will only show the
+        files that would be imported without running the import
+        process.
+
+        0: Dry run deactivated
+        1: Dry run activated [*]
+
+        '''
+
+        #
+        # Default values
+        #
+        total_files_imported = 0
+        total_files_not_imported = 0
+
+        dry_run_default = '1'
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                files = raw_input('# Import file []: ').strip()
+                dry_run = raw_input('# Dry run [' + dry_run_default + ']: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        #
+        # Command with parameters
+        #
+
+        elif len(arg_list) == 1:
+            files = arg_list[0].strip()
+            dry_run = dry_run_default
+
+        elif len(arg_list) == 2:
+            files = arg_list[0].strip()
+            dry_run = arg_list[1].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        files_orig = files
+
+        if files == '':
+            self.generate_feedback('Error','Files value is empty')
+            return False
+
+        if dry_run == '' or dry_run not in ('0','1'):
+            dry_run = dry_run_default
+
+        #
+        # Expand users HOME when using ~ or ~user
+        #
+        files = os.path.expanduser(files)
+
+        # Normalized absolutized version of the pathname if
+        # files does not include an absolute path
+
+        if os.path.isabs(files) == False:
+            files = os.path.abspath(files) 
+
+        #
+        # Finds all the pathnames matching a specified pattern
+        # according to the rules used by the Unix shell. No tilde
+        # expansion is done, but *, ?, and character ranges expressed
+        # with [] will be correctly matched. For a literal match, wrap
+        # the meta-characters in brackets. For example, '[?]' matches
+        # the character '?'.
+        #
+
+        expanded_files = glob.glob(files)
+
+        if expanded_files == []:
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Files %s do not exists',files)
+
+        for file in expanded_files:
+            if os.path.exists(file):
+                if os.path.isfile(file):
+
+                    file_ext = os.path.splitext(file)[1]
+
+                    if file_ext.lower() == '.json':
+                        format = 'json'
+                    elif file_ext.lower() == '.xml':
+                        format = 'xml'
+                    else:
+                        total_files_not_imported = total_files_not_imported +1
+                        
+                        if self.conf.logging == 'ON':
+                            self.logs.logger.error('The file %s is not a JSON or XML file',file)
+                            
+                        # Get the next file if this one is not a JSON or XML file 
+                        continue
+
+                    if dry_run == '1':
+                        
+                        #
+                        # Dry run. Show files that would be imported
+                        # without running the import process.
+                        #
+
+                        print '# File: ' + file
+
+                    elif dry_run == '0':
+                    
+                        #
+                        # Import the file
+                        #
+
+                        try:
+                            with open(file,'r') as import_filename:
+                                import_data = import_filename.read()
+                        
+                                data = self.zapi.confimport(format=format,
+                                                            source=import_data,
+                                                            rules={
+                                                                'applications':{'createMissing':'true','updateExisting':'true'},
+                                                                'discoveryRules':{'createMissing':'true','updateExisting':'true'},
+                                                                'graphs':{'createMissing':'true','updateExisting':'true'},
+                                                                'groups':{'createMissing':'true'},
+                                                                'hosts':{'createMissing':'true','updateExisting':'true'},
+                                                                'images':{'createMissing':'true','updateExisting':'true'},
+                                                                'items':{'createMissing':'true','updateExisting':'true'},
+                                                                'maps':{'createMissing':'true','updateExisting':'true'},
+                                                                'screens':{'createMissing':'true','updateExisting':'true'},
+                                                                'templateLinkage':{'createMissing':'true'},
+                                                                'templates':{'createMissing':'true','updateExisting':'true'},
+                                                                'templateScreens':{'createMissing':'true','updateExisting':'true'},
+                                                                'triggers':{'createMissing':'true','updateExisting':'true'}
+                                                            })    
+                                
+                                if data == True:
+                            
+                                    total_files_imported = total_files_imported + 1
+                                    
+                                    if self.conf.logging == 'ON':
+                                        self.logs.logger.info('The file %s has been imported into Zabbix',file)
+    
+                                elif data == False:
+
+                                    total_files_not_imported = total_files_not_imported +1
+
+                                    if self.conf.logging == 'ON':
+                                        self.logs.logger.info('The file %s could not been imported into Zabbix',file)
+
+                        except Exception as e:
+
+                            total_files_not_imported = total_files_not_imported + 1
+
+                            if self.conf.logging == 'ON':
+                                self.logs.logger.error('The file %s could not be imported into Zabbix - %s',file,e)
+            else:
+                if self.conf.logging == 'ON':
+                    self.logs.logger.error('The file %s does not exists',file)
+              
+        self.generate_feedback('done','Total files Imported ['+ str(total_files_imported) +'] / Not imported [' + str(total_files_not_imported) +']')
+            
 
     # ############################################
     # Method generate_export_filename
