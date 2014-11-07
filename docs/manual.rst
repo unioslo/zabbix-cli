@@ -576,10 +576,10 @@ This command can be run only with parameters. e.g.:
    --------------------------------------------------------
    # Directory [/root/zabbix_exports]: 
    # Object type [#all#]: hosts
-   # Object name [#all#]: profil.uio.no
+   # Object name [#all#]: profil.example.net
    --------------------------------------------------------
    
-   [Done]: Export file/s for object type [hosts] and object name [profil.uio.no] generated
+   [Done]: Export file/s for object type [hosts] and object name [test.example.net] generated
 
    [zabbix-CLI]$ export_configuration
    --------------------------------------------------------
@@ -631,7 +631,7 @@ This command can be run only with parameters. e.g.:
 
    [zabbix-CLI]$ import_configuration
    --------------------------------------------------------
-   # Import file []: ~/zabbix_exports/hosts/zabbix_export_hosts_w3utv-dspace01.uio.no_10395_2014-11-05T040209.json
+   # Import file []: ~/zabbix_exports/hosts/zabbix_export_hosts_test.example.net_10395_2014-11-05T040209.json
    # Dry run [1]: 
    --------------------------------------------------------
 
@@ -639,14 +639,14 @@ This command can be run only with parameters. e.g.:
    # Dry run: ON
    # These files would be imported with dry run: OFF
    # -----------------------------------------------
-   # File: /root/zabbix_exports/hosts/zabbix_export_hosts_w3utv-dspace01.uio.no_10395_2014-11-05T040209.json
+   # File: /root/zabbix_exports/hosts/zabbix_export_hosts_test.example.net_10395_2014-11-05T040209.json
    
    [Done]: Total files Imported [0] / Not imported [0]
 
 
    [zabbix-CLI]$ import_configuration
    --------------------------------------------------------
-   # Import file []: ~/zabbix_exports/hosts/zabbix_export_hosts_w3utv-dspace01.uio.no_10395_2014-11-05T040209.json
+   # Import file []: ~/zabbix_exports/hosts/zabbix_export_hosts_test.example.net_10395_2014-11-05T040209.json
    # Dry run [1]: 0
    --------------------------------------------------------
    
