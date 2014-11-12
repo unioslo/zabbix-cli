@@ -130,6 +130,7 @@ class zabbix_cli(cmd.Cmd):
         #
         try:
             result = self.zapi.hostgroup.get(output='extend',
+                                             selectHosts=['host'],
                                              sortfield='name',
                                              sortorder='ASC')
 
@@ -150,11 +151,15 @@ class zabbix_cli(cmd.Cmd):
         #
         for group in result:
 
+            print group
+            print
+            
             if self.output_format == 'json':
                 result_columns [result_columns_key] = {'groupid':group['groupid'],
                                                        'name':group['name'],
                                                        'flags':self.get_hostgroup_flag(int(group['flags'])),
-                                                       'type':self.get_hostgroup_type(int(group['internal']))}
+                                                       'type':self.get_hostgroup_type(int(group['internal'])),
+                                                       'hosts':group['hosts']}
             
             else:
                 result_columns [result_columns_key] = {'1':group['groupid'],
@@ -312,7 +317,7 @@ class zabbix_cli(cmd.Cmd):
         
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Command show_host executed.')
-            
+
         except Exception as e:
 
             if self.conf.logging == 'ON':
@@ -356,7 +361,6 @@ class zabbix_cli(cmd.Cmd):
                 for application in host['applications']:
                     application_list.append(application['name'])
 
-                    
                 result_columns [result_columns_key] = {'1':host['hostid'],
                                                        '2':host['host'],
                                                        '3':'\n'.join(hostgroup_list),
@@ -2368,6 +2372,7 @@ class zabbix_cli(cmd.Cmd):
         try:
             result = self.zapi.template.get(output='extend',
                                             sortfield='host',
+                                            selectHosts=['host'],
                                             sortorder='ASC')
 
         except Exception as e:
@@ -2386,7 +2391,8 @@ class zabbix_cli(cmd.Cmd):
 
             if self.output_format == 'json':
                 result_columns [result_columns_key] ={'templateid':template['templateid'],
-                                                      'name':template['host']}
+                                                      'name':template['host'],
+                                                      'hosts':template['hosts']}
             
             else:
                 result_columns [result_columns_key] ={'1':template['templateid'],
