@@ -150,9 +150,6 @@ class zabbix_cli(cmd.Cmd):
         # Get the columns we want to show from result 
         #
         for group in result:
-
-            print group
-            print
             
             if self.output_format == 'json':
                 result_columns [result_columns_key] = {'groupid':group['groupid'],
