@@ -2353,21 +2353,96 @@ class zabbix_cli(cmd.Cmd):
             return False 
 
 
+    # ############################################                                                                                                                                    
+    # Method show_templates
+    # ############################################
+
+    def do_show_templates(self,args):
+        '''
+        DESCRIPTION:
+        This command shows all templates defined in the system.
+
+        COMMAND:
+        show_templates
+        '''
+
+        cmd.Cmd.onecmd(self,'show_template "*"')
+
+
     # ########################################
-    # do_show_templates
+    # do_show_template
     # ########################################
     
-    def do_show_templates(self, args):
+    def do_show_template(self, args):
         '''
         DESCRITION
-        This command shows all templates
+        This command show templates information
+
+        COMMAND:
+        show_template [Template name]
+
+        [Template name]:
+        ----------------
+        One can search by template name. We can use wildcards.
+
         '''
 
         result_columns = {}
         result_columns_key = 0
 
         try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                template = raw_input('# Template: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        #
+        # Command with parameters
+        #
+
+        elif len(arg_list) == 1:
+            template = arg_list[0].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if template == '':
+            self.generate_feedback('Error','Template value is empty')
+            return False
+
+        #
+        # Get template 
+        #
+            
+        try:
             result = self.zapi.template.get(output='extend',
+                                            search={'host':template},
+                                            searchWildcardsEnabled=True,
                                             sortfield='host',
                                             selectHosts=['host'],
                                             sortorder='ASC')
@@ -2385,6 +2460,12 @@ class zabbix_cli(cmd.Cmd):
         #
 
         for template in result:
+            
+            host_list = []
+            template['hosts'].sort()
+                
+            for host in template['hosts']:
+                    host_list.append(host['host'])
 
             if self.output_format == 'json':
                 result_columns [result_columns_key] ={'templateid':template['templateid'],
@@ -2393,7 +2474,8 @@ class zabbix_cli(cmd.Cmd):
             
             else:
                 result_columns [result_columns_key] ={'1':template['templateid'],
-                                                      '2':template['host']}
+                                                      '2':template['host'],
+                                                      '3':'\n'.join(host_list)}
             
                 
             result_columns_key = result_columns_key + 1
@@ -2402,10 +2484,10 @@ class zabbix_cli(cmd.Cmd):
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['TemplateID','Name'],
-                             ['Name'],
+                             ['TemplateID','Name','Hosts'],
+                             ['Name','Hosts'],
                              ['TemplateID'],
-                             FRAME)
+                             ALL)
 
 
     # ########################################
