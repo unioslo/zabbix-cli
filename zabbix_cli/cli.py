@@ -108,28 +108,96 @@ class zabbix_cli(cmd.Cmd):
             
             sys.exit(1)
 
-    # ############################################  
+
+    # ############################################                                                                                                                                    
     # Method show_hostgroups
-    # ############################################  
+    # ############################################
 
     def do_show_hostgroups(self,args):
         '''
-        DESCRIPTION: 
+        DESCRIPTION:
         This command shows all hostgroups defined in the system.
 
         COMMAND:
         show_hostgroups
+        '''
+
+        cmd.Cmd.onecmd(self,'show_hostgroup "*"')
+
+
+    # ############################################  
+    # Method show_hostgroup
+    # ############################################  
+
+    def do_show_hostgroup(self,args):
+        '''
+        DESCRIPTION: 
+        This command show hostgroups information
+
+        COMMAND:
+        show_hostgroup [Hostgroup name]
+
+        [Hostgroup name]:
+        ----------------
+        One can search by hostgroup name. We can use wildcards.
 
         '''
 
         result_columns = {}
         result_columns_key = 0
 
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                hostgroup = raw_input('# Hostgroup: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        #
+        # Command with parameters
+        #
+
+        elif len(arg_list) == 1:
+            hostgroup = arg_list[0].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if hostgroup == '':
+            self.generate_feedback('Error','Template value is empty')
+            return False
+
         #
         # Get result from Zabbix API
         #
         try:
             result = self.zapi.hostgroup.get(output='extend',
+                                             search={'name':hostgroup},
+                                             searchWildcardsEnabled=True,
                                              selectHosts=['host'],
                                              sortfield='name',
                                              sortorder='ASC')
@@ -159,11 +227,19 @@ class zabbix_cli(cmd.Cmd):
                                                        'hosts':group['hosts']}
             
             else:
+
+                host_list = []
+                group['hosts'].sort()
+                
+                for host in group['hosts']:
+                    host_list.append(host['host'])
+
                 result_columns [result_columns_key] = {'1':group['groupid'],
                                                        '2':group['name'],
                                                        '3':self.get_hostgroup_flag(int(group['flags'])),
-                                                       '4':self.get_hostgroup_type(int(group['internal']))}
-                
+                                                       '4':self.get_hostgroup_type(int(group['internal'])),
+                                                       '5':'\n'.join(host_list)}
+    
 
             result_columns_key = result_columns_key + 1
 
@@ -171,10 +247,10 @@ class zabbix_cli(cmd.Cmd):
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['GroupID','Name','Flag','Type'],
-                             ['Name'],
+                             ['GroupID','Name','Flag','Type','Hosts'],
+                             ['Name','Hosts'],
                              ['GroupID'],
-                             FRAME)
+                             ALL)
 
 
     # ############################################                                                                                                                                    
@@ -2461,18 +2537,19 @@ class zabbix_cli(cmd.Cmd):
 
         for template in result:
             
-            host_list = []
-            template['hosts'].sort()
-                
-            for host in template['hosts']:
-                    host_list.append(host['host'])
-
             if self.output_format == 'json':
                 result_columns [result_columns_key] ={'templateid':template['templateid'],
                                                       'name':template['host'],
                                                       'hosts':template['hosts']}
             
             else:
+
+                host_list = []
+                template['hosts'].sort()
+                
+                for host in template['hosts']:
+                    host_list.append(host['host'])
+
                 result_columns [result_columns_key] ={'1':template['templateid'],
                                                       '2':template['host'],
                                                       '3':'\n'.join(host_list)}
