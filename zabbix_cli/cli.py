@@ -2429,6 +2429,118 @@ class zabbix_cli(cmd.Cmd):
             return False 
 
 
+    # ############################################
+    # Method do_create_global_macro
+    # ############################################
+
+    def do_create_global_macro(self, args):
+        '''
+        DESCRIPTION:
+        This command creates a global macro
+    
+        COMMAND:
+        create_global_macro [name]
+                            [value]
+
+        '''
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                global_macro_name = raw_input('# Name: ').strip()
+                global_macro_value = raw_input('# Value: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 1:
+            global_macro_name = arg_list[0].strip()
+            global_macro_value = arg_list[1].strip()
+        
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if global_macro_name == '':
+            self.generate_feedback('Error','Global macro name is empty')
+            return False
+        
+        else:
+            global_macro_name = '{$' + global_macro_name.upper() + '}'
+
+        if global_macro_value == '':
+            self.generate_feedback('Error','Global macro value is empty')
+            return False
+
+        #
+        # Checking if global macro exists
+        #
+
+        try:
+            
+            result = self.zapi.usermacro.get(search={'macro':global_macro_name},
+                                             globalmacro=True,
+                                             output='extend')
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Cheking if global macro (%s) exists',global_macro_name)
+                
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems checking if global macro (%s) exists - %s',global_macro_name,e)
+
+            self.generate_feedback('Error','Problems checking if global macro (' + global_macro_name + ') exists')
+            return False   
+        
+        try:
+
+            #
+            # Create global macro if it does not exist
+            #
+            
+            if result == []:
+
+                data = self.zapi.usermacro.createglobal(macro=global_macro_name,value=global_macro_value)
+                globalmacroid = data['globalmacroids'][0]
+                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('Global macro (%s) with ID: %s created',global_macro_name,globalmacroid)
+
+                self.generate_feedback('Done','Global macro (' + global_macro_name + ') with ID: ' + globalmacroid + ' created.')
+
+            else:
+
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('This global macro (%s) already exists',global_macro_name)
+
+                self.generate_feedback('Warning','This global macro (' + global_macro_name + ') already exists.')
+                return False
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems creating global macro (%s) - %s',global_macro_name,e)
+            
+            self.generate_feedback('Error','Problems creating global macro (' + global_macro_name + ')')
+            return False 
+
+
+
     # ############################################                                                                                                                                    
     # Method show_templates
     # ############################################
