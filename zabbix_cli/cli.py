@@ -2872,6 +2872,220 @@ class zabbix_cli(cmd.Cmd):
                              FRAME)
 
 
+    # ########################################
+    # do_show_host_macros 
+    # ########################################
+    def do_show_host_macros(self, args):
+        '''
+        DESCRITION:
+        This command shows host macros
+
+        COMMAND:
+        show_host_macros [hostname]
+        '''
+
+        result_columns = {}
+        result_columns_key = 0
+
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                hostname = raw_input('# Hostname: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 1:
+            hostname = arg_list[0].strip()
+        
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if hostname == '':
+            self.generate_feedback('Error','Hostname is empty')
+            return False
+
+        if hostname.isdigit() == True:
+            hostid = hostname
+        else:
+            try:
+                hostid = self.get_host_id(hostname.strip())
+            
+            except Exception as e:
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('Hostname %s does not exist',hostname)
+
+                self.generate_feedback('Error','Hostname ' + hostname + ' does not exist')
+                return False
+
+        #
+        # Get host macros
+        #
+
+        try:
+            result = self.zapi.usermacro.get(output='extend',
+                                             hostids=hostid,
+                                             sortfield='macro',
+                                             sortorder='ASC')
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting globalmacros list - %s',e)
+                
+            self.generate_feedback('Error','Problems getting globalmacros list')
+            return False
+
+        #
+        # Get the columns we want to show from result 
+        #
+
+        for host_macro in result:
+
+            if self.output_format == 'json':
+                result_columns [result_columns_key] ={'hostmacroid':host_macro['hostmacroid'],
+                                                      'name':host_macro['macro'],
+                                                      'value':host_macro['value']}
+
+            else:
+                result_columns [result_columns_key] ={'1':host_macro['hostmacroid'],
+                                                      '2':host_macro['macro'],
+                                                      '3':host_macro['value']}
+                
+            result_columns_key = result_columns_key + 1
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['MacroID','Name','Value'],
+                             ['Name','Value'],
+                             ['MacroID'],
+                             FRAME)
+
+
+    # ########################################
+    # do_show_macro_hostlist 
+    # ########################################
+    def do_show_macro_hostlist(self, args):
+        '''
+        DESCRITION:
+        This command shows all host with a defined macro
+
+        COMMAND:
+        show_macro_hostlist [macro name]
+        '''
+
+        result_columns = {}
+        result_columns_key = 0
+
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                host_macro_name= raw_input('# Host macro name: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 1:
+            host_macro_name = arg_list[0].strip()
+        
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+        
+        if host_macro_name == '':
+            self.generate_feedback('Error','Host macro name is empty')
+            return False
+        
+        else:
+            host_macro_name = '{$' + host_macro_name.upper() + '}'
+
+
+        #
+        # Get macro hostlist
+        #
+
+        try:
+            result = self.zapi.usermacro.get(output='extend',
+                                             selectHosts=['host'],
+                                             search={'macro':host_macro_name},
+                                             searchWildcardsEnabled=True,
+                                             sortfield='macro')
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting host list for macro %s - %s',host_macro_name,e)
+                
+            self.generate_feedback('Error','Problems getting host list for macro ' + host_macro_name)
+            return False
+
+        #
+        # Get the columns we want to show from result 
+        #
+
+
+        for macro in result:
+
+            if self.output_format == 'json':
+                result_columns [result_columns_key] ={'macro':macro['macro'],
+                                                      'value':macro['value'],
+                                                      'hostid':macro['hosts'][0]['hostid'],
+                                                      'host':macro['hosts'][0]['host']}
+
+
+            else:
+
+                result_columns [result_columns_key] ={'1':macro['macro'],
+                                                      '2':macro['value'],
+                                                      '3':macro['hosts'][0]['hostid'],
+                                                      '4':macro['hosts'][0]['host']}
+                
+            result_columns_key = result_columns_key + 1
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['Macro','Value','HostID','Host'],
+                             ['Macro','Host'],
+                             ['HostID'],
+                             FRAME)
+
+
+
     # #######################################
     # do_show_items
     # #######################################
