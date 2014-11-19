@@ -2439,8 +2439,8 @@ class zabbix_cli(cmd.Cmd):
         This command creates a global macro
     
         COMMAND:
-        create_global_macro [name]
-                            [value]
+        create_global_macro [macro name]
+                            [macro value]
 
         '''
 
@@ -2454,8 +2454,8 @@ class zabbix_cli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print '--------------------------------------------------------'
-                global_macro_name = raw_input('# Name: ').strip()
-                global_macro_value = raw_input('# Value: ').strip()
+                global_macro_name = raw_input('# Global macro name: ').strip()
+                global_macro_value = raw_input('# Global macro value: ').strip()
                 print '--------------------------------------------------------'
 
             except Exception as e:
@@ -2537,6 +2537,142 @@ class zabbix_cli(cmd.Cmd):
                 self.logs.logger.error('Problems creating global macro (%s) - %s',global_macro_name,e)
             
             self.generate_feedback('Error','Problems creating global macro (' + global_macro_name + ')')
+            return False 
+
+
+    # ############################################
+    # Method do_create_host_macro
+    # ############################################
+
+    def do_create_host_macro(self, args):
+        '''
+        DESCRIPTION:
+        This command creates a host macro
+    
+        COMMAND:
+        create_host_macro [hostname] 
+                          [macro name]
+                          [macro value]
+
+        '''
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                hostname = raw_input('# Hostname: ').strip()
+                host_macro_name = raw_input('# Macro name: ').strip()
+                host_macro_value = raw_input('# Macro value: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 1:
+            hostname = arg_list[0].strip()
+            host_macro_name = arg_list[1].strip()
+            host_macro_value = arg_list[2].strip()
+        
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        
+        if host_macro_name == '':
+            self.generate_feedback('Error','Host macro name is empty')
+            return False
+        
+        else:
+            host_macro_name = '{$' + host_macro_name.upper() + '}'
+
+        if host_macro_value == '':
+            self.generate_feedback('Error','Host macro value is empty')
+            return False
+
+        if hostname == '':
+            self.generate_feedback('Error','Hostname is empty')
+            return False
+
+        if hostname.isdigit() == True:
+            hostid = hostname
+        else:
+            try:
+                hostid = self.get_host_id(hostname.strip())
+            
+            except Exception as e:
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('Hostname %s does not exist',hostname)
+
+                self.generate_feedback('Error','Hostname ' + hostname + ' does not exist')
+                return False
+                
+
+        #
+        # Checking if host macro exists
+        #
+
+        try:
+            
+            result = self.zapi.usermacro.get(search={'macro':host_macro_name},
+                                             hostids=hostid,
+                                             output='extend')
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Cheking if host macro (%s:%s) exists',hostname,host_macro_name)
+                
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems checking if host macro (%s:%s) exists - %s',hostname,host_macro_name,e)
+
+            self.generate_feedback('Error','Problems checking if host macro (' + hostname + ':' + host_macro_name + ') exists')
+            return False   
+        
+        try:
+
+            #
+            # Create host macro if it does not exist
+            #
+            
+            if result == []:
+
+                data = self.zapi.usermacro.create(hostid=hostid,
+                                                  macro=host_macro_name,
+                                                  value=host_macro_value)
+                
+                hostmacroid = data['hostmacroids'][0]
+                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('Host macro (%s:%s) with ID: %s created',hostname,host_macro_name,hostmacroid)
+
+                self.generate_feedback('Done','Host macro (' + hostname + ':' + host_macro_name + ') with ID: ' + hostmacroid + ' created.')
+
+            else:
+
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('This host macro (%s:%s) already exists',hostname,host_macro_name)
+
+                self.generate_feedback('Warning','This host macro (' + hostname + ':' + host_macro_name + ') already exists.')
+                return False
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems creating host macro (%s:%s) - %s',hostname,host_macro_name,e)
+            
+            self.generate_feedback('Error','Problems creating host macro (' + hostname + ':' + global_macro_name + ')')
             return False 
 
 
