@@ -2463,7 +2463,7 @@ class zabbix_cli(cmd.Cmd):
                 print '\n[Aborted] Command interrupted by the user.\n'
                 return False
 
-        elif len(arg_list) == 1:
+        elif len(arg_list) == 2:
             global_macro_name = arg_list[0].strip()
             global_macro_value = arg_list[1].strip()
         
@@ -2508,12 +2508,12 @@ class zabbix_cli(cmd.Cmd):
             return False   
         
         try:
-
-            #
-            # Create/update global macro if it does not exist
-            #
             
             if result == []:
+
+                #
+                # Create global macro if it does not exist
+                #
 
                 data = self.zapi.usermacro.createglobal(macro=global_macro_name,value=global_macro_value)
                 globalmacroid = data['globalmacroids'][0]
@@ -2524,6 +2524,11 @@ class zabbix_cli(cmd.Cmd):
                 self.generate_feedback('Done','Global macro (' + global_macro_name + ') with ID: ' + globalmacroid + ' created.')
 
             else:
+
+                #
+                # Update global macro if it does exist
+                #
+
                 data = self.zapi.usermacro.updateglobal(globalmacroid=result[0]['globalmacroid'],
                                                         value=global_macro_value)
 
@@ -2578,7 +2583,7 @@ class zabbix_cli(cmd.Cmd):
                 print '\n[Aborted] Command interrupted by the user.\n'
                 return False
 
-        elif len(arg_list) == 1:
+        elif len(arg_list) == 3:
             hostname = arg_list[0].strip()
             host_macro_name = arg_list[1].strip()
             host_macro_value = arg_list[2].strip()
@@ -2643,12 +2648,12 @@ class zabbix_cli(cmd.Cmd):
             return False   
         
         try:
-
-            #
-            # Create / update host macro if it does not exist
-            #
             
             if result == []:
+
+                #
+                # Create host macro if it does not exist
+                #
 
                 data = self.zapi.usermacro.create(hostid=hostid,
                                                   macro=host_macro_name,
@@ -2662,7 +2667,11 @@ class zabbix_cli(cmd.Cmd):
                 self.generate_feedback('Done','Host macro (' + hostname + ':' + host_macro_name + ') with ID: ' + hostmacroid + ' created.')
 
             else:
-                
+
+                #
+                # Update host macro if it does exist
+                #
+
                 data = self.zapi.usermacro.update(hostmacroid=result[0]['hostmacroid'],
                                                   value=host_macro_value)
                 
@@ -2680,6 +2689,132 @@ class zabbix_cli(cmd.Cmd):
             self.generate_feedback('Error','Problems defining host macro (' + hostname + ':' + global_macro_name + ')')
             return False 
 
+
+    # ############################################
+    # Method do_define_host_monitoring_status
+    # ############################################
+
+    def do_define_host_monitoring_status(self, args):
+        '''
+        DESCRIPTION:
+        This command defines the monitoring status of a host
+    
+        COMMAND:
+        defines_host_monitoring_status [hostname] 
+                                       [ON/OFF]
+
+        '''
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                hostname = raw_input('# Hostname: ').strip()
+                monitoring_status = raw_input('# Monitoring status[ON|OFF]: ').strip().lower()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 2:
+            hostname = arg_list[0].strip()
+            monitoring_status = arg_list[1].strip()
+        
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        
+        if monitoring_status == '' or monitoring_status not in ('on','off'):
+            self.generate_feedback('Error','Monitoring status value is not valid')
+            return False
+        
+        else:
+            if monitoring_status == 'on':
+                monitoring_status = 0
+            elif monitoring_status == 'off':
+                monitoring_status = 1
+
+        if hostname == '':
+            self.generate_feedback('Error','Hostname is empty')
+            return False
+
+        if hostname.isdigit() == True:
+            hostid = hostname
+        else:
+            try:
+                hostid = self.get_host_id(hostname.strip())
+            
+            except Exception as e:
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('Hostname %s does not exist',hostname)
+
+                self.generate_feedback('Error','Hostname ' + hostname + ' does not exist')
+                return False
+                
+
+        #
+        # Checking if host exists
+        #
+
+        try:
+            
+            result = self.zapi.host.exists(hostid=hostid)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Cheking if host (%s) exists',hostname,)
+                
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems checking if host (%s) exists - %s',hostname,e)
+
+            self.generate_feedback('Error','Problems checking if host (' + hostname + ') exists')
+            return False   
+        
+        try:
+            
+            if result == True:
+
+                #
+                # Update host monitoring status
+                #
+
+                data = self.zapi.host.update(hostid=hostid,
+                                        status=monitoring_status)
+                                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('Monitoring status for hostname (%s) changed to (%s)',hostname,monitoring_status)
+
+                self.generate_feedback('Done','Monitoring status for hostname (' + hostname + ') changed to (' + str(monitoring_status) + ')')
+
+            else:
+                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('Hostname (%s) does not exist',hostname)
+
+                self.generate_feedback('Done','Hostname (' +hostname + ') does not exist')
+                return False
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems updating monitoring status for hostname (%s) - %s',hostname,e)
+            
+            self.generate_feedback('Error','Problems updating monitoring status for hostname (' + hostname + ')')
+            return False 
 
 
     # ############################################                                                                                                                                    
