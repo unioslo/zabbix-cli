@@ -690,7 +690,7 @@ class zabbix_cli(cmd.Cmd):
         #
 
         try:
-            query=ast.literal_eval("{'output':['host']," + search_host  + ",'selectParentTemplates':['templateid','name'],'selectInventory':'extend','sortfield':'host','sortorder':'ASC','searchWildcardsEnabled':'True','filter':{" + filter + "}}")
+            query=ast.literal_eval("{'output':'extend'," + search_host  + ",'selectInventory':'extend','sortfield':'host','sortorder':'ASC','searchWildcardsEnabled':'True','filter':{" + filter + "}}")
         
         except Exception as e:
 
@@ -706,7 +706,7 @@ class zabbix_cli(cmd.Cmd):
 
         try:
             result = self.zapi.host.get(**query)
-        
+
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Command show_host_inventory executed.')
             
@@ -728,7 +728,7 @@ class zabbix_cli(cmd.Cmd):
             if host['inventory'] != []:
             
                 if self.output_format == 'json':
-                    result_columns [result_columns_key] = dict({"hostname":host['host']}.items() + host['inventory'].items()) 
+                    result_columns [result_columns_key] = dict({"host":host['host']}.items() + host['inventory'].items()) 
                 
                 else:
                     result_columns [result_columns_key] = {'1':host['host'],
@@ -740,14 +740,14 @@ class zabbix_cli(cmd.Cmd):
                 
                 result_columns_key = result_columns_key + 1
 
-            #
-            # Generate output
-            #
-            self.generate_output(result_columns,
-                                 ['Hostname','Vendor','Chassis','MAC address','Networks','Contact'],
-                                 ['Hostname','Chassis','MAC address','Contact'],
-                                 [],
-                                 FRAME)
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['Hostname','Vendor','Chassis','MAC address','Networks','Contact'],
+                             ['Hostname','Chassis','MAC address','Contact'],
+                             [],
+                             FRAME)
 
         
     # ############################################  
@@ -2430,16 +2430,16 @@ class zabbix_cli(cmd.Cmd):
 
 
     # ############################################
-    # Method do_create_global_macro
+    # Method do_define_global_macro
     # ############################################
 
-    def do_create_global_macro(self, args):
+    def do_define_global_macro(self, args):
         '''
         DESCRIPTION:
-        This command creates a global macro
+        This command defines a global macro
     
         COMMAND:
-        create_global_macro [macro name]
+        define_global_macro [macro name]
                             [macro value]
 
         '''
@@ -2510,7 +2510,7 @@ class zabbix_cli(cmd.Cmd):
         try:
 
             #
-            # Create global macro if it does not exist
+            # Create/update global macro if it does not exist
             #
             
             if result == []:
@@ -2524,35 +2524,37 @@ class zabbix_cli(cmd.Cmd):
                 self.generate_feedback('Done','Global macro (' + global_macro_name + ') with ID: ' + globalmacroid + ' created.')
 
             else:
+                data = self.zapi.usermacro.updateglobal(globalmacroid=result[0]['globalmacroid'],
+                                                        value=global_macro_value)
 
                 if self.conf.logging == 'ON':
-                    self.logs.logger.debug('This global macro (%s) already exists',global_macro_name)
+                    self.logs.logger.info('Global macro (%s) already exists. Value (%s) updated to (%s)',global_macro_name,result[0]['value'],global_macro_value)
 
-                self.generate_feedback('Warning','This global macro (' + global_macro_name + ') already exists.')
+                self.generate_feedback('Done','Global macro (' + global_macro_name + ') already exists. Value (' + result[0]['value'] + ') updated to (' + global_macro_value + ')')
                 return False
 
         except Exception as e:
 
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems creating global macro (%s) - %s',global_macro_name,e)
+                self.logs.logger.error('Problems defining global macro (%s) - %s',global_macro_name,e)
             
-            self.generate_feedback('Error','Problems creating global macro (' + global_macro_name + ')')
+            self.generate_feedback('Error','Problems defining global macro (' + global_macro_name + ')')
             return False 
 
 
     # ############################################
-    # Method do_create_host_macro
+    # Method do_define_host_macro
     # ############################################
 
-    def do_create_host_macro(self, args):
+    def do_define_host_macro(self, args):
         '''
         DESCRIPTION:
-        This command creates a host macro
+        This command defines a host macro
     
         COMMAND:
-        create_host_macro [hostname] 
-                          [macro name]
-                          [macro value]
+        defines_host_macro [hostname] 
+                           [macro name]
+                           [macro value]
 
         '''
 
@@ -2643,7 +2645,7 @@ class zabbix_cli(cmd.Cmd):
         try:
 
             #
-            # Create host macro if it does not exist
+            # Create / update host macro if it does not exist
             #
             
             if result == []:
@@ -2660,19 +2662,22 @@ class zabbix_cli(cmd.Cmd):
                 self.generate_feedback('Done','Host macro (' + hostname + ':' + host_macro_name + ') with ID: ' + hostmacroid + ' created.')
 
             else:
-
+                
+                data = self.zapi.usermacro.update(hostmacroid=result[0]['hostmacroid'],
+                                                  value=host_macro_value)
+                
                 if self.conf.logging == 'ON':
-                    self.logs.logger.debug('This host macro (%s:%s) already exists',hostname,host_macro_name)
+                    self.logs.logger.debug('Host macro (%s:%s) already exists. Value (%s) updated to (%s)',hostname,host_macro_name,result[0]['value'],host_macro_value)
 
-                self.generate_feedback('Warning','This host macro (' + hostname + ':' + host_macro_name + ') already exists.')
+                self.generate_feedback('Done','Host macro (' + hostname + ':' + host_macro_name + ') already exists. Value (' + result[0]['value'] + ') updated to (' + host_macro_value+ ')')
                 return False
 
         except Exception as e:
 
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems creating host macro (%s:%s) - %s',hostname,host_macro_name,e)
+                self.logs.logger.error('Problems defining host macro (%s:%s) - %s',hostname,host_macro_name,e)
             
-            self.generate_feedback('Error','Problems creating host macro (' + hostname + ':' + global_macro_name + ')')
+            self.generate_feedback('Error','Problems defining host macro (' + hostname + ':' + global_macro_name + ')')
             return False 
 
 
