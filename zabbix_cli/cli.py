@@ -1849,7 +1849,7 @@ class zabbix_cli(cmd.Cmd):
         # Interface connection. 0:DNS
         interface_useip_default = '0'
 
-        # Default hostgroup
+        # Default hostgroups
         hostgroup_default = self.conf.default_hostgroup.strip()
 
         # Proxy server to use to monitor this host        
@@ -1934,7 +1934,8 @@ class zabbix_cli(cmd.Cmd):
             hostgroups_list = []
             hostgroup_ids = ''
 
-            hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup_default)) + '"}')
+            for hostgroup in hostgroup_default.split(','):
+                hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup)) + '"}')
             
             for hostgroup in hostgroups.split(','):
 
@@ -2390,7 +2391,6 @@ class zabbix_cli(cmd.Cmd):
                     self.logs.logger.info('Hostgroup (%s) with ID: %s created',hostgroup,hostgroupid)
 
                 self.generate_feedback('Done','Hostgroup (' + hostgroup + ') with ID: ' + hostgroupid + ' created.')
-
                 
                 #
                 # Give RW access to the new group to the default admin usergroup
@@ -2398,12 +2398,14 @@ class zabbix_cli(cmd.Cmd):
                 #
 
                 try:
-                    usrgrpid = self.get_usergroup_id(admin_usergroup_default)
 
-                    result = self.zapi.usergroup.massadd(usrgrpids=[usrgrpid],rights={'id':hostgroupid,'permission':3})
+                    for group in admin_usergroup_default.strip().split(','):
+                        usrgrpid = self.get_usergroup_id(group)
+
+                        result = self.zapi.usergroup.massadd(usrgrpids=[usrgrpid],rights={'id':hostgroupid,'permission':3})
                     
-                    if self.conf.logging == 'ON':
-                        self.logs.logger.debug('Admin usergroup (%s) has got RW permissions on hostgroup (%s) ',admin_usergroup_default,hostgroup)
+                        if self.conf.logging == 'ON':
+                            self.logs.logger.debug('Admin usergroup (%s) has got RW permissions on hostgroup (%s) ',admin_usergroup_default,hostgroup)
                         
                 except Exception as e:
 
