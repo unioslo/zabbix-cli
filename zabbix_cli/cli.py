@@ -53,7 +53,7 @@ from zabbix_cli.pyzabbix import ZabbixAPI, ZabbixAPIException
 # ############################################
 
 
-class zabbix_cli(cmd.Cmd):
+class zabbixcli(cmd.Cmd):
     '''
     This class implements the Zabbix shell. It is based on the python module cmd
     '''
@@ -72,7 +72,6 @@ class zabbix_cli(cmd.Cmd):
                       '#############################################################\n' + \
                       'Type help or \? to list commands.\n'
         
-        self.prompt = '[zabbix-CLI]$ '
         self.file = None
 
         self.conf = configuration()
@@ -81,6 +80,10 @@ class zabbix_cli(cmd.Cmd):
         self.api_username = username
         self.api_password = password
         self.output_format = 'table'
+
+        self.system_id = self.conf.system_id
+        
+        self.prompt = '[zabbix-cli ' + self.api_username + '@' + self.system_id + ']$ '
 
         if self.conf.logging == 'ON':
             self.logs.logger.debug('Zabbix API url: %s',self.conf.zabbix_api_url)
@@ -4427,21 +4430,21 @@ class zabbix_cli(cmd.Cmd):
             split_line = line_in.split()
             
             if split_line[0] not in ['EOF','shell','SHELL','\!']:
-                line_out = split_line[0].lower() + ' ' + ' '.join(split_line[1:])
+                line_out = line_in.lower()
             else:
                 line_out = line_in
 
-            if split_line[0] == '\h ':
-                line_out = line_out.replace('\h','help')
-            elif split_line[0] == '\? ':
-                line_out = line_out.replace('\?','help')
-            elif split_line[0] == '\! ':
+            if split_line[0] == '\h':
+                line_out = 'help'
+            elif split_line[0] == '\?':
+                line_out = 'help'
+            elif split_line[0] == '\!':
                 line_out = line_out.replace('\!','shell')
-            elif line_out == '\s ':
+            elif line_out == '\s':
                 line_out = 'show_history'    
-            elif line_out == '\q ':
+            elif line_out == '\q':
                 line_out = 'quit' 
-
+                
             self._hist += [ line_out.strip() ]
           
         else:
@@ -4866,7 +4869,7 @@ class zabbix_cli(cmd.Cmd):
         '''
         Get Zabbix-CLI version
         '''
-        
+
         try:
             return zabbix_cli.version.__version__
 

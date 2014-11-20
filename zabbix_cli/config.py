@@ -47,6 +47,7 @@ class configuration():
         self.usergroups_to_sync = ''
 
         # Zabbix_config section
+        self.system_id = 'zabbix-ID' 
         self.default_hostgroup = 'All-hosts'
         self.default_admin_usergroup = 'Zabbix-root'
         self.default_directory_exports = os.getenv('HOME') + '/zabbix_exports' 
@@ -120,6 +121,9 @@ class configuration():
             #
             # Zabbix configuration
             #
+
+            if config.has_option('zabbix_config','system_id'):
+                self.system_id = config.get('zabbix_config','system_id')
 
             if config.has_option('zabbix_config','default_hostgroup'):
                 self.default_hostgroup = config.get('zabbix_config','default_hostgroup')
