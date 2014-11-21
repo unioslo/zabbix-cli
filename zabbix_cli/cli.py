@@ -2177,6 +2177,9 @@ class zabbixcli(cmd.Cmd):
         # Default: 1 day: 86400s
         autologout_default = '86400'
 
+        # Default usergroups
+        usergroup_default = self.conf.default_create_user_usergroup.strip()
+
         try: 
             arg_list = shlex.split(args)
             
@@ -2250,16 +2253,25 @@ class zabbixcli(cmd.Cmd):
         if autologout == '':
             autologout = autologout_default
         
-        if usrgrps == '':
-            self.generate_feedback('Error','Group list is empty')
-            return False
-
-
         usergroup_list = []
 
-        for usrgrp in usrgrps.split(','):
-            usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
+        try:
             
+            for usrgrp in usergroup_default.split(','):
+                if usrgrp != '':
+                    usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
+
+            for usrgrp in usrgrps.split(','):
+                if usrgrp != '':
+                    usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
+            
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting usergroupID - %s',e)
+            
+            self.generate_feedback('Error','Problems getting usergroupID - ' + str(e))
+            return False 
 
         #
         # Check if user exists

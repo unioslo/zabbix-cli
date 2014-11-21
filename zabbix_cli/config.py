@@ -50,6 +50,7 @@ class configuration():
         self.system_id = 'zabbix-ID' 
         self.default_hostgroup = 'All-hosts'
         self.default_admin_usergroup = 'Zabbix-root'
+        self.default_create_user_usergroup = 'All-users'
         self.default_directory_exports = os.getenv('HOME') + '/zabbix_exports' 
         self.default_export_format = 'JSON'
         self.include_timestamp_export_filename = 'ON'
@@ -130,6 +131,9 @@ class configuration():
 
             if config.has_option('zabbix_config','default_admin_usergroup'):
                 self.default_admin_usergroup = config.get('zabbix_config','default_admin_usergroup')
+
+            if config.has_option('zabbix_config','default_create_user_usergroup'):
+                self.default_create_user_usergroup = config.get('zabbix_config','default_create_user_usergroup')
 
             if config.has_option('zabbix_config','default_directory_exports'):
                 self.default_directory_exports = config.get('zabbix_config','default_directory_exports')
