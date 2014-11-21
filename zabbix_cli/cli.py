@@ -2108,8 +2108,7 @@ class zabbixcli(cmd.Cmd):
     # ############################################
 
     def do_create_user(self,args):
-        '''
-        DESCRIPTION:
+        '''DESCRIPTION:
         This command creates an user.
 
         COMMAND:
@@ -2158,7 +2157,9 @@ class zabbixcli(cmd.Cmd):
 
         [groups]
         --------   
-        User groups ID
+        Usergroup names where this user will be registered. 
+        
+        One can define several values in a comma separated list.
 
         '''
         
@@ -2253,6 +2254,13 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error','Group list is empty')
             return False
 
+
+        usergroup_list = []
+
+        for usrgrp in usrgrps.split(','):
+            usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
+            
+
         #
         # Check if user exists
         #
@@ -2294,7 +2302,7 @@ class zabbixcli(cmd.Cmd):
                                                type=type,
                                                autologin=autologin,
                                                autologout=autologout,
-                                               usrgrps=usrgrps.strip().split(','))
+                                               usrgrps=usergroup_list)
                 
                 if self.conf.logging == 'ON':
                     self.logs.logger.info('User (%s) with ID: %s created',alias,str(result['userids'][0]))
