@@ -1993,7 +1993,7 @@ class zabbixcli(cmd.Cmd):
                 
             elif result == False:
 
-                query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + "\"proxy_hostid\":\"" + proxy_id + "\"," + "\"status\":" + host_status + "," + interfaces_def + ",\"inventory_mode\":1}")
+                query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + "\"proxy_hostid\":\"" + proxy_id + "\"," + "\"status\":" + host_status + "," + interfaces_def + ",\"inventory_mode\":1,\"inventory\":{\"name\":\"" + hostname +"\"}}")
                 
                 result = self.zapi.host.create(**query)
 
