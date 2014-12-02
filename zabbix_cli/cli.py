@@ -1936,19 +1936,21 @@ class zabbixcli(cmd.Cmd):
         try:
             hostgroups_list = []
             hostgroup_ids = ''
-
+                        
             for hostgroup in hostgroup_default.split(','):
-                hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup)) + '"}')
-            
+                
+                if hostgroup != '':
+                    hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup)) + '"}')
+
             for hostgroup in hostgroups.split(','):
 
-                if hostgroup.isdigit():
-                    hostgroups_list.append('{"groupid":"' + str(hostgroup).strip() + '"}')
-                else:
-                    hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup.strip())) + '"}')
+                if hostgroup != '':
+                    if hostgroup.isdigit():
+                        hostgroups_list.append('{"groupid":"' + str(hostgroup).strip() + '"}')
+                    else:
+                        hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup.strip())) + '"}')
 
             hostgroup_ids = ','.join(hostgroups_list)
-
             proxy_id = str(self.get_random_proxyid(proxy.strip()))
             
         except Exception as e:
