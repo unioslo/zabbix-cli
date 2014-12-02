@@ -76,7 +76,7 @@ class zabbixcli(cmd.Cmd):
 
         self.conf = configuration()
         self.logs = logs
-
+        
         self.api_username = username
         self.api_password = password
         self.output_format = 'table'
@@ -2391,7 +2391,7 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.hostgroup.exists(name=hostgroup)
 
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Cheking if hostgroup (%s) exists',hostgroup)
+                self.logs.logger.debug('Checking if hostgroup (%s) exists',hostgroup)
 
         except Exception as e:
 
@@ -2414,8 +2414,6 @@ class zabbixcli(cmd.Cmd):
                 
                 if self.conf.logging == 'ON':
                     self.logs.logger.info('Hostgroup (%s) with ID: %s created',hostgroup,hostgroupid)
-
-                self.generate_feedback('Done','Hostgroup (' + hostgroup + ') with ID: ' + hostgroupid + ' created.')
                 
                 #
                 # Give RW access to the new group to the default admin usergroup
@@ -2430,7 +2428,7 @@ class zabbixcli(cmd.Cmd):
                         result = self.zapi.usergroup.massadd(usrgrpids=[usrgrpid],rights={'id':hostgroupid,'permission':3})
                     
                         if self.conf.logging == 'ON':
-                            self.logs.logger.debug('Admin usergroup (%s) has got RW permissions on hostgroup (%s) ',admin_usergroup_default,hostgroup)
+                            self.logs.logger.info('Admin usergroup (%s) has got RW permissions on hostgroup (%s) ',group,hostgroup)
                         
                 except Exception as e:
 
@@ -2439,6 +2437,9 @@ class zabbixcli(cmd.Cmd):
             
                     self.generate_feedback('Error','Problems giving the admin usergroup ' + admin_usergroup_default +' RW access to ' + hostgroup)
                     return False 
+
+                self.generate_feedback('Done','Hostgroup (' + hostgroup + ') with ID: ' + hostgroupid + ' created.')
+
             else:
 
                 if self.conf.logging == 'ON':
