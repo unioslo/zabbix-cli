@@ -206,7 +206,7 @@ class zabbixcli(cmd.Cmd):
                                              sortorder='ASC')
 
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Command show_hostgroups executed')
+                self.logs.logger.info('Command show_hostgroups executed')
 
         except Exception as e: 
 
@@ -392,7 +392,7 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.host.get(**query)
         
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Command show_host executed.')
+                self.logs.logger.info('Command show_host executed.')
 
         except Exception as e:
 
@@ -470,7 +470,9 @@ class zabbixcli(cmd.Cmd):
         This command updates one hosts' inventory 
 
         COMMAND:
-        update_host_inventory hostname inventory_key "inventory value"
+        update_host_inventory [hostname] 
+                              [inventory_key] 
+                              [inventory value]
 
         Inventory key is not the same as seen in web-gui. To
         look at possible keys and their current values, use 
@@ -579,7 +581,7 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.host.update(**query)
         
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Command show_host_inventory executed.')
+                self.logs.logger.info('Command update_host_inventory executed [%s] [%s] [%s].',host,inventory_key,inventory_value)
             
         except Exception as e:
 
@@ -711,7 +713,7 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.host.get(**query)
 
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Command show_host_inventory executed.')
+                self.logs.logger.info('Command show_host_inventory [%s] executed.',host)
             
         except Exception as e:
 
@@ -779,7 +781,7 @@ class zabbixcli(cmd.Cmd):
                                              selectUsers=['alias'])
 
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Command show_usergroups executed')
+                self.logs.logger.info('Command show_usergroups executed')
                      
         except Exception as e:
 
@@ -853,7 +855,7 @@ class zabbixcli(cmd.Cmd):
                                         sortorder='ASC')
 
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Command show_users executed')
+                self.logs.logger.info('Command show_users executed')
                      
         except Exception as e:
 
@@ -936,7 +938,7 @@ class zabbixcli(cmd.Cmd):
                                            sortorder='DESC')
 
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Command show_alarms executed')
+                self.logs.logger.info('Command show_alarms executed')
 
         except Exception as e:
 
@@ -1108,7 +1110,7 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Done','Hosts ' + hostnames + ' (' + host_ids + ') added to these groups: ' + hostgroups + ' (' + hostgroup_ids + ')')
 
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Hosts: %s (%s) added to these groups: %s (%s)',hostnames,host_ids,hostgroups,hostgroup_ids)
+                self.logs.logger.info('Hosts: %s (%s) added to these groups: %s (%s)',hostnames,host_ids,hostgroups,hostgroup_ids)
 
         except Exception as e:
 
@@ -1240,7 +1242,7 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.hostgroup.massremove(**query)
 
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Hosts: %s (%s) removed from these groups: %s (%s)',hostnames,host_ids,hostgroups,hostgroup_ids)
+                self.logs.logger.info('Hosts: %s (%s) removed from these groups: %s (%s)',hostnames,host_ids,hostgroups,hostgroup_ids)
 
             self.generate_feedback('Done','Hosts ' + hostnames + ' (' + host_ids + ') removed from these groups: ' + hostgroups + ' (' + hostgroup_ids + ')')
 
@@ -1367,7 +1369,7 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Done','Users ' + usernames + ' added to these usergroups: ' + usergroups)
 
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Users: %s added to these usergroups: %s',usernames,usergroups)
+                self.logs.logger.info('Users: %s added to these usergroups: %s',usernames,usergroups)
 
         except Exception as e:
 
@@ -1500,7 +1502,7 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.template.massadd(**query)
 
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Templates: %s (%s) linked to these hosts: %s (%s)',templates,template_ids,hostnames,host_ids)
+                self.logs.logger.info('Templates: %s (%s) linked to these hosts: %s (%s)',templates,template_ids,hostnames,host_ids)
 
             self.generate_feedback('Done','Templates ' + templates + ' (' + template_ids + ') linked to these hosts: ' + hostnames + ' (' + host_ids + ')')
 
@@ -1636,7 +1638,7 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.template.massremove(**query)
 
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Templates: %s (%s) unlinked from these hosts: %s (%s)',templates,template_ids,hostnames,host_ids)
+                self.logs.logger.info('Templates: %s (%s) unlinked from these hosts: %s (%s)',templates,template_ids,hostnames,host_ids)
 
             self.generate_feedback('Done','Templates ' + templates + ' (' + template_ids + ') unlinked from these hosts: ' + hostnames + ' (' + host_ids + ')')
 
@@ -2704,7 +2706,7 @@ class zabbixcli(cmd.Cmd):
                                                   value=host_macro_value)
                 
                 if self.conf.logging == 'ON':
-                    self.logs.logger.debug('Host macro (%s:%s) already exists. Value (%s) updated to (%s)',hostname,host_macro_name,result[0]['value'],host_macro_value)
+                    self.logs.logger.info('Host macro (%s:%s) already exists. Value (%s) updated to (%s)',hostname,host_macro_name,result[0]['value'],host_macro_value)
 
                 self.generate_feedback('Done','Host macro (' + hostname + ':' + host_macro_name + ') already exists. Value (' + result[0]['value'] + ') updated to (' + host_macro_value+ ')')
                 return False
