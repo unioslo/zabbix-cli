@@ -140,6 +140,7 @@ if __name__ == '__main__':
                 cli.output_format = 'csv'
                               
                 cli.onecmd(' '.join(sys.argv[2:]))
+                cli.zapi.user.logout()
 
             # JSON format output
             
@@ -149,12 +150,14 @@ if __name__ == '__main__':
                 cli.output_format = 'json'
                               
                 cli.onecmd(' '.join(sys.argv[2:]))
+                cli.zapi.user.logout()
 
             # PrettyTable output
 
             else:
                 cli = zabbixcli(username,password,logs)
                 cli.onecmd(' '.join(sys.argv[1:]))
+                cli.zapi.user.logout()
             
         #
         # Zabbix-CLI in interactive modus 
@@ -169,6 +172,7 @@ if __name__ == '__main__':
             
             cli = zabbixcli(username,password,logs)
             cli.cmdloop()
+            cli.zapi.user.logout()
 
         else:
             raise NotImplementedError
