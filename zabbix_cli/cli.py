@@ -142,7 +142,7 @@ class zabbixcli(cmd.Cmd):
 
         [Hostgroup name]:
         ----------------
-        One can search by hostgroup name. We can use wildcards.
+        One can search by hostgroup name. One can use wildcards.
 
         '''
 
@@ -287,7 +287,7 @@ class zabbixcli(cmd.Cmd):
 
         [HostID / Hostname]:
         -------------------
-        One can search by HostID or by Hostname. We can use wildcards 
+        One can search by HostID or by Hostname. One can use wildcards 
         if we search by Hostname
             
         [Filter]:
@@ -607,7 +607,7 @@ class zabbixcli(cmd.Cmd):
 
         [HostID / Hostname]:
         -------------------
-        One can search by HostID or by Hostname. We can use wildcards 
+        One can search by HostID or by Hostname. One can use wildcards 
         if we search by Hostname
             
         [Filter]:
@@ -917,25 +917,105 @@ class zabbixcli(cmd.Cmd):
         This command shows all active alarms.
 
         COMMAND:
-        show_alarms
+        show_alarms [description]
+                    [filters]
+
+        [description]
+        -------------
+        Type of alarm description to search for. Leave this parameter
+        empty to search for all descriptions. One can use wildcards.
+
+
+        [filters]
+        ---------
+        One can filter the result by host and priority. No wildcards 
+        can be used.
+
+        Priority values:
+
+        0 - (default) not classified; 
+        1 - information; 
+        2 - warning; 
+        3 - average; 
+        4 - high; 
+        5 - disaster.
+
+
+        e.g.: Get all alarms with priority 'High' and that contain 
+              the word 'disk' in the description for the host 'host.example.org'
+
+        show_alarms "*disk*" "'host':'host.example.org','priority':'4'"
+        
         '''
 
         result_columns = {}
         result_columns_key = 0
+        filters = ''
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                description = raw_input('# Description []: ').strip()
+                filters = raw_input('# Filter []: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 2:
+
+            description = arg_list[0].strip()
+            filters = arg_list[1].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+
+        #
+        # Generate query
+        #
+
+        try:
+            query=ast.literal_eval("{'only_true':1,'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'expandData':'hostname','sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{" + filters + "}}")
+
+        except Exception as e:
+            
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems generating show_host query - %s',e)
+
+            self.generate_feedback('Error','Problems generating show_host query')
+            return False
+
+
 
         #
         # Get result from Zabbix API
         #
         try:
-            result = self.zapi.trigger.get(only_true=1,
-                                           skipDependent=1,
-                                           monitored=1,
-                                           active=1,
-                                           output='extend',
-                                           expandDescription=1,
-                                           expandData='host',
-                                           sortfield='lastchange',
-                                           sortorder='DESC')
+            result = self.zapi.trigger.get(**query)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Command show_alarms executed')
