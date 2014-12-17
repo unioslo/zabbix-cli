@@ -112,7 +112,7 @@ class zabbixcli(cmd.Cmd):
             sys.exit(1)
 
 
-    # ############################################                                                                                                                                    
+    # ############################################
     # Method show_hostgroups
     # ############################################
 
@@ -223,6 +223,8 @@ class zabbixcli(cmd.Cmd):
         for group in result:
             
             if self.output_format == 'json':
+
+                group['hosts'].sort()
                 result_columns [result_columns_key] = {'groupid':group['groupid'],
                                                        'name':group['name'],
                                                        'flags':self.get_hostgroup_flag(int(group['flags'])),
@@ -755,33 +757,101 @@ class zabbixcli(cmd.Cmd):
                              FRAME)
 
         
-    # ############################################  
+    # ############################################
     # Method show_usergroups
-    # ############################################  
+    # ############################################
 
     def do_show_usergroups(self,args):
         '''
         DESCRIPTION:
-        This command shows user groups information.
-        
+        This command shows all usergroups defined in the system.
+
         COMMAND:
         show_usergroups
         '''
 
+        cmd.Cmd.onecmd(self,'show_usergroup "*"')
+
+
+    # ############################################  
+    # Method show_usergroup
+    # ############################################  
+
+    def do_show_usergroup(self,args):
+        '''
+        DESCRIPTION:
+        This command shows user group information.
+        
+        COMMAND:
+        show_usergroup [usergroup]
+
+        [usergroup]
+        -----------
+        User group name. One can use wildcards.
+
+        '''
+
         result_columns = {}
         result_columns_key = 0
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                usergroup = raw_input('# Usergroup: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        #
+        # Command with parameters
+        #
+
+        elif len(arg_list) == 1:
+            usergroup = arg_list[0].strip()
+            
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if usergroup == '':
+            self.generate_feedback('Error','Usergroup value is empty')
+            return False
 
         #
         # Get result from Zabbix API
         #
         try:
             result = self.zapi.usergroup.get(output='extend',
+                                             search={'name':usergroup},
+                                             searchWildcardsEnabled=True,
                                              sortfield='name',
                                              sortorder='ASC',
                                              selectUsers=['alias'])
 
             if self.conf.logging == 'ON':
-                self.logs.logger.info('Command show_usergroups executed')
+                self.logs.logger.info('Command show_usergroup executed')
                      
         except Exception as e:
 
@@ -797,6 +867,8 @@ class zabbixcli(cmd.Cmd):
         for group in result:
 
             if self.output_format == 'json':
+                
+                group['users'].sort()
                 result_columns [result_columns_key] ={'usrgrpid':group['usrgrpid'],
                                                       'name':group['name'],
                                                       'gui_access':self.get_gui_access(int(group['gui_access'])),
@@ -804,8 +876,8 @@ class zabbixcli(cmd.Cmd):
                                                       'users':group['users']}
             
             else:
-
                 users = []
+                group['users'].sort()
 
                 for user in group['users']:
                     users.append(user['alias'])
@@ -2412,6 +2484,95 @@ class zabbixcli(cmd.Cmd):
 
             self.generate_feedback('Error','Problems creating user (' + alias + ')')
             return False   
+
+
+    # ############################################
+    # Method do_remove_user
+    # ############################################
+
+    def do_remove_user(self,args):
+        '''
+        DESCRIPTION:
+        This command removes an user.
+
+        COMMAND:
+        remove_user [username]
+
+        [username]
+        ----------
+        Username
+
+        '''
+        
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                username = raw_input('# Username: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 1:
+
+            username = arg_list[0].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if username == '':
+            self.generate_feedback('Error','Username value is empty')
+            return False
+
+        try:
+        
+            if username.isdigit() == False:
+                userid = str(self.get_user_id(username))
+            else:
+                userid = str(username)
+
+            result = self.zapi.user.delete(userid)
+            
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('User (%s) with IDs: %s removed',username,str(result['userids'][0]))
+
+            self.generate_feedback('Done','User (' + username + ') with IDs: ' + str(result['userids'][0]) + ' removed')
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems removing username (%s) - %s',username,e)
+
+            self.generate_feedback('Error','Problems removing username (' + username + ')')
+            return False   
+
 
             
     # ############################################
@@ -4789,7 +4950,7 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.hostgroup.get(output='extend', filter={'name':hostgroup})
+            data = self.zapi.hostgroup.get(filter={'name':hostgroup})
             
             if data != []:
                 hostgroupid = data[0]['groupid']
@@ -4813,7 +4974,7 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.host.get(output='extend', filter={"host":host})
+            data = self.zapi.host.get(filter={"host":host})
 
             if data != []:
                 hostid = data[0]['hostid']
@@ -4839,7 +5000,7 @@ class zabbixcli(cmd.Cmd):
         print image
 
         try:
-            data = self.zapi.image.get(output='extend', filter={"name":image})
+            data = self.zapi.image.get(filter={"name":image})
 
             print data
 
@@ -4890,7 +5051,7 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.screen.get(output='extend', filter={"name":screen})
+            data = self.zapi.screen.get(filter={"name":screen})
 
             if data != []:
                 screenid = data[0]['screenid']
@@ -4915,7 +5076,7 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.template.get(output='extend', filter={"host":template})
+            data = self.zapi.template.get(filter={"host":template})
             
             if data != []:
                 templateid = data[0]['templateid']
@@ -4963,7 +5124,7 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.user.get(search={'alias':user})
+            data = self.zapi.user.get(filter={'alias':user})
 
             if data != []:
                 userid = data[0]['userid']
@@ -4987,7 +5148,7 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.proxy.get(output='extend', filter={"host":proxy})
+            data = self.zapi.proxy.get(filter={"host":proxy})
 
             if data != []:
                 proxyid = data[0]['proxyid']
