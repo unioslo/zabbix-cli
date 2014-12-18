@@ -243,8 +243,8 @@ class zabbixcli(cmd.Cmd):
                                                        '2':group['name'],
                                                        '3':self.get_hostgroup_flag(int(group['flags'])),
                                                        '4':self.get_hostgroup_type(int(group['internal'])),
-                                                       '5':'\n'.join(host_list)}
-    
+                                                       '5':'\n'.join(textwrap.wrap(', '.join(host_list),60))}
+
 
             result_columns_key = result_columns_key + 1
 
