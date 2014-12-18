@@ -1481,11 +1481,11 @@ class zabbixcli(cmd.Cmd):
 
         if usergroups == '':
             
-            self.generate_feedback('Error','Usergroups information is empty')
+            self.generate_feedback('Error','Usergroups value is empty')
             return False
 
         if usernames == '':
-            self.generate_feedback('Error','Usernames information is empty')
+            self.generate_feedback('Error','Usernames value is empty')
             return False
         
         try:
@@ -1530,6 +1530,141 @@ class zabbixcli(cmd.Cmd):
            
             self.generate_feedback('Error','Problems adding users ' + usernames + ' to usergroups ' + usergroups)
             return False   
+
+
+    # ############################################
+    # Method do_add_user_to_usergroup
+    # ############################################
+
+    def do_remove_user_from_usergroup(self,args):
+        '''
+        DESCRIPTION:
+        This command removes an user from
+        one/several usergroups
+
+        COMMAND:
+        add_user_to_usergroup [username]
+                              [usergroups]
+
+
+        [username]
+        -----------
+        Username
+
+        [usergroups]
+        ------------
+        Usergroup names
+        One can define several values in a comma separated list.
+
+        '''
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                username = raw_input('# Username: ').strip()
+                usergroups = raw_input('# Usergroups: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 2:
+
+            username = arg_list[0].strip()
+            usergroups = arg_list[1].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if usergroups == '':
+            
+            self.generate_feedback('Error','Usergroups value is empty')
+            return False
+
+        if username == '':
+            self.generate_feedback('Error','Username value is empty')
+            return False
+        
+        user_to_remove = []
+        user_to_remove.append(username)
+
+        try:
+            
+            for usergroup in usergroups.split(','):
+                
+                usergroup = usergroup.strip()
+                usernames_list_orig = []
+                usernames_list_final = []
+                usernameids_list_final = []
+
+                #
+                # Get list with users to keep in this  usergroup
+                #
+
+                result = self.zapi.usergroup.get(output='extend',
+                                                 search={'name':usergroup},
+                                                 searchWildcardsEnabled=True,
+                                                 sortfield='name',
+                                                 sortorder='ASC',
+                                                 selectUsers=['alias'])
+
+                for users in result:
+                    for alias in users['users']:
+                        usernames_list_orig.append(alias['alias'])
+                    
+                usernames_list_final = list(set(usernames_list_orig) - set(user_to_remove))
+                
+                #
+                # Update usergroup with the new users list  
+                #
+
+                usergroupid = self.get_usergroup_id(usergroup)
+
+                for user in usernames_list_final:
+                    usernameids_list_final.append(self.get_user_id(user))
+
+                result = self.zapi.usergroup.update(usrgrpid=usergroupid,userids=usernameids_list_final)
+                
+                self.generate_feedback('Done','User ' + username + ' removed from this usergroup: ' + usergroup)
+                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('User: %s removed from this usergroup: %s',username,usergroup)
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                    self.logs.logger.error('Problems removing user %s from usergroups %s - %s',username,usergroups,e)
+           
+            self.generate_feedback('Error','Problems removing user ' + username + ' from usergroups ' + usergroups)
+            return False   
+
             
 
     # ############################################
@@ -3198,7 +3333,7 @@ class zabbixcli(cmd.Cmd):
             return False 
 
 
-    # ############################################                                                                                                                                    
+    # ############################################
     # Method show_templates
     # ############################################
 
