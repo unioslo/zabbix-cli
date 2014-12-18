@@ -3715,21 +3715,23 @@ class zabbixcli(cmd.Cmd):
 
         for macro in result:
 
-            if self.output_format == 'json':
-                result_columns [result_columns_key] ={'macro':macro['macro'],
-                                                      'value':macro['value'],
-                                                      'hostid':macro['hosts'][0]['hostid'],
-                                                      'host':macro['hosts'][0]['host']}
+            if len(macro['hosts']) > 0:
+
+                if self.output_format == 'json':
+                    result_columns [result_columns_key] ={'macro':macro['macro'],
+                                                          'value':macro['value'],
+                                                          'hostid':macro['hosts'][0]['hostid'],
+                                                          'host':macro['hosts'][0]['host']}
 
 
-            else:
-
-                result_columns [result_columns_key] ={'1':macro['macro'],
-                                                      '2':macro['value'],
-                                                      '3':macro['hosts'][0]['hostid'],
-                                                      '4':macro['hosts'][0]['host']}
-                
-            result_columns_key = result_columns_key + 1
+                else:
+                    
+                    result_columns [result_columns_key] ={'1':macro['macro'],
+                                                          '2':macro['value'],
+                                                          '3':macro['hosts'][0]['hostid'],
+                                                          '4':macro['hosts'][0]['host']}
+                    
+                result_columns_key = result_columns_key + 1
 
         #
         # Generate output
