@@ -2726,6 +2726,7 @@ class zabbixcli(cmd.Cmd):
 
         # Default values
         admin_usergroup_default = self.conf.default_admin_usergroup
+        all_usergroup_default = self.conf.default_create_user_usergroup.strip()
 
         try:
             arg_list = shlex.split(args)
@@ -2794,7 +2795,10 @@ class zabbixcli(cmd.Cmd):
                     self.logs.logger.info('Hostgroup (%s) with ID: %s created',hostgroup,hostgroupid)
                 
                 #
-                # Give RW access to the new group to the default admin usergroup
+                # Give RW access to the new hostgroup to the default admin usergroup
+                # defined in zabbix-cli.conf
+                #
+                # Give RO access to the new hostgroup to the default all usergroup
                 # defined in zabbix-cli.conf
                 #
 
@@ -2808,6 +2812,14 @@ class zabbixcli(cmd.Cmd):
                         if self.conf.logging == 'ON':
                             self.logs.logger.info('Admin usergroup (%s) has got RW permissions on hostgroup (%s) ',group,hostgroup)
                         
+                    for group in all_usergroup_default.strip().split(','):
+                        usrgrpid = self.get_usergroup_id(group)
+
+                        result = self.zapi.usergroup.massadd(usrgrpids=[usrgrpid],rights={'id':hostgroupid,'permission':2})
+                    
+                        if self.conf.logging == 'ON':
+                            self.logs.logger.info('All users usergroup (%s) has got RO permissions on hostgroup (%s) ',group,hostgroup)
+
                 except Exception as e:
 
                     if self.conf.logging == 'ON':
