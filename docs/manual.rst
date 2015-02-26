@@ -409,6 +409,69 @@ command can be run with or without parameters. e.g.:
    "Done","Host (test.example.net) with ID: 10515 created"
 
 
+create_host_interface
+---------------------
+
+This command creates a hostinterface
+
+::
+
+   create_host [hostname]
+               [interface connection]
+               [interface type]
+               [interface port]
+               [interface IP]
+               [default interface]
+
+Parameters:
+
+* **[hostname]**: Hostname
+* **[interface connection]**: Type of connection. Possible values:
+
+  - 0 - Connect using host DNS name (Default)
+  - 1 - Connect using host IP address
+
+* **[interface type]**: Type of interface. Possible values:
+
+  - 1 - Zabbix agent
+  - 2 - SNMP (Default)
+  - 3 - IPMI
+  - 4 - JMX
+        
+* **[interface port]**: Interface port (Default: 161)
+* **[interface IP]**: IP address if interface connection is 1
+* **[default interface]**: Define this interface som default. Possible
+  values:
+
+  - 0 - Not default interface
+  - 1 - Default interface (Default)
+
+The default value for a parameter is shown between brackets []. If the
+user does not define any value or a wrong value, the default value
+will be used. This command can be run with or without
+parameters. e.g.:
+
+::
+
+   [zabbix-cli]$ create_host_interface
+   --------------------------------------------------------
+   # Hostname: proxy.example.net
+   # Interface connection[0]: 
+   # Interface type[2]: 
+   # Interface port[161]: 
+   # Interface IP[]: 
+   # Default interface[0]: 
+   --------------------------------------------------------
+
+   [Done]: Host interface with ID: 1132 created on proxy.example.net
+
+
+   [zabbix-cli]$ create_host_interface proxy.example.net 0 2 161 "" 1
+
+   [Done]: Host interface with ID: 1133 created on proxy.example.net
+
+
+
 create_user
 -----------
 

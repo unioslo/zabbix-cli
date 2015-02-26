@@ -1324,7 +1324,7 @@ class zabbixcli(cmd.Cmd):
                 return False   
 
         #
-        # Command without filters attributes
+        # Command with parameters
         #
 
         elif len(arg_list) == 2:
@@ -2393,6 +2393,221 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error','Problems removing hosts (' + hostname + ')')
             return False   
             
+
+    # ############################################
+    # Method do_create_host_interface
+    # ############################################
+
+    def do_create_host_interface(self,args):
+        '''
+        DESCRIPTION:
+        This command creates a hostinterface.
+
+        COMMAND:
+        create_host [hostname]
+                    [interface connection]
+                    [interface type]
+                    [interface port]
+                    [interface IP]
+                    [default interface]
+
+        [hostname]
+        ----------
+        Hostname
+        
+        [interface connection]
+        ----------------------
+        0: Connect using host DNS name [*]
+        1: Connect using host IP address
+
+        [interface type]
+        ----------------
+        1: Zabbix agent
+        2: SNMP [*]
+        3: IPMI
+        4: JMX
+        
+        [interface port]
+        ----------------
+        Interface port [161]
+        
+        [interface IP]
+        --------------
+        IP address if interface connection is 1:
+
+        [default interface]
+        -------------------
+        0: Not default interface
+        1: Default interface [*]
+
+        '''
+        
+        #
+        # Default host interface information
+        #
+        
+        # We use DNS not IP
+        interface_ip_default = ''
+        
+        # This interface is the 1:default one
+        interface_main_default = '1'
+
+        # Port used by the interface
+        interface_port_default = '161'
+
+        # Interface type. 2:SNMP
+        interface_type_default = '2'
+        
+        # Interface connection. 0:DNS
+        interface_useip_default = '0'
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                hostname = raw_input('# Hostname: ').strip()
+                interface_useip = raw_input('# Interface connection[' + interface_useip_default + ']: ').strip()
+                interface_type = raw_input('# Interface type[' + interface_type_default + ']: ').strip()
+                interface_port = raw_input('# Interface port[' + interface_port_default + ']: ').strip()
+                interface_ip = raw_input('# Interface IP[' + interface_ip_default + ']: ').strip()
+                interface_main = raw_input('# Default interface[' + interface_main_default + ']: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 6:
+
+            hostname = arg_list[0].strip()
+            interface_useip = arg_list[1].strip() 
+            interface_type = arg_list[2].strip()
+            interface_port = arg_list[3].strip()
+            interface_ip = arg_list[4].strip()
+            interface_main = arg_list[5].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if hostname == '':
+            self.generate_feedback('Error','Hostname value is empty')
+            return False
+
+        if interface_useip == '' or interface_useip not in ('0','1'):
+            interface_useip = interface_useip_default
+
+        if interface_type == '' or interface_type not in ('1','2','3','4'):
+            interface_type = interface_type_default
+        
+        if interface_port == '' :
+            interface_port = interface_port_default
+
+        if interface_useip == '1' and interface_ip == '':
+            self.generate_feedback('Error','Host IP value is empty and connection type is 1:IP')
+            return False
+
+        if interface_main == '' or interface_main not in ('0','1'):
+            interface_main = interface_main_default
+
+        
+        # Generate interface definition
+
+        if interface_useip == '0':
+
+            interfaces_def = '"type":' + interface_type + \
+                             ',"main":' + interface_main + \
+                             ',"useip":' + interface_useip + \
+                             ',"ip":"' + \
+                             '","dns":"' + hostname + \
+                             '","port":"' + interface_port + '"'
+
+        elif interface_useip == '1':
+
+            interfaces_def = '"type":' + interface_type + \
+                             ',"main":' + interface_main + \
+                             ',"useip":' + interface_useip + \
+                             ',"ip":"' + interface_ip + \
+                             '","dns":"' + \
+                             '","port":"' + interface_port + '"'
+
+        #
+        # Checking if hostname exists
+        #
+
+        try:
+            host_exists = self.zapi.host.exists(name=hostname)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Cheking if host (%s) exists',hostname)
+
+            if host_exists == False:
+                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.error('Host (%s) does not exists. Host Interface can not be created',hostname)
+
+                self.generate_feedback('Error','Host (' + hostname + ') does not exists. Host Interface can not be created')
+                return False   
+
+            elif host_exists == True:
+                hostid = str(self.get_host_id(hostname))
+                
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems checking if host (%s) exists - %s',hostname,e)
+
+            self.generate_feedback('Error','Problems checking if host (' + hostname + ') exists')
+            return False   
+
+
+        #
+        # Create host interface if it does not exist
+        #
+
+        try:
+
+            query=ast.literal_eval("{\"hostid\":\"" + hostid + "\"," + interfaces_def + "}")
+            result = self.zapi.hostinterface.create(**query)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('Host interface with ID: %s created on %s',str(result['interfaceids'][0]),hostname)
+                
+            self.generate_feedback('Done','Host interface with ID: ' + str(result['interfaceids'][0]) + ' created on ' + hostname)
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems creating host interface on %s- %s',hostname,e)
+
+            self.generate_feedback('Error','Problems creating host interface on ' + hostname + '')
+            return False   
+
+
 
     # ############################################
     # Method do_create_user
