@@ -2121,26 +2121,6 @@ class zabbixcli(cmd.Cmd):
 
         '''
         
-        #
-        # All host get a default Agent type interface
-        # with DNS information
-        #
-        
-        # We use DNS not IP
-        interface_ip_default = ''
-        
-        # This interface is the default one
-        interface_main_default = '1'
-
-        # Port used by the interface
-        interface_port_default = '10050'
-
-        # Interface type. 1:agent
-        interface_type_default = '1'
-        
-        # Interface connection. 0:DNS
-        interface_useip_default = '0'
-
         # Default hostgroups
         hostgroup_default = self.conf.default_hostgroup.strip()
 
@@ -2209,14 +2189,22 @@ class zabbixcli(cmd.Cmd):
         if host_status == '' or host_status not in ('0','1'):
             host_status = host_status_default
 
-        # Generate interface definition
+        # Generate interface definition. Per default all hosts get a
+        # Zabbix agent and a SNMP interface defined
 
-        interfaces_def = '"interfaces":[{"type":' + interface_type_default + \
-                         ',"main":' + interface_main_default + \
-                         ',"useip":' + interface_useip_default + \
-                         ',"ip":"' + interface_ip_default + \
+        interfaces_def = '"interfaces":[' + \
+                         '{"type":1' + \
+                         ',"main":1' + \
+                         ',"useip":0' + \
+                         ',"ip":"' + \
                          '","dns":"' + hostname + \
-                         '","port":"' + interface_port_default + '"}]'
+                         '","port":"10050"},' + \
+                         '{"type":2' + \
+                         ',"main":1' + \
+                         ',"useip":0' + \
+                         ',"ip":"' + \
+                         '","dns":"' + hostname + \
+                         '","port":"161"}]'
 
         #
         # Generate hostgroups and proxy IDs
