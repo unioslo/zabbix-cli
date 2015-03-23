@@ -40,7 +40,6 @@ def replace(file_path, pattern, subst):
 
 if __name__ == "__main__":
 
-#    file_path=getenv('HOME')+"/testenv/test.log"
     pattern="log_file=/var/log/zabbix-cli/zabbix-cli.log"
     subst="log_file="+getenv('HOME')+"/.zabbix-cli/zabbix-cli.log"
 
@@ -49,10 +48,6 @@ if __name__ == "__main__":
     filename="zabbix-cli.conf"
 
     file_path=path.join(zabbixconfdir,filename)
-
-#    option="log_file=/var/log/zabbix-cli/zabbix-cli.log$"
-#    changedto="log_file="+zabbixconfdir+"zabbix-cli.log"
-    
     
     #
     # creating ~/.zabbix-cli folder if not exists
@@ -69,11 +64,11 @@ if __name__ == "__main__":
     if path.isfile(defconf):
         copy2(defconf,zabbixconfdir)
 
-
     #
     #  changing the line having log configuration option 
-    #   
+    #  replacing log file option 
+    #  log_file=/var/log/zabbix-cli/zabbix-cli.log
+    #  to log_file=~/.zabbix-cli/zabbix-cli.log
     #
-
     replace(file_path,pattern,subst)
 
