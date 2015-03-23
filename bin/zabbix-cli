@@ -58,7 +58,7 @@ if __name__ == '__main__':
         # <Zabbix username>::<password>
         #
 
-        zabbix_auth_file = os.getenv('HOME') + '/.zabbix_cli_auth'
+        zabbix_auth_file = os.getenv('HOME') + '/.zabbix-cli_auth'
 
         if os.path.isfile(zabbix_auth_file):
 
@@ -131,17 +131,33 @@ if __name__ == '__main__':
             
             if conf.logging == 'ON':
                 logs.logger.debug('Zabbix-CLI running in non-interactive modus')
+            
+            # CSV format output
                 
             if sys.argv[1] =='--use-csv-format':
                 
-                cli = zabbix_cli(username,password,logs)
+                cli = zabbixcli(username,password,logs)
                 cli.output_format = 'csv'
                               
                 cli.onecmd(' '.join(sys.argv[2:]))
+                cli.zapi.user.logout()
+
+            # JSON format output
+            
+            elif sys.argv[1] =='--use-json-format':
                 
+                cli = zabbixcli(username,password,logs)
+                cli.output_format = 'json'
+                              
+                cli.onecmd(' '.join(sys.argv[2:]))
+                cli.zapi.user.logout()
+
+            # PrettyTable output
+
             else:
-                cli = zabbix_cli(username,password,logs)
+                cli = zabbixcli(username,password,logs)
                 cli.onecmd(' '.join(sys.argv[1:]))
+                cli.zapi.user.logout()
             
         #
         # Zabbix-CLI in interactive modus 
@@ -154,8 +170,9 @@ if __name__ == '__main__':
         
             os.system('clear')
             
-            cli = zabbix_cli(username,password,logs)
+            cli = zabbixcli(username,password,logs)
             cli.cmdloop()
+            cli.zapi.user.logout()
 
         else:
             raise NotImplementedError

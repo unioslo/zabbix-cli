@@ -46,6 +46,15 @@ class configuration():
         self.ldap_usergroups_tree = ''
         self.usergroups_to_sync = ''
 
+        # Zabbix_config section
+        self.system_id = 'zabbix-ID' 
+        self.default_hostgroup = 'All-hosts'
+        self.default_admin_usergroup = 'Zabbix-root'
+        self.default_create_user_usergroup = 'All-users'
+        self.default_directory_exports = os.getenv('HOME') + '/zabbix_exports' 
+        self.default_export_format = 'JSON'
+        self.include_timestamp_export_filename = 'ON'
+
         # Logging section
         self.logging = 'OFF'
         self.log_level = 'ERROR'
@@ -110,6 +119,31 @@ class configuration():
             if config.has_option('ldap','usergroups_to_sync'):
                 self.usergroups_to_sync = config.get('ldap','usergroups_to_sync')
              
+            #
+            # Zabbix configuration
+            #
+
+            if config.has_option('zabbix_config','system_id'):
+                self.system_id = config.get('zabbix_config','system_id')
+
+            if config.has_option('zabbix_config','default_hostgroup'):
+                self.default_hostgroup = config.get('zabbix_config','default_hostgroup')
+
+            if config.has_option('zabbix_config','default_admin_usergroup'):
+                self.default_admin_usergroup = config.get('zabbix_config','default_admin_usergroup')
+
+            if config.has_option('zabbix_config','default_create_user_usergroup'):
+                self.default_create_user_usergroup = config.get('zabbix_config','default_create_user_usergroup')
+
+            if config.has_option('zabbix_config','default_directory_exports'):
+                self.default_directory_exports = config.get('zabbix_config','default_directory_exports')
+
+            if config.has_option('zabbix_config','default_export_format'):
+                self.default_export_format = config.get('zabbix_config','default_export_format')
+
+            if config.has_option('zabbix_config','include_timestamp_export_filename'):
+                self.include_timestamp_export_filename = config.get('zabbix_config','include_timestamp_export_filename')
+
             #
             # Logging section
             #

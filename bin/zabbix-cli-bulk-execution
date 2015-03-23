@@ -1,0 +1,119 @@
+#!/usr/bin/env python
+#
+# Authors:
+# rafael@postgresql.org.es / http://www.postgresql.org.es/
+#
+# Copyright (c) 2014 USIT-University of Oslo
+#
+# This file is part of Zabbix-cli
+# https://github.com/rafaelma/zabbix-cli
+#
+# Zabbix-CLI is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Zabbix-CLI is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
+
+import sys
+import os
+import argparse
+import subprocess
+
+from zabbix_cli.config import *
+from zabbix_cli.logs import * 
+
+if __name__ == '__main__':
+
+    try:
+
+        conf = configuration()
+
+        #
+        # If logging is activated, start logging to the file defined
+        # with log_file in the config file.
+        #
+
+        if conf.logging == 'ON':
+            logs = logs("zabbix-cli-bulk-execution")
+        else:
+            logs = None
+            
+        if conf.logging == 'ON':
+            logs.logger.debug('**** Zabbix-cli-bulk-execution startet. ****')
+
+        parser = argparse.ArgumentParser(prog=sys.argv[0])
+        parser.add_argument('--input-file', metavar='[Filename]', required=True, help='Input file', dest='input_file')
+
+        args = parser.parse_args() 
+        input_file = args.input_file
+
+        # Normalized absolutized version of the pathname if
+        # files does not include an absolute path
+
+        if os.path.isabs(input_file) == False:
+            input_file = os.path.abspath(input_file) 
+
+        if os.path.exists(input_file):
+
+            if conf.logging == 'ON':
+                logs.logger.info('File [%s] exists. Bulk execution of commands defined in this file.',input_file)
+
+            print '[OK] File [' + input_file + '] exists. Bulk execution of commands defined in this file started.'
+
+            try:
+                with open(input_file,'r') as file:
+                    for line in file:
+                        zabbix_cli_command = line.strip()
+
+                        command = 'zabbix-cli --use-json-format ' + zabbix_cli_command
+                        
+                        DEVNULL = open(os.devnull, 'w')
+                        proc = subprocess.Popen([command],stdout=DEVNULL,stderr=DEVNULL,shell=True)
+                        proc.wait()
+                
+                        if proc.returncode == 0:
+                            if conf.logging == 'ON':
+                                logs.logger.info('Zabbix-cli command [%s] executed',command)
+                        
+                            print '[OK] Zabbix-cli command [' + command +  '] executed'
+                                
+                        else:
+                            if conf.logging == 'ON':
+                                logs.logger.error('Zabbix-cli command [%s] could not be executed',command)
+                            
+                            print '[ERROR] Zabbix-cli command [' + command + '] could not bed executed'
+                        
+            except Exception as e:
+
+                if conf.logging == 'ON':
+                    logs.logger.error('Problems using file [%s] - %s',input_file,e)
+
+                print '[ERROR] Problems using file [' + input_file + '] - ' + str(e)
+                sys.exit(1)
+
+        else:
+            
+            if conf.logging == 'ON':
+                logs.logger.info('File [%s] does not exist. Bulk execution of commands aborted.',input_file)
+
+            print '[ERROR] File [' + input_file + '] does not exist. Bulk execution of commands aborted'
+
+
+        if conf.logging == 'ON':
+            logs.logger.debug('**** Zabbix-cli-bulk-execution finished. ****')
+
+    except Exception as e:
+        print '\n[ERROR]: %s\n',e
+        
+        if conf.logging == 'ON':
+            logs.logger.error('Problems running zabbix-cli-bulk-execution - %s',e)
+        
+        print 'Problems running zabbix-cli-bulk-execution - ' + str(e)
+        sys.exit(1)
