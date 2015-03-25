@@ -31,7 +31,6 @@ import shlex
 import datetime
 import subprocess
 import ast
-import ldap
 import random
 import hashlib
 import textwrap
