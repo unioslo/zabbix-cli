@@ -16,7 +16,7 @@
 from os import getenv,path,remove,close,makedirs
 from tempfile import mkstemp
 from shutil import move, copy2
-from sys import exit
+import sys
 
 def replace(file_path, pattern, subst):
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
             print '\n[ERROR]: %s\n',e
     else:
         print "Cannot find /etc/zabbix-cli/zabbix-cli.conf file. ERROR with zabbix-cli installation."
-        exit(1)
+        sys.exit(1)
     
     #
     #  changing the line having log configuration option 
