@@ -39,20 +39,31 @@ def replace(file_path, pattern, subst):
         remove(file_path)
         #Move new file
         move(abs_path, file_path)
+
     except Exception as e:
         print '\n[ERROR]: %s\n',e
 
 if __name__ == "__main__":
-
-    pattern="log_file=/var/log/zabbix-cli/zabbix-cli.log"
-    subst="log_file="+getenv('HOME')+"/.zabbix-cli/zabbix-cli.log"
 
     zabbixconfdir = getenv('HOME')+"/.zabbix-cli/"
     defconf="/etc/zabbix-cli/zabbix-cli.conf"
     filename="zabbix-cli.conf"
 
     file_path=path.join(zabbixconfdir,filename)
-    
+
+    try:
+        if len(sys.argv) == 2:
+            zabbix_api_url = sys.argv[1]
+            
+        else:
+            print "Error: Wrong number of parameters"
+            print 'Format: ' + sys.argv[0] + ' <zabbix API url>'        
+            sys.exit(1)
+
+    except Exception as e:
+        print e
+        sys.exit(1)
+
     #
     # creating ~/.zabbix-cli folder if not exists
     #
@@ -65,8 +76,9 @@ if __name__ == "__main__":
             print '\n[ERROR]: %s\n',e
 
     #
-    # /etc/zabbix-cli.conf will be created under installation of zabbix-cli package. 
-    # copying /etc/zabbix-cli.conf file to ~/.zabbix-cli/zabbix-cli.conf
+    # /etc/zabbix-cli.conf will be created under installation of
+    # zabbix-cli package.  copying /etc/zabbix-cli.conf file to
+    # ~/.zabbix-cli/zabbix-cli.conf
     # 
 
     if path.isfile(defconf):
@@ -85,5 +97,10 @@ if __name__ == "__main__":
     #  log_file=/var/log/zabbix-cli/zabbix-cli.log
     #  to log_file=~/.zabbix-cli/zabbix-cli.log
     #
-    replace(file_path,pattern,subst)
+    replace(file_path,'log_file=/var/log/zabbix-cli/zabbix-cli.log','log_file=' + getenv('HOME') + '/.zabbix-cli/zabbix-cli.log')
 
+    #
+    #  Changing the line having the zabbix API url example with real
+    #  URL.
+    #
+    replace(file_path,';zabbix_api_url=https://zabbix.example.net/zabbix','zabbix_api_url=' + zabbix_api_url)
