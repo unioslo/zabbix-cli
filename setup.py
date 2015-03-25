@@ -55,7 +55,8 @@ try:
           author_email='rafael@postgresql.org.es',
           url='http://www.zabbix-cli.org/',
           packages=['zabbix_cli',],
-          scripts=['bin/zabbix-cli','bin/zabbix-cli-bulk-execution'],
+          scripts=['bin/zabbix-cli','bin/zabbix-cli-bulk-execution','bin/zabbix-cli-init'],
+          data_files=[('/etc/zabbix-cli', ['etc/zabbix-cli.conf'])],
           platforms=['Linux'],
           classifiers=[
             'Environment :: Console',
