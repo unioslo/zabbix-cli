@@ -5,11 +5,12 @@
 # muo@uio.no
 #
 # Copyright (c) 2015 USIT-University of Oslo
-###########################################################################################
-# This script initialize zabbix-cli environment. it will copy /etc/zabbix-cli.conf to 
-# $HOME/.zabbix-cli/ 
-# and change log configuration in zabbix-cli.conf so that zabbix-cli logs to 
-# $HOME/.zabbix-cli/ 
+#
+# This script initialize zabbix-cli environment. it will copy
+# /etc/zabbix-cli/zabbix-cli.conf to $HOME/.zabbix-cli/ and change log
+# configuration in zabbix-cli.conf so that zabbix-cli logs to
+# $HOME/.zabbix-cli/
+#
 ###########################################################################################
 
 from os import getenv,path,remove,close,makedirs
@@ -47,7 +48,7 @@ if __name__ == "__main__":
     subst="log_file="+getenv('HOME')+"/.zabbix-cli/zabbix-cli.log"
 
     zabbixconfdir = getenv('HOME')+"/.zabbix-cli/"
-    defconf="/etc/zabbix-cli.conf"
+    defconf="/etc/zabbix-cli/zabbix-cli.conf"
     filename="zabbix-cli.conf"
 
     file_path=path.join(zabbixconfdir,filename)
@@ -75,7 +76,7 @@ if __name__ == "__main__":
         except Exception as e:
             print '\n[ERROR]: %s\n',e
     else:
-        print "Cannot find /etc/zabbix-cli.conf file. ERROR with zabbix-cli installation."
+        print "Cannot find /etc/zabbix-cli/zabbix-cli.conf file. ERROR with zabbix-cli installation."
         exit(1)
     
     #
