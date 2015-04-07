@@ -116,13 +116,29 @@ class ZabbixAPI(object):
         self.id += 1
 
         if 'error' in response_json:  # some exception
-            msg = "Error {code}: {message}, {data} while sending {json}".format(
-                code=response_json['error']['code'],
-                message=response_json['error']['message'],
-                data=response_json['error']['data'],
-                json=str(request_json)
-            )
-            raise ZabbixAPIException(msg, response_json['error']['code'])
+
+            #
+            # We do not want to get the password value in the error
+            # message if the user uses a not valid username or
+            # password.
+            #
+
+            if response_json['error']['data'] == 'Login name or password is incorrect.':
+                
+                msg = "Error {code}: {message}: {data}".format(
+                    code=response_json['error']['code'],
+                    message=response_json['error']['message'],
+                    data=response_json['error']['data'])
+
+            else:
+
+                msg = "Error {code}: {message}: {data} while sending {json}".format(
+                    code=response_json['error']['code'],
+                    message=response_json['error']['message'],
+                    data=response_json['error']['data'],
+                    json=str(request_json))
+
+            raise ZabbixAPIException(msg)
 
         return response_json
 
