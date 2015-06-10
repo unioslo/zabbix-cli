@@ -3743,15 +3743,15 @@ class zabbixcli(cmd.Cmd):
 
 
     # ########################################
-    # do_show_host_macros 
+    # do_show_host_user_macros 
     # ########################################
-    def do_show_host_macros(self, args):
+    def do_show_host_usermacros(self, args):
         '''
         DESCRITION:
-        This command shows host macros
+        This command shows all usermacros for a host
 
         COMMAND:
-        show_host_macros [hostname]
+        show_host_usermacros [hostname]
         '''
 
         result_columns = {}
@@ -3851,15 +3851,15 @@ class zabbixcli(cmd.Cmd):
 
 
     # ########################################
-    # do_show_macro_hostlist 
+    # do_show_usermacro_host_list 
     # ########################################
-    def do_show_macro_hostlist(self, args):
+    def do_show_usermacro_host_list(self, args):
         '''
         DESCRITION:
         This command shows all host with a defined macro
 
         COMMAND:
-        show_macro_hostlist [macro name]
+        show_usermacro_host_list [macro name]
         '''
 
         result_columns = {}
@@ -3952,8 +3952,115 @@ class zabbixcli(cmd.Cmd):
         #
         self.generate_output(result_columns,
                              ['Macro','Value','HostID','Host'],
-                             ['Macro','Host'],
+                             ['Macro','Value','Host'],
                              ['HostID'],
+                             FRAME)
+
+
+    # ########################################
+    # do_show_usermacro_templatelist 
+    # ########################################
+    def do_show_usermacro_template_list(self, args):
+        '''
+        DESCRITION:
+        This command shows all templates with a defined macro
+
+        COMMAND:
+        show_usermacro_template_list [macro name]
+        '''
+
+        result_columns = {}
+        result_columns_key = 0
+
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                template_macro_name= raw_input('# Host macro name: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 1:
+            template_macro_name = arg_list[0].strip()
+        
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+        
+        if template_macro_name == '':
+            self.generate_feedback('Error','Host macro name is empty')
+            return False
+        
+        else:
+            template_macro_name = '{$' + template_macro_name.upper() + '}'
+
+
+        #
+        # Get macro hostlist
+        #
+
+        try:
+            result = self.zapi.usermacro.get(output='extend',
+                                             selectTemplates=['host'],
+                                             search={'macro':template_macro_name},
+                                             searchWildcardsEnabled=True,
+                                             sortfield='macro')
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting template list for macro %s - %s',template_macro_name,e)
+                
+            self.generate_feedback('Error','Problems getting template list for macro ' + template_macro_name)
+            return False
+
+        #
+        # Get the columns we want to show from result 
+        #
+
+
+        for macro in result:
+
+            if len(macro['templates']) > 0:
+
+                if self.output_format == 'json':
+                    result_columns [result_columns_key] ={'macro':macro['macro'],
+                                                          'value':macro['value'],
+                                                          'templateid':macro['templates'][0]['templateid'],
+                                                          'template':macro['templates'][0]['host']}
+
+
+                else:
+                    
+                    result_columns [result_columns_key] ={'1':macro['macro'],
+                                                          '2':macro['value'],
+                                                          '3':macro['templates'][0]['templateid'],
+                                                          '4':macro['templates'][0]['host']}
+                    
+                result_columns_key = result_columns_key + 1
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['Macro','Value','TemplateID','Template'],
+                             ['Macro','Value','Template'],
+                             ['TemplateID'],
                              FRAME)
 
 
@@ -5336,7 +5443,59 @@ class zabbixcli(cmd.Cmd):
             raise e
 
         return str(hostid)
+
+
+    # #################################################
+    # Method get_host_name
+    # #################################################
     
+    def get_host_name(self, hostid):
+        '''
+        DESCRIPTION:
+        Get the host name for a hostID
+        '''
+
+        try:
+
+            data = self.zapi.host.get(output='extend',
+                                      hostids=hostid)
+
+            if data != []:
+                host_name = data[0]['host']
+            else:
+                raise Exception('Could not find hostname for ID:' + hostid)
+
+        except Exception as e:
+            raise e
+
+        return str(host_name)
+
+
+    # #################################################
+    # Method get_template_name
+    # #################################################
+    
+    def get_template_name(self, templateid):
+        '''
+        DESCRIPTION:
+        Get the template name for a templateID
+        '''
+
+        try:
+
+            data = self.zapi.template.get(output='extend',
+                                          templateids=templateid)
+
+            if data != []:
+                template_name = data[0]['name']
+            else:
+                raise Exception('Could not find template for ID:' + templateid)
+
+        except Exception as e:
+            raise e
+
+        return str(template_name)
+
 
     # #################################################
     # Method get_image_id
