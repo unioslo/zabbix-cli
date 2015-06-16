@@ -3548,6 +3548,132 @@ class zabbixcli(cmd.Cmd):
 
 
     # ############################################
+    # Method do_update_host_proxy
+    # ############################################
+
+    def do_update_host_proxy(self, args):
+        '''
+        DESCRIPTION:
+        This command defines the proxy used to monitor a host
+    
+        COMMAND:
+        update_host_proxy [hostname] 
+                          [proxy]
+
+        '''
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                hostname = raw_input('# Hostname: ').strip()
+                proxy = raw_input('# Proxy: ').strip().lower()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 2:
+            hostname = arg_list[0].strip()
+            proxy = arg_list[1].strip()
+        
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if hostname == '':
+            self.generate_feedback('Error','Hostname is empty')
+            return False
+
+        if hostname.isdigit() == True:
+            hostid = hostname
+        else:
+            try:
+                hostid = self.get_host_id(hostname.strip())
+            
+            except Exception as e:
+                if self.conf.logging == 'ON':
+                    self.logs.logger.error('Hostname %s does not exist',hostname)
+
+                self.generate_feedback('Error','Hostname ' + hostname + ' does not exist')
+                return False
+                
+        try:
+            proxy_id = self.get_proxy_id(proxy)
+
+        except Exception as e:
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Proxy %s does not exist',proxy)
+
+            self.generate_feedback('Error','Proxy ' + proxy + ' does not exist')
+            return False
+        
+
+        #
+        # Checking if host exists
+        #
+
+        try:
+            
+            result = self.zapi.host.exists(hostid=hostid)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Cheking if host (%s) exists',hostname,)
+                
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems checking if host (%s) exists - %s',hostname,e)
+
+            self.generate_feedback('Error','Problems checking if host (' + hostname + ') exists')
+            return False   
+        
+        try:
+            
+            if result == True:
+
+                #
+                # Update proxy used to monitor the host
+                #
+
+                data = self.zapi.host.update(hostid=hostid,
+                                             proxy_hostid=proxy_id)
+                                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('Proxy for hostname (%s) changed to (%s)',hostname,proxy)
+
+                self.generate_feedback('Done','Proxy for hostname (' + hostname + ') changed to (' + str(proxy) + ')')
+
+            else:
+                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('Hostname (%s) does not exist',hostname)
+
+                self.generate_feedback('Done','Hostname (' +hostname + ') does not exist')
+                return False
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems updating proxy for hostname (%s) - %s',hostname,e)
+            
+            self.generate_feedback('Error','Problems updating proxy for hostname (' + hostname + ')')
+            return False 
+
+
+    # ############################################
     # Method show_templates
     # ############################################
 
@@ -4866,12 +4992,250 @@ class zabbixcli(cmd.Cmd):
                     self.logs.logger.error('The file %s does not exists',file)
               
         self.generate_feedback('done','Total files Imported ['+ str(total_files_imported) +'] / Not imported [' + str(total_files_not_imported) +']')
-            
+
+
+
+    # ############################################
+    # Method move_proxy_hosts
+    # ############################################
+    def do_move_proxy_hosts(self,args):
+        '''
+        DESCRIPTION:
+        This command moves all hosts monitored by a proxy (src) to
+        another proxy (dst).
+
+        COMMAND:
+        move_proxy_hosts [proxy_src]
+                         [proxy_dst]
+
+        '''
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                proxy_src = raw_input('# SRC Proxy: ').strip()
+                proxy_dst = raw_input('# DST Proxy: ').strip().lower()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 2:
+            proxy_src = arg_list[0].strip()
+            proxy_dst = arg_list[1].strip()
+        
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+                
+        try:
+            proxy_src_id = self.get_proxy_id(proxy_src)
+
+        except Exception as e:
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('SRC Proxy %s does not exist',proxy_src)
+
+            self.generate_feedback('Error','SRC Proxy ' + proxy_src + ' does not exist')
+            return False
+        
+                
+        try:
+            proxy_dst_id = self.get_proxy_id(proxy_dst)
+
+        except Exception as e:
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('DST Proxy %s does not exist',proxy_dst)
+
+            self.generate_feedback('Error','DST Proxy ' + proxy_dst + ' does not exist')
+            return False
+
+        try:
+            result = self.zapi.proxy.get(output='extend',
+                                         proxyids=proxy_src_id,
+                                         selectHosts=['hostid','name'])
+
+        except Exception as e:
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting host list from SRC proxy %s - %s',proxy_src,e)
+
+            self.generate_feedback('Error','Problems getting host list from SRC proxy %s' + proxy_src)
+            return False
+
+        try:
+
+            hostid_list_tmp =[]
+            hostid_list = []
+
+            for host in result[0]['hosts']:
+                hostid_list_tmp.append('{"hostid":"' + str(host['hostid']) + '"}')
+        
+            hostid_list = ','.join(hostid_list_tmp)
+            query=ast.literal_eval("{\"hosts\":[" + hostid_list + "],\"proxy_hostid\":\"" + proxy_dst_id + "\"}")        
+        
+            result = self.zapi.host.massupdate(**query)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('Hosts from SRC Proxy %s have been moved to DST proxy %s',proxy_src,proxy_dst)
+
+            self.generate_feedback('Error','Hosts from SRC Proxy ' + proxy_src + ' have been moved to DST proxy ' + proxy_dst)
+
+        except Exception as e:
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems moving hosts from SRC Proxy %s to DST proxy %s - %s',proxy_src,proxy_dst,e)
+
+            self.generate_feedback('Error','Problems moving host from SRC Proxy ' + proxy_src + ' to DST proxy ' + proxy_dst)
+            return False
+
+
+    # ############################################
+    # Method load_balance_proxy_hosts
+    # ############################################
+    def do_load_balance_proxy_hosts(self,args):
+        '''
+        DESCRIPTION:
+        This command will spread hosts evenly along a serie of proxies.
+
+        COMMAND:
+        move_proxy_hosts [proxy list]
+
+        [proxy list]:
+        Comma delimited list with the proxies that will share the
+        monitoring task for a group of hosts.
+
+        The group of hosts is obtained from the hosts assigned to the
+        proxies in [proxy list]
+
+        '''
+        proxy_list = []
+        proxyid_list = []
+
+        all_hosts = []
+        host_proxy_relation = {}
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                proxies = raw_input('# Proxies: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 1:
+            proxies = arg_list[0].strip()
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        proxy_list = proxies.split(',')
+
+        for proxy in proxy_list:
+                
+            try:
+                proxyid = self.get_proxy_id(proxy.strip())
+                proxyid_list.append(proxyid)
+
+            except Exception as e:
+                if self.conf.logging == 'ON':
+                    self.logs.logger.error('Proxy [%s] does not exist - %s',proxy.strip(),e)
+
+                self.generate_feedback('Error','Proxy [' + proxy.strip() + '] does not exist')
+                return False
+
+        #
+        # Getting all host monitored by the proxies defined in
+        # proxyid_list. These are the host that will get spreaded
+        # evenly along the defined proxies.
+        #
+    
+        try:
+
+            for proxyid in proxyid_list:
+                result = self.zapi.proxy.get(output='extend',
+                                             proxyids=proxyid,
+                                             selectHosts=['hostid'])
+                
+                for host in result[0]['hosts']:
+                    all_hosts.append(host['hostid'])
+        
+        except Exception as e:
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting affected hosts - %s',e)
+
+            self.generate_feedback('Error','Problems getting affected hosts')
+            return False
+
+        #
+        # Create a dicctionary with hostid:proxyid entries. The
+        # proxyid value will be chosen randomly from the list of
+        # defined proxies.
+        #
+
+        for hostid in all_hosts:
+            host_proxy_relation[hostid] = proxyid_list[random.randint(0,len(proxyid_list) - 1)]
+                
+        try:
+
+            for proxyid in proxyid_list:
+                
+                hostid_list_tmp = []
+                hostid_list = []
+
+                for hostid,proxyid2 in host_proxy_relation.iteritems():
+
+                    if proxyid2 == proxyid:
+                        hostid_list_tmp.append('{"hostid":"' + str(hostid) + '"}')
+                        
+                hostid_list = ','.join(hostid_list_tmp)
+                query=ast.literal_eval("{\"hosts\":[" + hostid_list + "],\"proxy_hostid\":\"" + proxyid + "\"}")        
+
+                result = self.zapi.host.massupdate(**query)
+                
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('Balanced configuration of hosts along defined proxies done')
+
+            self.generate_feedback('Done','Balanced configuration of hosts along defined proxies done')
+
+        except Exception as e:
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems assigning new proxy values for the affected hosts - %s',e)
+
+            self.generate_feedback('Error','Problems assigning new proxy values for the affected hosts')
+            return False
+
+        
 
     # ############################################
     # Method generate_export_filename
     # ############################################
     def generate_export_filename(self,directory_exports,obj_type, obj_id, obj_name):
+
         '''
         Generate filename to export the configuration
         '''
@@ -5658,12 +6022,17 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.proxy.get(filter={"host":proxy})
+            if proxy != '':
 
-            if data != []:
-                proxyid = data[0]['proxyid']
+                data = self.zapi.proxy.get(filter={"host":proxy})
+
+                if data != []:
+                    proxyid = data[0]['proxyid']
+                else:
+                    raise Exception('Could not find proxyID for:' + proxy)
+
             else:
-                raise Exception('Could not find proxyID for:' + proxy)
+                 raise Exception('Cannot get the proxyID of an empty proxy value')
 
         except Exception as e:
             raise e
