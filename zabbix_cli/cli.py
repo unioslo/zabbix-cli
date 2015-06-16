@@ -414,7 +414,6 @@ class zabbixcli(cmd.Cmd):
                                                        'host':host['host'],
                                                        'groups':host['groups'],
                                                        'templates':host['parentTemplates'],
-                                                       'applications':host['applications'],
                                                        'zabbix_agent':self.get_zabbix_agent_status(int(host['available'])),
                                                        'maintenance_status':self.get_maintenance_status(int(host['maintenance_status'])),
                                                        'status':self.get_monitoring_status(int(host['status']))}
@@ -423,11 +422,9 @@ class zabbixcli(cmd.Cmd):
                 
                 hostgroup_list = []
                 template_list = []
-                application_list = []
                 
                 host['groups'].sort()
                 host['parentTemplates'].sort()
-                host['applications'].sort()
                 
                 for hostgroup in host['groups']:
                     hostgroup_list.append(hostgroup['name'])
@@ -435,17 +432,13 @@ class zabbixcli(cmd.Cmd):
                 for template in host['parentTemplates']:
                     template_list.append(template['name'])
                         
-                for application in host['applications']:
-                    application_list.append(application['name'])
-
                 result_columns [result_columns_key] = {'1':host['hostid'],
                                                        '2':host['host'],
                                                        '3':'\n'.join(hostgroup_list),
                                                        '4':'\n'.join(template_list),
-                                                       '5':'\n'.join(application_list),
-                                                       '6':self.get_zabbix_agent_status(int(host['available'])),
-                                                       '7':self.get_maintenance_status(int(host['maintenance_status'])),
-                                                       '8':self.get_monitoring_status(int(host['status']))}
+                                                       '5':self.get_zabbix_agent_status(int(host['available'])),
+                                                       '6':self.get_maintenance_status(int(host['maintenance_status'])),
+                                                       '7':self.get_monitoring_status(int(host['status']))}
 
 
 
@@ -455,8 +448,8 @@ class zabbixcli(cmd.Cmd):
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['HostID','Name','Hostgroups','Templates','Applications','Zabbix agent','Maintenance','Status'],
-                             ['Name','Hostgroups','Templates','Applications'],
+                             ['HostID','Name','Hostgroups','Templates','Zabbix agent','Maintenance','Status'],
+                             ['Name','Hostgroups','Templates'],
                              ['HostID'],
                              ALL)
 
@@ -990,6 +983,7 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_alarms [description]
                     [filters]
+        
 
         [description]
         -------------
