@@ -979,7 +979,9 @@ class zabbixcli(cmd.Cmd):
     def do_show_alarms(self,args):
         '''
         DESCRIPTION:
-        This command shows all active alarms.
+
+        This command shows all active alarms with the last event
+        unacknowledged.
 
         COMMAND:
         show_alarms [description]
@@ -989,7 +991,7 @@ class zabbixcli(cmd.Cmd):
         [description]
         -------------
         Type of alarm description to search for. Leave this parameter
-        empty to search for all descriptions. One can use wildcards.
+        empty to search for all descriptions. One can also use wildcards.
 
 
         [filters]
@@ -1109,7 +1111,8 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            query=ast.literal_eval("{'only_true':1,'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'expandData':'hostname','sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{" + filters + "}," + groupids + "}")
+            query=ast.literal_eval("{'only_true':1,'withLastEventUnacknowledged':3,'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'expandData':'hostname','sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{" + filters + "}," + groupids + "}")
+
 
         except Exception as e:
             
@@ -3524,8 +3527,8 @@ class zabbixcli(cmd.Cmd):
                 return False
 
         elif len(arg_list) == 2:
-            hostname = arg_list[0].strip()
-            monitoring_status = arg_list[1].strip()
+            hostname = arg_list[0].strip().lower()
+            monitoring_status = arg_list[1].strip().lower()
         
         else:
             self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
