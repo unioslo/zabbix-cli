@@ -124,10 +124,27 @@ if __name__ == '__main__':
 
 
         #
+        # Zabbix-CLI in interactive modus with color support
+        # 
+
+        if len(sys.argv) == 2 and sys.argv[1] == '--use-colors':
+
+            if conf.logging == 'ON':
+                logs.logger.debug('Zabbix-CLI running in interactive modus')
+        
+            os.system('clear')
+            
+            cli = zabbixcli(username,password,logs)
+            cli.color_support = 'on'
+
+            cli.cmdloop()
+            cli.zapi.user.logout()
+            
+        #
         # Zabbix-CLI in non-interactive modus(command line)
         # 
         
-        if len(sys.argv) > 1:
+        elif len(sys.argv) > 1:
             
             if conf.logging == 'ON':
                 logs.logger.debug('Zabbix-CLI running in non-interactive modus')
@@ -152,17 +169,28 @@ if __name__ == '__main__':
                 cli.onecmd(' '.join(sys.argv[2:]))
                 cli.zapi.user.logout()
 
+            # Activate color support with PrettyTable output when
+            # running in non-interactive modus
+            
+            elif sys.argv[1] == '--use-colors':
+                
+                cli = zabbixcli(username,password,logs)
+                cli.color_support = 'on'
+                              
+                cli.onecmd(' '.join(sys.argv[2:]))
+                cli.zapi.user.logout()
+
             # PrettyTable output
 
             else:
                 cli = zabbixcli(username,password,logs)
                 cli.onecmd(' '.join(sys.argv[1:]))
                 cli.zapi.user.logout()
-            
+
         #
-        # Zabbix-CLI in interactive modus 
+        # Zabbix-CLI in interactive modus without color support
         # 
-        
+
         elif len(sys.argv) == 1:
 
             if conf.logging == 'ON':

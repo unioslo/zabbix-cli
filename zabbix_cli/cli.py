@@ -79,6 +79,7 @@ class zabbixcli(cmd.Cmd):
         self.api_username = username
         self.api_password = password
         self.output_format = 'table'
+        self.color_support = 'off'
 
         self.system_id = self.conf.system_id
         
@@ -983,7 +984,7 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_alarms [description]
                     [filters]
-        
+                    [hostgroups]
 
         [description]
         -------------
@@ -1005,17 +1006,24 @@ class zabbixcli(cmd.Cmd):
         4 - high; 
         5 - disaster.
 
+        [hostgroups]
+        -----------
+        One can filter the result to alarms from a particular
+        hostgroup or group og hostgroups. One can define several
+        values in a comma separated list.
+ 
 
         e.g.: Get all alarms with priority 'High' and that contain 
               the word 'disk' in the description for the host 'host.example.org'
 
-        show_alarms "*disk*" "'host':'host.example.org','priority':'4'"
-        
+        show_alarms "*disk*" "'host':'host.example.org','priority':'4'" "*"
+
         '''
 
         result_columns = {}
         result_columns_key = 0
         filters = ''
+        hostgroup_list = []
 
         try: 
             arg_list = shlex.split(args)
@@ -1034,6 +1042,7 @@ class zabbixcli(cmd.Cmd):
                 print '--------------------------------------------------------'
                 description = raw_input('# Description []: ').strip()
                 filters = raw_input('# Filter []: ').strip()
+                hostgroups = raw_input('# Hostgroups []: ').strip()
                 print '--------------------------------------------------------'
 
             except Exception as e:
@@ -1045,10 +1054,11 @@ class zabbixcli(cmd.Cmd):
         # Command without filters attributes
         #
 
-        elif len(arg_list) == 2:
+        elif len(arg_list) == 3:
 
             description = arg_list[0].strip()
             filters = arg_list[1].strip()
+            hostgroups = arg_list[2].strip()
 
         #
         # Command with the wrong number of parameters
@@ -1060,18 +1070,53 @@ class zabbixcli(cmd.Cmd):
 
 
         #
+        # Sanity check
+        #
+
+        if filters == '*':
+            filters = ''
+
+        if hostgroups == '' or hostgroups == '*':
+            groupids = ''
+
+        else:
+        
+            #
+            # Generate a list with all hostgroupsIDs from the defined
+            # hostgroups
+            #
+    
+            for hostgroup in hostgroups.split(','):
+                
+                if hostgroup.isdigit() == True:
+                    hostgroup_list.append(hostgroup)
+                else:
+                    try:
+                        hostgroup_list.append(self.get_hostgroup_id(hostgroup))
+                    
+                    except Exception as e:
+            
+                        if self.conf.logging == 'ON':
+                            self.logs.logger.error('Problems getting the hostgroupID for %s - %s',hostgroup,e)
+
+                        self.generate_feedback('Error','Problems getting the hostgroupID for [' + hostgroup + ']')
+                        return False
+                    
+            groupids = "'groupids':['" + "','".join(hostgroup_list) + "']"
+        
+        #
         # Generate query
         #
 
         try:
-            query=ast.literal_eval("{'only_true':1,'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'expandData':'hostname','sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{" + filters + "}}")
+            query=ast.literal_eval("{'only_true':1,'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'expandData':'hostname','sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{" + filters + "}," + groupids + "}")
 
         except Exception as e:
             
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems generating show_host query - %s',e)
+                self.logs.logger.error('Problems generating show_alarms query - %s',e)
 
-            self.generate_feedback('Error','Problems generating show_host query')
+            self.generate_feedback('Error','Problems generating show_alarms query')
             return False
 
 
@@ -1111,11 +1156,41 @@ class zabbixcli(cmd.Cmd):
                                                        'age':str(age)}
             
             else:
+
+                if self.color_support == 'on':
                 
+                    if int(trigger['priority']) == 1:
+                        ansi_code = "\033[38;5;158m" 
+                        ansi_end = "\033[0m"
+
+                    elif int(trigger['priority']) == 2:
+                        ansi_code = "\033[38;5;190m" 
+                        ansi_end = "\033[0m"
+
+                    elif int(trigger['priority']) == 3:
+                        ansi_code = "\033[38;5;208m" 
+                        ansi_end = "\033[0m"
+
+                    elif int(trigger['priority']) == 4:
+                        ansi_code = "\033[38;5;160m" 
+                        ansi_end = "\033[0m"
+
+                    elif int(trigger['priority']) == 5:
+                        ansi_code = "\033[38;5;196m" 
+                        ansi_end = "\033[0m"
+
+                    else:
+                        ansi_code = ''
+                        ansi_end = ''
+
+                else:
+                    ansi_code = ''
+                    ansi_end = ''
+
                 result_columns [result_columns_key] = {'1':trigger['triggerid'],
                                                        '2':trigger['hostname'],
-                                                       '3':trigger['description'],
-                                                       '4':self.get_trigger_severity(int(trigger['priority'])),
+                                                       '3':'\n  '.join(textwrap.wrap("* " + trigger['description'],62)),
+                                                       '4':ansi_code + self.get_trigger_severity(int(trigger['priority'])).upper() + ansi_end,
                                                        '5':str(lastchange),
                                                        '6':str(age)}
 
@@ -5268,10 +5343,10 @@ class zabbixcli(cmd.Cmd):
         trigger_severity = {0:'Not classified',1:'Information',2:'Warning',3:'Average',4:'High',5:'Disaster'}
 
         if code in trigger_severity:
-            return trigger_severity[code] + " (" + str(code) +")"
+            return trigger_severity[code]
 
         else:
-            return 'Unknown' + " (" + str(code) +")"
+            return 'Unknown'
 
 
     # ############################################
@@ -5756,7 +5831,7 @@ class zabbixcli(cmd.Cmd):
 
 
     # ########################################################
-    # Method get_hostgroupid
+    # Method get_hostgroup_id
     # ########################################################
 
     def get_hostgroup_id(self, hostgroup):
