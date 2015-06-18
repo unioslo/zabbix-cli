@@ -138,11 +138,11 @@ class zabbixcli(cmd.Cmd):
         This command show hostgroups information
 
         COMMAND:
-        show_hostgroup [Hostgroup name]
+        show_hostgroup [hostgroup]
 
-        [Hostgroup name]:
+        [hostgroup]:
         ----------------
-        One can search by hostgroup name. One can use wildcards.
+        Hostgroup name. One can use wildcards.
 
         '''
 
@@ -595,31 +595,15 @@ class zabbixcli(cmd.Cmd):
     def do_show_host_inventory(self,args):
         '''
         DESCRIPTION:
-        This command shows hosts inventory as json data
+        This command shows hosts inventory
 
         COMMAND:
-        show_host [HostID / Hostname]
+        show_host_inventory [Hostname]
 
-        [HostID / Hostname]:
-        -------------------
-        One can search by HostID or by Hostname. One can use wildcards 
-        if we search by Hostname
+        [Hostname]:
+        ----------
+        Hostname.
             
-        [Filter]:
-        --------
-        * Zabbix agent: 'available': 0=Unknown  
-                                     1=Available  
-                                     2=Unavailable
-        
-        * Maintenance: 'maintenance_status': 0:No maintenance
-                                             1:In progress
-        
-        * Status: 'status': 0:Monitored
-                            1: Not monitored
-        
-        e.g.: Show all hosts with Zabbix agent: Available AND Status: Monitored:
-              show_host * "'available':'1','status':'0'"
-        
         '''
 
         result_columns = {}
@@ -734,9 +718,8 @@ class zabbixcli(cmd.Cmd):
                     result_columns [result_columns_key] = {'1':host['host'],
                                                            '2':host['inventory']['vendor'],
                                                            '3':host['inventory']['chassis'],
-                                                           '4':host['inventory']['macaddress_a'],
-                                                           '5':host['inventory']['host_networks'],
-                                                           '6':host['inventory']['poc_1_email']}
+                                                           '4':host['inventory']['host_router'],
+                                                           '5':host['inventory']['poc_1_email']}
                 
                 result_columns_key = result_columns_key + 1
 
@@ -744,8 +727,8 @@ class zabbixcli(cmd.Cmd):
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['Hostname','Vendor','Chassis','MAC address','Networks','Contact'],
-                             ['Hostname','Chassis','MAC address','Contact'],
+                             ['Hostname','Vendor','Chassis','Networks','Contact'],
+                             ['Hostname','Chassis','Contact'],
                              [],
                              FRAME)
 
@@ -1010,7 +993,7 @@ class zabbixcli(cmd.Cmd):
 
         [hostgroups]
         -----------
-        One can filter the result to alarms from a particular
+        One can filter the result to get alarms from a particular
         hostgroup or group og hostgroups. One can define several
         values in a comma separated list.
  
@@ -1078,6 +1061,9 @@ class zabbixcli(cmd.Cmd):
         if filters == '*':
             filters = ''
 
+        if filters != '':
+            filters = ',' + filters
+
         if hostgroups == '' or hostgroups == '*':
             groupids = ''
 
@@ -1094,7 +1080,7 @@ class zabbixcli(cmd.Cmd):
                     hostgroup_list.append(hostgroup)
                 else:
                     try:
-                        hostgroup_list.append(self.get_hostgroup_id(hostgroup))
+                        hostgroup_list.append(self.get_hostgroup_id(hostgroup.strip()))
                     
                     except Exception as e:
             
@@ -1111,7 +1097,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            query=ast.literal_eval("{'only_true':1,'withLastEventUnacknowledged':3,'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'expandData':'hostname','sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{" + filters + "}," + groupids + "}")
+            query=ast.literal_eval("{'withLastEventUnacknowledged':3,'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'expandData':'hostname','sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{'value':'1'" + filters + "}," + groupids + "}")
 
 
         except Exception as e:
@@ -1620,12 +1606,12 @@ class zabbixcli(cmd.Cmd):
 
         [username]
         -----------
-        Username
+        Username to remove
 
         [usergroups]
         ------------
-        Usergroup names
-        One can define several values in a comma separated list.
+        Usergroup names from where the username will be removed.  One
+        can define several values in a comma separated list.
 
         '''
 
@@ -2174,21 +2160,32 @@ class zabbixcli(cmd.Cmd):
 
         [hostgroups]
         ------------
-        Hostgroup names or IDs.
-        One can define several values in a comma 
-        separated list.
+        Hostgroup names or IDs. One can define several values in a
+        comma separated list.
+
+        Remember that the host will get added to all hostgroups
+        defined with the parameter 'default_hostgroup' in the
+        zabbix-cli configuration file 'zabbix-cli.conf'
+
+        This command will fail if both 'default_hostgroup' and
+        [hostgroups] are empty.
 
         [proxy]
         -------
         Proxy server used to monitor this host. One can use wildcards
         to define a group of proxy servers from where the system
         will choose a random proxy. 
-        Default: random proxy from all proxies defined in the system.
+
+        If this parameter is not defined, the system will assign a
+        random proxy from the list of all available proxies.
 
         [Status]
         --------
         0:'Monitored' [*]
         1:'Unmonitored'
+
+        All host created with this command will get assigned a
+        default interface of type 'Agent' using the port 10050.
 
         '''
         
@@ -2909,7 +2906,7 @@ class zabbixcli(cmd.Cmd):
 
         [username]
         ----------
-        Username
+        Username to remove
 
         '''
         
@@ -3238,11 +3235,21 @@ class zabbixcli(cmd.Cmd):
     def do_define_global_macro(self, args):
         '''
         DESCRIPTION:
-        This command defines a global macro
+        This command defines a global Zabbix macro
     
         COMMAND:
         define_global_macro [macro name]
                             [macro value]
+
+        [macro name]
+        ------------
+        Name of the zabbix macro. The system will format this value to
+        use the macro format definition needed by Zabbix. 
+        e.g. site_url will be converted to ${SITE_URL}
+
+        [macro value]
+        -------------
+        Default value of the macro
 
         '''
 
@@ -3350,18 +3357,33 @@ class zabbixcli(cmd.Cmd):
 
 
     # ############################################
-    # Method do_define_host_macro
+    # Method do_define_host_usermacro
     # ############################################
 
-    def do_define_host_macro(self, args):
+    def do_define_host_usermacro(self, args):
         '''
         DESCRIPTION:
-        This command defines a host macro
+        This command defines a host usermacro
     
         COMMAND:
-        defines_host_macro [hostname] 
-                           [macro name]
-                           [macro value]
+        defines_host_usermacro [hostname] 
+                               [macro name]
+                               [macro value]
+
+
+        [hostname]
+        ----------
+        Hostname that will get the usermacro locally defined.
+
+        [macro name]
+        ------------
+        Name of the zabbix macro. The system will format this value to
+        use the macro format definition needed by Zabbix. 
+        e.g. site_url will be converted to ${SITE_URL}
+
+        [macro value]
+        -------------
+        Default value of the macro
 
         '''
 
@@ -3503,7 +3525,11 @@ class zabbixcli(cmd.Cmd):
     
         COMMAND:
         defines_host_monitoring_status [hostname] 
-                                       [ON/OFF]
+                                       [on/off]
+
+        [hostname]
+        ----------
+        Hostname that will get the monitoring status updated.
 
         '''
 
@@ -3631,6 +3657,14 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         update_host_proxy [hostname] 
                           [proxy]
+
+        [hostname]
+        ----------
+        Hostname to update
+
+        [proxy]
+        -------
+        Zabbix proxy server that will monitor [hostname]
 
         '''
 
@@ -4054,10 +4088,17 @@ class zabbixcli(cmd.Cmd):
     def do_show_usermacro_host_list(self, args):
         '''
         DESCRITION:
-        This command shows all host with a defined macro
+        This command shows all host with a defined usermacro
 
         COMMAND:
-        show_usermacro_host_list [macro name]
+        show_usermacro_host_list [usermacro]
+
+        [usermacro]
+        -----------
+        Usermacro name. The system will format this value to use the
+        macro format definition needed by Zabbix.  e.g. site_url will be
+        converted to ${SITE_URL}
+
         '''
 
         result_columns = {}
@@ -4156,7 +4197,7 @@ class zabbixcli(cmd.Cmd):
 
 
     # ########################################
-    # do_show_usermacro_templatelist 
+    # do_show_usermacro_template_list 
     # ########################################
     def do_show_usermacro_template_list(self, args):
         '''
@@ -4164,7 +4205,14 @@ class zabbixcli(cmd.Cmd):
         This command shows all templates with a defined macro
 
         COMMAND:
-        show_usermacro_template_list [macro name]
+        show_usermacro_template_list [usermacro]
+
+        [usermacro]
+        -----------
+        Usermacro name. The system will format this value to use the
+        macro format definition needed by Zabbix.  e.g. site_url will be
+        converted to ${SITE_URL}
+
         '''
 
         result_columns = {}
@@ -5080,6 +5128,14 @@ class zabbixcli(cmd.Cmd):
         move_proxy_hosts [proxy_src]
                          [proxy_dst]
 
+        [proxy_src]
+        -----------
+        Source proxy server. 
+
+        [proxy_dst]
+        -----------
+        Destination proxy server.
+
         '''
 
         try:
@@ -5181,7 +5237,7 @@ class zabbixcli(cmd.Cmd):
         This command will spread hosts evenly along a serie of proxies.
 
         COMMAND:
-        move_proxy_hosts [proxy list]
+        load_balance_proxy_hosts [proxy list]
 
         [proxy list]:
         Comma delimited list with the proxies that will share the
@@ -6172,14 +6228,12 @@ class zabbixcli(cmd.Cmd):
         print '''
         Shortcuts in Zabbix-CLI:
 
-        \h [COMMAND] - Help on syntax of Zabbix-CLI commands
-        \? [COMMAND] - Help on syntax of Zabbix-CLI commands
-        
         \s - display history 
         \q - quit Zabbix-CLI shell
 
-        \! [COMMAND] - Execute command in shell
-          
+        \! [COMMAND] - Execute a command in shell
+        !  [COMMAND] - Execute a command in shell
+
         '''
 
 
@@ -6194,7 +6248,13 @@ class zabbixcli(cmd.Cmd):
         
         print '''
         The latest information and versions of Zabbix-CLI can be obtained 
-        from: http://
+        from: https://github.com/usit-gd/zabbix-cli
+
+        The Zabbix-CLI documentation is available from:
+        https://github.com/usit-gd/zabbix-cli/blob/master/docs/manual.rst
+
+        Zabbix documentation:
+        http://www.zabbix.com/documentation.php
           
         '''
 

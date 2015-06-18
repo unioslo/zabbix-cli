@@ -3,19 +3,11 @@ Zabbix-CLI
 =====================================
 
 |
-| Version-1.1.0
-|
-| Authors: 
-| .....
-| .....
-|
-| .....
-| .....
+| Version-1.3.0
 |
 | Rafael Martinez Guerrero (University of Oslo)
 | E-mail: rafael@postgresql.org.es
 | 
-|
 | Source: https://github.com/usit-gd/zabbix-cli
 |
 
@@ -48,18 +40,18 @@ System requirements
 
 * Linux/Unix
 * Python 2.6 or 2.7
-* Python modules: ldap, request
+* Python modules: request
      
 Before you install Zabbix-CLI you have to install the software needed
 by this tool
 
 In systems using ``yum``, e.g. Centos, RHEL, ...::
 
-  yum install python-ldap python-requests
+  yum install python-requests
 
 In system using ``apt-get``, e.g. Debian, Ubuntu, ...::
 
-  apt-get install python-ldap python-requests
+  apt-get install python-requests
 
 If you are going to install from source, you need to install also
 these packages: ``python-dev(el), python-setuptools, git, make, python-docutils``
@@ -113,16 +105,23 @@ file in this order:
 * ``/etc/zabbix-cli.conf``
 
 A default configuration file can be found in ``etc/zabbix-cli.conf``
-in the source code. Use it to create your configuration file.
+in the source code. 
+
+Run this command to create your own
+``$HOME/.zabbix-cli/zabbix-cli.conf`` file.::
+
+  # zabbix-cli-init <zabbix API url>
 
 The parameter ``zabbix_api_url`` must be defined in the configuration
 file. Without this parameter, ``zabbix-cli`` will not know where to
-connect.
+connect. This parameter will be defined automatically if you have run
+the command ``zabbix-cli-init``.
 
-Remember to define the ``log_file`` parameter with a valid value if
-you activate logging with ``logging=ON``. The user running
-``zabbix-cli`` must have read/write access to the log file defined
-with ``log_file``.
+Remember to activate logging with ``logging=ON`` if you want to
+activate logging. The user running ``zabbix-cli`` must have read/write
+access to the log file defined with ``log_file``. This parameter will
+be defined automatically with an OFF value if you have run the command
+``zabbix-cli-init``.
 
 
 Authentication file
@@ -162,15 +161,29 @@ The Zabbix-CLI interactive shell can be started by running the program
    
    Documented commands (type help <topic>):
    ========================================
-   EOF                    quit                        show_hostgroups          
-   add_host_to_hostgroup  remove_host                 show_hosts               
-   clear                  remove_host_from_hostgroup  show_items               
-   create_host            shell                       show_templates           
-   create_hostgroup       show_alarms                 show_triggers            
-   create_user            show_global_macros          show_usergroups          
-   create_usergroup       show_history                show_users               
-   link_template_to_host  show_host                   unlink_template_from_host
-   
+   EOF                            remove_user_from_usergroup    update_host_proxy
+   add_host_to_hostgroup          shell                       
+   add_user_to_usergroup          show_alarms                 
+   add_usergroup_permissions      show_global_macros          
+   clear                          show_history                
+   create_host                    show_host                   
+   create_host_interface          show_host_inventory         
+   create_hostgroup               show_host_usermacros        
+   create_user                    show_hostgroup              
+   create_usergroup               show_hostgroups             
+   define_global_macro            show_hosts                  
+   define_host_usermacro          show_items                  
+   define_host_monitoring_status  show_template               
+   export_configuration           show_templates              
+   import_configuration           show_triggers               
+   link_template_to_host          show_usergroup              
+   load_balance_proxy_hosts       show_usergroups             
+   move_proxy_hosts               show_usermacro_host_list    
+   quit                           show_usermacro_template_list
+   remove_host                    show_users                  
+   remove_host_from_hostgroup     unlink_template_from_host   
+   remove_user                    update_host_inventory       
+
    Miscellaneous help topics:
    ==========================
    shortcuts  support
@@ -203,9 +216,9 @@ scripts or other programs .e.g.
    |      14 | Zabbix core               | System default (0) |  Enable (0) |
    +---------+---------------------------+--------------------+-------------+
 
-You can also use the parameter ``--use-csv-format`` when running
-``zabbix-cli`` in non-interactive modus to generate an output in CSV
-format.
+One can also use the parameters ``--use-csv-format`` or
+``--use-json-format`` when running ``zabbix-cli`` in non-interactive
+modus to generate an output in CSV or JSON format.
 
 ::
 
@@ -223,7 +236,7 @@ format.
    "14","Zabbix core","System default (0)","Enable (0)"
 
 
-Remember that you have to use ``""`` or escape some characters if
+Remember that you have to use ``""`` and escape some characters if
 running commands in non-interactive modus with parameters that have spaces
 or special characters for the shell.e.g.
 
@@ -262,6 +275,11 @@ or special characters for the shell.e.g.
    +--------+----------------------+-------------------------+-----------------------------------+--------------------+-----------------+-----------------+---------------+
 
 
+The parameter ``--use-colors`` in non-interactive and interactive
+modus will activate the use of colors when showing alarms with the
+command show_alarms.
+
+
 add_host_to_hostgroup
 ---------------------
 
@@ -279,22 +297,6 @@ Parameters:
 
 * **[hostgroups]:** Hostgroup name or zabbix-hostgroupID. One can define several
   values in a comma separated list.
- 
-This command can be run only with parameters. e.g.:
-
-::
-
-   [zabbix-CLI]$ add_host_to_hostgroup
-   --------------------------------------------------------
-   # Hostnames: test.example.net
-   # Hostgroups: Database servers
-   --------------------------------------------------------
-   
-   [Done]: Hosts test.example.net added to these groups: Database servers
-   
-
-   [user@server]# zabbix-cli --use-csv-format add_host_to_hostgroup test.example.net \"Database servers,Linux servers\"
-   "Done","Hosts test.example.net added to these groups: Database servers,Linux servers"
 
 
 add_user_to_usergroup
@@ -304,36 +306,45 @@ This command adds one/several users to one/several usergroups
 
 ::
 
-   add_host_to_hostgroup [usernames]
+   add_user_to_hostgroup [usernames]
                          [usergroups]
 
 Parameters:
 
-* **[usernames]:** Usrname or zabbix-userID. One can define several
+* **[usernames]:** Username or zabbix-userID. One can define several
   values in a comma separated list.
 
-* **[usergroups]:** usergroup name or zabbix-usergroupID. One can define several
+* **[usergroups]:** Usergroup name or zabbix-usergroupID. One can define several
   values in a comma separated list.
  
-This command can be run only with parameters. e.g.:
+   
+add_usergroup_permissions
+-------------------------
 
+This command adds a permission for an usergroup on a hostgroup.
+
+If the usergroup already have permissions on the hostgroup, nothing
+will be changed.
+    
 ::
-
-   [zabbix-CLI]$ add_user_to_usergroup
-   --------------------------------------------------------
-   # Usernames: AAA-user
-   # Usergroups: DBA
-   --------------------------------------------------------
    
-   [Done]: Users AAA-user added to these usergroups: DBA
+   define_usergroup_permissions [usergroup]
+                                [hostgroups]
+                                [permission code]
 
-   [user@server]# zabbix-cli --use-json-format add_user_to_usergroup \"AAA-user\" \"DBA\"
-   {
-   "message": "Users AAA-user added to these usergroups: DBA", 
-   "return_code": "done"
-   }
+Parameters:
 
-   
+* **usergroup:** Usergroup that will get a permission on a hostgroup
+* **hostgroups:** Hostgroup names where the permission will apply. One
+  can define several values in a comma separated list.
+
+* **permission:**
+
+  - **deny**: Deny [usergroup] all access to [hostgroups]
+  - **ro**: Give [usergroup] read access to [hostgroups]
+  - **rw**: Give [usergroup] read and write access to [hostgroups]
+
+
 clear
 -----
 
@@ -343,18 +354,6 @@ This command clears the screen and shows the welcome banner
 
    clear
 
-This command can be run only without parameters. e.g.:
-
-::
-
-   [zabbix-CLI]$ clear
-
-   #############################################################
-   Welcome to the Zabbix command-line interface (v.Unknown)
-   #############################################################
-   Type help or \? to list commands.
-   
-   [zabbix-CLI]$ 
 
 create_host
 -----------
@@ -374,6 +373,13 @@ Parameters:
 * **[hostgroups]:** Hostgroup name or zabbix-hostgroupID to add the
   host to. One can define several values in a comma separated list.
 
+  Remember that the host will get added per default to all hostgroups
+  defined with the parameter ``default_hostgroup`` in the zabbix-cli
+  configuration file ``zabbix-cli.conf``
+
+  This command will fail if both ``default_hostgroup`` and
+  [hostgroups] are empty.
+
 * **[proxy]:** Proxy server used to monitor this host. One can use
   wildcards to define a group of proxy servers from where the system
   will choose a random proxy. If this parameter is not defined, the
@@ -388,25 +394,6 @@ Parameters:
 
 All host created with this function will get assigned a default
 interface of type 'Agent' using the port 10050.
-
-The default value for a parameter is shown between brackets []. If the
-user does not define any value, the default value will be used. This
-command can be run with or without parameters. e.g.:
-
-::
-
-   [zabbix-CLI]$ create_host
-   --------------------------------------------------------
-   # Hostname: test.example.net
-   # Hostgroups: 8
-   # Proxy [10106]: 
-   # Status [0]: 
-   --------------------------------------------------------
-   
-   [Done]: Host (test.example.net) with ID: 10514 created
-
-   [user@server]# zabbix-cli --use-csv-format create_host test.example.net 8 \"'*.example.net'\" \"''\"
-   "Done","Host (test.example.net) with ID: 10515 created"
 
 
 create_host_interface
@@ -451,25 +438,19 @@ user does not define any value or a wrong value, the default value
 will be used. This command can be run with or without
 parameters. e.g.:
 
+
+create_hostgroup
+----------------
+
+This command creates a hostgroup
+
 ::
 
-   [zabbix-cli]$ create_host_interface
-   --------------------------------------------------------
-   # Hostname: proxy.example.net
-   # Interface connection[0]: 
-   # Interface type[2]: 
-   # Interface port[161]: 
-   # Interface IP[]: 
-   # Default interface[0]: 
-   --------------------------------------------------------
+  create_hostgroup [group name]
 
-   [Done]: Host interface with ID: 1132 created on proxy.example.net
+Parameters:
 
-
-   [zabbix-cli]$ create_host_interface proxy.example.net 0 2 161 "" 1
-
-   [Done]: Host interface with ID: 1133 created on proxy.example.net
-
+* **[group name]:** Name of the hostgroup
 
 
 create_user
@@ -510,32 +491,14 @@ Parameters:
   the session will never expire. Default: 86400
 
 * **[groups]:** User groups to add the user to. 
+
+  Remember that the user will get added per default to all usergroups
+  defined with the parameter ``default_usergroup`` in the zabbix-cli
+  configuration file ``zabbix-cli.conf``
+
+  This command will fail if both ``default_usergroup`` and
+  [groups] are empty.  
  
-The default value for a parameter is shown between brackets []. If the
-user does not define any value, the default value will be used. This
-command can be run with or without parameters. e.g.:
-
-::
-
-   [zabbix-CLI]$ create_user
-   --------------------------------------------------------
-   # Alias []: user-test
-   # Name []: Test
-   # Surname []: User
-   # Password []: 
-   # User type [1]: 
-   # Autologin [0]: 
-   # Autologout [86400]: 
-   # Usergroups []: 16
-   --------------------------------------------------------
-   
-   [Done]: User (user-test) with ID: 19 created.
-
-
-   [zabbix-CLI]$ create_user user-test2 Test User2 "" "" "" 600 16
-   
-   [Done]: User (user-test2) with ID: 20 created.
-
 
 create_usergroup
 ----------------
@@ -564,39 +527,63 @@ Parameters:
   - 0 - (default) enabled; 
   - 1 - disabled.
  
-The default value for a parameter is shown between brackets []. If the
-user does not define any value, the default value will be used. This
-command can be run with or without parameters. e.g.:
+
+define_global_macro
+-------------------
+
+This command defines a global macro
 
 ::
 
-   [zabbix-CLI]$ create_usergroup
-   --------------------------------------------------------
-   # Name: Testgroup
-   # GUI access [0]: 
-   # Status [0]: 
-   --------------------------------------------------------
-   
-   [Done]: Usergroup (Testgroup) with ID: 51 created.
-
-
-   [zabbix-CLI]$ create_usergroup "Test group" "" ""
-   [Done]: Usergroup (test group) with ID: 53 created.
-
-
-create_hostgroup
-----------------
-
-This command creates a hostgroup
-
-::
-
-  create_hostgroup [group name]
-
+   define_global_macro [macro name]
+                       [macro value]
 
 Parameters:
 
-* **[group name]:** Name of the hostgroup
+* **macro name:** Name of the zabbix macro. The system will format
+  this value to use the macro format definition needed by Zabbix.
+  e.g. site_url will be converted to ${SITE_URL}
+
+* **macro value:** Default value of the macro
+
+
+define_host_usermacro
+---------------------
+
+This command defines a host usermacro.
+    
+::
+  
+   defines_host_usermacro [hostname] 
+                          [macro name]
+                          [macro value]
+
+Parameters:
+
+* **hostname:** Hostname that will get the macro locally defined.
+
+* **macro name:** Name of the zabbix macro. The system will format
+  this value to use the macro format definition needed by
+  Zabbix.  e.g. site_url will be converted to ${SITE_URL}
+
+* **macro value:** Default value of the macro
+
+
+define_host_monitoring_status
+-----------------------------
+
+This command defines the monitoring status of a host. A monitor status
+of 'Not monitored (off)' will stop all monitoring of the host and a
+'Monitored (on)' value will start monitoring. 
+    
+::
+
+   defines_host_monitoring_status [hostname] 
+                                  [on/off]
+
+Parameteres:
+
+* **hostname:** Hostname that will get the monitoring status updated.
 
 
 export_configuration
@@ -631,28 +618,6 @@ Parameters:
   object type group. This parameter will be defined automatically as
   #all# if [object type] == #all#
  
-This command can be run only with parameters. e.g.:
-
-::
-
-   [zabbix-CLI]$ export_configuration
-   --------------------------------------------------------
-   # Directory [/root/zabbix_exports]: 
-   # Object type [#all#]: hosts
-   # Object name [#all#]: profil.example.net
-   --------------------------------------------------------
-   
-   [Done]: Export file/s for object type [hosts] and object name [test.example.net] generated
-
-   [zabbix-CLI]$ export_configuration
-   --------------------------------------------------------
-   # Directory [/root/zabbix_exports]: 
-   # Object type [#all#]: hosts
-   # Object name [#all#]: #All#
-   --------------------------------------------------------
-
-   [Done]: Export file/s for object type [hosts] and object name [#all#] generated
-
 
 import_configuration
 --------------------
@@ -688,33 +653,6 @@ Parameters:
   - 0 - Dry run deactivated
   - 1 (default) - Dry run activated
 
-This command can be run only with parameters. e.g.:
-
-::
-
-   [zabbix-CLI]$ import_configuration
-   --------------------------------------------------------
-   # Import file []: ~/zabbix_exports/hosts/zabbix_export_hosts_test.example.net_10395_2014-11-05T040209.json
-   # Dry run [1]: 
-   --------------------------------------------------------
-
-   # -----------------------------------------------
-   # Dry run: ON
-   # These files would be imported with dry run: OFF
-   # -----------------------------------------------
-   # File: /root/zabbix_exports/hosts/zabbix_export_hosts_test.example.net_10395_2014-11-05T040209.json
-   
-   [Done]: Total files Imported [0] / Not imported [0]
-
-
-   [zabbix-CLI]$ import_configuration
-   --------------------------------------------------------
-   # Import file []: ~/zabbix_exports/hosts/zabbix_export_hosts_test.example.net_10395_2014-11-05T040209.json
-   # Dry run [1]: 0
-   --------------------------------------------------------
-   
-   [Done]: Total files Imported [1] / Not imported [0]
-
 
 link_template_to_host
 ---------------------
@@ -734,21 +672,49 @@ Parameters:
 * **[hostnames]:** Hostname or zabbix-hostID. One can define several
   values in a comma separated list.
  
-This command can be run only with parameters. e.g.:
+
+load_balance_proxy_hosts
+------------------------
+
+This command will spread hosts evenly along a serie of proxies.
 
 ::
 
-   [zabbix-CLI]$ link_template_to_host
-   --------------------------------------------------------
-   # Templates: Template App FTP Service
-   # Hostnames: 10108,test01.example.net
-   --------------------------------------------------------
-   
-   [Done]: Templates Template App FTP Service linked to these hosts: 10108,test01.example.net
+   load_balance_proxy_hosts [proxy list]
+
+Parameters:
+
+* **proxy list:** Comma delimited list with the proxies that will
+  share the monitoring task for a group of hosts.
+
+  The group of hosts is obtained from the hosts assigned to the
+  proxies in [proxy list]
+
+e.g. If proxy-1 is monitoring 1500 hosts and proxy-2 is monitoring 500
+hosts, we can run this command to redistribute the 2000 hosts between
+the two proxies. Every proxy will get assigned automatically ca 1000
+hosts from the list of 2000 host::
+  
+  load_balance_proxy_host proxy-1,proxy-2
 
 
-   [user@server]# zabbix-cli --use-csv-format link_template_to_host 10103 10108
-   "Done","Templates 10103 linked to these hosts: 10108"
+move_proxy_hosts
+-----------------
+
+This command moves all hosts monitored by a proxy (src) to another
+proxy (dst).
+
+::
+
+   move_proxy_hosts [proxy_src]
+                    [proxy_dst]
+
+
+Parameters:
+
+* **proxy_src:** Source proxy server. 
+
+* **proxy_dst:** Destination proxy server.
 
 
 quit
@@ -761,16 +727,6 @@ This command quits/terminates the zabbix-CLI shell.
   quit
 
 A shortcut to this command is ``\q``.
-
-This command can be run only without parameters. e.g.:
-
-::
-
-   [zabbix-CLI]$ quit
-   Done, thank you for using Zabbix-CLI
-
-   [zabbix-CLI]$ \q
-   Done, thank you for using Zabbix-CLI
 
 
 remove_host
@@ -786,16 +742,6 @@ Parameters:
 
 * **[hostname]:** Hostname or zabbix-hostID.
  
-This command can be run only with parameters. e.g.:
-
-::
-
-   [zabbix-CLI]$ remove_host test.example.net
-   [Done]: Hosts (test.example.net) with IDs: 10522 removed
-
-   [user@server]# zabbix-cli --use-csv-format remove_host test.example.net
-   "Done","Hosts (test.example.net) with IDs: 10523 removed"
-
 
 remove_host_from_hostgroup
 --------------------------
@@ -815,21 +761,36 @@ Parameters:
 * **[hostgroups]:** Hostgroup name or zabbix-hostgroupID. One can define several
   values in a comma separated list.
  
-This command can be run only with parameters. e.g.:
+
+remove_user
+------------
+
+This command removes an user.
 
 ::
 
-   [zabbix-CLI]$ remove_host_from_hostgroup
-   --------------------------------------------------------
-   # Hostnames: test.example.net
-   # Hostgroups: Oracle servers,17,20,24,28,foor,54
-   --------------------------------------------------------
-   
-   [Done]: Hosts test.example.net removed from these groups: Oracle servers,17,20,24,28,foor,54
-   
-   
-   [user@server]# zabbix-cli --use-csv-format remove_host_from_hostgroup \"test.example.net,10110\" \"FTP servers,48\"
-   "Done","Hosts test.example.net,10110 removed from these groups: FTP servers,48"
+   remove_user [username]
+
+Parameters:
+
+* **username:** Username to remove.
+
+
+remove_user_from_usergroup
+--------------------------
+
+This command removes an user from one/several usergroups
+
+::
+  
+   add_user_to_usergroup [username]
+                         [usergroups]
+
+Parameters:
+
+* **username:** Username to remove
+* **usergroups:** Usergroup names from where the username will be
+  removed. One can define several values in a comma separated list.
 
 
 shell
@@ -860,6 +821,45 @@ of ``shell``. This command can be run only with parameters. e.g.:
    -rw-rw-r--. 1 vagrant vagrant 35121 May 30 10:04 LICENSE
    drwxrwxr-x. 4 vagrant vagrant  4096 May 30 10:03 vagrant
 
+show_alarms
+-----------
+
+This command shows all active alarms with the last event
+unacknowledged.
+
+::
+   show_alarms [description]
+               [filters]
+               [hostgroups]
+
+Parameters:
+
+* **description:** Type of alarm description to search for. Leave this
+  parameter empty to search for all descriptions. One can also
+  use wildcards.
+
+* **filters:** One can filter the result by host and priority. No
+  wildcards can be used.
+
+  Priority values:
+
+  - 0 - (default) not classified; 
+  - 1 - information; 
+  - 2 - warning; 
+  - 3 - average; 
+  - 4 - high; 
+  - 5 - disaster.
+
+* **hostgroups:** One can filter the result to get alarms from a
+  particular hostgroup or group og hostgroups. One can define
+  several values in a comma separated list.
+ 
+e.g.: Get all alarms with priority 'High' that contain 
+the word 'disk' in t\he description from all hostgroups in the system::
+
+  show_alarms "*disk*" "'priority':'4'" "*"
+
+
 
 show_global_macros
 ------------------
@@ -869,18 +869,6 @@ This command shows all global macros
 ::
 
    show_global_macros
-
-This command can be run only without parameters. e.g.:
-
-::
-
-   [zabbix-CLI]$ show_global_macros
-   +---------+-------------------+--------+
-   | MacroID | Name              | Value  |
-   +---------+-------------------+--------+
-   |       2 | {$SNMP_COMMUNITY} | public |
-   +---------+-------------------+--------+
-
 
 
 show_history
@@ -898,58 +886,87 @@ Line-Edit Mode Command History Searching* to get previous commands
 containing a string. Hit ``[CTRL]+[r]`` in the zabbix-CLI shell followed by
 the search string you are trying to find in the history.
 
-This command can be run only without parameters. e.g.:
+
+show_host
+---------
+
+This command shows hosts information
 
 ::
 
-   [pgbackman]$ show_history
+   show_host [HostID / Hostname]
+             [Filter]
 
-   [0]: help
-   [1]: help show_history
-   [2]: show_history
-   [3]: help
-   [4]: show_history
+Parameters:
+
+* **HostID / Hostname:** One can search by HostID or by Hostname. One
+  can use wildcards if we search by Hostname
+            
+* **Filter:** 
+
+  - Zabbix agent: 'available': (0=Unknown, 1=Available, 2=Unavailable)
+  - Maintenance: 'maintenance_status': (0:No maintenance, 1:In progress)
+  - Status: 'status': (0:Monitored,1: Not monitored)
+    
+e.g.: Show all hosts with Zabbix agent: Available AND Status: Monitored:
+
+::
+
+   show_host * "'available':'1','status':'0'"
+
+show_host_inventory
+--------------------
+
+This command shows hosts inventory
+
+::
+
+   show_host_inventory [Hostname]
+
+Parameters:
+
+* **Hostname:** Hostname.
+
+This command will return all inventory information in json format when
+running zabbix-cli in non-interactive modus.
+
+If zabbix-cli is running in interactive modus, only a few attributes
+will be shown (hostname, vendor,chassis,gateway,contact address)
+
+
+show_hostgroup
+--------------
+
+This command show hostgroups information
+
+::
+  
+   show_hostgroup [hostgroup]
+
+Parameters:
+
+* **hostgroup:** Hostgroup name. One can use wildcards.
 
 
 show_hostgroups
 ---------------
 
-This command shows host groups information.
+This command shows all hostgroups defined in the system.
 
 ::
 
    show_hostgroups
 
-This command can be run only without parameters. e.g.:
+
+show_hosts
+---------
+
+This command shows all hosts defined in the system.
 
 ::
 
-   [zabbix-CLI]$ show_hostgroups
-   +---------+----------------------+-----------+------------------+
-   | GroupID | Name                 |    Flag   |       Type       |
-   +---------+----------------------+-----------+------------------+
-   |       8 | Database servers     | Plain (0) | Not internal (0) |
-   |       5 | Discovered hosts     | Plain (0) |   Internal (1)   |
-   |      20 | FTP servers          | Plain (0) | Not internal (0) |
-   |       7 | Hypervisors          | Plain (0) | Not internal (0) |
-   |      15 | Laptops              | Plain (0) | Not internal (0) |
-   |       2 | Linux servers        | Plain (0) | Not internal (0) |
-   |      16 | Log managing servers | Plain (0) | Not internal (0) |
-   |      17 | MySQL servers        | Plain (0) | Not internal (0) |
-   |      14 | Oracle servers       | Plain (0) | Not internal (0) |
-   |      13 | PostgreSQL servers   | Plain (0) | Not internal (0) |
-   |      22 | Printers             | Plain (0) | Not internal (0) |
-   |      10 | Routers              | Plain (0) | Not internal (0) |
-   |      21 | ssh servers          | Plain (0) | Not internal (0) |
-   |      11 | Switches             | Plain (0) | Not internal (0) |
-   |       1 | Templates            | Plain (0) | Not internal (0) |
-   |      23 | Template test        | Plain (0) | Not internal (0) |
-   |       6 | Virtual machines     | Plain (0) | Not internal (0) |
-   |      18 | Webmail servers      | Plain (0) | Not internal (0) |
-   |      12 | Web servers          | Plain (0) | Not internal (0) |
-   |       9 | Windows servers      | Plain (0) | Not internal (0) |
-   |       4 | Zabbix servers       | Plain (0) | Not internal (0) |
-   +---------+----------------------+-----------+------------------+
+   show_hosts
+
 
 show_items
 ----------
@@ -964,61 +981,30 @@ Parameters:
 
 * **[templates]:** Template or zabbix-templateID.
  
-This command can be run only with parameters. e.g.:
+
+show_template
+-------------
+
+This command show templates information
+
+::
+   
+   show_template [Template name]
+
+Parameters:
+
+* **Template name:** One can search by template name. We can use
+  wildcards.
+
+
+show_templates
+--------------
+
+This command shows all templates defined in the system.
 
 ::
 
-   [zabbix-CLI]$ show_items "Template OS Linux"
-   +--------+------------------------------------------+-------------------------------+------------------+----------+---------+--------------------------------------------------------------+
-   | ItemID | Name                                     | Key                           |       Type       | Interval | History | Description                                                  |
-   +--------+------------------------------------------+-------------------------------+------------------+----------+---------+--------------------------------------------------------------+
-   |  10020 | Agent ping                               | agent.ping                    | Zabbix agent (0) |    60    |    7    | The agent always returns 1 for this item. It could be used   |
-   |        |                                          |                               |                  |          |         | in combination with nodata() for availability check.         |
-   |  22181 | Available memory                         | vm.memory.size[available]     | Zabbix agent (0) |    60    |    7    | Available memory is defined as free+cached+buffers memory.   |
-   |  10019 | Checksum of $1                           | vfs.file.cksum[/etc/passwd]   | Zabbix agent (0) |   3600   |    7    |                                                              |
-   |  22680 | Context switches per second              | system.cpu.switches           | Zabbix agent (0) |    60    |    7    |                                                              |
-   |  22668 | CPU $2 time                              | system.cpu.util[,softirq]     | Zabbix agent (0) |    60    |    7    | The amount of time the CPU has been servicing software       |
-   |        |                                          |                               |                  |          |         | interrupts.                                                  |
-   |  22665 | CPU $2 time                              | system.cpu.util[,steal]       | Zabbix agent (0) |    60    |    7    | The amount of CPU 'stolen' from this virtual machine by the  |
-   |        |                                          |                               |                  |          |         | hypervisor for other tasks (such as running another virtual  |
-   |        |                                          |                               |                  |          |         | machine).                                                    |
-   |  17354 | CPU $2 time                              | system.cpu.util[,idle]        | Zabbix agent (0) |    60    |    7    | The time the CPU has spent doing nothing.                    |
-   |  22671 | CPU $2 time                              | system.cpu.util[,interrupt]   | Zabbix agent (0) |    60    |    7    | The amount of time the CPU has been servicing hardware       |
-   |        |                                          |                               |                  |          |         | interrupts.                                                  |
-   |  17362 | CPU $2 time                              | system.cpu.util[,iowait]      | Zabbix agent (0) |    60    |    7    | Amount of time the CPU has been waiting for I/O to complete. |
-   |  17358 | CPU $2 time                              | system.cpu.util[,nice]        | Zabbix agent (0) |    60    |    7    | The time the CPU has spent running users' processes that     |
-   |        |                                          |                               |                  |          |         | have been niced.                                             |
-   |  17356 | CPU $2 time                              | system.cpu.util[,user]        | Zabbix agent (0) |    60    |    7    | The time the CPU has spent running users' processes that are |
-   |        |                                          |                               |                  |          |         | not niced.                                                   |
-   |  17360 | CPU $2 time                              | system.cpu.util[,system]      | Zabbix agent (0) |    60    |    7    | The time the CPU has spent running the kernel and its        |
-   |        |                                          |                               |                  |          |         | processes.                                                   |
-   |  10014 | Free swap space                          | system.swap.size[,free]       | Zabbix agent (0) |    60    |    7    |                                                              |
-   |  17350 | Free swap space in %                     | system.swap.size[,pfree]      | Zabbix agent (0) |    60    |    7    |                                                              |
-   |  17318 | Host boot time                           | system.boottime               | Zabbix agent (0) |   600    |    7    |                                                              |
-   |  17352 | Host local time                          | system.localtime              | Zabbix agent (0) |    60    |    7    |                                                              |
-   |  10057 | Host name                                | system.hostname               | Zabbix agent (0) |   3600   |    7    | System host name.                                            |
-   |  23319 | Host name of zabbix_agentd running       | agent.hostname                | Zabbix agent (0) |   3600   |    7    |                                                              |
-   |  22683 | Interrupts per second                    | system.cpu.intr               | Zabbix agent (0) |    60    |    7    |                                                              |
-   |  10056 | Maximum number of opened files           | kernel.maxfiles               | Zabbix agent (0) |   3600   |    7    | It could be increased by using sysctrl utility or modifying  |
-   |        |                                          |                               |                  |          |         | file /etc/sysctl.conf.                                       |
-   |  10055 | Maximum number of processes              | kernel.maxproc                | Zabbix agent (0) |   3600   |    7    | It could be increased by using sysctrl utility or modifying  |
-   |        |                                          |                               |                  |          |         | file /etc/sysctl.conf.                                       |
-   |  10016 | Number of logged in users                | system.users.num              | Zabbix agent (0) |    60    |    7    | Number of users who are currently logged in.                 |
-   |  10009 | Number of processes                      | proc.num[]                    | Zabbix agent (0) |    60    |    7    | Total number of processes in any state.                      |
-   |  10013 | Number of running processes              | proc.num[,,run]               | Zabbix agent (0) |    60    |    7    | Number of processes in running state.                        |
-   |  22677 | Processor load (15 min average per core) | system.cpu.load[percpu,avg15] | Zabbix agent (0) |    60    |    7    | The processor load is calculated as system CPU load divided  |
-   |        |                                          |                               |                  |          |         | by number of CPU cores.                                      |
-   |  10010 | Processor load (1 min average per core)  | system.cpu.load[percpu,avg1]  | Zabbix agent (0) |    60    |    7    | The processor load is calculated as system CPU load divided  |
-   |        |                                          |                               |                  |          |         | by number of CPU cores.                                      |
-   |  22674 | Processor load (5 min average per core)  | system.cpu.load[percpu,avg5]  | Zabbix agent (0) |    60    |    7    | The processor load is calculated as system CPU load divided  |
-   |        |                                          |                               |                  |          |         | by number of CPU cores.                                      |
-   |  24633 | System OS full                           | system.sw.os[full]            | Zabbix agent (0) |    60    |    90   |                                                              |
-   |  10058 | System OS short                          | system.sw.os[name]            | Zabbix agent (0) |    60    |    7    | The information as normally returned by 'uname -a'.          |
-   |  10025 | System uptime                            | system.uptime                 | Zabbix agent (0) |   600    |    7    |                                                              |
-   |  10026 | Total memory                             | vm.memory.size[total]         | Zabbix agent (0) |   3600   |    7    |                                                              |
-   |  10030 | Total swap space                         | system.swap.size[,total]      | Zabbix agent (0) |   3600   |    7    |                                                              |
-   |  10059 | Version of zabbix_agent(d) running       | agent.version                 | Zabbix agent (0) |   3600   |    7    |                                                              |
-   +--------+------------------------------------------+-------------------------------+------------------+----------+---------+--------------------------------------------------------------+
+   show_templates
 
 
 show_triggers
@@ -1033,31 +1019,20 @@ This command shows triggers that belong to a template.
 Parameters:
 
 * **[templates]:** Template or zabbix-templateID.
+
  
-This command can be run only with parameters. e.g.:
+show_usergroup
+--------------
 
+This command shows user group information.
+        
 ::
+  
+   show_usergroup [usergroup]
 
-   [zabbix-CLI]$ show_triggers "Template OS Linux"
-   +-----------+------------------------------------------------------------+-----------------------------------------------------------------+-----------------+------------+
-   | TriggerID | Expression                                                 | Description                                                     |     Priority    |   Status   |
-   +-----------+------------------------------------------------------------+-----------------------------------------------------------------+-----------------+------------+
-   |     10010 | {Template OS Linux:system.cpu.load[percpu,avg1].avg(5m)}>5 | Processor load is too high on {HOST.NAME}                       |   Warning (2)   | Enable (0) |
-   |     10011 | {Template OS Linux:proc.num[,,run].avg(5m)}>30             | Too many processes running on {HOST.NAME}                       |   Warning (2)   | Enable (0) |
-   |     10012 | {Template OS Linux:system.swap.size[,pfree].last(0)}<50    | Lack of free swap space on {HOST.NAME}                          |   Warning (2)   | Enable (0) |
-   |     10016 | {Template OS Linux:vfs.file.cksum[/etc/passwd].diff(0)}>0  | /etc/passwd has been changed on {HOST.NAME}                     |   Warning (2)   | Enable (0) |
-   |     10021 | {Template OS Linux:system.uptime.change(0)}<0              | {HOST.NAME} has just been restarted                             | Information (1) | Enable (0) |
-   |     10041 | {Template OS Linux:kernel.maxproc.last(0)}<256             | Configured max number of processes is too low on {HOST.NAME}    | Information (1) | Enable (0) |
-   |     10042 | {Template OS Linux:kernel.maxfiles.last(0)}<1024           | Configured max number of opened files is too low on {HOST.NAME} | Information (1) | Enable (0) |
-   |     10043 | {Template OS Linux:system.hostname.diff(0)}>0              | Hostname was changed on {HOST.NAME}                             | Information (1) | Enable (0) |
-   |     10044 | {Template OS Linux:system.sw.os[name].diff(0)}>0           | Host information was changed on {HOST.NAME}                     | Information (1) | Enable (0) |
-   |     10045 | {Template OS Linux:agent.version.diff(0)}>0                | Version of zabbix_agent(d) was changed on {HOST.NAME}           | Information (1) | Enable (0) |
-   |     10047 | {Template OS Linux:agent.ping.nodata(5m)}=1                | Zabbix agent on {HOST.NAME} is unreachable for 5 minutes        |   Average (3)   | Enable (0) |
-   |     10190 | {Template OS Linux:proc.num[].avg(5m)}>300                 | Too many processes on {HOST.NAME}                               |   Warning (2)   | Enable (0) |
-   |     13000 | {Template OS Linux:vm.memory.size[available].last(0)}<20M  | Lack of available memory on server {HOST.NAME}                  |   Average (3)   | Enable (0) |
-   |     13243 | {Template OS Linux:system.cpu.util[,iowait].avg(5m)}>20    | Disk I/O is overloaded on {HOST.NAME}                           |   Warning (2)   | Enable (0) |
-   |     13508 | {Template OS Linux:agent.hostname.diff(0)}>0               | Host name of zabbix_agentd was changed on {HOST.NAME}           | Information (1) | Enable (0) |
-   +-----------+------------------------------------------------------------+-----------------------------------------------------------------+-----------------+------------+
+Parameters:
+
+* **usergroup:** User group name. One can use wildcards.
 
 
 show_usergroups
@@ -1069,27 +1044,37 @@ This command shows user groups information.
 
    show_usergroups
 
-This command can be run only without parameters. e.g.:
+
+show_usermacro_host_list
+------------------------
+
+This command shows all host with a defined usermacro
 
 ::
+  
+   show_usermacro_host_list [usermacro]
 
-   [zabbix-CLI]$ show_usergroups
-   +---------+---------------------------+--------------------+-------------+
-   | GroupID | Name                      |     GUI access     |    Status   |
-   +---------+---------------------------+--------------------+-------------+
-   |      50 | aaa                       | System default (0) |  Enable (0) |
-   |       9 | Disabled                  | System default (0) | Disable (1) |
-   |      11 | Enabled debug mode        | System default (0) |  Enable (0) |
-   |       8 | Guests                    |    Disable (2)     | Disable (1) |
-   |      12 | No access to the frontend |    Disable (2)     |  Enable (0) |
-   |      52 | Test-core group           | System default (0) |  Enable (0) |
-   |      49 | testgroup                 | System default (0) |  Enable (0) |
-   |      53 | test group                | System default (0) |  Enable (0) |
-   |      51 | Testgroup                 | System default (0) |  Enable (0) |
-   |      15 | Test users                | System default (0) |  Enable (0) |
-   |       7 | Zabbix administrators     |    Internal (1)    |  Enable (0) |
-   +---------+---------------------------+--------------------+-------------+
+Parameters:
 
+* **usermacro:** Name of the zabbix usermacro. The system will format
+  this value to use the macro format definition needed by Zabbix.
+  e.g. site_url will be converted to ${SITE_URL}
+
+
+show_usermacro_template_list
+----------------------------
+
+This command shows all templates with a defined macro
+
+::
+  
+   show_usermacro_template_list [macro name]
+
+Parameters:
+
+* **usermacro:** Name of the zabbix usermacro. The system will format
+  this value to use the macro format definition needed by Zabbix.
+  e.g. site_url will be converted to ${SITE_URL}
 
 
 show_users
@@ -1100,82 +1085,6 @@ This command shows users information.
 ::
 
    show_users
-
-This command can be run only without parameters. e.g.:
-
-::
-
-   [zabbix-CLI]$ show_users
-   +--------+-------------+----------------------+-------------+------------+-----------------+
-   | UserID |    Alias    | Name                 |  Autologin  | Autologout | Type            |
-   +--------+-------------+----------------------+-------------+------------+-----------------+
-   |     18 |   aaa-test  | aaa bbb              | Disable (0) |   86400    | User (1)        |
-   |      1 |  Admin-user | Zabbix Administrator |  Enable (1) |     0      | Super admin (3) |
-   |      2 |    guest    |                      | Disable (0) |    900     | User (1)        |
-   |     21 |     qqq     | aaa aa               | Disable (0) |   86400    | User (1)        |
-   |     19 |  user-test  | Test User            | Disable (0) |   86400    | User (1)        |
-   |     20 |  user-test2 | test user2           | Disable (0) |    600     | User (1)        |
-   +--------+-------------+----------------------+-------------+------------+-----------------+
-
-
-
-show_templates
----------------
-
-This command shows all templates
-
-::
-
-    show_templates
-
-This command can be run only without parameters.e.g.:
-
-::
-
-   [zabbix-CLI]$ show_templates
-   +------------+---------------------------------+
-   | TemplateID | Name                            |
-   +------------+---------------------------------+
-   |      10116 | Inventory                       |
-   |      10093 | Template App FTP Service        |
-   |      10094 | Template App HTTP Service       |
-   |      10095 | Template App HTTPS Service      |
-   |      10096 | Template App IMAP Service       |
-   |      10097 | Template App LDAP Service       |
-   |      10073 | Template App MySQL              |
-   |      10098 | Template App NNTP Service       |
-   |      10099 | Template App NTP Service        |
-   |      10100 | Template App POP Service        |
-   |      10101 | Template App SMTP Service       |
-   |      10102 | Template App SSH Service        |
-   |      10103 | Template App Telnet Service     |
-   |      10050 | Template App Zabbix Agent       |
-   |      10048 | Template App Zabbix Proxy       |
-   |      10047 | Template App Zabbix Server      |
-   |      10104 | Template ICMP Ping              |
-   |      10071 | Template IPMI Intel SR1530      |
-   |      10072 | Template IPMI Intel SR1630      |
-   |      10082 | Template JMX Generic            |
-   |      10083 | Template JMX Tomcat             |
-   |      10076 | Template OS AIX                 |
-   |      10075 | Template OS FreeBSD             |
-   |      10077 | Template OS HP-UX               |
-   |      10001 | Template OS Linux               |
-   |      10079 | Template OS Mac OS X            |
-   |      10074 | Template OS OpenBSD             |
-   |      10078 | Template OS Solaris             |
-   |      10081 | Template OS Windows             |
-   |      10066 | Template SNMP Device            |
-   |      10068 | Template SNMP Disks             |
-   |      10065 | Template SNMP Generic           |
-   |      10060 | Template SNMP Interfaces        |
-   |      10069 | Template SNMP OS Linux          |
-   |      10067 | Template SNMP OS Windows        |
-   |      10070 | Template SNMP Processors        |
-   |      10088 | Template Virt VMware            |
-   |      10089 | Template Virt VMware Guest      |
-   |      10091 | Template Virt VMware Hypervisor |
-   +------------+---------------------------------+
 
 
 ulink_template_from_host
@@ -1196,22 +1105,37 @@ Parameters:
 * **[hostnames]:** Hostname or zabbix-hostID. One can define several
   values in a comma separated list.
  
-This command can be run only with parameters. e.g.:
+
+update_host_inventory
+---------------------
+
+This command updates one hosts' inventory 
 
 ::
 
-   [zabbix-CLI]$ unlink_template_from_host
-   --------------------------------------------------------
-   # Templates: Template App FTP Service,10103
-   # Hostnames: test.example.net
-   --------------------------------------------------------
-   
-   [Done]: Templates Template App FTP Service,10103 unlinked from these hosts: test.example.net
-   
-   
-   [user@server]# zabbix-cli --use-csv-format unlink_template_from_host 10102 10108
-   "Done","Templates 10102 unlinked from these hosts: 10108"
-   
+   update_host_inventory [hostname] 
+                         [inventory_key] 
+                         [inventory value]
+
+Inventory key is not the same as seen in web-gui. To look at possible
+keys and their current values, use "zabbix-cli --use-json-format
+show_host_inventory <hostname>"
+
+update_host_proxy
+-----------------
+
+This command defines the proxy used to monitor a host
+    
+::
+   update_host_proxy [hostname] 
+                     [proxy]
+
+
+Parameters:
+
+* **hostname:** Hostname to update
+* **proxy:** Zabbix proxy that will monitor [hostname]
+
 
 Authors
 =======
