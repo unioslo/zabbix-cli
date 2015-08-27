@@ -61,7 +61,7 @@ class zabbixcli(cmd.Cmd):
     # Constructor
     # ###############################
 
-    def __init__(self,username,password,logs):
+    def __init__(self,logs,username='',password='',auth_token=''):
         cmd.Cmd.__init__(self)
         
         self.version = self.get_version()
@@ -78,6 +78,7 @@ class zabbixcli(cmd.Cmd):
         
         self.api_username = username
         self.api_password = password
+        self.api_auth_token = auth_token
         self.output_format = 'table'
         self.color_support = 'off'
 
@@ -89,18 +90,36 @@ class zabbixcli(cmd.Cmd):
             self.logs.logger.debug('Zabbix API url: %s',self.conf.zabbix_api_url)
 
         try:
-
+                        
             #
             # Connecting to the Zabbix JSON-API
             #
 
-            self.zapi = ZabbixAPI(self.conf.zabbix_api_url)
-            self.zapi.session.verify = False
+            zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
 
-            self.zapi.login(self.api_username,self.api_password)
-        
+            self.zapi = ZabbixAPI(self.conf.zabbix_api_url)
+            self.zapi.session.verify = True
+
+            self.api_auth_token = self.zapi.login(self.api_username,self.api_password,self.api_auth_token)
+
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Connected to Zabbix JSON-API')
+
+            #
+            # The file $HOME/.zabbix-cli_auth_token is created if it does not exists.
+            #
+            # Format:
+            # USERNAME::API-auth-token returned after the las login. 
+            #
+
+            if os.path.isfile(zabbix_auth_token_file) == False:
+
+                with open(zabbix_auth_token_file,'w') as auth_token_file:            
+                    auth_token_file.write(self.api_username + '::' + self.api_auth_token)
+                    auth_token_file.flush()
+
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('API-auth-token file created.')
 
         except Exception as e:        
             print '\n[ERROR]: ',e
@@ -109,6 +128,24 @@ class zabbixcli(cmd.Cmd):
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems logging to %s',self.conf.zabbix_api_url)
             
+            zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
+
+            if os.path.isfile(zabbix_auth_token_file):
+
+                try:
+                    os.remove(zabbix_auth_token_file)
+            
+                    if self.conf.logging == 'ON':
+                        self.logs.logger.info('API-auth-token has probably expired. File %s deleted.',zabbix_auth_token_file)
+
+                except Exception as e:
+                    print '\n[ERROR]: ',e
+
+                    if self.conf.logging == 'ON':
+                        self.logs.logger.error('Problems deleting file %s - %s',zabbix_auth_token_file,e)
+
+                    sys.exit(1)
+
             sys.exit(1)
 
 

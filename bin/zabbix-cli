@@ -58,9 +58,33 @@ if __name__ == '__main__':
         # <Zabbix username>::<password>
         #
 
-        zabbix_auth_file = os.getenv('HOME') + '/.zabbix-cli_auth'
+        auth_token = ''
+        username = ''
+        password = ''
 
-        if os.path.isfile(zabbix_auth_file):
+        zabbix_auth_file = os.getenv('HOME') + '/.zabbix-cli_auth'
+        zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
+
+        if os.path.isfile(zabbix_auth_token_file):
+
+            try:
+                os.chmod(zabbix_auth_token_file,0600)
+            
+                with open(zabbix_auth_token_file,'r') as file:
+                    for line in file:
+                        (username, auth_token) = line.split('::')
+                
+                if conf.logging == 'ON':
+                    logs.logger.info('File %s exists. Using this file to get authentication token information',zabbix_auth_token_file)
+
+            except Exception as e:
+                print '\n[ERROR]: %s\n',e
+
+                if conf.logging == 'ON':
+                    logs.logger.error('Problems using file %s - %s',zabbix_auth_token_file,e)
+
+
+        elif os.path.isfile(zabbix_auth_file):
 
             try:
                 os.chmod(zabbix_auth_file,0400)
@@ -92,22 +116,31 @@ if __name__ == '__main__':
             print 'Zabbix-CLI authentication'
             print '-------------------------'
         
-            username = raw_input('# Username[' + default_user +']: ')
-            password = getpass.getpass('# Password: ')
+            try:
+                username = raw_input('# Username[' + default_user +']: ')
+                password = getpass.getpass('# Password: ')
             
+            except Exception as e:
+                print '\n[Aborted]'
+                sys.exit(0)
+
             if username == '':
                 username = default_user
 
 
         #
-        # Check that username and password have some values
+        # Check that username and password have some values if the
+        # API-auth-token is empty ($HOME/.zabbix-cli_auth_token does
+        # not exist)
         #
+        
+        if auth_token == '':
 
-        if username == '' or password == '':
-            print '\n[ERROR]: Username or password is empty\n'
+            if username == '' or password == '':
+                print '\n[ERROR]: Username or password is empty\n'
                                     
-            if conf.logging == 'ON':
-                logs.logger.error('Username or password is empty')
+                if conf.logging == 'ON':
+                    logs.logger.error('Username or password is empty')
                 
                 sys.exit(1)
                 
@@ -134,11 +167,10 @@ if __name__ == '__main__':
         
             os.system('clear')
             
-            cli = zabbixcli(username,password,logs)
+            cli = zabbixcli(logs,username,password,auth_token)
             cli.color_support = 'on'
 
             cli.cmdloop()
-            cli.zapi.user.logout()
             
         #
         # Zabbix-CLI in non-interactive modus(command line)
@@ -153,39 +185,35 @@ if __name__ == '__main__':
                 
             if sys.argv[1] =='--use-csv-format':
                 
-                cli = zabbixcli(username,password,logs)
+                cli = zabbixcli(logs,username,password,auth_token)
                 cli.output_format = 'csv'
                               
                 cli.onecmd(' '.join(sys.argv[2:]))
-                cli.zapi.user.logout()
 
             # JSON format output
             
             elif sys.argv[1] =='--use-json-format':
                 
-                cli = zabbixcli(username,password,logs)
+                cli = zabbixcli(logs,username,password,auth_token)
                 cli.output_format = 'json'
                               
                 cli.onecmd(' '.join(sys.argv[2:]))
-                cli.zapi.user.logout()
 
             # Activate color support with PrettyTable output when
             # running in non-interactive modus
             
             elif sys.argv[1] == '--use-colors':
                 
-                cli = zabbixcli(username,password,logs)
+                cli = zabbixcli(logs,username,password,auth_token)
                 cli.color_support = 'on'
                               
                 cli.onecmd(' '.join(sys.argv[2:]))
-                cli.zapi.user.logout()
 
             # PrettyTable output
 
             else:
-                cli = zabbixcli(username,password,logs)
+                cli = zabbixcli(logs,username,password,auth_token)
                 cli.onecmd(' '.join(sys.argv[1:]))
-                cli.zapi.user.logout()
 
         #
         # Zabbix-CLI in interactive modus without color support
@@ -198,9 +226,8 @@ if __name__ == '__main__':
         
             os.system('clear')
             
-            cli = zabbixcli(username,password,logs)
+            cli = zabbixcli(logs,username,password,auth_token)
             cli.cmdloop()
-            cli.zapi.user.logout()
 
         else:
             raise NotImplementedError

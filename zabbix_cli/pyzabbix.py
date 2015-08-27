@@ -36,7 +36,7 @@ class ZabbixAPI(object):
             self.session = session
         else:
             self.session = requests.Session()
-
+            
         # Default headers for all requests
         self.session.headers.update({
             'Content-Type': 'application/json-rpc',
@@ -50,18 +50,34 @@ class ZabbixAPI(object):
         self.url = server + '/api_jsonrpc.php'
         logger.info("JSON-RPC Server Endpoint: %s", self.url)
 
-    def login(self, user='', password=''):
-        """Convenience method for calling user.authenticate and storing the resulting auth token
-           for further commands.
-           If use_authenticate is set, it uses the older (Zabbix 1.8) authentication command"""
+    def login(self, user='', password='', auth_token=''):
+        """
+        Convenience method for calling user.authenticate and storing the
+        resulting auth token for further commands.  If
+        use_authenticate is set, it uses the older (Zabbix 1.8)
+        authentication command
+        """
 
-        # If we have an invalid auth token, we are not allowed to send a login
-        # request. Clear it before trying.
-        self.auth = ''
-        if self.use_authenticate:
-            self.auth = self.user.authenticate(user=user, password=password)
+        # If the file $HOME/.zabbix-cli_auth_token exists from an
+        # older session, the system will try to reuse the
+        # API-auth-token saved in this file.
+        #
+        # If the file $HOME/.zabbix-cli_auth_token does not exist, we
+        # will login with the username and password.
+        #
+
+        if auth_token == '':
+
+            self.auth = ''
+            if self.use_authenticate:
+                self.auth = self.user.authenticate(user=user, password=password)
+            else:
+                self.auth = self.user.login(user=user, password=password)
         else:
-            self.auth = self.user.login(user=user, password=password)
+            self.auth = auth_token
+            self.api_version()
+
+        return self.auth
 
     def confimport(self, format='', source='', rules=''):
         """Alias for configuration.import because it clashes with
@@ -90,10 +106,12 @@ class ZabbixAPI(object):
         logger.debug("Sending: %s", json.dumps(request_json,
                                                indent=4,
                                                separators=(',', ': ')))
+       
         response = self.session.post(
             self.url,
-            data=json.dumps(request_json),
+            data=json.dumps(request_json)
         )
+
         logger.debug("Response Code: %s", str(response.status_code))
 
         # NOTE: Getting a 412 response code means the headers are not in the
@@ -129,6 +147,14 @@ class ZabbixAPI(object):
                     code=response_json['error']['code'],
                     message=response_json['error']['message'],
                     data=response_json['error']['data'])
+
+            elif response_json['error']['data'] == 'Not authorized':
+
+                msg = "Error {code}: {data}: {message}".format(
+                    code=response_json['error']['code'],
+                    data=response_json['error']['data'],
+                    message=response_json['error']['message'] + '\n\n* Your API-auth-token has probably expired.\n' +
+                    '* Try to login again with your username and password')
 
             else:
 
