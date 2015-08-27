@@ -2010,25 +2010,25 @@ class zabbixcli(cmd.Cmd):
             # Generate zabbix query
             #
             
-            query=ast.literal_eval("{\"templateids\":[" + template_ids + "],\"hostids\":[" + host_ids + "]}")
+            query=ast.literal_eval("{\"hostids\":[" + host_ids + "],\"templateids_clear\":[" + template_ids + "]}")
         
             #
             # Unlink templates from hosts
             #
 
-            result = self.zapi.template.massremove(**query)
+            result = self.zapi.host.massremove(**query)
 
             if self.conf.logging == 'ON':
-                self.logs.logger.info('Templates: %s (%s) unlinked from these hosts: %s (%s)',templates,template_ids,hostnames,host_ids)
+                self.logs.logger.info('Templates: %s (%s) unlinked and cleared from these hosts: %s (%s)',templates,template_ids,hostnames,host_ids)
 
-            self.generate_feedback('Done','Templates ' + templates + ' (' + template_ids + ') unlinked from these hosts: ' + hostnames + ' (' + host_ids + ')')
+            self.generate_feedback('Done','Templates ' + templates + ' (' + template_ids + ') unlinked and cleared from these hosts: ' + hostnames + ' (' + host_ids + ')')
 
         except Exception as e:
             
             if self.conf.logging == 'ON':
-                    self.logs.logger.error('Problems unlinking templates %s (%s) from hosts %s (%s) - %s',templates,template_ids,hostnames,host_ids,e)
+                    self.logs.logger.error('Problems unlinking and clearing templates %s (%s) from hosts %s (%s) - %s',templates,template_ids,hostnames,host_ids,e)
            
-            self.generate_feedback('Error','Problems unlinking templates ' + templates + ' (' + template_ids + ') from hosts ' + hostnames + ' (' + host_ids + ')')
+            self.generate_feedback('Error','Problems unlinking and clearing templates ' + templates + ' (' + template_ids + ') from hosts ' + hostnames + ' (' + host_ids + ')')
             return False   
             
 
