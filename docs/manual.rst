@@ -3,7 +3,7 @@ Zabbix-CLI
 =====================================
 
 |
-| Version-1.3.0
+| Version-1.3.1
 |
 | Rafael Martinez Guerrero (University of Oslo)
 | E-mail: rafael@postgresql.org.es
@@ -140,6 +140,28 @@ The format of this file is a line with this information::
 the information saved here and restrict access to this file only to
 your user. ``chmod 400 ~/.zabbix-cli_auth`` will be defined by
 ``zabbix-cli`` on this file the first time it uses it.
+
+**NOTE:** The support for this file will probably disappear in the future.
+
+
+Authentication token file
+-------------------------
+
+The file ``$HOME/.zabbix-cli_auth_token`` will be created with
+information about the API-auth-token from the last login.
+
+The information in this file will be used, if we can, to avoid having to
+write the username and password everytime you use ``zabbix-cli``. This
+can be useful if you are running ``zabbix-cli`` in non-interactive
+modus from scripts or automated jobs.
+
+This authentication method will work as long as the API-auth-token
+saved is active in Zabbix. The ``Auto-logout`` attribute of the user
+will define how long the API-auth-token will be active.
+
+If the API-auth-token is not valid, ``zabbix-cli`` will delete the
+file ``$HOME/.zabbix-cli_auth_token`` and you will have to login again
+with a valid username and password.
 
 
 Zabbix-CLI shell
@@ -1090,7 +1112,7 @@ This command shows users information.
 ulink_template_from_host
 ------------------------
 
-This command unlinks one/several templates from one/several hosts
+This command unlinks and clear one/several templates from one/several hosts
 
 ::
 
