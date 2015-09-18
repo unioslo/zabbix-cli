@@ -57,6 +57,12 @@ if __name__ == '__main__':
         # Format:
         # <Zabbix username>::<password>
         #
+        # Use .zabbix-cli_auth_token if it exists and .zabbix_cli_auth
+        # does not exist.
+        #
+        # Format:
+        # <Zabbix username>::<API-token>
+        #
 
         auth_token = ''
         username = ''
@@ -65,26 +71,7 @@ if __name__ == '__main__':
         zabbix_auth_file = os.getenv('HOME') + '/.zabbix-cli_auth'
         zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
 
-        if os.path.isfile(zabbix_auth_token_file):
-
-            try:
-                os.chmod(zabbix_auth_token_file,0600)
-            
-                with open(zabbix_auth_token_file,'r') as file:
-                    for line in file:
-                        (username, auth_token) = line.split('::')
-                
-                if conf.logging == 'ON':
-                    logs.logger.info('File %s exists. Using this file to get authentication token information',zabbix_auth_token_file)
-
-            except Exception as e:
-                print '\n[ERROR]: %s\n',e
-
-                if conf.logging == 'ON':
-                    logs.logger.error('Problems using file %s - %s',zabbix_auth_token_file,e)
-
-
-        elif os.path.isfile(zabbix_auth_file):
+        if os.path.isfile(zabbix_auth_file):
 
             try:
                 os.chmod(zabbix_auth_file,0400)
@@ -103,6 +90,25 @@ if __name__ == '__main__':
 
                 if conf.logging == 'ON':
                     logs.logger.error('Problems using file %s - %s',zabbix_auth_file,e)
+
+        elif os.path.isfile(zabbix_auth_token_file):
+
+            try:
+                os.chmod(zabbix_auth_token_file,0600)
+            
+                with open(zabbix_auth_token_file,'r') as file:
+                    for line in file:
+                        (username, auth_token) = line.split('::')
+                
+                if conf.logging == 'ON':
+                    logs.logger.info('File %s exists. Using this file to get authentication token information',zabbix_auth_token_file)
+
+            except Exception as e:
+                print '\n[ERROR]: %s\n',e
+
+                if conf.logging == 'ON':
+                    logs.logger.error('Problems using file %s - %s',zabbix_auth_token_file,e)
+
 
         #
         # Interactive authentication procedure
