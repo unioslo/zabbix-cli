@@ -2929,6 +2929,228 @@ class zabbixcli(cmd.Cmd):
             return False   
 
 
+
+    # ############################################
+    # Method do_create_user
+    # ############################################
+
+    def do_create_notification_user(self,args):
+        '''DESCRIPTION:
+
+        This command creates a notification user. These users are
+        used to send notifications when a event happens. 
+
+        They are needed because sometimes a system administrator group
+        needs to send different notifications to multiple different
+        medias, e.g. alarm-type-1 to email-1 and alarm-type-2 to
+        email-2, but not alarm-type-1 to email-1 and email-2
+
+        COMMAND:
+        create_user [sendto]
+                    [mediatype]
+                    
+        [sendto]
+        --------
+        E-mail address or SMS number
+            
+        [mediatype]
+        -----------
+        One of the media types names defined in Zabbix, e.g.  Email, SMS
+        '''
+        
+        # Default: md5 value of a random int >1 and <1000000 
+        x = hashlib.md5()
+        x.update(str(random.randint(1,1000000)))
+        passwd_default = x.hexdigest()
+        
+        # Default: 1: Zabbix user
+        type_default = '1'
+
+        # Default: 0: Disable
+        autologin_default = '0'
+
+        # Default: 1 day: 86400s
+        autologout_default = '3600'
+
+        # Default usergroups
+        usergroup_default = self.conf.default_create_user_usergroup.strip()
+        notifications_usergroup_default = self.conf.default_notification_users_usergroup.strip()
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                sendto = raw_input('# SendTo []: ').strip()
+                mediatype = raw_input('# Media type []: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command with parameters
+        #
+
+        elif len(arg_list) == 2:
+
+            sendto = arg_list[0].strip()
+            mediatype = arg_list[1].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if sendto == '':
+            self.generate_feedback('Error','SendTo is empty')
+            return False
+
+        if mediatype == '':
+            self.generate_feedback('Error','Media type is empty')
+            return False
+
+        alias = 'notification-user-' + sendto.replace('.','-')
+        passwd = passwd_default
+        type = type_default
+        autologin = autologin_default
+        autologout = autologout_default
+        
+        usergroup_list = []
+
+        try:
+            
+            for usrgrp in usergroup_default.split(','):
+                if usrgrp != '':
+                    usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
+
+            for usrgrp in notifications_usergroup_default.split(','):
+                if usrgrp != '':
+                    usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
+            
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting usergroupID - %s',e)
+            
+            self.generate_feedback('Error','Problems getting usergroupID - ' + str(e))
+            return False 
+
+        #
+        # Check if user exists
+        #
+
+        try:
+            
+            result1 = self.zapi.user.get(search={'alias':alias},output='extend',searchWildcardsEnabled=True)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Checking if user (%s) exists',alias)
+
+        except Exception as e:
+            
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems checking if user (%s) exists - %s',alias,e)
+
+            self.generate_feedback('Error','Problems checking if user (' + alias + ') exists')
+            return False   
+
+        #
+        # Check media type exists
+        #
+
+        try:
+            
+            result2 = self.zapi.mediatype.get(search={'description':mediatype},output='extend',searchWildcardsEnabled=True)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Checking if media type (%s) exists',mediatype)
+
+        except Exception as e:
+            
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems checking if media type (%s) exists - %s',mediatype,e)
+
+            self.generate_feedback('Error','Problems checking if media type (' + mediatype + ') exists')
+            return False   
+
+
+        #
+        # Create user
+        #
+
+        try:
+
+            if result1 != []:
+
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('This user (%s) already exists',alias)
+
+                self.generate_feedback('Warning','This user (' + alias + ') already exists.')
+                return False
+
+            elif result2 == []:
+
+                if self.conf.logging == 'ON':
+                    self.logs.logger.debug('This media type (%s) does not exist',mediatype)
+
+                self.generate_feedback('Warning','This media type (' + mediatype + ') does not exist.')
+                return False
+                
+            else:
+                result = self.zapi.user.create(alias=alias,
+                                               passwd=passwd,
+                                               type=type,
+                                               autologin=autologin,
+                                               autologout=autologout,
+                                               usrgrps=usergroup_list,
+                                               user_medias=[
+                                                   {
+                                                       'mediatypeid':result2[0]['mediatypeid'],
+                                                       'sendto':sendto,
+                                                       'active':0,
+                                                       'severity':63,
+                                                       'period':'1-7,00:00-24:00'
+                                                   }
+                                               ]
+                                           )
+
+                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('User (%s) with ID: %s created',alias,str(result['userids'][0]))
+                
+                self.generate_feedback('Done','User (' + alias + ') with ID: ' + str(result['userids'][0]) + ' created.')
+
+
+        except Exception as e:
+            
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems creating user (%s) - %s',alias,e)
+
+            self.generate_feedback('Error','Problems creating user (' + alias + ')')
+            return False   
+
+
+
     # ############################################
     # Method do_remove_user
     # ############################################
