@@ -3,7 +3,7 @@
 # Authors:
 # rafael@postgresql.org.es / http://www.postgresql.org.es/
 #
-# Copyright (c) 2014 USIT-University of Oslo
+# Copyright (c) 2014-2015 USIT-University of Oslo
 #
 # This file is part of Zabbix-CLI
 # https://github.com/rafaelma/zabbix-cli
@@ -40,12 +40,6 @@ class configuration():
         # Zabbix API section
         self.zabbix_api_url = ''
 
-        # LDAP section
-        self.ldap_uri = ''
-        self.ldap_users_tree = ''
-        self.ldap_usergroups_tree = ''
-        self.usergroups_to_sync = ''
-
         # Zabbix_config section
         self.system_id = 'zabbix-ID' 
         self.default_hostgroup = 'All-hosts'
@@ -55,6 +49,8 @@ class configuration():
         self.default_directory_exports = os.getenv('HOME') + '/zabbix_exports' 
         self.default_export_format = 'JSON'
         self.include_timestamp_export_filename = 'ON'
+        self.use_colors = 'ON'
+        self.use_auth_token_file = 'OFF'
 
         # Logging section
         self.logging = 'OFF'
@@ -103,23 +99,7 @@ class configuration():
             
             if config.has_option('zabbix_api','zabbix_api_url'):
                 self.zabbix_api_url = config.get('zabbix_api','zabbix_api_url')
-    
-            #
-            # LDAP section
-            #
-
-            if config.has_option('ldap','ldap_uri'):
-                self.ldap_uri = config.get('ldap','ldap_uri')    
-                
-            if config.has_option('ldap','ldap_users_tree'):
-                self.ldap_users_tree = config.get('ldap','ldap_users_tree')
-
-            if config.has_option('ldap','ldap_usergroups_tree'):
-                self.ldap_usergroups_tree = config.get('ldap','ldap_usergroups_tree')
-
-            if config.has_option('ldap','usergroups_to_sync'):
-                self.usergroups_to_sync = config.get('ldap','usergroups_to_sync')
-             
+                 
             #
             # Zabbix configuration
             #
@@ -147,6 +127,12 @@ class configuration():
 
             if config.has_option('zabbix_config','include_timestamp_export_filename'):
                 self.include_timestamp_export_filename = config.get('zabbix_config','include_timestamp_export_filename')
+
+            if config.has_option('zabbix_config','use_colors'):
+                self.use_colors = config.get('zabbix_config','use_colors')
+
+            if config.has_option('zabbix_config','use_auth_token_file'):
+                self.use_auth_token_file = config.get('zabbix_config','use_auth_token_file')
 
             #
             # Logging section

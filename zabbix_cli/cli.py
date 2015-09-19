@@ -80,7 +80,8 @@ class zabbixcli(cmd.Cmd):
         self.api_password = password
         self.api_auth_token = auth_token
         self.output_format = 'table'
-        self.color_support = 'off'
+        self.use_colors = self.conf.use_colors
+        self.use_auth_token_file = self.conf.use_auth_token_file
 
         self.system_id = self.conf.system_id
         
@@ -112,7 +113,7 @@ class zabbixcli(cmd.Cmd):
             # USERNAME::API-auth-token returned after the las login. 
             #
 
-            if os.path.isfile(zabbix_auth_token_file) == False:
+            if self.use_auth_token_file == 'ON' and os.path.isfile(zabbix_auth_token_file) == False:
 
                 with open(zabbix_auth_token_file,'w') as auth_token_file:            
                     auth_token_file.write(self.api_username + '::' + self.api_auth_token)
@@ -1183,7 +1184,7 @@ class zabbixcli(cmd.Cmd):
             
             else:
 
-                if self.color_support == 'on':
+                if self.use_colors == 'ON':
                 
                     if int(trigger['priority']) == 1:
                         ansi_code = "\033[38;5;158m" 
