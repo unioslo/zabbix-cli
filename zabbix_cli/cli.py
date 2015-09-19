@@ -3,7 +3,7 @@
 # Authors:
 # rafael@postgresql.org.es / http://www.postgresql.org.es/
 #
-# Copyright (c) 2014 USIT-University of Oslo
+# Copyright (c) 2014-2015 USIT-University of Oslo
 #
 # This file is part of Zabbix-CLI
 # https://github.com/rafaelma/zabbix-cli
@@ -2947,8 +2947,8 @@ class zabbixcli(cmd.Cmd):
         email-2, but not alarm-type-1 to email-1 and email-2
 
         COMMAND:
-        create_user [sendto]
-                    [mediatype]
+        create_notification_user [sendto]
+                                 [mediatype]
                     
         [sendto]
         --------
@@ -2956,7 +2956,9 @@ class zabbixcli(cmd.Cmd):
             
         [mediatype]
         -----------
-        One of the media types names defined in Zabbix, e.g.  Email, SMS
+        One of the media types names defined in your Zabbix
+        installation, e.g.  Email, SMS
+
         '''
         
         # Default: md5 value of a random int >1 and <1000000 

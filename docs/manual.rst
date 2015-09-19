@@ -3,7 +3,7 @@ Zabbix-CLI
 =====================================
 
 |
-| Version-1.3.1
+| Version-1.4.0
 |
 | Rafael Martinez Guerrero (University of Oslo)
 | E-mail: rafael@postgresql.org.es
@@ -100,6 +100,7 @@ Configuration file
 Zabbix-CLI needs a configuration file to work. It will look for the
 file in this order:
 
+* Config file defined with ``--config`` or ``-c`` when starting ``zabbix-cli`` 
 * ``$HOME/.zabbix-cli/zabbix-cli.conf``
 * ``/etc/zabbix-cli/zabbix-cli.conf``
 * ``/etc/zabbix-cli.conf``
@@ -148,7 +149,9 @@ Authentication token file
 -------------------------
 
 The file ``$HOME/.zabbix-cli_auth_token`` will be created with
-information about the API-auth-token from the last login.
+information about the API-auth-token from the last login if the
+parameter ``use_auth_token_file=ON`` is defined in the configuration
+file.
 
 The information in this file will be used, if we can, to avoid having to
 write the username and password everytime you use ``zabbix-cli``. This
@@ -183,7 +186,7 @@ The Zabbix-CLI interactive shell can be started by running the program
    
    Documented commands (type help <topic>):
    ========================================
-   EOF                            remove_user_from_usergroup    update_host_proxy
+   EOF                            remove_user_from_usergroup  
    add_host_to_hostgroup          shell                       
    add_user_to_usergroup          show_alarms                 
    add_usergroup_permissions      show_global_macros          
@@ -191,20 +194,21 @@ The Zabbix-CLI interactive shell can be started by running the program
    create_host                    show_host                   
    create_host_interface          show_host_inventory         
    create_hostgroup               show_host_usermacros        
-   create_user                    show_hostgroup              
-   create_usergroup               show_hostgroups             
-   define_global_macro            show_hosts                  
-   define_host_usermacro          show_items                  
+   create_notification_user       show_hostgroup              
+   create_user                    show_hostgroups             
+   create_usergroup               show_hosts                  
+   define_global_macro            show_items                  
    define_host_monitoring_status  show_template               
-   export_configuration           show_templates              
-   import_configuration           show_triggers               
-   link_template_to_host          show_usergroup              
-   load_balance_proxy_hosts       show_usergroups             
-   move_proxy_hosts               show_usermacro_host_list    
-   quit                           show_usermacro_template_list
-   remove_host                    show_users                  
-   remove_host_from_hostgroup     unlink_template_from_host   
-   remove_user                    update_host_inventory       
+   define_host_usermacro          show_templates              
+   export_configuration           show_triggers               
+   import_configuration           show_usergroup              
+   link_template_to_host          show_usergroups             
+   load_balance_proxy_hosts       show_usermacro_host_list    
+   move_proxy_hosts               show_usermacro_template_list
+   quit                           show_users                  
+   remove_host                    unlink_template_from_host   
+   remove_host_from_hostgroup     update_host_inventory       
+   remove_user                    update_host_proxy         
 
    Miscellaneous help topics:
    ==========================
@@ -215,13 +219,14 @@ The Zabbix-CLI interactive shell can be started by running the program
    help
 
 **NOTE:** It is possible to use Zabbix-CLI in a non-interactive modus
-by running ``/usr/bin/zabbix-cli`` with a command as a parameter in
-the OS shell. This can be used to run ``zabbix-cli`` commands from shell
-scripts or other programs .e.g.
+by running ``/usr/bin/zabbix-cli`` with the parameter ``--command
+<zabbix_command>`` or ``-C <zabbix_command>`` in the OS shell. This
+can be used to run ``zabbix-cli`` commands from shell scripts or other
+programs .e.g.
 
 ::
 
-   [user@host]# zabbix-cli show_usergroups
+   [user@host]# zabbix-cli -C "show_usergroups"
 
    +---------+---------------------------+--------------------+-------------+
    | GroupID | Name                      |     GUI access     |    Status   |
@@ -238,13 +243,13 @@ scripts or other programs .e.g.
    |      14 | Zabbix core               | System default (0) |  Enable (0) |
    +---------+---------------------------+--------------------+-------------+
 
-One can also use the parameters ``--use-csv-format`` or
-``--use-json-format`` when running ``zabbix-cli`` in non-interactive
+One can also use the parameters ``--output csv`` or
+``--output json`` when running ``zabbix-cli`` in non-interactive
 modus to generate an output in CSV or JSON format.
 
 ::
 
-   [user@host ~]# zabbix-cli --use-csv-format show_usergroups
+   [user@host ~]# zabbix-cli --output csv show_usergroups
 
    "13","DBA","System default (0)","Enable (0)"
    "9","Disabled","System default (0)","Disable (1)"
@@ -264,7 +269,7 @@ or special characters for the shell.e.g.
 
 ::
 
-   [user@host ~]# zabbix-cli show_host "*" "\'available\':\'2\',\'maintenance_status\':\'1\'"
+   [user@host ~]# zabbix-cli -C "show_host * \"'available':'2','maintenance_status':'1'\" "
 
    +--------+----------------------+-------------------------+-----------------------------------+--------------------+-----------------+-----------------+---------------+
    | HostID | Name                 | Hostgroups              | Templates                         | Applications       |   Zabbix agent  |   Maintenance   |     Status    |
@@ -295,11 +300,6 @@ or special characters for the shell.e.g.
    |        |                      | [5] Discovered hosts    | [10104] Template ICMP Ping        | SSH service        |                 |                 |               |
    |        |                      | [8] Database servers    |                                   |                    |                 |                 |               |
    +--------+----------------------+-------------------------+-----------------------------------+--------------------+-----------------+-----------------+---------------+
-
-
-The parameter ``--use-colors`` in non-interactive and interactive
-modus will activate the use of colors when showing alarms with the
-command show_alarms.
 
 
 add_host_to_hostgroup
@@ -473,6 +473,29 @@ This command creates a hostgroup
 Parameters:
 
 * **[group name]:** Name of the hostgroup
+
+
+create_notification_user
+------------------------
+
+This command creates a notification user. These users are used to send
+notifications when an zabbix event happens.
+
+They are needed because sometimes a system administrator group needs
+to send different notifications to multiple different
+medias,e.g. alarm-type-1 to email-1 and alarm-type-2 to email-2, but
+not alarm-type-1 to email-1 and email-2
+
+::
+  
+   create_notification_user [sendto]
+                            [mediatype]
+                    
+Parameters:
+
+* **[sendto]**: E-mail address or SMS number
+* **[mediatype]**: One of the media types names defined in your Zabbix
+  installation, e.g.  Email, SMS
 
 
 create_user
