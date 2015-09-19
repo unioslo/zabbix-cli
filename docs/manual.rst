@@ -479,7 +479,7 @@ create_notification_user
 ------------------------
 
 This command creates a notification user. These users are used to send
-notifications when an zabbix event happens.
+notifications when a zabbix event happens.
 
 They are needed because sometimes a system administrator group needs
 to send different notifications to multiple different
@@ -1199,4 +1199,4 @@ License and Contributions
 Zabbix-CLI is the property of USIT-University of Oslo, and its code is
 distributed under GNU General Public License 3.
 
-| Copyright © 2014 USIT-University of Oslo.
+| Copyright © 2014-2015 USIT-University of Oslo.

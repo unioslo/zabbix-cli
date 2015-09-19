@@ -2939,7 +2939,7 @@ class zabbixcli(cmd.Cmd):
         '''DESCRIPTION:
 
         This command creates a notification user. These users are
-        used to send notifications when an zabbix event happens. 
+        used to send notifications when a zabbix event happens. 
 
         They are needed because sometimes a system administrator group
         needs to send different notifications to multiple different
