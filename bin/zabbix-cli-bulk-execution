@@ -33,7 +33,24 @@ if __name__ == '__main__':
 
     try:
 
-        conf = configuration()
+        #
+        # Process command line parameters
+        #
+
+        config_file = ''
+        input_file = ''
+
+        parser = argparse.ArgumentParser(prog=sys.argv[0])
+        parser.add_argument('--input-file', '-f', metavar='[Filename]', required=True, help='Input file', dest='input_file')
+        parser.add_argument('--config','-c', metavar='<config file>', required=False, dest='config_file')
+
+        args = parser.parse_args() 
+        input_file = args.input_file
+
+        if args.config_file:
+            config_file = args.config_file 
+        
+        conf = configuration(config_file)
 
         #
         # If logging is activated, start logging to the file defined
@@ -41,18 +58,12 @@ if __name__ == '__main__':
         #
 
         if conf.logging == 'ON':
-            logs = logs("zabbix-cli-bulk-execution")
+            logs = log("zabbix-cli-bulk-execution",config_file)
         else:
             logs = None
             
         if conf.logging == 'ON':
             logs.logger.debug('**** Zabbix-cli-bulk-execution startet. ****')
-
-        parser = argparse.ArgumentParser(prog=sys.argv[0])
-        parser.add_argument('--input-file', metavar='[Filename]', required=True, help='Input file', dest='input_file')
-
-        args = parser.parse_args() 
-        input_file = args.input_file
 
         # Normalized absolutized version of the pathname if
         # files does not include an absolute path
@@ -67,12 +78,16 @@ if __name__ == '__main__':
 
             print '[OK] File [' + input_file + '] exists. Bulk execution of commands defined in this file started.'
 
+            #
+            # Processing zabbix commands in file
+            #
+
             try:
                 with open(input_file,'r') as file:
                     for line in file:
                         zabbix_cli_command = line.strip()
 
-                        command = 'zabbix-cli --use-json-format ' + zabbix_cli_command
+                        command = 'zabbix-cli -o json -C "' + zabbix_cli_command + '"'
                         
                         DEVNULL = open(os.devnull, 'w')
                         proc = subprocess.Popen([command],stdout=DEVNULL,stderr=DEVNULL,shell=True)

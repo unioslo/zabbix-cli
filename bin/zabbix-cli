@@ -24,6 +24,7 @@
 import sys
 import os
 import getpass
+import argparse
 
 from zabbix_cli.config import *
 from zabbix_cli.logs import * 
@@ -33,15 +34,40 @@ if __name__ == '__main__':
 
     try:
 
-        conf = configuration()
+        #
+        # Processing command line parameters
+        #
 
+        output_format = ''
+        config_file = ''
+        zabbix_command = ''
+
+        parser = argparse.ArgumentParser(prog=sys.argv[0],description='zabbix-cli - Zabbix client')
+
+        parser.add_argument('--output','-o',  metavar='[csv|json|plain]', choices=['csv','json','table'], required=False, dest='output_format')
+        parser.add_argument('--config','-c', metavar='<config file>', required=False, dest='config_file')
+        parser.add_argument('--command','-C', metavar='<Zabbix-cli command>',required=False,dest='zabbix_command')
+        
+        args = parser.parse_args()  
+        
+        if args.output_format:
+            output_format = args.output_format 
+        
+        if args.config_file:
+            config_file = args.config_file 
+    
+        if args.zabbix_command:
+            zabbix_command = args.zabbix_command 
+
+        conf = configuration(config_file)
+                
         #
         # If logging is activated, start logging to the file defined
         # with log_file in the config file.
         #
 
         if conf.logging == 'ON':
-            logs = logs("zabbix-cli")
+            logs = log("zabbix-cli",config_file)
         else:
             logs = None
             
@@ -163,77 +189,53 @@ if __name__ == '__main__':
 
 
         #
-        # Zabbix-CLI in interactive modus with color support
+        # Zabbix-CLI in interactive modus
         # 
 
-        if len(sys.argv) == 2 and sys.argv[1] == '--use-colors':
+        if zabbix_command == '':
 
             if conf.logging == 'ON':
                 logs.logger.debug('Zabbix-CLI running in interactive modus')
         
             os.system('clear')
             
-            cli = zabbixcli(logs,username,password,auth_token)
-            cli.color_support = 'on'
-
+            cli = zabbixcli(logs,conf,username,password,auth_token)
             cli.cmdloop()
             
         #
         # Zabbix-CLI in non-interactive modus(command line)
         # 
         
-        elif len(sys.argv) > 1:
+        elif zabbix_command != '':
             
             if conf.logging == 'ON':
                 logs.logger.debug('Zabbix-CLI running in non-interactive modus')
             
             # CSV format output
                 
-            if sys.argv[1] =='--use-csv-format':
+            if output_format == 'csv':
                 
-                cli = zabbixcli(logs,username,password,auth_token)
+                cli = zabbixcli(logs,conf,username,password,auth_token)
                 cli.output_format = 'csv'
                               
-                cli.onecmd(' '.join(sys.argv[2:]))
+                cli.onecmd(zabbix_command)
 
             # JSON format output
             
-            elif sys.argv[1] =='--use-json-format':
+            elif output_format == 'json':
                 
-                cli = zabbixcli(logs,username,password,auth_token)
+                cli = zabbixcli(logs,conf,username,password,auth_token)
                 cli.output_format = 'json'
                               
-                cli.onecmd(' '.join(sys.argv[2:]))
+                cli.onecmd(zabbix_command)
 
-            # Activate color support with PrettyTable output when
-            # running in non-interactive modus
-            
-            elif sys.argv[1] == '--use-colors':
-                
-                cli = zabbixcli(logs,username,password,auth_token)
-                cli.color_support = 'on'
-                              
-                cli.onecmd(' '.join(sys.argv[2:]))
-
-            # PrettyTable output
+            # Table format output
 
             else:
-                cli = zabbixcli(logs,username,password,auth_token)
-                cli.onecmd(' '.join(sys.argv[1:]))
-
-        #
-        # Zabbix-CLI in interactive modus without color support
-        # 
-
-        elif len(sys.argv) == 1:
-
-            if conf.logging == 'ON':
-                logs.logger.debug('Zabbix-CLI running in interactive modus')
-        
-            os.system('clear')
-            
-            cli = zabbixcli(logs,username,password,auth_token)
-            cli.cmdloop()
+                cli = zabbixcli(logs,conf,username,password,auth_token)
+                cli.output_format = 'table'
+                                
+                cli.onecmd(zabbix_command)
 
         else:
             raise NotImplementedError
@@ -249,3 +251,5 @@ if __name__ == '__main__':
             logs.logger.debug('**** Zabbix-CLI stopped. ****')
 
         sys.exit(0)
+
+

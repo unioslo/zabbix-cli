@@ -32,10 +32,10 @@ class configuration():
     # Constructor
     # ############################################
     
-    def __init__(self):
+    def __init__(self,config_file):
         """ The Constructor."""
         
-        self.config_file = ''
+        self.config_file = config_file
 
         # Zabbix API section
         self.zabbix_api_url = ''
@@ -72,7 +72,7 @@ class configuration():
     def set_configuration_file(self):
         """Set the zabbix-cli configuration file"""
         
-        config_file_list = (os.getenv('HOME') + '/.zabbix-cli/zabbix-cli.conf','/etc/zabbix-cli/zabbix-cli.conf','/etc/zabbix-cli.conf')
+        config_file_list = [self.config_file] + [os.getenv('HOME') + '/.zabbix-cli/zabbix-cli.conf','/etc/zabbix-cli/zabbix-cli.conf','/etc/zabbix-cli.conf']
         
         for file in config_file_list:
             if os.path.isfile(file):

@@ -27,17 +27,17 @@ import logging
 
 from zabbix_cli.config import *
 
-class logs(logging.Logger):
+class log(logging.Logger):
 
     # ############################################
     # Constructor    
     # ############################################
 
-    def __init__(self, logger_name):
+    def __init__(self, logger_name,config_file):
         """ The Constructor."""
      
         self.logger_name = logger_name
-        self.conf = configuration()
+        self.conf = configuration(config_file)
         
         self.logger = logging.getLogger(logger_name)
         level = logging.getLevelName(self.conf.log_level.upper())

@@ -61,7 +61,7 @@ class zabbixcli(cmd.Cmd):
     # Constructor
     # ###############################
 
-    def __init__(self,logs,username='',password='',auth_token=''):
+    def __init__(self,logs,conf,username='',password='',auth_token=''):
         cmd.Cmd.__init__(self)
         
         self.version = self.get_version()
@@ -73,7 +73,7 @@ class zabbixcli(cmd.Cmd):
         
         self.file = None
 
-        self.conf = configuration()
+        self.conf = conf
         self.logs = logs
         
         self.api_username = username
@@ -2938,7 +2938,7 @@ class zabbixcli(cmd.Cmd):
         '''DESCRIPTION:
 
         This command creates a notification user. These users are
-        used to send notifications when a event happens. 
+        used to send notifications when an zabbix event happens. 
 
         They are needed because sometimes a system administrator group
         needs to send different notifications to multiple different
