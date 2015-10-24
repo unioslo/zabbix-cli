@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
         parser = argparse.ArgumentParser(prog=sys.argv[0],description='zabbix-cli - Zabbix client')
 
-        parser.add_argument('--output','-o',  metavar='[csv|json|plain]', choices=['csv','json','table'], required=False, dest='output_format')
+        parser.add_argument('--output','-o',  metavar='[csv|json|table]', choices=['csv','json','table'], required=False, dest='output_format')
         parser.add_argument('--config','-c', metavar='<config file>', required=False, dest='config_file')
         parser.add_argument('--command','-C', metavar='<Zabbix-cli command>',required=False,dest='zabbix_command')
         
