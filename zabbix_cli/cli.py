@@ -1773,7 +1773,7 @@ class zabbixcli(cmd.Cmd):
         one/several hosts
 
         COMMAND:
-        add_host_to_hostgroup [templates]
+        link_template_to_host [templates]
                               [hostnames]
 
 
