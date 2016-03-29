@@ -103,6 +103,13 @@ class zabbixcli(cmd.Cmd):
 
             self.api_auth_token = self.zapi.login(self.api_username,self.api_password,self.api_auth_token)
 
+            #
+            # Populate the dictionary used as a cache with hostid and
+            # hostname data
+            #
+
+            self.hostid_cache = self.populate_hostid_cache()
+
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Connected to Zabbix JSON-API')
 
@@ -439,7 +446,7 @@ class zabbixcli(cmd.Cmd):
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems getting host information - %s',e)
 
-            self.generate_feddback('Error','Problems getting host information')
+            self.generate_feedback('Error','Problems getting host information')
             return False   
 
         #
@@ -1135,7 +1142,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            query=ast.literal_eval("{'withLastEventUnacknowledged':3,'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'expandData':'hostname','sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{'value':'1'" + filters + "}," + groupids + "}")
+            query=ast.literal_eval("{'selectHosts':'host','withLastEventUnacknowledged':3,'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{'value':'1'" + filters + "}," + groupids + "}")
 
 
         except Exception as e:
@@ -1176,7 +1183,7 @@ class zabbixcli(cmd.Cmd):
             if self.output_format == 'json':
 
                 result_columns [result_columns_key] = {'triggerid':trigger['triggerid'],
-                                                       'hostname':trigger['hostname'],
+                                                       'hostname':self.get_host_name(trigger['host'][0]['hostid']),
                                                        'description':trigger['description'],
                                                        'severity':self.get_trigger_severity(int(trigger['priority'])),
                                                        'lastchange':str(lastchange),
@@ -1215,7 +1222,7 @@ class zabbixcli(cmd.Cmd):
                     ansi_end = ''
 
                 result_columns [result_columns_key] = {'1':trigger['triggerid'],
-                                                       '2':trigger['hostname'],
+                                                       '2':self.get_host_name(trigger['hosts'][0]['hostid']),
                                                        '3':'\n  '.join(textwrap.wrap("* " + trigger['description'],62)),
                                                        '4':ansi_code + self.get_trigger_severity(int(trigger['priority'])).upper() + ansi_end,
                                                        '5':str(lastchange),
@@ -6211,13 +6218,25 @@ class zabbixcli(cmd.Cmd):
 
         try:
 
-            data = self.zapi.host.get(output='extend',
-                                      hostids=hostid)
+            # 
+            # Return the value if it exists from the dictionary
+            # hostid_cache.
+            #
 
-            if data != []:
-                host_name = data[0]['host']
+            if hostid in self.hostid_cache:
+                host_name = self.hostid_cache[hostid]
+            
             else:
-                raise Exception('Could not find hostname for ID:' + hostid)
+
+                data = self.zapi.host.get(output=['name'],
+                                          hostids=hostid)
+
+                if data != []:
+                    host_name = data[0]['name']
+                    self.hostid_cache[hostid] = host_name
+                
+                else:
+                    raise Exception('Could not find hostname for ID:' + hostid)
 
         except Exception as e:
             raise e
@@ -6461,7 +6480,48 @@ class zabbixcli(cmd.Cmd):
 
         else:
             raise Exception('The proxy list is empty')
+
+
+    # #################################################
+    # Method populate_hostid_cache
+    # #################################################
+    
+    def populate_hostid_cache(self):
+        '''
+        DESCRIPTION:
+        Populate hostid cache
+        '''
+
+        # This methos initializes a dictionary when we start
+        # zabbix-cli with all hostid:hostname from hosts that are
+        # monitored. We use this as a cache to get hostname
+        # information for a hostid.
+        #
+        # This cache is necessary e.g. by the show_alarms to avoid an
+        # API call per active trigger to get the hostname of the host
+        # with the associated trigger because this is a very expensive
+        # operation on big systems with many active triggers.
+        #
+        # This has to be done this way now because with zabbix 3.0 the
+        # API has changed and it is not possible to get the hostname
+        # value via trigger.get(). expandData parameter got
+        # deprecated in 2.4 and removed in 3.0.
+        #
+
+        try:
+            temp_dict = {}
             
+            data = self.zapi.host.get(output=['hostid','name'],
+                                      monitored_hosts=True)
+
+            for host in data:
+                temp_dict[host['hostid']] = host['name'] 
+
+            return temp_dict
+            
+        except Exception as e:
+            raise e
+
 
     # ############################################
     # Method preloop
