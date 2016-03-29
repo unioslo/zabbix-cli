@@ -1,3 +1,16 @@
+#
+# Most of the code in this file is from the project PyZabbix:
+# https://github.com/lukecyca/pyzabbix
+#
+# We have modified the login method to be able to send an auth-token so
+# we do not have to login again as long as the auth-token used is still
+# active.
+#
+# We have also modified the output when an error happens to not show
+# the username + password information.
+#
+
+from __future__ import unicode_literals
 import logging
 import requests
 import json
@@ -24,12 +37,14 @@ class ZabbixAPI(object):
     def __init__(self,
                  server='http://localhost/zabbix',
                  session=None,
-                 use_authenticate=False):
+                 use_authenticate=False,
+                 timeout=None):
         """
         Parameters:
             server: Base URI for zabbix web interface (omitting /api_jsonrpc.php)
             session: optional pre-configured requests.Session instance
             use_authenticate: Use old (Zabbix 1.8) style authentication
+            timeout: optional connect and read timeout in seconds, default: None (if you're using Requests >= 2.4 you can set it as tuple: "(connect, read)" which is used to set individual connect and read timeouts.)
         """
 
         if session:
@@ -40,12 +55,15 @@ class ZabbixAPI(object):
         # Default headers for all requests
         self.session.headers.update({
             'Content-Type': 'application/json-rpc',
-            'User-Agent': 'python/pyzabbix'
+            'User-Agent': 'python/pyzabbix',
+            'Cache-Control': 'no-cache'
         })
 
         self.use_authenticate = use_authenticate
         self.auth = ''
         self.id = 0
+
+        self.timeout = timeout
 
         self.url = server + '/api_jsonrpc.php'
         logger.info("JSON-RPC Server Endpoint: %s", self.url)
@@ -99,7 +117,8 @@ class ZabbixAPI(object):
             'id': self.id,
         }
 
-        if self.auth:
+        # We don't have to pass the auth token if asking for the apiinfo.version
+        if self.auth and method != 'apiinfo.version':
             request_json['auth'] = self.auth
 
 
@@ -109,7 +128,8 @@ class ZabbixAPI(object):
        
         response = self.session.post(
             self.url,
-            data=json.dumps(request_json)
+            data=json.dumps(request_json),
+            timeout=self.timeout
         )
 
         logger.debug("Response Code: %s", str(response.status_code))
@@ -135,6 +155,9 @@ class ZabbixAPI(object):
 
         if 'error' in response_json:  # some exception
 
+            if 'data' not in response_json['error']: # some errors don't contain 'data': workaround for ZBX-9340
+                response_json['error']['data'] = "No data"
+            
             #
             # We do not want to get the password value in the error
             # message if the user uses a not valid username or
@@ -164,7 +187,7 @@ class ZabbixAPI(object):
                     data=response_json['error']['data'],
                     json=str(request_json))
 
-            raise ZabbixAPIException(msg)
+            raise ZabbixAPIException(msg, response_json['error']['code'])
 
         return response_json
 
