@@ -2341,7 +2341,6 @@ class zabbixcli(cmd.Cmd):
                         hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup.strip())) + '"}')
 
             hostgroup_ids = ','.join(hostgroups_list)
-            proxy_id = str(self.get_random_proxyid(proxy.strip()))
             
         except Exception as e:
  
@@ -2351,13 +2350,27 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error',e)
             return False
 
+
+        try:
+            proxy_id = str(self.get_random_proxyid(proxy.strip()))
+
+            proxy_hostid = "\"proxy_hostid\":\"" + proxy_id + "\","
+
+        except Exception as e:
+ 
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Host [%s] - %s',hostname,e)
+                
+            proxy_hostid = ""
+
         #
         # Checking if hostname exists
         #
 
         try:
-            result = self.zapi.host.exists(name=hostname)
 
+            result = self.host_exists(hostname.strip())
+            
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Cheking if host (%s) exists',hostname)
 
@@ -2385,7 +2398,7 @@ class zabbixcli(cmd.Cmd):
                 
             elif result == False:
 
-                query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + "\"proxy_hostid\":\"" + proxy_id + "\"," + "\"status\":" + host_status + "," + interfaces_def + ",\"inventory_mode\":1,\"inventory\":{\"name\":\"" + hostname +"\"}}")
+                query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + proxy_hostid + "\"status\":" + host_status + "," + interfaces_def + ",\"inventory_mode\":1,\"inventory\":{\"name\":\"" + hostname +"\"}}")
                 
                 result = self.zapi.host.create(**query)
 
@@ -6182,6 +6195,29 @@ class zabbixcli(cmd.Cmd):
         return str(hostgroupid)
 
 
+
+    # #################################################
+    # Method host_exists
+    # #################################################
+    
+    def host_exists(self, host):
+        '''
+        DESCRIPTION:
+        Find out if a hostname exists in zabbix
+        '''
+
+        try:
+            data = self.zapi.host.get(filter={"host":host})
+
+            if data != []:
+                return True
+            else:
+                return False
+
+        except Exception as e:
+            raise e
+
+
     # #################################################
     # Method get_host_id
     # #################################################
@@ -6479,7 +6515,7 @@ class zabbixcli(cmd.Cmd):
             return proxy_list[get_random_index]
 
         else:
-            raise Exception('The proxy list is empty')
+            raise Exception('The proxy list is empty. Using the zabbix server to monitor this host.')
 
 
     # #################################################
