@@ -2969,7 +2969,7 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         create_notification_user [sendto]
                                  [mediatype]
-                    
+                                 [remarks]
         [sendto]
         --------
         E-mail address or SMS number
@@ -2978,6 +2978,11 @@ class zabbixcli(cmd.Cmd):
         -----------
         One of the media types names defined in your Zabbix
         installation, e.g.  Email, SMS
+
+        [remarks]
+        ---------
+        Comments about this user. e.g. Johns cellphone.
+        Max lenght is 20 characters.
 
         '''
         
@@ -3016,6 +3021,7 @@ class zabbixcli(cmd.Cmd):
                 print '--------------------------------------------------------'
                 sendto = raw_input('# SendTo []: ').strip()
                 mediatype = raw_input('# Media type []: ').strip()
+                remarks = raw_input('# Remarks []: ').strip()
                 print '--------------------------------------------------------'
 
             except Exception as e:
@@ -3027,10 +3033,11 @@ class zabbixcli(cmd.Cmd):
         # Command with parameters
         #
 
-        elif len(arg_list) == 2:
+        elif len(arg_list) == 3:
 
             sendto = arg_list[0].strip()
             mediatype = arg_list[1].strip()
+            remarks = arg_list[2].strip()
 
         #
         # Command with the wrong number of parameters
@@ -3052,7 +3059,11 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error','Media type is empty')
             return False
 
-        alias = 'notification-user-' + sendto.replace('.','-')
+        if remarks.strip() == '':
+            alias = 'notification-user-' + sendto.replace('.','-')
+        else:
+            alias = 'notification-user-' + remarks.strip()[:20].replace(' ','_') + '-' + sendto.replace('.','-')
+
         passwd = passwd_default
         type = type_default
         autologin = autologin_default
