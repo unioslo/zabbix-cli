@@ -3320,7 +3320,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
             
-            result = self.zapi.hostgroup.exists(name=hostgroup)
+            result = self.hostgroup_exists(hostgroup.strip())
 
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Checking if hostgroup (%s) exists',hostgroup)
@@ -6172,6 +6172,28 @@ class zabbixcli(cmd.Cmd):
 
 
     # ########################################################
+    # Method hostgroup_exists
+    # ########################################################
+
+    def hostgroup_exists(self, hostgroup):
+        '''
+        DESCRIPTION:
+        Find out if hostgroup exists
+        '''
+
+        try:
+            data = self.zapi.hostgroup.get(filter={'name':hostgroup})
+            
+            if data != []:
+                return True
+            else:
+                return False
+
+        except Exception as e:
+            raise e
+
+
+    # ########################################################
     # Method get_hostgroup_id
     # ########################################################
 
@@ -6419,7 +6441,8 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.usergroup.getobjects(name=usergroup)
+            data = self.zapi.usergroup.get(output=['usrgrpid'],
+                                           filter={"name":usergroup})
 
             if data != []:
                 usergroupid = data[0]['usrgrpid']
