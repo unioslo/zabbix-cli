@@ -2674,7 +2674,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            host_exists = self.zapi.host.exists(name=hostname)
+            host_exists = self.host_exists(hostname)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Cheking if host (%s) exists',hostname)
