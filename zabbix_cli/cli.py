@@ -3505,7 +3505,7 @@ class zabbixcli(cmd.Cmd):
             for group in hostgroups.split(','):
                 hostgroupid = self.get_hostgroup_id(group)                
 
-                result = self.zapi.usergroup.massadd(usrgrpids=[usrgrpid],rights={'id':hostgroupid,'permission':permission_code})
+                result = self.zapi.usergroup.massupdate(usrgrpids=[usrgrpid],rights={'id':hostgroupid,'permission':permission_code})
                 
                 if self.conf.logging == 'ON':
                     self.logs.logger.info('Usergroup [%s] has got [%s] permission on hostgroup [%s] ',usergroup,permission,group)
@@ -3515,9 +3515,9 @@ class zabbixcli(cmd.Cmd):
         except Exception as e:
             
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems giving the usergroup [%s] [%s] access to the hostgroup [%s] - %s',usergroup,permission,group,e)
+                self.logs.logger.error('Problems giving the usergroup [%s] [%s] access to the hostgroup [%s] - %s',usergroup,permission,hostgroups,e)
             
-            self.generate_feedback('Error','Problems giving the usergroup [' + usergroup + '] [' + permission + '] access to the hostgroup [' + group + ']')
+            self.generate_feedback('Error','Problems giving the usergroup [' + usergroup + '] [' + permission + '] access to the hostgroup [' + hostgroups + ']')
             return False 
 
 
