@@ -2137,7 +2137,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
             
-            result = self.zapi.usergroup.exists(name=groupname)
+            result = self.usergroup_exists(groupname)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Cheking if usergroup (%s) exists',groupname)
@@ -6439,6 +6439,29 @@ class zabbixcli(cmd.Cmd):
             raise e
 
         return str(templateid)
+
+
+    # ##########################################
+    # Method usergroup_exists
+    # ##########################################
+    
+    def usergroup_exists(self, usergroup):
+        '''
+        DESCRIPTION:
+        Find out if usergroups exists
+        '''
+
+        try:
+            data = self.zapi.usergroup.get(output=['usrgrpid'],
+                                           filter={"name":usergroup})
+
+            if data != []:
+                return True
+            else:
+                return False
+
+        except Exception as e:
+            raise e
 
 
     # ##########################################
