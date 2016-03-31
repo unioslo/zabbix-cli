@@ -587,7 +587,7 @@ class zabbixcli(cmd.Cmd):
         try:
             host_id = str(self.get_host_id(host))
 
-        except ValueError as e:
+        except Exception as e:
             print '\n[ERROR]: ',e,'\n'
             return False
         
