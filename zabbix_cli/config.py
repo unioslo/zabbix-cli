@@ -47,7 +47,7 @@ class configuration():
         self.default_create_user_usergroup = 'All-users'
         self.default_notification_users_usergroup = 'All-notification-users'
         self.default_directory_exports = os.getenv('HOME') + '/zabbix_exports' 
-        self.default_export_format = 'JSON'
+        self.default_export_format = 'XML'
         self.include_timestamp_export_filename = 'ON'
         self.use_colors = 'ON'
         self.use_auth_token_file = 'OFF'
@@ -122,8 +122,13 @@ class configuration():
             if config.has_option('zabbix_config','default_directory_exports'):
                 self.default_directory_exports = config.get('zabbix_config','default_directory_exports')
 
-            if config.has_option('zabbix_config','default_export_format'):
-                self.default_export_format = config.get('zabbix_config','default_export_format')
+            #
+            # We deactivate this until https://support.zabbix.com/browse/ZBX-10607 gets fixed.
+            # We use XML as the export format.
+            #
+            # if config.has_option('zabbix_config','default_export_format'):
+            #    self.default_export_format = config.get('zabbix_config','default_export_format')
+            #
 
             if config.has_option('zabbix_config','include_timestamp_export_filename'):
                 self.include_timestamp_export_filename = config.get('zabbix_config','include_timestamp_export_filename')
