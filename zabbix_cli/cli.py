@@ -37,6 +37,7 @@ import textwrap
 import json
 import xml.dom.minidom
 import glob
+import re
 
 from zabbix_cli.config import *
 from zabbix_cli.logs import *
@@ -2189,8 +2190,7 @@ class zabbixcli(cmd.Cmd):
     # ############################################
 
     def do_create_host(self,args):
-        '''
-        DESCRIPTION:
+        '''DESCRIPTION:
         This command creates a host.
 
         COMMAND:
@@ -2215,14 +2215,27 @@ class zabbixcli(cmd.Cmd):
         This command will fail if both 'default_hostgroup' and
         [hostgroups] are empty.
 
-        [proxy]
-        -------
-        Proxy server used to monitor this host. One can use wildcards
-        to define a group of proxy servers from where the system
-        will choose a random proxy. 
+        [proxy] 
+        ------- 
+
+        Proxy server used to monitor this host. One can use regular
+        expressions to define a group of proxy servers from where the
+        system will choose a random proxy.
 
         If this parameter is not defined, the system will assign a
         random proxy from the list of all available proxies.
+
+        If the system does not have proxy servers defined, the new
+        host will be monitor by the Zabbix-server.
+
+        e.g. Some regular expressions that can be used:
+        
+        * proxy-(prod|test)+d\.example\.org
+          e.g. proxy-prod1.example.org and proxy-test8.example.org 
+               will match this expression.  
+
+        * .+
+          All proxies will match this expression.
 
         [Status]
         --------
@@ -2238,7 +2251,7 @@ class zabbixcli(cmd.Cmd):
         hostgroup_default = self.conf.default_hostgroup.strip()
 
         # Proxy server to use to monitor this host        
-        proxy_default = '*'
+        proxy_default = '.+'
 
         # Default 0: Enable
         host_status_default = '0'
@@ -6546,21 +6559,23 @@ class zabbixcli(cmd.Cmd):
     # Method get_random_proxy
     # ##########################################
     
-    def get_random_proxyid(self,proxy):
+    def get_random_proxyid(self,proxy_pattern):
         '''
-        Return a random proxyID from the list of existing proxies 
+        Return a random proxyID from the list of proxies that match the
+        regular expression sent as a parameter to this funtion
+
         '''
 
         proxy_list = []
 
-        try:
-            search_proxy = '\'search\':{\'host\':\'' + proxy + '\'}' 
-            query=ast.literal_eval("{'output':'extend'," + search_proxy  + ",'searchWildcardsEnabled':'True'}")
+        match_pattern = re.compile(proxy_pattern)
 
-            data = self.zapi.proxy.get(**query)
+        try:
+            data = self.zapi.proxy.get(output=['proxyid','host'])
             
             for proxy in data:
-                proxy_list.append(proxy['proxyid'])
+                if match_pattern.match(proxy['host']):
+                    proxy_list.append(proxy['proxyid'])
             
         except Exception as e:
             raise e
