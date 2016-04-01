@@ -2190,7 +2190,8 @@ class zabbixcli(cmd.Cmd):
     # ############################################
 
     def do_create_host(self,args):
-        '''DESCRIPTION:
+        '''
+        DESCRIPTION:
         This command creates a host.
 
         COMMAND:
@@ -2217,7 +2218,6 @@ class zabbixcli(cmd.Cmd):
 
         [proxy] 
         ------- 
-
         Proxy server used to monitor this host. One can use regular
         expressions to define a group of proxy servers from where the
         system will choose a random proxy.

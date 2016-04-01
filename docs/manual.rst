@@ -3,7 +3,7 @@ Zabbix-CLI
 =====================================
 
 |
-| Version-1.4.0
+| Version-1.5.0
 |
 | Rafael Martinez Guerrero (University of Oslo)
 | E-mail: rafael@postgresql.org.es
@@ -402,12 +402,25 @@ Parameters:
   This command will fail if both ``default_hostgroup`` and
   [hostgroups] are empty.
 
-* **[proxy]:** Proxy server used to monitor this host. One can use
-  wildcards to define a group of proxy servers from where the system
-  will choose a random proxy. If this parameter is not defined, the
-  system will assign a random proxy from the list of all available
-  proxies.
- 
+* **[proxy]:** Proxy server used to monitor this host. One can use regular
+  expressions to define a group of proxy servers from where the
+  system will choose a random proxy.
+
+  If this parameter is not defined, the system will assign a
+  random proxy from the list of all available proxies.
+  
+  If the system does not have proxy servers defined, the new
+  host will be monitor by the Zabbix-server.
+
+  e.g. Some regular expressions that can be used:
+  
+  - proxy-(prod|test)+d\.example\.org
+    e.g. proxy-prod1.example.org and proxy-test8.example.org 
+    will match this expression.  
+
+  - .+
+    All proxies will match this expression.
+
 * **[status]:** Status of the host. If this parameter is not defined,
   the system will use the default.
 
@@ -490,12 +503,15 @@ not alarm-type-1 to email-1 and email-2
   
    create_notification_user [sendto]
                             [mediatype]
-                    
+                            [remarks]
+
 Parameters:
 
 * **[sendto]**: E-mail address or SMS number
 * **[mediatype]**: One of the media types names defined in your Zabbix
   installation, e.g.  Email, SMS
+* **[remarks]**: Comments about this user. e.g. Johns cellphone.
+  Max lenght is 20 characters.
 
 
 create_user
@@ -1199,4 +1215,4 @@ License and Contributions
 Zabbix-CLI is the property of USIT-University of Oslo, and its code is
 distributed under GNU General Public License 3.
 
-| Copyright © 2014-2015 USIT-University of Oslo.
+| Copyright © 2014-2016 USIT-University of Oslo.
