@@ -414,11 +414,13 @@ Parameters:
 
   e.g. Some regular expressions that can be used:
   
-  - proxy-(prod|test)+d\.example\.org
+  - *proxy-(prod|test)+d\.example\.org*
+
     e.g. proxy-prod1.example.org and proxy-test8.example.org 
     will match this expression.  
 
-  - .+
+  - *.+*
+
     All proxies will match this expression.
 
 * **[status]:** Status of the host. If this parameter is not defined,
