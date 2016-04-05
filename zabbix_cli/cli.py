@@ -2353,8 +2353,8 @@ class zabbixcli(cmd.Cmd):
                     else:
                         hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup.strip())) + '"}')
 
-            hostgroup_ids = ','.join(hostgroups_list)
-            
+            hostgroup_ids = ','.join(set(hostgroups_list))
+
         except Exception as e:
  
             if self.conf.logging == 'ON':
@@ -2412,7 +2412,7 @@ class zabbixcli(cmd.Cmd):
             elif result == False:
 
                 query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + proxy_hostid + "\"status\":" + host_status + "," + interfaces_def + ",\"inventory_mode\":1,\"inventory\":{\"name\":\"" + hostname +"\"}}")
-                
+
                 result = self.zapi.host.create(**query)
 
                 if self.conf.logging == 'ON':
@@ -6572,7 +6572,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
             data = self.zapi.proxy.get(output=['proxyid','host'])
-            
+
             for proxy in data:
                 if match_pattern.match(proxy['host']):
                     proxy_list.append(proxy['proxyid'])
