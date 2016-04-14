@@ -3425,7 +3425,7 @@ class zabbixcli(cmd.Cmd):
 
 
     # ############################################
-    # Method do_define_usergroup_permissions
+    # Method do_add_usergroup_permissions
     # ############################################
 
     def do_add_usergroup_permissions(self, args):
@@ -3437,6 +3437,113 @@ class zabbixcli(cmd.Cmd):
         If the usergroup already have permissions on the hostgroup,
         nothing will be changed.
     
+        COMMAND:
+        define_usergroup_permissions [usergroup]
+                                     [hostgroups]
+                                     [permission code]
+
+        [usergroup]
+        -----------
+        Usergroup that will get a permission on a hostgroup
+
+        [hostgroups]
+        ------------
+        Hostgroup names where the permission will apply. 
+        
+        One can define several values in a comma separated list.
+
+        [permission]
+        ------------
+        * deny: Deny [usergroup] all access to [hostgroups]
+        * ro: Give [usergroup] read access to [hostgroups]
+        * rw: Give [usergroup] read and write access to [hostgroups]
+
+        '''
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                usergroup = raw_input('# Usergroup: ').strip()
+                hostgroups = raw_input('# Hostgroup: ').strip()
+                permission = raw_input('# Permission: ').strip().lower()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 3:
+
+            usergroup = arg_list[0].strip()
+            hostgroups = arg_list[1].strip()
+            permission = arg_list[2].strip().lower()
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if usergroup == '':
+            self.generate_feedback('Error','Usergroup value is empty')
+            return False
+
+        if hostgroups == '':
+            self.generate_feedback('Error','Hostgroups value is empty')
+            return False
+
+        if permission not in ('deny','ro','rw'):
+            self.generate_feedback('Error','Permission value is not valid')
+            return False
+
+        #
+        # Define access permissions to the hostgroups
+        #
+
+        try:
+            
+            usrgrpid = self.get_usergroup_id(usergroup)
+            permission_code = self.get_permission_code(permission)
+
+            for group in hostgroups.split(','):
+                hostgroupid = self.get_hostgroup_id(group)                
+
+                result = self.zapi.usergroup.massadd(usrgrpids=[usrgrpid],rights={'id':hostgroupid,'permission':permission_code})
+                
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('Usergroup [%s] has got [%s] permission on hostgroup [%s] ',usergroup,permission,group)
+
+                self.generate_feedback('Done','Usergroup [' + usergroup + '] has got [' + permission + '] permission on hostgroup [' + group + ']')
+                        
+        except Exception as e:
+            
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems giving the usergroup [%s] [%s] access to the hostgroup [%s] - %s',usergroup,permission,hostgroups,e)
+            
+            self.generate_feedback('Error','Problems giving the usergroup [' + usergroup + '] [' + permission + '] access to the hostgroup [' + hostgroups + ']')
+            return False 
+
+
+    # ############################################
+    # Method do_update_usergroup_permissions
+    # ############################################
+
+    def do_update_usergroup_permissions(self, args):
+        '''
+        DESCRIPTION:
+        This command updates the permissions for an usergroup
+        on a hostgroup.
+
         COMMAND:
         define_usergroup_permissions [usergroup]
                                      [hostgroups]
