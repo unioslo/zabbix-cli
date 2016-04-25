@@ -3992,19 +3992,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error','Hostname is empty')
             return False
 
-        if hostname.isdigit() == True:
-            hostid = hostname
-        else:
-            try:
-                hostid = self.get_host_id(hostname.strip())
-            
-            except Exception as e:
-                if self.conf.logging == 'ON':
-                    self.logs.logger.info('Hostname %s does not exist',hostname)
-
-                self.generate_feedback('Error','Hostname ' + hostname + ' does not exist')
-                return False
-                
 
         #
         # Checking if host exists
@@ -4012,7 +3999,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
             
-            result = self.zapi.host.exists(hostid=hostid)
+            result = self.host_exists(hostname)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Cheking if host (%s) exists',hostname,)
@@ -4033,8 +4020,10 @@ class zabbixcli(cmd.Cmd):
                 # Update host monitoring status
                 #
 
+                hostid = self.get_host_id(hostname.strip())
+
                 data = self.zapi.host.update(hostid=hostid,
-                                        status=monitoring_status)
+                                             status=monitoring_status)
                                 
                 if self.conf.logging == 'ON':
                     self.logs.logger.info('Monitoring status for hostname (%s) changed to (%s)',hostname,monitoring_status)
