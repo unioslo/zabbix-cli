@@ -1016,6 +1016,7 @@ class zabbixcli(cmd.Cmd):
         show_alarms [description]
                     [filters]
                     [hostgroups]
+                    [Last event unacknowledged]                    
 
         [description]
         -------------
@@ -1043,11 +1044,22 @@ class zabbixcli(cmd.Cmd):
         hostgroup or group og hostgroups. One can define several
         values in a comma separated list.
  
+        [Last event unacknowledged]
+        ---------------------------
+        One can filter the result after the acknowledged value of the 
+        last event of an alarm.
 
-        e.g.: Get all alarms with priority 'High' and that contain 
-              the word 'disk' in the description for the host 'host.example.org'
+        Values:
+        
+        true - (default) Show only active alarms with last event unacknowledged.
+        false - Show all active alarms, also those with the last event acknowledged.
 
-        show_alarms "*disk*" "'host':'host.example.org','priority':'4'" "*"
+
+        e.g.: Get all alarms with priority 'High' that contain the word 
+              'disk' in the description for the host 'host.example.org' and
+              the last event unacknowledged
+
+        show_alarms *disk* "'host':'host.example.org','priority':'4'" * true
 
         '''
 
@@ -1074,6 +1086,7 @@ class zabbixcli(cmd.Cmd):
                 description = raw_input('# Description []: ').strip()
                 filters = raw_input('# Filter []: ').strip()
                 hostgroups = raw_input('# Hostgroups []: ').strip()
+                ack_filter = raw_input('# Last event unacknowledged [true]: ').strip().lower()
                 print '--------------------------------------------------------'
 
             except Exception as e:
@@ -1085,11 +1098,12 @@ class zabbixcli(cmd.Cmd):
         # Command without filters attributes
         #
 
-        elif len(arg_list) == 3:
+        elif len(arg_list) == 4:
 
             description = arg_list[0].strip()
             filters = arg_list[1].strip()
             hostgroups = arg_list[2].strip()
+            ack_filter = arg_list[3].strip().lower()
 
         #
         # Command with the wrong number of parameters
@@ -1103,6 +1117,13 @@ class zabbixcli(cmd.Cmd):
         #
         # Sanity check
         #
+
+        if ack_filter in ['','true']:
+            ack_filter = ",'withLastEventUnacknowledged':'True'"
+        elif ack_filter in ['*','false']:
+            ack_filter = ""
+        else:
+            ack_filter = ",'withLastEventUnacknowledged':'True'"
 
         if filters == '*':
             filters = ''
@@ -1143,7 +1164,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            query=ast.literal_eval("{'selectHosts':'host','withLastEventUnacknowledged':3,'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{'value':'1'" + filters + "}," + groupids + "}")
+            query=ast.literal_eval("{'selectHosts':'host'" + ack_filter + ",'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{'value':'1'" + filters + "}," + groupids + "}")
 
 
         except Exception as e:

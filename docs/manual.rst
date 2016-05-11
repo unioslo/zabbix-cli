@@ -894,6 +894,7 @@ unacknowledged.
    show_alarms [description]
                [filters]
                [hostgroups]
+               [Last event unacknowledged]
 
 Parameters:
 
@@ -916,11 +917,22 @@ Parameters:
 * **hostgroups:** One can filter the result to get alarms from a
   particular hostgroup or group og hostgroups. One can define
   several values in a comma separated list.
- 
-e.g.: Get all alarms with priority 'High' that contain 
-the word 'disk' in t\he description from all hostgroups in the system::
 
-  show_alarms "*disk*" "'priority':'4'" "*"
+* **Last event unacknowledged:** One can filter the result after the
+  acknowledged value of the last event of an alarm.
+
+  Values:
+        
+  - true - (default) Show only active alarms with last event
+    unacknowledged.
+  - false - Show all active alarms, also those with the last event
+    acknowledged.
+
+e.g.: Get all alarms with priority 'High' that contain the word 'disk'
+in the description from all hostgroups in the system and the last
+event unacknowledged::
+
+  show_alarms *disk* "'priority':'4'" * true
 
 
 
