@@ -1184,7 +1184,7 @@ class zabbixcli(cmd.Cmd):
             if self.output_format == 'json':
 
                 result_columns [result_columns_key] = {'triggerid':trigger['triggerid'],
-                                                       'hostname':self.get_host_name(trigger['host'][0]['hostid']),
+                                                       'hostname':self.get_host_name(trigger['hosts'][0]['hostid']),
                                                        'description':trigger['description'],
                                                        'severity':self.get_trigger_severity(int(trigger['priority'])),
                                                        'lastchange':str(lastchange),
