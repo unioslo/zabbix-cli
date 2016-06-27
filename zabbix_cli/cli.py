@@ -65,34 +65,53 @@ class zabbixcli(cmd.Cmd):
     def __init__(self,logs,conf,username='',password='',auth_token=''):
         cmd.Cmd.__init__(self)
         
-        self.version = self.get_version()
-
-        self.intro =  '\n#############################################################\n' + \
-                      'Welcome to the Zabbix command-line interface (v.' + self.version + ')\n' + \
-                      '#############################################################\n' + \
-                      'Type help or \? to list commands.\n'
-        
-        self.file = None
-
-        self.conf = conf
-        self.logs = logs
-        
-        self.api_username = username
-        self.api_password = password
-        self.api_auth_token = auth_token
-        self.output_format = 'table'
-        self.use_colors = self.conf.use_colors
-        self.use_auth_token_file = self.conf.use_auth_token_file
-
-        self.system_id = self.conf.system_id
-        
-        self.prompt = '[zabbix-cli ' + self.api_username + '@' + self.system_id + ']$ '
-
-        if self.conf.logging == 'ON':
-            self.logs.logger.debug('Zabbix API url: %s',self.conf.zabbix_api_url)
-
         try:
-                        
+
+            # Zabbix-cli version
+            self.version = self.get_version()
+
+            # Zabbix-cli welcome intro
+            self.intro =  '\n#############################################################\n' + \
+                          'Welcome to the Zabbix command-line interface (v.' + self.version + ')\n' + \
+                          '#############################################################\n' + \
+                          'Type help or \? to list commands.\n'
+            
+            # Pointer to Configuration class
+            self.conf = conf
+            
+            # Pointer to logging class
+            self.logs = logs
+            
+            # zabbix-API Username
+            self.api_username = username
+            
+            # zabbix-API password
+            self.api_password = password
+            
+            # zabbix-API auth-token
+            self.api_auth_token = auth_token
+            
+            # Default output format (table|json|csv)
+            self.output_format = 'table'
+            
+            # Use of colors (on|off)
+            self.use_colors = self.conf.use_colors
+            
+            # Use of auth-token file (on|off)
+            self.use_auth_token_file = self.conf.use_auth_token_file
+            
+            # Bulk execution of commands (True|False)
+            self.bulk_execution = False
+            
+            # SystemID show in prompt text
+            self.system_id = self.conf.system_id
+        
+            # Prompt text
+            self.prompt = '[zabbix-cli ' + self.api_username + '@' + self.system_id + ']$ '
+            
+            if self.conf.logging == 'ON':
+                self.logs.logger.debug('Zabbix API url: %s',self.conf.zabbix_api_url)
+                                    
             #
             # Connecting to the Zabbix JSON-API
             #
@@ -103,13 +122,6 @@ class zabbixcli(cmd.Cmd):
             self.zapi.session.verify = True
 
             self.api_auth_token = self.zapi.login(self.api_username,self.api_password,self.api_auth_token)
-
-            #
-            # Populate the dictionary used as a cache with hostid and
-            # hostname data
-            #
-
-            self.hostid_cache = self.populate_hostid_cache()
 
             if self.conf.logging == 'ON':
                 self.logs.logger.debug('Connected to Zabbix JSON-API')
@@ -129,6 +141,20 @@ class zabbixcli(cmd.Cmd):
 
                 if self.conf.logging == 'ON':
                     self.logs.logger.info('API-auth-token file created.')
+
+            #
+            # Populate the dictionary used as a cache with hostid and
+            # hostname data
+            #
+
+            self.hostid_cache = self.populate_hostid_cache()
+
+            #
+            # Populate the dictionary used as a cache with proxyid and
+            # proxy name data
+            #
+
+            self.proxyid_cache = self.populate_proxyid_cache()
 
         except Exception as e:        
             print '\n[ERROR]: ',e
@@ -2416,10 +2442,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error','Problems checking if host (' + hostname + ') exists')
             return False   
         
-        #
-        # Create host if it does not exist
-        #
-
         try:
 
             if result == True:
@@ -2432,6 +2454,10 @@ class zabbixcli(cmd.Cmd):
                 
             elif result == False:
 
+                #
+                # Create host via Zabbix-API
+                # 
+
                 query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + proxy_hostid + "\"status\":" + host_status + "," + interfaces_def + ",\"inventory_mode\":1,\"inventory\":{\"name\":\"" + hostname +"\"}}")
 
                 result = self.zapi.host.create(**query)
@@ -2440,6 +2466,11 @@ class zabbixcli(cmd.Cmd):
                     self.logs.logger.info('Host (%s) with ID: %s created',hostname,str(result['hostids'][0]))
                 
                 self.generate_feedback('Done','Host (' + hostname + ') with ID: ' + str(result['hostids'][0]) + ' created')
+
+                #
+                # Update the hostid cache with the created host.
+                #
+                self.hostid_cache[result['hostids'][0]] = hostname
 
         except Exception as e:
 
@@ -2526,12 +2557,22 @@ class zabbixcli(cmd.Cmd):
             else:
                 hostid = str(hostname)
             
+            #
+            # Delete host via zabbix-API
+            #
+                
             result = self.zapi.host.delete(hostid)
-            
+
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Hosts (%s) with IDs: %s removed',hostname,str(result['hostids'][0]))
 
             self.generate_feedback('Done','Hosts (' + hostname + ') with IDs: ' + str(result['hostids'][0]) + ' removed')
+
+            #
+            # Delete the deleted host from the hostid cache.
+            #
+
+            del self.hostid_cache[hostid]
 
         except Exception as e:
 
@@ -6370,12 +6411,22 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.host.get(filter={"host":host})
 
-            if data != []:
-                return True
+            if self.bulk_execution == True:
+
+                if host in self.hostid_cache.values():
+                    return True
+                else:
+                    return False
+
             else:
-                return False
+
+                data = self.zapi.host.get(filter={"host":host})
+                
+                if data != []:
+                    return True
+                else:
+                    return False
 
         except Exception as e:
             raise e
@@ -6392,8 +6443,9 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
+            
             data = self.zapi.host.get(filter={"host":host})
-
+                
             if data != []:
                 hostid = data[0]['hostid']
             else:
@@ -6684,15 +6736,23 @@ class zabbixcli(cmd.Cmd):
         '''
 
         proxy_list = []
-
         match_pattern = re.compile(proxy_pattern)
 
         try:
-            data = self.zapi.proxy.get(output=['proxyid','host'])
 
-            for proxy in data:
-                if match_pattern.match(proxy['host']):
-                    proxy_list.append(proxy['proxyid'])
+            if self.bulk_execution == True:
+
+                for proxyid,proxy_name in self.proxyid_cache.iteritems():
+                    if match_pattern.match(proxy_name):
+                        proxy_list.append(proxyid)
+            
+            else:
+
+                data = self.zapi.proxy.get(output=['proxyid','host'])
+
+                for proxy in data:
+                    if match_pattern.match(proxy['host']):
+                        proxy_list.append(proxy['proxyid'])
             
         except Exception as e:
             raise e
@@ -6741,6 +6801,37 @@ class zabbixcli(cmd.Cmd):
 
             for host in data:
                 temp_dict[host['hostid']] = host['name'] 
+
+            return temp_dict
+            
+        except Exception as e:
+            raise e
+
+
+    # #################################################
+    # Method populate_proxyid_cache
+    # #################################################
+    
+    def populate_proxyid_cache(self):
+        '''
+        DESCRIPTION:
+        Populate proxyid cache
+        '''
+
+        # This method initializes a dictionary with all active proxies
+        # in the system.
+        #
+        # This will help the performance of creating a host via bulk
+        # executions because we avoid an extra call to the zabbix-API.
+        #
+
+        try:
+            temp_dict = {}
+
+            data = self.zapi.proxy.get(output=['proxyid','host'])
+
+            for proxy in data:
+                temp_dict[proxy['proxyid']] = proxy['host'] 
 
             return temp_dict
             

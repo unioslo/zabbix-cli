@@ -41,12 +41,14 @@ if __name__ == '__main__':
         output_format = ''
         config_file = ''
         zabbix_command = ''
+        input_file = ''
 
         parser = argparse.ArgumentParser(prog=sys.argv[0],description='zabbix-cli - Zabbix client')
 
         parser.add_argument('--output','-o',  metavar='[csv|json|table]', choices=['csv','json','table'], required=False, dest='output_format')
         parser.add_argument('--config','-c', metavar='<config file>', required=False, dest='config_file')
         parser.add_argument('--command','-C', metavar='<Zabbix-cli command>',required=False,dest='zabbix_command')
+        parser.add_argument('--file','-f', metavar='<Zabbix-cli input file>',required=False,dest='input_file')
         
         args = parser.parse_args()  
         
@@ -58,6 +60,9 @@ if __name__ == '__main__':
     
         if args.zabbix_command:
             zabbix_command = args.zabbix_command 
+
+        if args.input_file:
+            input_file = args.input_file 
 
         conf = configuration(config_file)
                 
@@ -192,7 +197,7 @@ if __name__ == '__main__':
         # Zabbix-CLI in interactive modus
         # 
 
-        if zabbix_command == '':
+        if zabbix_command == '' and input_file == '':
 
             if conf.logging == 'ON':
                 logs.logger.debug('Zabbix-CLI running in interactive modus')
@@ -202,6 +207,74 @@ if __name__ == '__main__':
             cli = zabbixcli(logs,conf,username,password,auth_token)
 
             cli.cmdloop()
+
+        #
+        # Zabbix-CLI in bulk execution modus. 
+        #
+        # This mode is activated when we run zabbix-cli with the
+        # parameter -f to define a file with zabbix-cli commands.
+        # 
+
+        elif zabbix_command == '' and input_file != '':
+
+            cli = zabbixcli(logs,conf,username,password,auth_token)
+
+            # Normalized absolutized version of the pathname if
+            # files does not include an absolute path
+
+            if os.path.isabs(input_file) == False:
+                input_file = os.path.abspath(input_file) 
+
+            if os.path.exists(input_file):
+
+                if conf.logging == 'ON':
+                    logs.logger.info('File [%s] exists. Bulk execution of commands defined in this file.',input_file)
+
+                print '[OK] File [' + input_file + '] exists. Bulk execution of commands defined in this file started.'
+                
+                #
+                # Register that this is a bulk execution via -f
+                # parameter. This will activate some performance
+                # improvements to boost bulk execution.
+                #
+                
+                cli.bulk_execution = True
+                
+                #
+                # Processing zabbix commands in file.
+                #
+                # Empty lines or comment lines (started with #) will
+                # not be considered.
+
+                try:
+                    with open(input_file,'r') as file:
+                        
+                        for input_line in file:
+                                                        
+                            if input_line.find('#',0) == -1 and input_line.strip() != '': 
+
+                                zabbix_cli_command = input_line.strip()
+                                cli.onecmd(zabbix_cli_command)
+
+                                if conf.logging == 'ON':
+                                    logs.logger.info('Zabbix-cli command [%s] executed via input file',zabbix_cli_command)
+                                                
+                except Exception as e:
+
+                    if conf.logging == 'ON':
+                        logs.logger.error('Problems using input file [%s] - %s',input_file,e)
+
+                    print '[ERROR] Problems using input file [' + input_file + '] - ' + str(e)
+                    sys.exit(1)
+
+            else:
+            
+                if conf.logging == 'ON':
+                    logs.logger.info('Input file [%s] does not exist. Bulk execution of commands aborted.',input_file)
+
+                print '[ERROR] Input file [' + input_file + '] does not exist. Bulk execution of commands aborted'
+
+
             
         #
         # Zabbix-CLI in non-interactive modus(command line)
