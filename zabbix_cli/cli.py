@@ -156,6 +156,13 @@ class zabbixcli(cmd.Cmd):
 
             self.proxyid_cache = self.populate_proxyid_cache()
 
+            #
+            # Populate the dictionary used as a cache with hostgroupname and
+            # hostgroupid
+            #
+
+            self.hostgroupname_cache = self.populate_hostgroupname_cache()
+
         except Exception as e:        
             print '\n[ERROR]: ',e
             print
@@ -6364,6 +6371,7 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
+
             data = self.zapi.hostgroup.get(filter={'name':hostgroup})
             
             if data != []:
@@ -6386,12 +6394,23 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
-            data = self.zapi.hostgroup.get(filter={'name':hostgroup})
             
-            if data != []:
-                hostgroupid = data[0]['groupid']
+            if self.bulk_execution == True:
+                
+                if hostgroup in self.hostgroupname_cache:
+                    hostgroupid = self.hostgroupname_cache[hostgroup]
+
+                else:
+                    raise Exception('Could not find hostgroupID for: ' + hostgroup)
+
             else:
-                raise Exception('Could not find hostgroupID for: ' + hostgroup)
+            
+                data = self.zapi.hostgroup.get(filter={'name':hostgroup})
+            
+                if data != []:
+                    hostgroupid = data[0]['groupid']
+                else:
+                    raise Exception('Could not find hostgroupID for: ' + hostgroup)
 
         except Exception as e:
             raise e
@@ -6801,6 +6820,38 @@ class zabbixcli(cmd.Cmd):
 
             for host in data:
                 temp_dict[host['hostid']] = host['name'] 
+
+            return temp_dict
+            
+        except Exception as e:
+            raise e
+
+
+    # #################################################
+    # Method populate_hostgroupname_cache
+    # #################################################
+    
+    def populate_hostgroupname_cache(self):
+        '''
+        DESCRIPTION:
+        Populate hostgroupname cache
+        '''
+
+        # This method initializes a dictionary with all hostgroups in
+        # the system.
+        #
+        # This will help the performance of creating a host via bulk
+        # executions because we avoid an extra call to the zabbix-API.
+        #
+
+
+        try:
+            temp_dict = {}
+            
+            data = self.zapi.hostgroup.get(output=['groupid','name'])
+            
+            for hostgroup in data:
+                temp_dict[hostgroup['name']] = hostgroup['groupid'] 
 
             return temp_dict
             
