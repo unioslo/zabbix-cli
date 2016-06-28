@@ -3,7 +3,7 @@ Zabbix-CLI
 =====================================
 
 |
-| Version-1.5.0
+| Version-1.5.4
 |
 | Rafael Martinez Guerrero (University of Oslo)
 | E-mail: rafael@postgresql.org.es
@@ -242,6 +242,44 @@ programs .e.g.
    |       7 | Zabbix administrators     |    Internal (1)    |  Enable (0) |
    |      14 | Zabbix core               | System default (0) |  Enable (0) |
    +---------+---------------------------+--------------------+-------------+
+
+From version 1.5.4 it is possible to use the parameter ``--file
+<zabbix_command_file>`` or ``-f <zabbix_command_file>`` to define a
+file with multiple ``zabbix-cli`` commands. 
+
+Some performance improvements get activated when executing
+``zabbix-cli`` in this way. The perfomance gain when running multiple
+commands via an input file can be as high as 70% when creating new
+hosts in Zabbix.
+
+::
+
+   [user@host]# cat zabbix_input_file.txt
+
+   # This a comment. 
+   # Creating hosts.
+
+   create_host test000001.example.net All-manual-hosts .+ 1
+   create_host test000002.example.net All-manual-hosts .+ 1
+   create_host test000003.example.net All-manual-hosts .+ 1
+   
+   # Deleting hosts
+
+   remove_host test000001.example.net
+   remove_host test000002.example.net
+   remove_host test000003.example.net
+
+   [user@host]# zabbix-cli -f zabbix_input_file.txt
+
+   [OK] File [/home/user/zabbix_input_file.txt] exists. Bulk execution of commands defined in this file started.
+
+   [Done]: Host (test000001.example.net) with ID: 14213 created
+   [Done]: Host (test000002.example.net) with ID: 14214 created
+   [Done]: Host (test000003.example.net) with ID: 14215 created
+   [Done]: Hosts (test000001.example.net) with IDs: 14213 removed
+   [Done]: Hosts (test000002.example.net) with IDs: 14214 removed
+   [Done]: Hosts (test000003.example.net) with IDs: 14215 removed
+
 
 One can also use the parameters ``--output csv`` or
 ``--output json`` when running ``zabbix-cli`` in non-interactive
