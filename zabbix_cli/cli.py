@@ -3040,13 +3040,21 @@ class zabbixcli(cmd.Cmd):
     def do_create_notification_user(self,args):
         '''DESCRIPTION:
 
-        This command creates a notification user. These users are
-        used to send notifications when a zabbix event happens. 
+        This command creates a notification user. These users can be
+        used to send notifications when a zabbix event happens.
 
-        They are needed because sometimes a system administrator group
-        needs to send different notifications to multiple different
-        medias, e.g. alarm-type-1 to email-1 and alarm-type-2 to
-        email-2, but not alarm-type-1 to email-1 and email-2
+        Sometimes we need to send a notification to a place not owned by any
+        user in particular, e.g. an email list or jabber channel but Zabbix has
+        not the possibility of defining media for a usergroup. 
+        
+        This is the reason we use *notification users*. They are users nobody
+        owns, but that can be used by other users to send notifications to the
+        media defined in the notification user profile.
+
+        Check the parameter **default_notification_users_usergroup** in your
+        zabbix-cli configuration file. The usergroup defined here has to
+        exists if you want this command to work.
+
 
         COMMAND:
         create_notification_user [sendto]
@@ -3054,16 +3062,16 @@ class zabbixcli(cmd.Cmd):
                                  [remarks]
         [sendto]
         --------
-        E-mail address or SMS number
+        E-mail address, SMS number, jabber address, ...
             
         [mediatype]
         -----------
         One of the media types names defined in your Zabbix
-        installation, e.g.  Email, SMS
+        installation, e.g.  Email, SMS, jabber, ...
 
         [remarks]
         ---------
-        Comments about this user. e.g. Johns cellphone.
+        Comments about this user. e.g. Operations email.
         Max lenght is 20 characters.
 
         '''
