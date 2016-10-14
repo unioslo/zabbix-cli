@@ -148,8 +148,6 @@ the information saved here and restrict access to this file only to
 your user. ``chmod 400 ~/.zabbix-cli_auth`` will be defined by
 ``zabbix-cli`` on this file the first time it uses it.
 
-**NOTE:** The support for this file will probably disappear in the future.
-
 
 Authentication token file
 -------------------------
@@ -184,38 +182,39 @@ The Zabbix-CLI interactive shell can be started by running the program
    [user@host]# zabbix-cli
 
    #############################################################
-   Welcome to the Zabbix command-line interface (v.Unknown)
+   Welcome to the Zabbix command-line interface (v.1.5.4)
    #############################################################
    Type help or \? to list commands.
-   
-   [zabbix-CLI]$ help
-   
+
+   [zabbix-cli rafael@zabbix-ID]$ help
+
    Documented commands (type help <topic>):
    ========================================
-   EOF                            remove_user_from_usergroup  
-   add_host_to_hostgroup          shell                       
-   add_user_to_usergroup          show_alarms                 
-   add_usergroup_permissions      show_global_macros          
-   clear                          show_history                
-   create_host                    show_host                   
-   create_host_interface          show_host_inventory         
-   create_hostgroup               show_host_usermacros        
-   create_notification_user       show_hostgroup              
-   create_user                    show_hostgroups             
-   create_usergroup               show_hosts                  
-   define_global_macro            show_items                  
-   define_host_monitoring_status  show_template               
-   define_host_usermacro          show_templates              
-   export_configuration           show_triggers               
-   import_configuration           show_usergroup              
-   link_template_to_host          show_usergroups             
-   load_balance_proxy_hosts       show_usermacro_host_list    
-   move_proxy_hosts               show_usermacro_template_list
-   quit                           show_users                  
-   remove_host                    unlink_template_from_host   
-   remove_host_from_hostgroup     update_host_inventory       
-   remove_user                    update_host_proxy         
-
+   EOF                            shell                       
+   add_host_to_hostgroup          show_alarms                 
+   add_user_to_usergroup          show_global_macros          
+   add_usergroup_permissions      show_history                
+   clear                          show_host                   
+   create_host                    show_host_inventory         
+   create_host_interface          show_host_usermacros        
+   create_hostgroup               show_hostgroup              
+   create_notification_user       show_hostgroups             
+   create_user                    show_hosts                  
+   create_usergroup               show_items                  
+   define_global_macro            show_template               
+   define_host_monitoring_status  show_templates              
+   define_host_usermacro          show_triggers               
+   export_configuration           show_usergroup              
+   import_configuration           show_usergroups             
+   link_template_to_host          show_usermacro_host_list    
+   load_balance_proxy_hosts       show_usermacro_template_list
+   move_proxy_hosts               show_users                  
+   quit                           unlink_template_from_host   
+   remove_host                    update_host_inventory       
+   remove_host_from_hostgroup     update_host_proxy           
+   remove_user                    update_usergroup_permissions
+   remove_user_from_usergroup   
+   
    Miscellaneous help topics:
    ==========================
    shortcuts  support
@@ -223,6 +222,7 @@ The Zabbix-CLI interactive shell can be started by running the program
    Undocumented commands:
    ======================
    help
+
 
 **NOTE:** It is possible to use Zabbix-CLI in a non-interactive modus
 by running ``/usr/bin/zabbix-cli`` with the parameter ``--command
@@ -540,10 +540,20 @@ create_notification_user
 This command creates a notification user. These users are used to send
 notifications when a zabbix event happens.
 
-They are needed because sometimes a system administrator group needs
-to send different notifications to multiple different
-medias,e.g. alarm-type-1 to email-1 and alarm-type-2 to email-2, but
-not alarm-type-1 to email-1 and email-2
+Sometimes we need to send a notification to a place not owned by any
+user in particular, e.g. an email list or jabber channel but Zabbix
+has not the possibility of defining media for a usergroup.
+
+This is the reason we use *notification users*. They are users nobody
+owns, but that can be used by other users to send notifications to the
+media defined in the notification user profile.
+
+All notification users will have an 'Alias' value that starts with
+*notification-user-*
+
+Check the parameter **default_notification_users_usergroup** in your
+zabbix-cli configuration file. The usergroup defined here has to
+exists if you want this command to work.
 
 ::
   
@@ -553,10 +563,10 @@ not alarm-type-1 to email-1 and email-2
 
 Parameters:
 
-* **[sendto]**: E-mail address or SMS number
+* **[sendto]**: E-mail address, SMS number, jabber address, ...
 * **[mediatype]**: One of the media types names defined in your Zabbix
-  installation, e.g.  Email, SMS
-* **[remarks]**: Comments about this user. e.g. Johns cellphone.
+  installation, e.g.  Email, SMS, jabber, ...
+* **[remarks]**: Comments about this user. e.g. Operations email.
   Max lenght is 20 characters.
 
 
@@ -935,6 +945,7 @@ This command shows all active alarms with the last event
 unacknowledged.
 
 ::
+
    show_alarms [description]
                [filters]
                [hostgroups]
