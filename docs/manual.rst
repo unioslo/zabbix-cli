@@ -84,7 +84,13 @@ lastest version from the master branch at the GitHub repository.
 Installing via RPM packages
 ---------------------------
 
-TODO
+Find the zabbix-cli in your distribution (if distributed already) or build it from the included .spec file (assuming that you have rpm-build, python-setuptools, python-devel pkgs installed) like this : 
+
+::
+  [user@node]$ rpmbuild -ba zabbix-cli.spec --define 'dist .el7' --define 'el7 1'#for el7
+  [user@node]$ rpmbuild -ba zabbix-cli.spec --define 'dist .el6' --define 'el6 1'#for el6
+ 
+Then you can install it (for example through "yum localinstall" zabbix-cli-<version>.rpm 
 
 Installing via Deb packages
 ----------------------------
