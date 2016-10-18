@@ -41,7 +41,7 @@ try:
     if sys.version_info < (2, 6):
         raise SystemExit('ERROR: zabbix-cli needs at least python 2.6 to work')
     else:
-        install_requires = ['psycopg2','argparse']
+        install_requires = ['argparse','requests']
 
                 
     #
@@ -50,13 +50,15 @@ try:
 
     setup(name='zabbix_cli',
           version=zabbix_cli['__version__'],
-          description='ZABBIX-CLI - PostgreSQL Backup Manager',
+          description='ZABBIX-CLI - Zabbix terminal client',
           author='Rafael Martinez Guerrero',
           author_email='rafael@postgresql.org.es',
-          url='http://www.zabbix-cli.org/',
+          url='https://github.com/usit-gd/zabbix-cli',
           packages=['zabbix_cli',],
           scripts=['bin/zabbix-cli','bin/zabbix-cli-bulk-execution','bin/zabbix-cli-init'],
-          data_files=[('/etc/zabbix-cli', ['etc/zabbix-cli.conf'])],
+          data_files=[('/etc/zabbix-cli', ['etc/zabbix-cli.conf']),
+                      ('/usr/share/zabbix-cli', ['etc/zabbix-cli.conf'])],
+          install_requires=install_requires,
           platforms=['Linux'],
           classifiers=[
             'Environment :: Console',

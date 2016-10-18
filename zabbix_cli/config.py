@@ -3,7 +3,7 @@
 # Authors:
 # rafael@postgresql.org.es / http://www.postgresql.org.es/
 #
-# Copyright (c) 2014-2015 USIT-University of Oslo
+# Copyright (c) 2014-2016 USIT-University of Oslo
 #
 # This file is part of Zabbix-CLI
 # https://github.com/rafaelma/zabbix-cli
@@ -32,10 +32,11 @@ class configuration():
     # Constructor
     # ############################################
     
-    def __init__(self,config_file):
+    def __init__(self,config_file_from_parameter):
         """ The Constructor."""
         
-        self.config_file = config_file
+        self.config_file_from_parameter = config_file_from_parameter
+        self.config_file_list = []
 
         # Zabbix API section
         self.zabbix_api_url = ''
@@ -68,14 +69,30 @@ class configuration():
     def set_configuration_file(self):
         """Set the zabbix-cli configuration file"""
         
-        config_file_list = [self.config_file] + [os.getenv('HOME') + '/.zabbix-cli/zabbix-cli.conf','/etc/zabbix-cli/zabbix-cli.conf','/etc/zabbix-cli.conf']
-        
-        for file in config_file_list:
-            if os.path.isfile(file):
-                self.config_file = file 
-                break
+        # This list defines the priority list of configuration files
+        # that can exist in the system. Files close to the top of the
+        # list will have priority to define configuration parameters
+        # in the system.
+        #
+        # 1. /usr/share/zabbix-cli/zabbix-cli.fixed.conf
+        # 2. /etc/zabbix-cli/zabbix-cli.fixed.conf
+        # 3. Configuration file defined with the parameter -c / --config when executing zabbix-cli
+        # 4. $HOME/.zabbix-cli/zabbix-cli.conf
+        # 5. /etc/zabbix-cli/zabbix-cli.conf
+        # 6. /usr/share/zabbix-cli/zabbix-cli.conf
+        #
 
-        if self.config_file == '':
+        config_file_priority_list = ['/usr/share/zabbix-cli/zabbix-cli.conf', '/etc/zabbix-cli/zabbix-cli.conf', os.getenv('HOME') + '/.zabbix-cli/zabbix-cli.conf'] + [self.config_file_from_parameter] + ['/etc/zabbix-cli/zabbix-cli.fixed.conf','/usr/share/zabbix-cli/zabbix-cli.fixed.conf']
+
+        # We check if the configuration files defined in
+        # config_file_priority_list exist before we start reading
+        # them.
+        
+        for file in config_file_priority_list:
+            if os.path.isfile(file):
+                self.config_file_list.append(file) 
+
+        if not self.config_file_list:
             
             print '\n[ERROR]: No config file found. Exiting.\n'
             sys.exit(1)
@@ -88,10 +105,10 @@ class configuration():
     def set_configuration_parameters(self):
         """Set configuration parameters"""
 
-        if self.config_file:
+        for config_file in self.config_file_list:
 
             config = ConfigParser.RawConfigParser()
-            config.read(self.config_file)
+            config.read(config_file)
             
             #
             # Zabbix APIsection
@@ -152,4 +169,3 @@ class configuration():
             if config.has_option('logging','log_file'):
                 self.log_file = config.get('logging','log_file')
             
-

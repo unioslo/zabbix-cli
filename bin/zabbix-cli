@@ -65,7 +65,7 @@ if __name__ == '__main__':
             input_file = args.input_file 
 
         conf = configuration(config_file)
-                
+    
         #
         # If logging is activated, start logging to the file defined
         # with log_file in the config file.
