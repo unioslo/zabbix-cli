@@ -191,6 +191,225 @@ class zabbixcli(cmd.Cmd):
             sys.exit(1)
 
 
+
+    # ############################################  
+    # Method show_maintenance_definitions
+    # ############################################  
+
+    def do_show_maintenance_definitions(self,args):
+        '''
+        DESCRIPTION: 
+        This command shows maintenance definitions global
+        information. The logical operator AND will be used if one
+        defines more than one parameter.
+
+        COMMAND: show_maintenance_definition [definitionID]
+        [hostgroup] [host]
+
+        [definitionID]
+        --------------
+        Definition ID. One can define more than one value.
+
+        [hostgroup]:
+        ------------
+        Hostgroup name. One can define more than one value.
+
+        [host]:
+        -------
+        Hostname. One can define more than one value.
+
+        '''
+
+        result_columns = {}
+        result_columns_key = 0
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                maintenances = raw_input('# MaintenanceID [*]: ').strip()
+                hostgroups = raw_input('# Hostgroups [*]: ').strip()
+                hostnames = raw_input('# Hosts [*]: ').strip() 
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        #
+        # Command with parameters
+        #
+
+        elif len(arg_list) == 3:
+            maintenances = arg_list[0].strip()
+            hostgroups = arg_list[1].strip()
+            hostnames = arg_list[2].strip()
+
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+                                                
+        #
+        # Generate maintenances, hosts and hostgroups IDs
+        #
+
+        try:
+            maintenance_list = []
+            hostnames_list = []
+            hostgroups_list = []
+            maintenance_ids = ''
+            hostgroup_ids = ''
+            host_ids = ''
+            search_data = ','
+            
+            if maintenances == '*':
+                maintenances = ''
+            
+            if hostgroups == '*':
+                hostgroups = ''
+
+            if hostnames == '*':
+                hostnames = ''
+
+            if maintenances != '':
+                for maintenance in maintenances.split(','):
+                    maintenance_list.append(str(maintenance).strip())
+                                
+                maintenance_ids = "','".join(maintenance_list)
+                search_data += '\'maintenanceids\':[\'' + maintenance_ids + '\'],'
+
+            if hostgroups != '':
+                
+                for hostgroup in hostgroups.split(','):
+                    
+                    if hostgroup.isdigit():
+                        hostgroups_list.append(str(hostgroup).strip())
+                    else:
+                        hostgroups_list.append(str(self.get_hostgroup_id(hostgroup.strip())))
+                
+                hostgroup_ids = "','".join(hostgroups_list)
+                search_data += '\'groupids\':[\'' + hostgroup_ids + '\'],'
+
+            if hostnames != '':
+
+                for hostname in hostnames.split(','):
+            
+                    if hostname.isdigit():
+                        hostnames_list.append(str(hostname).strip())
+                    else:
+                        hostnames_list.append(str(self.get_host_id(hostname.strip())))
+                
+                host_ids = "','".join(hostnames_list)
+                search_data += '\'hostids\':[\'' + host_ids + '\'],'
+        
+        except Exception as e: 
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting maintenance information - %s',e)
+
+            self.generate_feedback('Error','Problems getting maintenance information')
+
+            return False   
+
+        #
+        # Get result from Zabbix API
+        #
+        try:
+            query=ast.literal_eval("{'output':'extend'" + search_data  + "'selectGroups':['name'],'selectHosts':['name'],'sortfield':'maintenanceid','sortorder':'ASC','searchByAny':'True'}")
+            result = self.zapi.maintenance.get(**query)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('Command show_maintenance executed')
+
+        except Exception as e: 
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting maintenance information - %s',e)
+
+            self.generate_feedback('Error','Problems getting maintenance information')
+
+            return False   
+
+        #
+        # Get the columns we want to show from result 
+        #
+        for maintenance in result:
+            
+            if (int(time.time()) - int(maintenance['active_till'])) > 0:
+                state = 'Expired'
+            else:
+                state = 'Active'
+            
+
+            if self.output_format == 'json':
+
+                result_columns [result_columns_key] = {'maintenanceid':maintenance['maintenanceid'],
+                                                       'name':maintenance['name'],
+                                                       'maintenance_type':self.get_maintenance_type(int(maintenance['maintenance_type'])),
+                                                       'state':state,
+                                                       'active_till':maintenance['active_till'],
+                                                       'hosts':maintenance['hosts'],
+                                                       'groups':maintenance['groups'],
+                                                       'description':maintenance['description']}
+
+            
+            else:
+
+                host_list = []
+                maintenance['hosts'].sort()
+                
+                for host in maintenance['hosts']:
+                    host_list.append(host['name'])
+
+
+                group_list = []
+                maintenance['groups'].sort()
+                
+                for group in maintenance['groups']:
+                    group_list.append(group['name'])
+
+
+                result_columns [result_columns_key] = {'1':maintenance['maintenanceid'],
+                                                       '2':'\n'.join(textwrap.wrap(maintenance['name'],30)),
+                                                       '3':self.get_maintenance_type(int(maintenance['maintenance_type'])),
+                                                       '4':state,
+                                                       '5':datetime.datetime.utcfromtimestamp(float(maintenance['active_till'])).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                                                       '6':'\n'.join(host_list),
+                                                       '7':'\n'.join(group_list),
+                                                       '8':'\n'.join(textwrap.wrap(maintenance['description'],40))}
+
+
+            result_columns_key = result_columns_key + 1
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['ID','Name','Type','State','To','Hostnames','Hostgroups','Description'],
+                             ['Name','Description','Hostnames','Hostgroups'],
+                             ['ID'],
+                             ALL)
+
+
+
+
     # ############################################
     # Method show_hostgroups
     # ############################################
@@ -6043,6 +6262,23 @@ class zabbixcli(cmd.Cmd):
 
         if code in user_type:
             return user_type[code] + " (" + str(code) +")"
+
+        else:
+            return 'Unknown' + " (" + str(code) +")"
+
+    # ############################################
+    # Method get_maintenance_type
+    # ############################################
+    
+    def get_maintenance_type(self,code):
+        '''
+        Get maintenance type from code
+        '''
+
+        maintenance_type = {0:'With DC',1:'Without DC'}
+
+        if code in maintenance_type:
+            return maintenance_type[code] + " (" + str(code) +")"
 
         else:
             return 'Unknown' + " (" + str(code) +")"
