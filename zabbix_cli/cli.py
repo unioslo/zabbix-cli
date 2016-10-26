@@ -203,7 +203,7 @@ class zabbixcli(cmd.Cmd):
         information. The logical operator AND will be used if one
         defines more than one parameter.
 
-        COMMAND: show_maintenance_definition [definitionID]
+        COMMAND: show_maintenance_definitions [definitionID]
         [hostgroup] [host]
 
         [definitionID]
@@ -322,9 +322,9 @@ class zabbixcli(cmd.Cmd):
         except Exception as e: 
 
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems getting maintenance information - %s',e)
+                self.logs.logger.error('Problems getting maintenance definitions information - %s',e)
 
-            self.generate_feedback('Error','Problems getting maintenance information')
+            self.generate_feedback('Error','Problems getting maintenance definitions information')
 
             return False   
 
@@ -336,14 +336,14 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.maintenance.get(**query)
 
             if self.conf.logging == 'ON':
-                self.logs.logger.info('Command show_maintenance executed')
+                self.logs.logger.info('Command show_maintenance_definitions executed')
 
         except Exception as e: 
 
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems getting maintenance information - %s',e)
+                self.logs.logger.error('Problems getting maintenance definitions information - %s',e)
 
-            self.generate_feedback('Error','Problems getting maintenance information')
+            self.generate_feedback('Error','Problems getting maintenance definitions information')
 
             return False   
 
@@ -407,6 +407,172 @@ class zabbixcli(cmd.Cmd):
                              ['ID'],
                              ALL)
 
+
+    # ############################################  
+    # Method show_maintenance_periods
+    # ############################################  
+
+    def do_show_maintenance_periods(self,args):
+        '''
+        DESCRIPTION: 
+        This command shows maintenance periods global information. 
+
+        COMMAND: show_maintenance_periods [definitionID]
+
+        [definitionID]
+        --------------
+        Definition ID. One can define more than one value.
+
+        '''
+
+        result_columns = {}
+        result_columns_key = 0
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                maintenances = raw_input('# MaintenanceID [*]: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        #
+        # Command with parameters
+        #
+
+        elif len(arg_list) == 1:
+            maintenances = arg_list[0].strip()
+
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+                                                
+        #
+        # Generate maintenances, hosts and hostgroups IDs
+        #
+
+        try:
+            search_data = ','
+            maintenance_list = []
+            maintenance_ids = ''
+
+            if maintenances == '*':
+                maintenances = ''
+            
+            if maintenances != '':
+                for maintenance in maintenances.split(','):
+                    maintenance_list.append(str(maintenance).strip())
+                                
+                maintenance_ids = "','".join(maintenance_list)
+                search_data += '\'maintenanceids\':[\'' + maintenance_ids + '\'],'
+
+        except Exception as e: 
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting maintenance periods information - %s',e)
+
+            self.generate_feedback('Error','Problems getting maintenance periods information')
+
+            return False   
+
+        #
+        # Get result from Zabbix API
+        #
+        try:
+            query=ast.literal_eval("{'output':'extend'" + search_data  + "'selectGroups':['name'],'selectHosts':['name'],'selectTimeperiods':['timeperiodid','day','dayofweek','every','month','period','start_date','start_time','timeperiod_type'],'sortfield':'maintenanceid','sortorder':'ASC','searchByAny':'True'}")
+            result = self.zapi.maintenance.get(**query)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('Command show_maintenance_periods executed')
+
+        except Exception as e: 
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting maintenance periods information - %s',e)
+
+            self.generate_feedback('Error','Problems getting maintenance periods information')
+
+            return False   
+
+        #
+        # Get the columns we want to show from result 
+        #
+        for maintenance in result:
+
+            if self.output_format == 'json':
+
+                result_columns [result_columns_key] = {'maintenanceid':maintenance['maintenanceid'],
+                                                       'name':maintenance['name'],
+                                                       'timeperiods':maintenance['timeperiods'],
+                                                       'hosts':maintenance['hosts'],
+                                                       'groups':maintenance['groups']}
+
+                result_columns_key = result_columns_key + 1
+                
+            else:
+                
+                host_list = []
+                maintenance['hosts'].sort()
+                
+                for host in maintenance['hosts']:
+                    host_list.append(host['name'])
+                    
+                    
+                group_list = []
+                maintenance['groups'].sort()
+                
+                for group in maintenance['groups']:
+                    group_list.append(group['name'])
+
+
+                for period in maintenance['timeperiods']:
+
+                    result_columns [result_columns_key] = {1:maintenance['maintenanceid'],
+                                                           2:'\n'.join(textwrap.wrap(maintenance['name'],30)),
+                                                           3:period['timeperiodid'],
+                                                           4:period['day'],
+                                                           5:str(bin(int(period['dayofweek'])))[2:],
+                                                           6:period['every'],
+                                                           7:str(bin(int(period['month'])))[2:],
+                                                           8:datetime.datetime.utcfromtimestamp(float(period['start_date'])).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                                                           9:str(datetime.timedelta(seconds=long(period['start_time']))),
+                                                           10:str(datetime.timedelta(seconds=long(period['period']))),
+                                                           11:self.get_maintenance_period_type(int(period['timeperiod_type'])),
+                                                           12:'\n'.join(host_list),
+                                                           13:'\n'.join(group_list)}
+
+
+                    result_columns_key = result_columns_key + 1
+
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['DefID','DefName','PerID','Days','Dayweek','Every','Month','Start_date','Start_time','Period','PerType','Hostnames','Hostgroups'],
+                             ['DefName','Hostnames','Hostgroups'],
+                             ['DefID'],
+                             ALL)
 
 
 
@@ -6266,6 +6432,7 @@ class zabbixcli(cmd.Cmd):
         else:
             return 'Unknown' + " (" + str(code) +")"
 
+
     # ############################################
     # Method get_maintenance_type
     # ############################################
@@ -6279,6 +6446,24 @@ class zabbixcli(cmd.Cmd):
 
         if code in maintenance_type:
             return maintenance_type[code] + " (" + str(code) +")"
+
+        else:
+            return 'Unknown' + " (" + str(code) +")"
+
+
+    # ############################################
+    # Method get_maintenance_period_type
+    # ############################################
+    
+    def get_maintenance_period_type(self,code):
+        '''
+        Get maintenance period type from code
+        '''
+
+        maintenance_period_type = {0:'One time',2:'Daily',3:'Weekly',4:'Monthly'}
+
+        if code in maintenance_period_type:
+            return maintenance_period_type[code] + " (" + str(code) +")"
 
         else:
             return 'Unknown' + " (" + str(code) +")"
@@ -6384,7 +6569,7 @@ class zabbixcli(cmd.Cmd):
                 for records in result:
                     columns = []
 
-                    for column in sorted(result[records]):
+                    for column in sorted(result[records].keys()):
                         columns.append(result[records][column])
                     
                     x.add_row(columns)
