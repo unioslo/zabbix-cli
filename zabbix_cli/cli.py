@@ -575,6 +575,95 @@ class zabbixcli(cmd.Cmd):
                              ALL)
 
 
+    # ############################################  
+    # Method show_zabbixcli_config
+    # ############################################  
+
+    def do_show_zabbixcli_config(self,args):
+        '''
+        DESCRIPTION: 
+        This command shows information about the
+        configuration used by this zabbix-cli instance.
+
+        COMMAND:
+        show_zabbixcli_config
+
+        '''
+
+        result_columns = {}
+        result_columns_key = 0
+
+
+        # Generate information of the configuration files that are
+        # active and exist in this host.
+        #
+        # This is the priority list of configuration files that can
+        # exist in the system. Files close to the top of the list will
+        # have priority to define configuration parameters in the
+        # system.
+        #
+        # 1. /usr/share/zabbix-cli/zabbix-cli.fixed.conf
+        # 2. /etc/zabbix-cli/zabbix-cli.fixed.conf
+        # 3. Configuration file defined with the parameter -c / --config when executing zabbix-cli
+        # 4. $HOME/.zabbix-cli/zabbix-cli.conf
+        # 5. /etc/zabbix-cli/zabbix-cli.conf
+        # 6. /usr/share/zabbix-cli/zabbix-cli.conf
+        #
+
+        config_file_list = ['/usr/share/zabbix-cli/zabbix-cli.fixed.conf',
+                            '/etc/zabbix-cli/zabbix-cli.fixed.conf',
+                            self.conf.config_file_from_parameter,
+                            os.getenv('HOME') + '/.zabbix-cli/zabbix-cli.conf', 
+                            '/etc/zabbix-cli/zabbix-cli.conf', 
+                            '/usr/share/zabbix-cli/zabbix-cli.conf']
+
+        for file in config_file_list:
+            if os.path.isfile(file):
+
+                result_columns [result_columns_key] = {1:'*' + file}
+                result_columns_key = result_columns_key + 1
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['Active configuration files'],
+                             ['Active configuration files'],
+                             [''],
+                             FRAME)
+
+
+        #
+        # Generate information with all the configuration parameters
+        #
+
+        result_columns = {}
+
+        result_columns [0] = {1:'zabbix_api_url',2:self.conf.zabbix_api_url}
+        result_columns [1] = {1:'system_id',2:self.conf.system_id}
+        result_columns [2] = {1:'default_hostgroup',2:self.conf.default_hostgroup}
+        result_columns [3] = {1:'default_admin_usergroup',2:self.conf.default_admin_usergroup}
+        result_columns [4] = {1:'default_create_user_usergroup',2:self.conf.default_create_user_usergroup}
+        result_columns [5] = {1:'default_notification_users_usergroup',2:self.conf.default_notification_users_usergroup}
+        result_columns [6] = {1:'default_directory_exports',2:self.conf.default_directory_exports}
+        result_columns [7] = {1:'default_export_format',2:self.conf.default_export_format}
+        result_columns [8] = {1:'include_timestamp_export_filename',2:self.conf.include_timestamp_export_filename}
+        result_columns [9] = {1:'use_colors',2:self.conf.use_colors}
+        result_columns [10] = {1:'use_auth_token_file',2:self.conf.use_auth_token_file}
+        result_columns [11] = {1:'logging',2:self.conf.logging}
+        result_columns [12] = {1:'log_level',2:self.conf.log_level}
+        result_columns [13] = {1:'log_file',2:self.conf.log_file}
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                             ['Configuration parameter','Value'],
+                             ['Value'],
+                             ['Configuration parameter'],
+                             FRAME)
+
+
 
     # ############################################
     # Method show_hostgroups
@@ -599,7 +688,7 @@ class zabbixcli(cmd.Cmd):
     def do_show_hostgroup(self,args):
         '''
         DESCRIPTION: 
-        This command show hostgroups information
+        This command shows hostgroup information
 
         COMMAND:
         show_hostgroup [hostgroup]
