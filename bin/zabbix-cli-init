@@ -17,6 +17,7 @@ from os import getenv,path,remove,close,makedirs
 from tempfile import mkstemp
 from shutil import move, copy2
 import sys
+import argparse
 
 def replace(file_path, pattern, subst):
 
@@ -46,20 +47,18 @@ def replace(file_path, pattern, subst):
 if __name__ == "__main__":
 
     zabbixconfdir = getenv('HOME')+"/.zabbix-cli/"
-    defconf="/etc/zabbix-cli/zabbix-cli.conf"
+    defconf="/usr/share/zabbix-cli/zabbix-cli.conf"
     filename="zabbix-cli.conf"
 
     file_path=path.join(zabbixconfdir,filename)
 
     try:
-        if len(sys.argv) == 2:
-            zabbix_api_url = sys.argv[1]
-            
-        else:
-            print "Error: Wrong number of parameters"
-            print 'Format: ' + sys.argv[0] + ' <zabbix API url>'        
-            sys.exit(1)
 
+        parser = argparse.ArgumentParser(prog=sys.argv[0],description='zabbix-cli-init - Zabbix-cli initialization program')
+
+        parser.add_argument('--zabbix-url','-z',  metavar='<zabbix URL>', required=True, dest='zabbix_api_url')        
+        args = parser.parse_args()  
+        
     except Exception as e:
         print e
         sys.exit(1)
