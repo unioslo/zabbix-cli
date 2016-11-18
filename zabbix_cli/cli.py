@@ -203,8 +203,10 @@ class zabbixcli(cmd.Cmd):
         information. The logical operator AND will be used if one
         defines more than one parameter.
 
-        COMMAND: show_maintenance_definitions [definitionID]
-        [hostgroup] [host]
+        COMMAND: 
+        show_maintenance_definitions [definitionID]
+                                     [hostgroup]
+                                     [host]
 
         [definitionID]
         --------------
@@ -3062,6 +3064,102 @@ class zabbixcli(cmd.Cmd):
 
             self.generate_feedback('Error','Problems removing hosts (' + hostname + ')')
             return False   
+
+
+    # ############################################
+    # Method do_remove_maintenance_definition
+    # ############################################
+
+    def do_remove_maintenance_definition(self,args):
+        '''
+        DESCRIPTION:
+        This command removes one or several maintenance definitions
+
+        COMMAND:
+        remove_maintenance_definitions [definitionID]
+
+        [definitionID]
+        --------------
+        Definition ID. One can define more than one value in a comma
+        separated list.
+
+        '''
+        
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                maintenanceid = raw_input('# maintenanceID: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 1:
+
+            maintenanceid = arg_list[0].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if maintenanceid == '':
+            self.generate_feedback('Error','MaintenceID value is empty')
+            return False
+
+        try:
+
+            #
+            # Generate maintenanceIDs list
+            #
+        
+            maintenances = [int(i) for i in maintenanceid.replace(' ','').split(',')]
+            
+            #
+            # Delete maintenances via zabbix-API
+            #
+                
+            for maintenance in maintenances:
+                result = self.zapi.maintenance.delete(maintenance)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('Maintenances defintions with IDs: [%s] removed',maintenanceid.replace(' ',''))
+
+            self.generate_feedback('Done','Maintenance definitions with IDs: [' + maintenanceid.replace(' ','') + '] removed')
+
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems removing maintenance IDs: [%s] - %s',maintenanceid.replace(' ',''),e)
+
+            self.generate_feedback('Error','Problems removing maintenance IDs (' + maintenanceid.replace(' ','') + ')')
+            return False   
             
 
     # ############################################
@@ -3506,9 +3604,8 @@ class zabbixcli(cmd.Cmd):
             return False   
 
 
-
     # ############################################
-    # Method do_create_user
+    # Method do_create_notification_user
     # ############################################
 
     def do_create_notification_user(self,args):
