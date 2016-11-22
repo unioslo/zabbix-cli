@@ -3,7 +3,7 @@
 # Authors:
 # rafael@postgresql.org.es / http://www.postgresql.org.es/
 #
-# Copyright (c) 2014 USIT-University of Oslo 
+# Copyright (c) 2014-2016 USIT-University of Oslo 
 #
 # This file is part of Zabbix-Cli
 # https://github.com/rafaelma/zabbix-cli

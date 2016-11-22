@@ -6,8 +6,8 @@
 %{!?pybasever: %global pybasever %(%{__python2} -c "import sys;print(sys.version[0:3])")}
 
 Name: zabbix-cli
-Version: 1.5.4
-Release: 5%{?dist}
+Version: 1.6.0
+Release: 1%{?dist}
 Summary: Command-line interface for Zabbix
 
 Group: System Environment/Base
@@ -19,7 +19,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 Requires: python-argparse, python-requests
 BuildRequires: python2-devel, python-setuptools
-BuildArch:      noarch
+BuildArch: noarch
 
 %description
 Command-line interface for Zabbix monitoring system.
@@ -43,6 +43,9 @@ Command-line interface for Zabbix monitoring system.
 %config(noreplace) %{_sysconfdir}/zabbix-cli/zabbix-cli.conf
 
 %changelog
+* Tue Nov 22 2016 Rafael Martinez Guerrero <r.m.guerrero@usit.uio.no> - 1.6.0-1
+- New release
+
 * Sat Oct 29 2016 Volker Froehlich <volker27@gmx.at> - 1.5.4-5
 - Match the actual license claimed in the code
 - Remove -n from the setup macro, because it was the default
