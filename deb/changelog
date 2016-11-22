@@ -1,0 +1,9 @@
+zabbix-cli (1.6.0-1) UNRELEASED; urgency=low
+
+  * New release 1.6.0-1
+
+ -- Rafael Martinez Guerrero <r.m.guerrero@usit.uio.no> Tue, 22 Nov 2016 14:30:00 +0000
+
+  * Initial upload to Debian (Closes: #842337).
+
+ -- Petter Reinholdtsen <pere@debian.org>  Mon, 17 Oct 2016 11:41:24 +0000
