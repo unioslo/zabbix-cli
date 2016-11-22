@@ -3160,6 +3160,228 @@ class zabbixcli(cmd.Cmd):
 
             self.generate_feedback('Error','Problems removing maintenance IDs (' + maintenanceid.replace(' ','') + ')')
             return False   
+
+
+    # ############################################
+    # Method do_create_maintenance_definition
+    # ############################################
+
+    def do_create_maintenance_definition(self,args):
+        '''
+        DESCRIPTION: 
+
+        This command creates a 'one time only' maintenance definition
+        for a defined period of time. Use the zabbix dashboard for
+        more advance definitions.
+
+        COMMAND:
+        create_maintenance_definition [name]
+                                      [description]
+                                      [host/hostgroup]
+                                      [time period]
+
+        [name]
+        ------
+        Maintenance definition name.
+
+        [description]
+        -------------
+        Maintenance definition description
+
+        [host/hostgroup]
+        ----------------
+        Host/s and/or hostgroup/s the that will undergo
+        maintenance. 
+
+        One can define more than one value in a comma separated list
+        and mix host and hostgroup values.
+
+        [time period]
+        -------------
+        Time period when the maintenance must come into effect.
+
+        One can define an interval between to timestamps in ISO format
+        or a time period in minutes, hours or days from the moment the
+        definition is created.
+        
+        e.g. From 22:00 until 23:00 on 2016-11-21 -> '2016-11-21T22:00 to 2016-11-21T23:00'
+             2 hours from the moment we create the maintenance -> '2 hours'
+
+        '''
+
+        host_ids = []
+        hostgroup_ids = []
+
+        # Default values
+        x = hashlib.md5()
+        x.update(str(random.randint(1, 1000000)))
+        tag_default = x.hexdigest()[1:10].upper()
+
+        maintenance_name_default = 'zabbixCLI-' + tag_default
+        time_period_default = '1 hour'
+
+        try: 
+            arg_list = shlex.split(args)
+            
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if len(arg_list) == 0:
+
+            try:
+                print '--------------------------------------------------------'
+                maintenance_name = raw_input('# Maintenance name [' + maintenance_name_default + ']: ').strip()
+                maintenance_description = raw_input('# Maintenance description []: ').strip()
+                host_hostgroup = raw_input('# Host/Hostgroup []: ').strip()
+                time_period = raw_input('# Time period [1 hour]: ').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------' 
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False   
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 4:
+
+            maintenance_name = arg_list[0].strip()
+            maintenance_description = arg_list[1].strip()
+            host_hostgroup = arg_list[2].strip()
+            time_period = arg_list[3].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        try:
+
+            #
+            # Sanity check
+            #
+
+            if maintenance_name == '':
+                maintenance_name = maintenance_name_default
+
+            if host_hostgroup == '':
+                self.generate_feedback('Error','Maintenance host/hostgroup value is empty')
+                return False
+
+            if time_period == '':
+                time_period = time_period_default
+            else:
+                time_period = time_period.upper()
+
+
+            #
+            # Generate lists with hostID anf hostgroupID information.
+            #
+        
+            for value in host_hostgroup.replace(' ','').split(','):
+
+                if self.host_exists(value):
+                    host_ids.append(self.get_host_id(value))
+
+                elif self.hostgroup_exists(value):
+                    hostgroup_ids.append(self.get_hostgroup_id(value))
+
+            #
+            # Generate since, till and period (in sec) when
+            # maintenance period is defined with 
+            # <ISO timestamp> TO <timestamp>
+            #
+            # ISO timestamp = %Y-%m-%dT%H:%M
+            #
+
+            if 'TO' in time_period:
+             
+                from_,to_ = time_period.split('TO')
+
+                since_tmp = datetime.datetime.strptime(from_.strip(), "%Y-%m-%dT%H:%M")
+                till_tmp = datetime.datetime.strptime(to_.strip(), "%Y-%m-%dT%H:%M")
+               
+                diff = (till_tmp-since_tmp)
+                sec = (diff.seconds + diff.days * 24 * 3600)
+
+                # Convert to timestamp
+
+                since = time.mktime(since_tmp.timetuple())
+                till = time.mktime(till_tmp.timetuple())
+
+
+            #
+            # Generate since, till and period (in sec) when
+            # maintenance period id defined with a time period in
+            # minutes, hours or days
+            #
+            # time period -> 'x minutes', 'y hours', 'z days'
+            #
+
+            else:
+
+                if 'SECOND' in time_period:
+                    sec = int(time_period.replace(' ','').replace('SECONDS','').replace('SECOND',''))
+
+                elif 'MINUTE' in time_period:
+                    sec = int(time_period.replace(' ','').replace('MINUTES','').replace('MINUTE','')) * 60
+
+                elif 'HOUR' in time_period:
+                    sec = int(time_period.replace(' ','').replace('HOURS','').replace('HOUR','')) * 60 * 60
+
+                elif 'DAY' in time_period:
+                    sec = int(time_period.replace(' ','').replace('DAYS','').replace('DAY','')) * 60 * 60 * 24
+
+                since_tmp = datetime.datetime.now()
+                till_tmp = since_tmp + datetime.timedelta(seconds=sec)
+
+                # Convert to timestamp
+                
+                since = time.mktime(since_tmp.timetuple())
+                till = time.mktime(till_tmp.timetuple())
+
+
+            #
+            # Create maintenance period 
+            #
+            result = self.zapi.maintenance.create(name=maintenance_name,
+                                                  active_since=since,
+                                                  active_till=till,
+                                                  description=maintenance_description,
+                                                  hostids=host_ids,
+                                                  groupids=hostgroup_ids,
+                                                  timeperiods=[
+                                                      {
+                                                          'start_date':since,
+                                                          'period':sec,
+                                                          'timeperiod_type':0
+                                                      }
+                                                  ])
+            
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('Maintenances definition with name [%s] created',maintenance_name)
+
+            self.generate_feedback('Done','Maintenance definition with name [' + maintenance_name + '] created')
+
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems creating maintenance definition: [%s] - %s',maintenance_name,e)
+
+            self.generate_feedback('Error','Problems creating maintenance definition (' + maintenance_name + ')')
+            return False   
             
 
     # ############################################
