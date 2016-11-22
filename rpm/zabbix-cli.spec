@@ -40,6 +40,7 @@ Command-line interface for Zabbix monitoring system.
 %{python2_sitelib}/zabbix_cli/
 %{_bindir}/zabbix-cli*
 %dir %{_sysconfdir}/zabbix-cli/
+%{_datadir}/zabbix-cli/zabbix-cli.conf
 %config(noreplace) %{_sysconfdir}/zabbix-cli/zabbix-cli.conf
 
 %changelog
