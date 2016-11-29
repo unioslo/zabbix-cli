@@ -32,16 +32,19 @@ Command-line interface for Zabbix monitoring system.
 
 %install
 %{__python2} setup.py install -O1 --skip-build --root %{buildroot}
+mkdir -p %{buildroot}%{_defaultdocdir}/zabbix-cli-%{version}
 
 %files
 %defattr(-, root, root, 0755)
-%license LICENSE
 %{python2_sitelib}/zabbix_cli-%{version}-py%{pybasever}.egg-info/
 %{python2_sitelib}/zabbix_cli/
 %{_bindir}/zabbix-cli*
 %dir %{_sysconfdir}/zabbix-cli/
+%dir %{_datadir}/zabbix-cli/
+%dir %{_defaultdocdir}/zabbix-cli/
 %{_datadir}/zabbix-cli/zabbix-cli.conf
 %config(noreplace) %{_sysconfdir}/zabbix-cli/zabbix-cli.conf
+%doc LICENSE docs/manual.rst
 
 %changelog
 * Tue Nov 22 2016 Rafael Martinez Guerrero <r.m.guerrero@usit.uio.no> - 1.6.0-1
