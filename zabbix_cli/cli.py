@@ -2176,8 +2176,8 @@ class zabbixcli(cmd.Cmd):
         one/several usergroups
 
         COMMAND:
-        add_user_to_usergroup [username]
-                              [usergroups]
+        remove_user_to_usergroup [username]
+                                 [usergroups]
 
 
         [username]
@@ -5247,7 +5247,7 @@ class zabbixcli(cmd.Cmd):
 
 
     # ########################################
-    # do_show_host_user_macros 
+    # do_show_host_usermacros 
     # ########################################
     def do_show_host_usermacros(self, args):
         '''
@@ -5256,6 +5256,11 @@ class zabbixcli(cmd.Cmd):
 
         COMMAND:
         show_host_usermacros [hostname]
+
+        [hostname]
+        ----------
+        Hostname
+
         '''
 
         result_columns = {}

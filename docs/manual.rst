@@ -3,7 +3,7 @@ Zabbix-CLI
 =====================================
 
 |
-| Version-1.5.4
+| Version-1.6.0
 |
 | Rafael Martinez Guerrero (University of Oslo)
 | E-mail: rafael@postgresql.org.es
@@ -21,10 +21,9 @@ Zabbix-cli is a tool for managing some Zabbix administration task via
 the zabbix-API.
 
 The zabbix-cli code is distributed under the GNU General Public
-License 3 and it is written in Python and PL/PgSQL. It has been
-developed and tested by members of the Department for IT
-Infrastructure at the Center for Information Technology at the
-University of Oslo.
+License 3 and it is written in Python. It has been developed and
+tested by members of the Department for IT Infrastructure at the
+Center for Information Technology at the University of Oslo, Norway.
 
 
 Main features
@@ -84,13 +83,24 @@ lastest version from the master branch at the GitHub repository.
 Installing via RPM packages
 ---------------------------
 
-Find the zabbix-cli in your distribution (if distributed already) or build it from the included .spec file (assuming that you have rpm-build, python-setuptools, python-devel pkgs installed) like this : 
+Find the zabbix-cli in your distribution (if distributed already) or
+build it from the included .spec file in the source (assuming that you
+have rpm-build, python-setuptools, python-devel pkgs installed) like
+this (e.g. version 1.6.0:
 
 ::
-  [user@node]$ rpmbuild -ba zabbix-cli.spec --define 'dist .el7' --define 'el7 1'#for el7
-  [user@node]$ rpmbuild -ba zabbix-cli.spec --define 'dist .el6' --define 'el6 1'#for el6
+
+  [user@node]$ cd ~/rpmbuild/SOURCES && wget https://github.com/usit-gd/zabbix-cli/archive/1.6.0.tar.gz
+  [user@node]$ cp zabbix-cli.spec ~/rpmbuild/SPECS/
+  
+  [user@node]$ rpmbuild -ba ~/rpmbuild/SPECS/zabbix-cli.spec --define 'dist .el7' --define 'el7 1' #for el7
+  [user@node]$ rpmbuild -ba ~/rpmbuild/SPECS/zabbix-cli.spec --define 'dist .el6' --define 'el6 1' #for el6
  
-Then you can install it (for example through "yum localinstall" zabbix-cli-<version>.rpm 
+Then you can install it with e.g.::
+
+  [root@node]$ yum localinstall" ~/rpmbuild/RPMS/zabbix-cli-1.6.0-1.el7.noarch.rpm  #for el7
+  [root@node]$ yum localinstall" ~/rpmbuild/RPMS/zabbix-cli-1.6.0-1.el6.noarch.rpm  #for el6
+ 
 
 Installing via Deb packages
 ----------------------------
@@ -103,19 +113,54 @@ Configuration
 Configuration file
 ------------------
 
-Zabbix-CLI needs a configuration file to work. It will look for the
-file in this order:
+Zabbix-CLI needs a configuration file to work. Until version 1.5.4 we
+supported a **singlelevel configuration system** with three possible
+locations for our configuration file:
 
-* Config file defined with ``--config`` or ``-c`` when starting ``zabbix-cli`` 
-* ``$HOME/.zabbix-cli/zabbix-cli.conf``
-* ``/etc/zabbix-cli/zabbix-cli.conf``
-* ``/etc/zabbix-cli.conf``
+#. Config file defined with ``--config`` or ``-c`` parameter when
+   starting ``zabbix-cli``
+#. ``$HOME/.zabbix-cli/zabbix-cli.conf``
+#. ``/etc/zabbix-cli/zabbix-cli.conf``
 
-A default configuration file can be found in ``etc/zabbix-cli.conf``
-in the source code. 
 
-Run this command to create your own
-``$HOME/.zabbix-cli/zabbix-cli.conf`` file.::
+With the **singlelevel configuration system**, Zabbix-cli checked for
+a configuration file in these locations and in this order and used the
+first one that existed. This means that you could always override: 3)
+with 2) or 1), and 2) with 1).
+
+From version 1.6.0, Zabbix-cli has started to use a **multilevel
+configuration system.**
+
+This means thet we do not override entire configuration files but we
+merge all the defined configuration files in our system and use the
+parameter values defined in the configuration file with higher
+priority if a parameter is defined in more than one file.
+
+The ordered list with the files with higher on top:
+
+#. ``/usr/share/zabbix-cli/zabbix-cli.fixed.conf``
+#. ``/etc/zabbix-cli/zabbix-cli.fixed.conf``
+#. Configuration file defined with the parameter ``-c`` / ``--config`` when executing zabbix-cli
+#. ``$HOME/.zabbix-cli/zabbix-cli.conf``
+#. ``/etc/zabbix-cli/zabbix-cli.conf``
+#. ``/usr/share/zabbix-cli/zabbix-cli.conf``
+
+With this implementation:
+
+* Local configuration will be kept during upgrades.
+* The local configuration is separate from the package defaults.
+* Several actors will be allow to have their own files.
+* It is possible to provide package, host and user defaults, as well
+  as locking down features on a host, package level.
+* Always well known where the admin made his changes
+
+A default configuration file can be found in
+``/usr/share/zabbix-cli/zabbix-cli.conf`` or ``etc/zabbix-cli.conf``
+in the source code.
+
+The easiest way to configurate your client will be running this
+command to create your own ``$HOME/.zabbix-cli/zabbix-cli.conf``
+file.::
 
   # zabbix-cli-init <zabbix API url>
 
@@ -130,7 +175,41 @@ access to the log file defined with ``log_file``. This parameter will
 be defined automatically with an OFF value if you have run the command
 ``zabbix-cli-init``.
 
+From version 1.6.0 we have a new zabbix-cli command that can be used
+to see all the active configuration files in your system and the
+configuration parameters that zabbix-cli is using::
 
+  [zabbix-cli rafael@zabbix-ID]$ show_zabbixcli_config
+
+  +----------------------------------------------+
+  | Active configuration files                   |
+  +----------------------------------------------+
+  | */usr/share/zabbix-cli/zabbix-cli.fixed.conf |
+  | */etc/zabbix-cli/zabbix-cli.fixed.conf       |
+  | */root/.zabbix-cli/zabbix-cli.conf           |
+  | */etc/zabbix-cli/zabbix-cli.conf             |
+  | */usr/share/zabbix-cli/zabbix-cli.conf       |
+  +----------------------------------------------+
+  
+  +--------------------------------------+---------------------------------------+
+  |              Configuration parameter | Value                                 |
+  +--------------------------------------+---------------------------------------+
+  |                       zabbix_api_url | https://zabbix.example.org         |
+  |                            system_id | zabbix-ID                             |
+  |                    default_hostgroup | All-hosts                             |
+  |              default_admin_usergroup | Zabbix-admin                          |
+  |        default_create_user_usergroup | All-users                             |
+  | default_notification_users_usergroup | All-notification-users                |
+  |            default_directory_exports | /home/user/zabbix_exports             |
+  |                default_export_format | XML                                   |
+  |    include_timestamp_export_filename | ON                                    |
+  |                           use_colors | ON                                    |
+  |                  use_auth_token_file | ON                                    |
+  |                              logging | ON                                    |
+  |                            log_level | INFO                                  |
+  |                             log_file | /home/user/.zabbix-cli/zabbix-cli.log |
+  +--------------------------------------+---------------------------------------+
+  
 Authentication file
 -------------------
 
@@ -182,7 +261,7 @@ The Zabbix-CLI interactive shell can be started by running the program
    [user@host]# zabbix-cli
 
    #############################################################
-   Welcome to the Zabbix command-line interface (v.1.5.4)
+   Welcome to the Zabbix command-line interface (v.1.6.0)
    #############################################################
    Type help or \? to list commands.
 
@@ -198,22 +277,24 @@ The Zabbix-CLI interactive shell can be started by running the program
    create_host                    show_host_inventory         
    create_host_interface          show_host_usermacros        
    create_hostgroup               show_hostgroup              
-   create_notification_user       show_hostgroups             
-   create_user                    show_hosts                  
-   create_usergroup               show_items                  
-   define_global_macro            show_template               
-   define_host_monitoring_status  show_templates              
-   define_host_usermacro          show_triggers               
-   export_configuration           show_usergroup              
-   import_configuration           show_usergroups             
-   link_template_to_host          show_usermacro_host_list    
-   load_balance_proxy_hosts       show_usermacro_template_list
-   move_proxy_hosts               show_users                  
-   quit                           unlink_template_from_host   
-   remove_host                    update_host_inventory       
-   remove_host_from_hostgroup     update_host_proxy           
-   remove_user                    update_usergroup_permissions
-   remove_user_from_usergroup   
+   create_maintenance_definition  show_hostgroups             
+   create_notification_user       show_hosts                  
+   create_user                    show_items                  
+   create_usergroup               show_maintenance_definitions
+   define_global_macro            show_maintenance_periods    
+   define_host_monitoring_status  show_template               
+   define_host_usermacro          show_templates              
+   export_configuration           show_triggers               
+   import_configuration           show_usergroup              
+   link_template_to_host          show_usergroups             
+   load_balance_proxy_hosts       show_usermacro_host_list    
+   move_proxy_hosts               show_usermacro_template_list
+   quit                           show_users                  
+   remove_host                    show_zabbixcli_config       
+   remove_host_from_hostgroup     unlink_template_from_host   
+   remove_maintenance_definition  update_host_inventory       
+   remove_user                    update_host_proxy           
+   remove_user_from_usergroup     update_usergroup_permissions
    
    Miscellaneous help topics:
    ==========================
@@ -222,7 +303,6 @@ The Zabbix-CLI interactive shell can be started by running the program
    Undocumented commands:
    ======================
    help
-
 
 **NOTE:** It is possible to use Zabbix-CLI in a non-interactive modus
 by running ``/usr/bin/zabbix-cli`` with the parameter ``--command
@@ -441,7 +521,7 @@ Parameters:
 
   Remember that the host will get added per default to all hostgroups
   defined with the parameter ``default_hostgroup`` in the zabbix-cli
-  configuration file ``zabbix-cli.conf``
+  configuration file.
 
   This command will fail if both ``default_hostgroup`` and
   [hostgroups] are empty.
@@ -534,6 +614,41 @@ Parameters:
 * **[group name]:** Name of the hostgroup
 
 
+create_maintenance_definition
+-----------------------------
+
+This command creates a 'one time only' maintenance definition for a
+defined period of time. Use the zabbix dashboard for more advance
+definitions.
+
+::
+
+   create_maintenance_definition [name]
+                                 [description]
+                                 [host/hostgroup]
+                                 [time period]
+
+Parameters:
+
+* **[name]**: Maintenance definition name.
+* **[description]**: Maintenance definition description
+* **[host/hostgroup]**: Host/s and/or hostgroup/s the that will
+  undergo maintenance.
+
+  One can define more than one value in a comma separated list and mix
+  host and hostgroup values.
+
+* **[time period]** Time period when the maintenance must come into
+  effect.
+
+  One can define an interval between to timestamps in ISO format or a
+  time period in minutes, hours or days from the moment the definition
+  is created.
+        
+  e.g. From 22:00 until 23:00 on 2016-11-21 -> '2016-11-21T22:00 to 2016-11-21T23:00'
+       2 hours from the moment we create the maintenance -> '2 hours'
+
+
 create_notification_user
 ------------------------
 
@@ -611,7 +726,7 @@ Parameters:
 
   Remember that the user will get added per default to all usergroups
   defined with the parameter ``default_usergroup`` in the zabbix-cli
-  configuration file ``zabbix-cli.conf``
+  configuration file.
 
   This command will fail if both ``default_usergroup`` and
   [groups] are empty.  
@@ -879,6 +994,22 @@ Parameters:
   values in a comma separated list.
  
 
+remove_maintenance_definition
+-----------------------------
+
+This command removes one or several maintenance definitions
+
+::
+
+   remove_maintenance_definitions [definitionID]
+
+Parameters:
+   
+* **[definitionID]**: Definition ID. 
+
+  One can define more than one value in a comma separated list.
+
+
 remove_user
 ------------
 
@@ -900,8 +1031,8 @@ This command removes an user from one/several usergroups
 
 ::
   
-   add_user_to_usergroup [username]
-                         [usergroups]
+   remove_user_to_usergroup [username]
+                            [usergroups]
 
 Parameters:
 
@@ -1044,6 +1175,7 @@ e.g.: Show all hosts with Zabbix agent: Available AND Status: Monitored:
 
    show_host * "'available':'1','status':'0'"
 
+
 show_host_inventory
 --------------------
 
@@ -1062,6 +1194,20 @@ running zabbix-cli in non-interactive modus.
 
 If zabbix-cli is running in interactive modus, only a few attributes
 will be shown (hostname, vendor,chassis,gateway,contact address)
+
+
+show_host_usermacros
+--------------------
+
+This command shows all usermacros for a host
+
+::
+   
+   show_host_usermacros [hostname]
+
+Parameters:
+
+* **Hostname:** Hostname.
 
 
 show_hostgroup
@@ -1111,6 +1257,46 @@ Parameters:
 
 * **[templates]:** Template or zabbix-templateID.
  
+
+show_maintenance_definitions
+----------------------------
+
+This command shows maintenance definitions global information. The
+logical operator AND will be used if one defines more than one
+parameter.
+
+::
+
+   show_maintenance_definitions [definitionID]
+                                [hostgroup]
+                                [host]
+
+Parameters:
+
+* **[definitionID]**: Definition ID. 
+  One can define more than one value.
+
+* **[hostgroup]**: Hostgroup name. 
+  One can define more than one value.
+
+* **[host]**: Hostname. 
+  One can define more than one value.
+
+
+show_maintenance_periods
+------------------------
+
+This command shows maintenance periods global information.
+
+::
+
+   show_maintenance_periods [definitionID]
+
+Parameters:
+
+* **[definitionID]**: Definition ID. 
+  One can define more than one value.
+
 
 show_template
 -------------
@@ -1217,6 +1403,17 @@ This command shows users information.
    show_users
 
 
+show_zabbixcli_config
+---------------------
+
+This command shows information about the configuration used by this
+zabbix-cli instance.
+
+::
+  
+   show_zabbixcli_config
+
+
 ulink_template_from_host
 ------------------------
 
@@ -1265,6 +1462,31 @@ Parameters:
 
 * **hostname:** Hostname to update
 * **proxy:** Zabbix proxy that will monitor [hostname]
+
+
+update_usergroup_permissions
+----------------------------
+
+This command updates the permissions for an usergroup on a hostgroup.
+
+::
+
+   define_usergroup_permissions [usergroup]
+                                [hostgroups]
+                                [permission code]
+
+Parameters:
+
+* **[usergroup]**: Usergroup that will get a permission on a hostgroup
+* **[hostgroups]**: Hostgroup names where the permission will apply.
+        
+  One can define several values in a comma separated list.
+
+* **[permission]**:
+
+  - deny: Deny [usergroup] all access to [hostgroups]
+  - ro: Give [usergroup] read access to [hostgroups]
+  - rw: Give [usergroup] read and write access to [hostgroups]
 
 
 Authors
