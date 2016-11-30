@@ -17,8 +17,8 @@ Zabbix-CLI
 Introduction
 ============
 
-Zabbix-cli is a tool for managing some Zabbix administration task via
-the zabbix-API.
+Zabbix-cli is a terminal client for managing some Zabbix
+administration tasks via the zabbix-API.
 
 The zabbix-cli code is distributed under the GNU General Public
 License 3 and it is written in Python. It has been developed and
