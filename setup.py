@@ -56,8 +56,7 @@ try:
           url='https://github.com/usit-gd/zabbix-cli',
           packages=['zabbix_cli',],
           scripts=['bin/zabbix-cli','bin/zabbix-cli-bulk-execution','bin/zabbix-cli-init'],
-          data_files=[('/etc/zabbix-cli', ['etc/zabbix-cli.conf']),
-                      ('/usr/share/zabbix-cli', ['etc/zabbix-cli.conf'])],
+          data_files=[('/usr/share/zabbix-cli', ['etc/zabbix-cli.conf'])],
           install_requires=install_requires,
           platforms=['Linux'],
           classifiers=[
