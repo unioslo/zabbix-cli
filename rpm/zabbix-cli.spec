@@ -39,11 +39,9 @@ mkdir -p %{buildroot}%{_defaultdocdir}/zabbix-cli-%{version}
 %{python2_sitelib}/zabbix_cli-%{version}-py%{pybasever}.egg-info/
 %{python2_sitelib}/zabbix_cli/
 %{_bindir}/zabbix-cli*
-%dir %{_sysconfdir}/zabbix-cli/
 %dir %{_datadir}/zabbix-cli/
 %dir %{_defaultdocdir}/zabbix-cli/
 %{_datadir}/zabbix-cli/zabbix-cli.conf
-%config(noreplace) %{_sysconfdir}/zabbix-cli/zabbix-cli.conf
 %doc LICENSE docs/manual.rst
 
 %changelog
