@@ -58,6 +58,9 @@ if __name__ == "__main__":
 
         parser.add_argument('--zabbix-url','-z',  metavar='<zabbix URL>', required=True, dest='zabbix_api_url')        
         args = parser.parse_args()  
+
+        if args.zabbix_api_url:
+            zabbix_api_url = args.zabbix_api_url
         
     except Exception as e:
         print e
