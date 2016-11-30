@@ -1,0 +1,5 @@
+zabbix-cli (1.6.0-1) unstable; urgency=low
+
+  * Initial upload to Debian (Closes: #842337):
+
+ -- Petter Reinholdtsen <pere@debian.org>  Mon, 17 Oct 2016 11:41:24 +0000

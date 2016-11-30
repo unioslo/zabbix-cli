@@ -40,13 +40,21 @@ mkdir -p %{buildroot}%{_defaultdocdir}/zabbix-cli-%{version}
 %{python2_sitelib}/zabbix_cli/
 %{_bindir}/zabbix-cli*
 %dir %{_datadir}/zabbix-cli/
-%dir %{_defaultdocdir}/zabbix-cli/
+%dir %{_defaultdocdir}/zabbix-cli-%{version}
 %{_datadir}/zabbix-cli/zabbix-cli.conf
 %doc LICENSE docs/manual.rst
 
 %changelog
-* Tue Nov 22 2016 Rafael Martinez Guerrero <r.m.guerrero@usit.uio.no> - 1.6.0-1
-- New release
+* Wed Nov 30 2016 Rafael Martinez Guerrero <r.m.guerrero@usit.uio.no> - 1.6.0-1
+- Add support for multilevel configuration [Issue: #8]
+- Add new command to define maintenance definitions [Issue: #9]
+- Add new command to remove maintenance definitions [Issue: #11]
+- Add new command to show maintenance definitions [issue: #10]
+- Add new command to show maintenance periods [Issue: #14]
+- Add new command to show active zabbix-cli configuration parameters and configuration files [Issue: #13]
+- Add RPM specs file
+- Add DEBIAN files
+- Bugfix: Fix zabbix-cli-init parameters parsing. We use the argparse module now.
 
 * Sat Oct 29 2016 Volker Froehlich <volker27@gmx.at> - 1.5.4-5
 - Match the actual license claimed in the code

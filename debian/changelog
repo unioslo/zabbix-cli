@@ -1,5 +1,0 @@
-zabbix-cli (1.6.0-1) UNSTABLE; urgency=low
-
-  * Initial upload to Debian (Closes: #842337):
-
- -- Rafael Martinez Guerrero <r.m.guerrero@usit.uio.no>  Wed, 30 Nov 2016 12:29:17 +0000
