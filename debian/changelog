@@ -1,10 +1,5 @@
-zabbix-cli (1.6.0-1) UNRELEASED; urgency=low
+zabbix-cli (1.6.0-1) UNSTABLE; urgency=low
 
-  [ Petter Reinholdtsen ]
-  * New release 1.6.0-1:
   * Initial upload to Debian (Closes: #842337):
-
-  [ root ]
-  * debian/changelog
 
  -- Rafael Martinez Guerrero <r.m.guerrero@usit.uio.no>  Wed, 30 Nov 2016 12:29:17 +0000
