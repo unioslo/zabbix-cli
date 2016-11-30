@@ -17,3 +17,10 @@ Depends: ${misc:Depends}
  , ${python:Depends}
  , python-requests
 Description: Command-line interface for Zabbix monitoring system
+Zabbix-cli is a terminal client for managing some Zabbix
+administration tasks via the zabbix-API.
+.
+The zabbix-cli code is distributed under the GNU General Public
+License 3 and it is written in Python. It has been developed and
+tested by members of the Department for IT Infrastructure at the
+Center for Information Technology at the University of Oslo, Norway.
