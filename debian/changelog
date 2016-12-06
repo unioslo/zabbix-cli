@@ -1,4 +1,4 @@
-zabbix-cli (1.6.0-1) unstable; urgency=low
+zabbix-cli (1.6.0) unstable; urgency=low
 
   * Initial upload to Debian (Closes: #842337):
 
