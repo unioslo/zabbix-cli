@@ -1,7 +1,8 @@
 Source: zabbix-cli
 Section: misc
 Priority: optional
-Maintainer: Petter Reinholdtsen <pere@debian.org>
+Maintainer: Rafael Martinez Guerrero <rafael@postgresql.org.es>
+Uploaders: Petter Reinholdtsen <pere@debian.org>
 Build-Depends: debhelper (>= 9~)
  , python | python-all | python-dev | python-all-dev
  , python-setuptools
