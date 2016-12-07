@@ -3238,7 +3238,7 @@ class zabbixcli(cmd.Cmd):
                 maintenance_name = raw_input('# Maintenance name [' + maintenance_name_default + ']: ').strip()
                 maintenance_description = raw_input('# Maintenance description []: ').strip()
                 host_hostgroup = raw_input('# Host/Hostgroup []: ').strip()
-                time_period = raw_input('# Time period [1 hour]: ').strip()
+                time_period = raw_input('# Time period [' + time_period_default + ']: ').strip()
                 print '--------------------------------------------------------'
 
             except Exception as e:
@@ -3279,7 +3279,7 @@ class zabbixcli(cmd.Cmd):
                 return False
 
             if time_period == '':
-                time_period = time_period_default
+                time_period = time_period_default.upper()
             else:
                 time_period = time_period.upper()
 
