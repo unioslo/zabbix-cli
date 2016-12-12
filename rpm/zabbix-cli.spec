@@ -6,7 +6,7 @@
 %{!?pybasever: %global pybasever %(%{__python2} -c "import sys;print(sys.version[0:3])")}
 
 Name: zabbix-cli
-Version: 1.6.0
+Version: 1.6.1
 Release: 1%{?dist}
 Summary: Command-line interface for Zabbix
 
@@ -45,16 +45,11 @@ mkdir -p %{buildroot}%{_defaultdocdir}/zabbix-cli-%{version}
 %doc LICENSE docs/manual.rst
 
 %changelog
+* Mon Dec 12 2016 Rafael Martinez Guerrero <r.m.guerrero@usit.uio.no> - 1.6.1-1
+- New version 1.6.1
+
 * Wed Nov 30 2016 Rafael Martinez Guerrero <r.m.guerrero@usit.uio.no> - 1.6.0-1
-- Add support for multilevel configuration [Issue: #8]
-- Add new command to define maintenance definitions [Issue: #9]
-- Add new command to remove maintenance definitions [Issue: #11]
-- Add new command to show maintenance definitions [issue: #10]
-- Add new command to show maintenance periods [Issue: #14]
-- Add new command to show active zabbix-cli configuration parameters and configuration files [Issue: #13]
-- Add RPM specs file
-- Add DEBIAN files
-- Bugfix: Fix zabbix-cli-init parameters parsing. We use the argparse module now.
+- New version 1.6.0
 
 * Sat Oct 29 2016 Volker Froehlich <volker27@gmx.at> - 1.5.4-5
 - Match the actual license claimed in the code
