@@ -3399,6 +3399,7 @@ class zabbixcli(cmd.Cmd):
                     [interface type]
                     [interface port]
                     [interface IP]
+                    [interface DNS]
                     [default interface]
 
         [hostname]
@@ -3407,7 +3408,7 @@ class zabbixcli(cmd.Cmd):
         
         [interface connection]
         ----------------------
-        0: Connect using host DNS name [*]
+        0: Connect using host DNS name or interface DNS if provided [*]
         1: Connect using host IP address
 
         [interface type]
@@ -3424,6 +3425,10 @@ class zabbixcli(cmd.Cmd):
         [interface IP]
         --------------
         IP address if interface connection is 1:
+
+        [interface DNS]
+        --------------
+        DNS if interface connection is 0: (hostname by default)
 
         [default interface]
         -------------------
@@ -3451,6 +3456,9 @@ class zabbixcli(cmd.Cmd):
         # Interface connection. 0:DNS
         interface_useip_default = '0'
 
+	# The default DNS will be set to hostname when parsed
+	interface_dns_default = ''
+
         try: 
             arg_list = shlex.split(args)
             
@@ -3471,6 +3479,7 @@ class zabbixcli(cmd.Cmd):
                 interface_type = raw_input('# Interface type[' + interface_type_default + ']: ').strip()
                 interface_port = raw_input('# Interface port[' + interface_port_default + ']: ').strip()
                 interface_ip = raw_input('# Interface IP[' + interface_ip_default + ']: ').strip()
+                interface_dns = raw_input('# Interface DNS[' + interface_dns_default + ']: ').strip()
                 interface_main = raw_input('# Default interface[' + interface_main_default + ']: ').strip()
                 print '--------------------------------------------------------'
 
@@ -3483,14 +3492,15 @@ class zabbixcli(cmd.Cmd):
         # Command without filters attributes
         #
 
-        elif len(arg_list) == 6:
+        elif len(arg_list) == 7:
 
             hostname = arg_list[0].strip()
             interface_useip = arg_list[1].strip() 
             interface_type = arg_list[2].strip()
             interface_port = arg_list[3].strip()
             interface_ip = arg_list[4].strip()
-            interface_main = arg_list[5].strip()
+            interface_dns = arg_list[5].strip()
+            interface_main = arg_list[6].strip()
 
         #
         # Command with the wrong number of parameters
@@ -3508,6 +3518,8 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error','Hostname value is empty')
             return False
 
+	interface_dns_default = hostname
+
         if interface_useip == '' or interface_useip not in ('0','1'):
             interface_useip = interface_useip_default
 
@@ -3516,6 +3528,9 @@ class zabbixcli(cmd.Cmd):
         
         if interface_port == '' :
             interface_port = interface_port_default
+
+        if interface_dns == '':
+            interface_dns = interface_dns_default
 
         if interface_useip == '1' and interface_ip == '':
             self.generate_feedback('Error','Host IP value is empty and connection type is 1:IP')
@@ -3533,7 +3548,7 @@ class zabbixcli(cmd.Cmd):
                              ',"main":' + interface_main + \
                              ',"useip":' + interface_useip + \
                              ',"ip":"' + \
-                             '","dns":"' + hostname + \
+                             '","dns":"' + interface_dns + \
                              '","port":"' + interface_port + '"'
 
         elif interface_useip == '1':
