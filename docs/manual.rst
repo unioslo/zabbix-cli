@@ -564,19 +564,20 @@ This command creates a hostinterface
 
 ::
 
-   create_host [hostname]
-               [interface connection]
-               [interface type]
-               [interface port]
-               [interface IP]
-               [default interface]
+   create_host_interface [hostname]
+                         [interface connection]
+                         [interface type]
+                         [interface port]
+                         [interface IP]
+                         [interface DNS]
+                         [default interface]
 
 Parameters:
 
 * **[hostname]**: Hostname
 * **[interface connection]**: Type of connection. Possible values:
 
-  - 0 - Connect using host DNS name (Default)
+  - 0 - Connect using host DNS name (Default) or interface DNS if provided
   - 1 - Connect using host IP address
 
 * **[interface type]**: Type of interface. Possible values:
@@ -588,6 +589,7 @@ Parameters:
         
 * **[interface port]**: Interface port (Default: 161)
 * **[interface IP]**: IP address if interface connection is 1
+* **[interface DNS]**: DNS if interface connection is 0: (hostname by default)
 * **[default interface]**: Define this interface som default. Possible
   values:
 
