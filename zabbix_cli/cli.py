@@ -6678,7 +6678,7 @@ class zabbixcli(cmd.Cmd):
         else:
             timestamp = '_' + datetime.datetime.now().strftime('%Y-%m-%dT%H%M%S%Z')
 
-        filename = directory_exports + '/' + obj_type + '/zabbix_export_' + obj_type + '_' + obj_name.replace(' ','_') + '_' + obj_id + timestamp + '.' + file_ext
+        filename = directory_exports + '/' + obj_type + '/zabbix_export_' + obj_type + '_' + obj_name.replace(' ','_').replace('/','_') + '_' + obj_id + timestamp + '.' + file_ext
         return filename
 
 
