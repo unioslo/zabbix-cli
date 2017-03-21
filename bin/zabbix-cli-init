@@ -17,6 +17,7 @@ from os import getenv,path,remove,close,makedirs
 from tempfile import mkstemp
 from shutil import move, copy2
 import sys
+import os
 import argparse
 
 def replace(file_path, pattern, subst):
