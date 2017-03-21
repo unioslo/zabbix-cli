@@ -3060,10 +3060,14 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Done','Hosts (' + hostname + ') with IDs: ' + str(result['hostids'][0]) + ' removed')
 
             #
-            # Delete the deleted host from the hostid cache.
+            # Delete the deleted host from the hostid cache if it
+            # exists. If a host is created via the zabbix frontend
+            # after a zabbix-cli session has been started, the host
+            # will not exist in the zabbix-cli cache of this session.
             #
 
-            del self.hostid_cache[hostid]
+            if hostid in self.hostid_cache.values():
+                del self.hostid_cache[hostid]
 
         except Exception as e:
 
