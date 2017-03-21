@@ -98,9 +98,21 @@ if __name__ == '__main__':
         auth_token = ''
         username = ''
         password = ''
+        zabbix_auth_file = ''
+        zabbix_auth_token_file = ''
 
-        zabbix_auth_file = os.getenv('HOME') + '/.zabbix-cli_auth'
-        zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
+        if os.getenv('HOME') is not None:
+
+            zabbix_auth_file = os.getenv('HOME') + '/.zabbix-cli_auth'
+            zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
+            
+        else:
+            print '\n[ERROR]: The $HOME environment variable is not defined. Zabbix-CLI cannot read ~/.zabbix-cli_auth or ~/.zabbix-cli_auth_token'
+
+            if conf.logging == 'ON':
+                logs.logger.error('The $HOME environment variable is not defined. Zabbix-CLI cannot read ~/.zabbix-cli_auth or ~/.zabbix-cli_auth_token')
+            
+            sys.exit(1)
 
         if os.path.isfile(zabbix_auth_file):
 
@@ -326,4 +338,5 @@ if __name__ == '__main__':
 
         sys.exit(0)
 
-
+    except Exception as e:
+        print '\n[ERROR]: %s\n',e
