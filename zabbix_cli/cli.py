@@ -7367,11 +7367,11 @@ class zabbixcli(cmd.Cmd):
             
             else:
 
-                data = self.zapi.host.get(output=['name'],
+                data = self.zapi.host.get(output=['host'],
                                           hostids=hostid)
 
                 if data != []:
-                    host_name = data[0]['name']
+                    host_name = data[0]['host']
                     self.hostid_cache[hostid] = host_name
                 
                 else:
@@ -7665,9 +7665,9 @@ class zabbixcli(cmd.Cmd):
         Populate hostid cache
         '''
 
-        # This methos initializes a dictionary when we start
+        # This method initializes a dictionary when we start
         # zabbix-cli with all hostid:hostname from hosts that are
-        # monitored. We use this as a cache to get hostname
+        # defined in zabbix. We use this as a cache to get hostname
         # information for a hostid.
         #
         # This cache is necessary e.g. by the show_alarms to avoid an
@@ -7684,11 +7684,10 @@ class zabbixcli(cmd.Cmd):
         try:
             temp_dict = {}
             
-            data = self.zapi.host.get(output=['hostid','name'],
-                                      monitored_hosts=True)
+            data = self.zapi.host.get(output=['hostid','host'])
 
             for host in data:
-                temp_dict[host['hostid']] = host['name'] 
+                temp_dict[host['hostid']] = host['host'] 
 
             return temp_dict
             
