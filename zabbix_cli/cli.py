@@ -2777,9 +2777,17 @@ class zabbixcli(cmd.Cmd):
 
         '''
         
-        # Default hostgroups
+        # Default hostgroups. 
+        # Use these values only if they exist.
+
         hostgroup_default = self.conf.default_hostgroup.strip()
 
+        for hostgroup in self.conf.default_hostgroup.split(','):
+            
+            if hostgroup_exists(hostgroup.strip()) == False:
+                hostgroup_default = ''
+                break
+        
         # Proxy server to use to monitor this host        
         proxy_default = '.+'
 
@@ -2873,7 +2881,7 @@ class zabbixcli(cmd.Cmd):
             for hostgroup in hostgroup_default.split(','):
                 
                 if hostgroup != '':
-                    hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup)) + '"}')
+                    hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup.strip())) + '"}')
 
             for hostgroup in hostgroups.split(','):
 
