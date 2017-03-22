@@ -426,6 +426,25 @@ or special characters for the shell.e.g.
    +--------+----------------------+-------------------------+-----------------------------------+--------------------+-----------------+-----------------+---------------+
 
 
+
+acknowledge_event
+-----------------
+        
+This command acknowledges an event
+    
+::
+
+   acknowledge_events [eventIDs] 
+                      [message]
+
+Parameters:
+
+* **[eventIDs]:** IDs of the events to acknowledge. One can define
+    several values in a comma separated list.
+
+* **[message]:** Text of the acknowledgement message.
+
+
 add_host_to_hostgroup
 ---------------------
 

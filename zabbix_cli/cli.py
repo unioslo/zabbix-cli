@@ -5079,6 +5079,86 @@ class zabbixcli(cmd.Cmd):
 
 
     # ############################################
+    # Method do_acknowledge_event
+    # ############################################
+
+    def do_acknowledge_event(self, args):
+        '''
+        DESCRIPTION:
+        This command acknowledges an event
+    
+        COMMAND:
+        acknowledge_events [eventIDs] 
+                           [message]
+
+        [eventIDs]
+        ----------
+        IDs of the events to acknowledge. One can define several
+        values in a comma separated list.
+
+        [message]
+        ---------
+        Text of the acknowledgement message. 
+        '''
+
+        ack_message_default = '[Zabbix-CLI]'
+        
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                event_ids = raw_input('# EventIDs: ').strip()
+                ack_message = raw_input('# Message[' + ack_message_default + ']:').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 2:
+            event_ids = arg_list[0].strip()
+            ack_message = arg_list[1].strip()
+        
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if ack_message == '':
+            ack_message = ack_message_default
+
+        event_ids = event_ids.replace(' ','').split(',')
+
+        try:
+            
+            data = self.zapi.event.acknowledge(eventids=event_ids,
+                                               message=ack_message)
+            
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('Acknowledge message [%s] for eventID [%s] registered',ack_message,event_ids)
+                
+                self.generate_feedback('Done','Acknowledge message [' + ack_message + '] for eventID [' + ','.join(event_ids) + '] registered')
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems registering the acknowledge message [%s] for eventID [%s] - %s',ack_message,event_ids,e)
+            
+            self.generate_feedback('Error','Problems registering the acknowledge message [' + ack_message + '] for eventID [' + ','.join(event_ids) + ']')
+            return False 
+
+
+    # ############################################
     # Method show_templates
     # ############################################
 
