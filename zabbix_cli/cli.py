@@ -5147,7 +5147,7 @@ class zabbixcli(cmd.Cmd):
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Acknowledge message [%s] for eventID [%s] registered',ack_message,event_ids)
                 
-                self.generate_feedback('Done','Acknowledge message [' + ack_message + '] for eventID [' + ','.join(event_ids) + '] registered')
+            self.generate_feedback('Done','Acknowledge message [' + ack_message + '] for eventID [' + ','.join(event_ids) + '] registered')
 
         except Exception as e:
 
