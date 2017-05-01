@@ -2784,7 +2784,7 @@ class zabbixcli(cmd.Cmd):
 
         for hostgroup in self.conf.default_hostgroup.split(','):
             
-            if hostgroup_exists(hostgroup.strip()) == False:
+            if self.hostgroup_exists(hostgroup.strip()) == False:
                 hostgroup_default = ''
                 break
         
