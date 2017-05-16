@@ -527,14 +527,14 @@ This command creates a host.
 
 ::
 
-   create_host [hostname]
+   create_host [hostname|IP]
                [hostgroups]
                [proxy]
                [status]
 
 Parameters:
 
-* **[Hostname]:** Hostname
+* **[Hostname|IP]:** Hostname or IPaddress
 * **[hostgroups]:** Hostgroup name or zabbix-hostgroupID to add the
   host to. One can define several values in a comma separated list.
 
