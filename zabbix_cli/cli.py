@@ -38,6 +38,7 @@ import json
 import xml.dom.minidom
 import glob
 import re
+import ipaddr
 
 from zabbix_cli.config import *
 from zabbix_cli.logs import *
@@ -2725,14 +2726,14 @@ class zabbixcli(cmd.Cmd):
         This command creates a host.
 
         COMMAND:
-        create_host [hostname]
+        create_host [hostname|IP]
                     [hostgroups]
                     [proxy]
                     [status]
 
-        [hostname]
-        ----------
-        Hostname
+        [hostname|IP]
+        -------------
+        Hostname or IP
 
         [hostgroups]
         ------------
@@ -2809,7 +2810,7 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print '--------------------------------------------------------'
-                hostname = raw_input('# Hostname: ').strip()
+                host = raw_input('# Hostname|IP: ').strip()
                 hostgroups = raw_input('# Hostgroups[' + hostgroup_default + ']: ').strip()
                 proxy = raw_input('# Proxy ['+ proxy_default + ']: ').strip()
                 host_status = raw_input('# Status ['+ host_status_default + ']: ').strip()
@@ -2826,7 +2827,7 @@ class zabbixcli(cmd.Cmd):
 
         elif len(arg_list) == 4:
 
-            hostname = arg_list[0].strip()
+            host = arg_list[0].strip()
             hostgroups = arg_list[1].strip()
             proxy = arg_list[2].strip()
             host_status = arg_list[3].strip()
@@ -2843,8 +2844,8 @@ class zabbixcli(cmd.Cmd):
         # Sanity check
         #
 
-        if hostname == '':
-            self.generate_feedback('Error','Hostname value is empty')
+        if host == '':
+            self.generate_feedback('Error','Hostname|IP value is empty')
             return False
 
         if proxy == '':
@@ -2856,19 +2857,32 @@ class zabbixcli(cmd.Cmd):
         # Generate interface definition. Per default all hosts get a
         # Zabbix agent and a SNMP interface defined
 
+        try:
+            # Check if we are using a hostname or an IP
+            ipaddr.IPAddress(host)
+
+            useip = ',"useip":1'
+            interface_ip = '"ip":"' host + '",'
+            interface_dns = '"dns":"",'
+            
+        except ValueError:
+            useip = ',"useip":0'
+            interface_ip = '"ip":"",'
+            interface_dns = '"dns":"' + host + '",'
+            
         interfaces_def = '"interfaces":[' + \
-                         '{"type":1' + \
-                         ',"main":1' + \
-                         ',"useip":0' + \
-                         ',"ip":"' + \
-                         '","dns":"' + hostname + \
-                         '","port":"10050"},' + \
-                         '{"type":2' + \
-                         ',"main":1' + \
-                         ',"useip":0' + \
-                         ',"ip":"' + \
-                         '","dns":"' + hostname + \
-                         '","port":"161"}]'
+                         '{"type":1,' + \
+                         '"main":1,' + \
+                         useip + \
+                         interface_ip + \
+                         interface_dns + \
+                         '"port":"10050"},' + \
+                         '{"type":2,' + \
+                         '"main":1,' + \
+                         useip + \
+                         interface_ip + \
+                         interface_dns + \
+                         '"port":"161"}]'
 
         #
         # Generate hostgroups and proxy IDs
@@ -2910,27 +2924,27 @@ class zabbixcli(cmd.Cmd):
         except Exception as e:
  
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Host [%s] - %s',hostname,e)
+                self.logs.logger.debug('Host [%s] - %s',host,e)
                 
             proxy_hostid = ""
 
         #
-        # Checking if hostname exists
+        # Checking if host exists
         #
 
         try:
 
-            result = self.host_exists(hostname.strip())
+            result = self.host_exists(host.strip())
             
             if self.conf.logging == 'ON':
-                self.logs.logger.debug('Cheking if host (%s) exists',hostname)
+                self.logs.logger.debug('Cheking if host (%s) exists',host)
 
         except Exception as e:
 
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems checking if host (%s) exists - %s',hostname,e)
+                self.logs.logger.error('Problems checking if host (%s) exists - %s',host,e)
 
-            self.generate_feedback('Error','Problems checking if host (' + hostname + ') exists')
+            self.generate_feedback('Error','Problems checking if host (' + host + ') exists')
             return False   
         
         try:
@@ -2938,9 +2952,9 @@ class zabbixcli(cmd.Cmd):
             if result == True:
 
                 if self.conf.logging == 'ON':
-                    self.logs.logger.debug('Host (%s) already exists',hostname)
+                    self.logs.logger.debug('Host (%s) already exists',host)
 
-                self.generate_feedback('Warning','This host (' + hostname + ') already exists.')
+                self.generate_feedback('Warning','This host (' + host + ') already exists.')
                 return False   
                 
             elif result == False:
@@ -2949,26 +2963,26 @@ class zabbixcli(cmd.Cmd):
                 # Create host via Zabbix-API
                 # 
 
-                query=ast.literal_eval("{\"host\":\"" + hostname + "\"," + "\"groups\":[" + hostgroup_ids + "]," + proxy_hostid + "\"status\":" + host_status + "," + interfaces_def + ",\"inventory_mode\":1,\"inventory\":{\"name\":\"" + hostname +"\"}}")
+                query=ast.literal_eval("{\"host\":\"" + host + "\"," + "\"groups\":[" + hostgroup_ids + "]," + proxy_hostid + "\"status\":" + host_status + "," + interfaces_def + ",\"inventory_mode\":1,\"inventory\":{\"name\":\"" + host +"\"}}")
 
                 result = self.zapi.host.create(**query)
 
                 if self.conf.logging == 'ON':
-                    self.logs.logger.info('Host (%s) with ID: %s created',hostname,str(result['hostids'][0]))
+                    self.logs.logger.info('Host (%s) with ID: %s created',host,str(result['hostids'][0]))
                 
-                self.generate_feedback('Done','Host (' + hostname + ') with ID: ' + str(result['hostids'][0]) + ' created')
+                self.generate_feedback('Done','Host (' + host + ') with ID: ' + str(result['hostids'][0]) + ' created')
 
                 #
                 # Update the hostid cache with the created host.
                 #
-                self.hostid_cache[result['hostids'][0]] = hostname
+                self.hostid_cache[result['hostids'][0]] = host
 
         except Exception as e:
 
             if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems creating host (%s) - %s',hostname,e)
+                self.logs.logger.error('Problems creating host (%s) - %s',host,e)
 
-            self.generate_feedback('Error','Problems creating host (' + hostname + ')')
+            self.generate_feedback('Error','Problems creating host (' + host + ')')
             return False   
 
             
@@ -3406,13 +3420,13 @@ class zabbixcli(cmd.Cmd):
         This command creates a hostinterface.
 
         COMMAND:
-        create_host [hostname]
-                    [interface connection]
-                    [interface type]
-                    [interface port]
-                    [interface IP]
-                    [interface DNS]
-                    [default interface]
+        create_host_interface [hostname]
+                              [interface connection]
+                              [interface type]
+                              [interface port]
+                              [interface IP]
+                              [interface DNS]
+                              [default interface]
 
         [hostname]
         ----------

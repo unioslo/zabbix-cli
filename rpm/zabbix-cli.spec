@@ -17,7 +17,7 @@ Source0: https://github.com/usit-gd/zabbix-cli/archive/%{version}.tar.gz
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
-Requires: python-argparse, python-requests
+Requires: python-argparse, python-requests, python-ipaddr
 BuildRequires: python2-devel, python-setuptools
 BuildArch: noarch
 
