@@ -445,6 +445,24 @@ Parameters:
 * **[message]:** Text of the acknowledgement message.
 
 
+acknowledge_trigger_last_event
+------------------------------
+
+This command acknowledges the last event of a trigger.
+    
+::
+  
+   acknowledge_trigger_last_event [triggerIDs] 
+                                  [message]
+
+Parameters:
+
+* **[triggerIDs]:** IDs of the triggers to acknowledge. One can define
+  several values in a comma separated list.
+
+* **[message]:** Text of the acknowledgement message.
+
+
 add_host_to_hostgroup
 ---------------------
 
