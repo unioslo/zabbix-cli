@@ -123,7 +123,7 @@ if __name__ == '__main__':
             password = env_password
 
             if conf.logging == 'ON':
-                logs.logger.info('Enviroment variables ZABBIX_USERNAME and ZABBIX_PASSWORD exist. Using these variables to get authentication information')
+                logs.logger.info('Environment variables ZABBIX_USERNAME and ZABBIX_PASSWORD exist. Using these variables to get authentication information')
 
         elif os.path.isfile(zabbix_auth_file):
 
