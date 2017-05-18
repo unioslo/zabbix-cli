@@ -314,7 +314,8 @@ if __name__ == '__main__':
                 
                 cli = zabbixcli(logs,conf,username,password,auth_token)
                 cli.output_format = 'csv'
-                              
+                cli.non_interactive = True
+                                                              
                 cli.onecmd(zabbix_command)
 
             # JSON format output
@@ -323,7 +324,8 @@ if __name__ == '__main__':
                 
                 cli = zabbixcli(logs,conf,username,password,auth_token)
                 cli.output_format = 'json'
-                              
+                cli.non_interactive = True
+
                 cli.onecmd(zabbix_command)
 
             # Table format output
@@ -331,6 +333,7 @@ if __name__ == '__main__':
             else:
                 cli = zabbixcli(logs,conf,username,password,auth_token)
                 cli.output_format = 'table'
+                cli.non_interactive = True
                                 
                 cli.onecmd(zabbix_command)
 

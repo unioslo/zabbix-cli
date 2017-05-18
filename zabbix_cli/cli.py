@@ -103,7 +103,10 @@ class zabbixcli(cmd.Cmd):
             
             # Bulk execution of commands (True|False)
             self.bulk_execution = False
-            
+
+            # Non-interactive execution (True|False)
+            self.non_interactive = False
+
             # SystemID show in prompt text
             self.system_id = self.conf.system_id
         
@@ -7258,22 +7261,33 @@ class zabbixcli(cmd.Cmd):
             print '\n[' + return_code.title() + ']: ' + str(message) + '\n'   
             print 
 
+            if self.non_interactive == True or self.bulk_execution == True: 
+
+                if return_code.lower() == 'done':
+                    sys.exit(0)
+                elif return_code.lower() == 'error':
+                    sys.exit(1)
+
         elif self.output_format == 'csv':
             print '"' + return_code.lower() + '","' + str(message) + '"\n'   
+
+            if self.non_interactive == True or self.bulk_execution == True: 
             
-            if return_code.lower() == 'done':
-                sys.exit(0)
-            elif return_code.lower() == 'error':
-                sys.exit(1)
+                if return_code.lower() == 'done':
+                    sys.exit(0)
+                elif return_code.lower() == 'error':
+                    sys.exit(1)
     
         elif self.output_format == 'json':
             output = {"return_code":return_code.lower(),"message":str(message)}
             print json.dumps(output,sort_keys=True,indent=2)
 
-            if return_code.lower() == 'done':
-                sys.exit(0)
-            elif return_code.lower() == 'error':
-                sys.exit(1)
+            if self.non_interactive == True or self.bulk_execution == True: 
+
+                if return_code.lower() == 'done':
+                    sys.exit(0)
+                elif return_code.lower() == 'error':
+                    sys.exit(1)
 
 
     # ############################################
