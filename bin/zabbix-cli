@@ -114,7 +114,15 @@ if __name__ == '__main__':
             
             sys.exit(1)
 
-        if os.path.isfile(zabbix_auth_file):
+        env_username = os.getenv('ZABBIX_USERNAME')
+        env_password = os.getenv('ZABBIX_PASSWORD')
+
+        if env_username is not None and env_password is not None:
+
+            username = env_username
+            password = env_password
+
+        elif os.path.isfile(zabbix_auth_file):
 
             try:
                 os.chmod(zabbix_auth_file,0400)

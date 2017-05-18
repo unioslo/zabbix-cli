@@ -209,6 +209,19 @@ configuration parameters that zabbix-cli is using::
   |                            log_level | INFO                                  |
   |                             log_file | /home/user/.zabbix-cli/zabbix-cli.log |
   +--------------------------------------+---------------------------------------+
+
+Environment Authentication
+--------------------------
+
+You can define the ``ZABBIX_USERNAME`` and ``ZABBIX_PASSWORD`` environment
+variables to pass credentials to ``zabbix-cli``.
+
+For example:
+
+::
+
+   export ZABBIX_USERNAME=zbxuser
+   read -srp "Zabbix Password: " ZABBIX_PASSWORD; export ZABBIX_PASSWORD;
   
 Authentication file
 -------------------
