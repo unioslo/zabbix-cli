@@ -105,7 +105,14 @@ Then you can install it with e.g.::
 Installing via Deb packages
 ----------------------------
 
-TODO
+* Use prepared repositories from `tracker.debian.org/pkg/zabbix-cli <https://tracker.debian.org/pkg/zabbix-cli>`_,
+* or manual build deb package (this example without gpg encryption):
+  ::
+
+   sudo apt-get install dpkg debconf debhelper lintian devscripts
+   git clone git@github.com:usit-gd/zabbix-cli.git
+   cd zabbix-cli
+   dpkg-buildpackage -us -uc -tc -Zgzip
 
 Configuration
 =============
@@ -1301,7 +1308,7 @@ This command shows all hostgroups defined in the system.
 
 
 show_hosts
----------
+----------
 
 This command shows all hosts defined in the system.
 
