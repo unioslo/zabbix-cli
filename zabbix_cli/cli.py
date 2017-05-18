@@ -2861,12 +2861,12 @@ class zabbixcli(cmd.Cmd):
             # Check if we are using a hostname or an IP
             ipaddr.IPAddress(host)
 
-            useip = ',"useip":1'
-            interface_ip = '"ip":"' host + '",'
+            useip = '"useip":1,'
+            interface_ip = '"ip":"' + host + '",'
             interface_dns = '"dns":"",'
             
         except ValueError:
-            useip = ',"useip":0'
+            useip = '"useip":0,'
             interface_ip = '"ip":"",'
             interface_dns = '"dns":"' + host + '",'
             
@@ -5115,7 +5115,7 @@ class zabbixcli(cmd.Cmd):
         Text of the acknowledgement message. 
         '''
 
-        ack_message_default = '[Zabbix-CLI]'
+        ack_message_default = '[Zabbix-CLI] Acknowledged via acknowledge_events'
         
         try:
             arg_list = shlex.split(args)
@@ -5170,6 +5170,100 @@ class zabbixcli(cmd.Cmd):
             
             self.generate_feedback('Error','Problems registering the acknowledge message [' + ack_message + '] for eventID [' + ','.join(event_ids) + ']')
             return False 
+
+    # ############################################
+    # Method do_acknowledge_trigger_last_event
+    # ############################################
+
+    def do_acknowledge_trigger_last_event(self, args):
+        '''
+        DESCRIPTION:
+
+        This command acknowledges the last event of a trigger.
+    
+        COMMAND:
+        acknowledge_trigger_last_event [triggerIDs] 
+                                       [message]
+
+        [triggerIDs]
+        ------------
+        IDs of the triggers to acknowledge. One can define several
+        values in a comma separated list.
+
+        [message]
+        ---------
+        Text of the acknowledgement message.
+
+        '''
+
+        event_ids = []
+        ack_message_default = '[Zabbix-CLI] Acknowledged via acknowledge_trigger_last_event'
+        
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 0:
+            try:
+                print '--------------------------------------------------------'
+                trigger_ids = raw_input('# TriggerIDs: ').strip()
+                ack_message = raw_input('# Message[' + ack_message_default + ']:').strip()
+                print '--------------------------------------------------------'
+
+            except Exception as e:
+                print '\n--------------------------------------------------------'
+                print '\n[Aborted] Command interrupted by the user.\n'
+                return False
+
+        elif len(arg_list) == 2:
+            trigger_ids = arg_list[0].strip()
+            ack_message = arg_list[1].strip()
+        
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if ack_message == '':
+            ack_message = ack_message_default
+
+        trigger_ids = trigger_ids.replace(' ','').split(',')
+
+        try:
+
+            for trigger_id in trigger_ids:
+            
+                data = self.zapi.event.get(objectids=trigger_id,sortfield=['clock'],sortorder='DESC',limit=1)
+                event_ids.append(data[0]['eventid'])
+
+            
+            result = self.zapi.event.acknowledge(eventids=event_ids,
+                                                 message=ack_message)
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.info('Acknowledge message [%s] for last eventIDs [%s] on triggerIDs [%s] registered',ack_message,','.join(event_ids),','.join(trigger_ids))
+                
+            self.generate_feedback('Done','Acknowledge message [' + ack_message + '] for last eventIDs [' + ','.join(event_ids) + '] on triggerIDs [' + ','.join(trigger_ids) + '] registered')
+
+        except Exception as e:
+
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems registering acknowledge message [%s] for last eventIDs [%s] on triggerIDs [%s] - %s',
+                                       ack_message,
+                                       ','.join(event_ids),
+                                       ','.join(trigger_ids),
+                                       e)
+            
+            self.generate_feedback('Error','Problems registering acknowledge message [' + ack_message + '] for last eventIDs [' + ','.join(event_ids) + '] on triggerIDs [' + ','.join(trigger_ids) + ']')
+            return False 
+
+
 
 
     # ############################################
