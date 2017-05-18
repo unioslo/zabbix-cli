@@ -122,6 +122,9 @@ if __name__ == '__main__':
             username = env_username
             password = env_password
 
+            if conf.logging == 'ON':
+                logs.logger.info('Enviroment variables ZABBIX_USERNAME and ZABBIX_PASSWORD exist. Using these variables to get authentication information')
+
         elif os.path.isfile(zabbix_auth_file):
 
             try:
@@ -134,7 +137,7 @@ if __name__ == '__main__':
                 password = password.replace('\n','')
                 
                 if conf.logging == 'ON':
-                    logs.logger.debug('File %s exists. Using this file to get authentication information',zabbix_auth_file)
+                    logs.logger.info('File %s exists. Using this file to get authentication information',zabbix_auth_file)
 
             except Exception as e:
                 print '\n[ERROR]: %s\n',e
