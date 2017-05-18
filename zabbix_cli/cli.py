@@ -3205,6 +3205,7 @@ class zabbixcli(cmd.Cmd):
                                       [description]
                                       [host/hostgroup]
                                       [time period]
+                                      [maintenance type]
 
         [name]
         ------
@@ -3233,6 +3234,16 @@ class zabbixcli(cmd.Cmd):
         e.g. From 22:00 until 23:00 on 2016-11-21 -> '2016-11-21T22:00 to 2016-11-21T23:00'
              2 hours from the moment we create the maintenance -> '2 hours'
 
+
+        [maintenance type]
+        ------------------
+        Maintenance type.
+
+        Type values:
+
+        0 - (default) With data collection
+        1 - Without data collection
+
         '''
 
         host_ids = []
@@ -3245,6 +3256,7 @@ class zabbixcli(cmd.Cmd):
 
         maintenance_name_default = 'zabbixCLI-' + tag_default
         time_period_default = '1 hour'
+        maintenance_type_default = 0
 
         try: 
             arg_list = shlex.split(args)
@@ -3265,6 +3277,7 @@ class zabbixcli(cmd.Cmd):
                 maintenance_description = raw_input('# Maintenance description []: ').strip()
                 host_hostgroup = raw_input('# Host/Hostgroup []: ').strip()
                 time_period = raw_input('# Time period [' + time_period_default + ']: ').strip()
+                maintenance_type_ = raw_input('# Maintenance type [' + str(maintenance_type_default) + ']: ').strip()
                 print '--------------------------------------------------------'
 
             except Exception as e:
@@ -3276,12 +3289,13 @@ class zabbixcli(cmd.Cmd):
         # Command without filters attributes
         #
 
-        elif len(arg_list) == 4:
+        elif len(arg_list) == 5:
 
             maintenance_name = arg_list[0].strip()
             maintenance_description = arg_list[1].strip()
             host_hostgroup = arg_list[2].strip()
             time_period = arg_list[3].strip()
+            maintenance_type_ = arg_list[4].strip()
 
         #
         # Command with the wrong number of parameters
@@ -3309,6 +3323,8 @@ class zabbixcli(cmd.Cmd):
             else:
                 time_period = time_period.upper()
 
+            if maintenance_type_ == '' or maintenance_type_ not in ('0','1'):
+                maintenance_type_ = maintenance_type_default
 
             #
             # Generate lists with hostID anf hostgroupID information.
@@ -3381,6 +3397,7 @@ class zabbixcli(cmd.Cmd):
             # Create maintenance period 
             #
             result = self.zapi.maintenance.create(name=maintenance_name,
+                                                  maintenance_type=maintenance_type_,
                                                   active_since=since,
                                                   active_till=till,
                                                   description=maintenance_description,

@@ -685,6 +685,7 @@ definitions.
                                  [description]
                                  [host/hostgroup]
                                  [time period]
+                                 [maintenance type]
 
 Parameters:
 
@@ -705,6 +706,13 @@ Parameters:
         
   e.g. From 22:00 until 23:00 on 2016-11-21 -> '2016-11-21T22:00 to 2016-11-21T23:00'
        2 hours from the moment we create the maintenance -> '2 hours'
+
+* **[maintenance type]** Maintenance type.
+
+  Type values:
+
+  - 0 - (default) With data collection
+  - 1 - Without data collection
 
 
 create_notification_user
