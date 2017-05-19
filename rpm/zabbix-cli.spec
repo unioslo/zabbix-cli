@@ -6,7 +6,7 @@
 %{!?pybasever: %global pybasever %(%{__python2} -c "import sys;print(sys.version[0:3])")}
 
 Name: zabbix-cli
-Version: 1.6.1
+Version: 1.7.0
 Release: 1%{?dist}
 Summary: Command-line interface for Zabbix
 
@@ -45,6 +45,9 @@ mkdir -p %{buildroot}%{_defaultdocdir}/zabbix-cli-%{version}
 %doc LICENSE docs/manual.rst
 
 %changelog
+* Fri May 19 2017 Rafael Martinez Guerrero <r.m.guerrero@usit.uio.no> - 1.7.0-1
+- New version 1.7.0
+
 * Mon Dec 12 2016 Rafael Martinez Guerrero <r.m.guerrero@usit.uio.no> - 1.6.1-1
 - New version 1.6.1
 
