@@ -3,7 +3,7 @@ Zabbix-CLI
 =====================================
 
 |
-| Version-1.6.0
+| Version-1.7.0
 |
 | Rafael Martinez Guerrero (University of Oslo)
 | E-mail: rafael@postgresql.org.es
@@ -29,7 +29,18 @@ Center for Information Technology at the University of Oslo, Norway.
 Main features
 =============
 
-TODO
+* Terminal client
+* Two execution modes available: Zabbix-CLI shell and commandline.
+* 54 zabbix-CLI commands available.
+* Multilevel configuration system.
+* Possibility to define Bulk updates. Several performance improvements
+  are used when running in bulk modus.
+* Authentication-token, authentication-file and environment variables
+  support for autologin.
+* Support for plain, CSV and JSON output.
+* Online help
+* Written in Python.
+
 
 Installation
 ============
@@ -39,18 +50,18 @@ System requirements
 
 * Linux/Unix
 * Python 2.6 or 2.7
-* Python modules: request
+* Python modules: request ipaddr
      
 Before you install Zabbix-CLI you have to install the software needed
 by this tool
 
-In systems using ``yum``, e.g. Centos, RHEL, ...::
+In systems using ``yum``, e.g. Centos, RHEL, Fedora::
 
-  yum install python-requests
+  yum install python-requests python-ipaddr
 
-In system using ``apt-get``, e.g. Debian, Ubuntu, ...::
+In system using ``apt-get``, e.g. Debian, Ubuntu::
 
-  apt-get install python-requests
+  apt-get install python-requests python-ipaddr
 
 If you are going to install from source, you need to install also
 these packages: ``python-dev(el), python-setuptools, git, make, python-docutils``
@@ -67,8 +78,13 @@ In system using ``apt-get``::
 Installing from source
 ----------------------
 
-The easiest way to install zabbix-cli from source is to get the
-lastest version from the master branch at the GitHub repository.
+The easiest way to install zabbix-cli from source is to download the
+latest stable release from GitHub
+https://github.com/usit-gd/zabbix-cli/releases in tar.gz or zip
+format.
+
+You can also clone the official GitHub GIT repository and get the
+latest code from the master branch. 
 
 ::
 
@@ -79,33 +95,57 @@ lastest version from the master branch at the GitHub repository.
  [root@server]# ./setup.py install
  .....
 
+**NOTE**: The code in the master branch can be unstable and with bugs
+ between releases. Use it at your own risk.
+
+For stable code to be used in production use the source code
+distributed via the release section:
+https://github.com/usit-gd/zabbix-cli/releases
+
 
 Installing via RPM packages
 ---------------------------
 
-Find the zabbix-cli in your distribution (if distributed already) or
-build it from the included .spec file in the source (assuming that you
-have rpm-build, python-setuptools, python-devel pkgs installed) like
-this (e.g. version 1.6.0:
+The University of Oslo has made available an official repository that
+can be used to install RPM packages via yum.
+
+First, you have to create this file ``/etc/yum.repos.d/zabbix-cli.repo``:
 
 ::
 
-  [user@node]$ cd ~/rpmbuild/SOURCES && wget https://github.com/usit-gd/zabbix-cli/archive/1.6.0.tar.gz
-  [user@node]$ cp zabbix-cli.spec ~/rpmbuild/SPECS/
-  
-  [user@node]$ rpmbuild -ba ~/rpmbuild/SPECS/zabbix-cli.spec --define 'dist .el7' --define 'el7 1' #for el7
-  [user@node]$ rpmbuild -ba ~/rpmbuild/SPECS/zabbix-cli.spec --define 'dist .el6' --define 'el6 1' #for el6
- 
-Then you can install it with e.g.::
+   TODO
+   
+   [zabbix-cli]
+   name=Zabbix-CLI Official Repository - $basearch
+   baseurl=http://xxxxxxxxxxx/rhel/6/$basearch/
+   enabled=1
+   gpgcheck=1
+   gpgkey=xxxxxxxxxx
 
-  [root@node]$ yum localinstall" ~/rpmbuild/RPMS/zabbix-cli-1.6.0-1.el7.noarch.rpm  #for el7
-  [root@node]$ yum localinstall" ~/rpmbuild/RPMS/zabbix-cli-1.6.0-1.el6.noarch.rpm  #for el6
- 
+And run these commands to install the client:
+
+::
+
+   # yum update
+   # yum install zabbix-cli
+
 
 Installing via Deb packages
 ----------------------------
 
-TODO
+Zabbix-CLI has been accepted into the official Debian package
+repository (unstable). It is available for Debian and Ubuntu
+systems. Check https://packages.qa.debian.org/z/zabbix-cli.html for
+details.
+
+::
+
+   TODO
+
+   # echo "" >  /etc
+   # apt-get update
+   # apt-get install zabbix-cli
+
 
 Configuration
 =============
@@ -210,6 +250,7 @@ configuration parameters that zabbix-cli is using::
   |                             log_file | /home/user/.zabbix-cli/zabbix-cli.log |
   +--------------------------------------+---------------------------------------+
 
+
 Environment Authentication
 --------------------------
 
@@ -280,40 +321,42 @@ The Zabbix-CLI interactive shell can be started by running the program
    [user@host]# zabbix-cli
 
    #############################################################
-   Welcome to the Zabbix command-line interface (v.1.6.0)
+   Welcome to the Zabbix command-line interface (v.1.7.0)
    #############################################################
    Type help or \? to list commands.
-
+   
    [zabbix-cli rafael@zabbix-ID]$ help
-
+   
    Documented commands (type help <topic>):
    ========================================
-   EOF                            shell                       
-   add_host_to_hostgroup          show_alarms                 
-   add_user_to_usergroup          show_global_macros          
-   add_usergroup_permissions      show_history                
-   clear                          show_host                   
-   create_host                    show_host_inventory         
-   create_host_interface          show_host_usermacros        
-   create_hostgroup               show_hostgroup              
-   create_maintenance_definition  show_hostgroups             
-   create_notification_user       show_hosts                  
-   create_user                    show_items                  
-   create_usergroup               show_maintenance_definitions
-   define_global_macro            show_maintenance_periods    
-   define_host_monitoring_status  show_template               
-   define_host_usermacro          show_templates              
-   export_configuration           show_triggers               
-   import_configuration           show_usergroup              
-   link_template_to_host          show_usergroups             
-   load_balance_proxy_hosts       show_usermacro_host_list    
-   move_proxy_hosts               show_usermacro_template_list
-   quit                           show_users                  
-   remove_host                    show_zabbixcli_config       
-   remove_host_from_hostgroup     unlink_template_from_host   
-   remove_maintenance_definition  update_host_inventory       
-   remove_user                    update_host_proxy           
-   remove_user_from_usergroup     update_usergroup_permissions
+   EOF                             shell                       
+   acknowledge_event               show_alarms                 
+   acknowledge_trigger_last_event  show_global_macros          
+   add_host_to_hostgroup           show_history                
+   add_user_to_usergroup           show_host                   
+   add_usergroup_permissions       show_host_inventory         
+   clear                           show_host_usermacros        
+   create_host                     show_hostgroup              
+   create_host_interface           show_hostgroups             
+   create_hostgroup                show_hosts                  
+   create_maintenance_definition   show_items                  
+   create_notification_user        show_maintenance_definitions
+   create_user                     show_maintenance_periods    
+   create_usergroup                show_template               
+   define_global_macro             show_templates              
+   define_host_monitoring_status   show_trigger_events         
+   define_host_usermacro           show_triggers               
+   export_configuration            show_usergroup              
+   import_configuration            show_usergroups             
+   link_template_to_host           show_usermacro_host_list    
+   load_balance_proxy_hosts        show_usermacro_template_list
+   move_proxy_hosts                show_users                  
+   quit                            show_zabbixcli_config       
+   remove_host                     unlink_template_from_host   
+   remove_host_from_hostgroup      update_host_inventory       
+   remove_maintenance_definition   update_host_proxy           
+   remove_user                     update_usergroup_permissions
+   remove_user_from_usergroup    
    
    Miscellaneous help topics:
    ==========================
@@ -322,7 +365,7 @@ The Zabbix-CLI interactive shell can be started by running the program
    Undocumented commands:
    ======================
    help
-
+   
 **NOTE:** It is possible to use Zabbix-CLI in a non-interactive modus
 by running ``/usr/bin/zabbix-cli`` with the parameter ``--command
 <zabbix_command>`` or ``-C <zabbix_command>`` in the OS shell. This
@@ -991,9 +1034,11 @@ Parameters:
 e.g. If proxy-1 is monitoring 1500 hosts and proxy-2 is monitoring 500
 hosts, we can run this command to redistribute the 2000 hosts between
 the two proxies. Every proxy will get assigned automatically ca 1000
-hosts from the list of 2000 host::
+hosts from the list of 2000 host
+
+::
   
-  load_balance_proxy_host proxy-1,proxy-2
+   load_balance_proxy_host proxy-1,proxy-2
 
 
 move_proxy_hosts
@@ -1301,7 +1346,7 @@ This command shows all hostgroups defined in the system.
 
 
 show_hosts
----------
+----------
 
 This command shows all hosts defined in the system.
 
@@ -1535,6 +1580,7 @@ update_host_proxy
 This command defines the proxy used to monitor a host
     
 ::
+
    update_host_proxy [hostname] 
                      [proxy]
 
