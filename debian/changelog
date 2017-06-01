@@ -2,7 +2,7 @@ zabbix-cli (1.7.0-1) unstable; urgency=low
 
   * New release 1.7.0 
 
- -- rafael <rafael@e-mc2.net>  Thu, 01 Jun 2017 12:02:45 +0200
+ -- Petter Reinholdtsen <pere@debian.org>  Thu, 01 Jun 2017 12:02:45 +0200
 
 zabbix-cli (1.6.1-1) unstable; urgency=low
 
