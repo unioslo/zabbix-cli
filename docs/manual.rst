@@ -251,9 +251,7 @@ For example:
    read -srp "Zabbix Password: " ZABBIX_PASSWORD; export ZABBIX_PASSWORD;
    zabbix-cli
   
-**NOTE**: It is important to remember that this method will save the
- password in clear text in a environment variable. This value will be
- available to other processes running in the same session.
+**NOTE**: It is important to remember that this method will save the password in clear text in a environment variable. This value will be available to other processes running in the same session.
 
 
 Authentication file
