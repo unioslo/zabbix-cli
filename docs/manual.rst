@@ -1614,4 +1614,4 @@ License and Contributions
 Zabbix-CLI is the property of USIT-University of Oslo, and its code is
 distributed under GNU General Public License 3.
 
-| Copyright © 2014-2016 USIT-University of Oslo.
+| Copyright © 2014-2017 USIT-University of Oslo.
