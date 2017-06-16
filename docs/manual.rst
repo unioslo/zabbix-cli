@@ -268,10 +268,7 @@ The format of this file is a line with this information::
 
   USERNAME::PASSWORD
 
-**NOTE:** The password will be saved in clear text so be carefull with
-the information saved here and restrict access to this file only to
-your user. ``chmod 400 ~/.zabbix-cli_auth`` will be defined by
-``zabbix-cli`` on this file the first time it uses it.
+**NOTE:** The password will be saved in clear text so be carefull with the information saved here and restrict access to this file only to your user. ``chmod 400 ~/.zabbix-cli_auth`` will be defined by ``zabbix-cli`` on this file the first time it uses it.
 
 
 Authentication token file
