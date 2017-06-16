@@ -106,28 +106,16 @@ https://github.com/usit-gd/zabbix-cli/releases
 Installing via RPM packages
 ---------------------------
 
-The University of Oslo has made available an official repository that
-can be used to install RPM packages via yum.
+The University of Oslo will make available in the near future an
+official repository that can be used to install RPM packages via yum .
 
-First, you have to create this file ``/etc/yum.repos.d/zabbix-cli.repo``:
-
-::
-
-   TODO
-   
-   [zabbix-cli]
-   name=Zabbix-CLI Official Repository - $basearch
-   baseurl=http://xxxxxxxxxxx/rhel/6/$basearch/
-   enabled=1
-   gpgcheck=1
-   gpgkey=xxxxxxxxxx
-
-And run these commands to install the client:
+In the meantime download the latest RPM package for your distribution
+from https://github.com/usit-gd/zabbix-cli/releases and run this
+command:
 
 ::
 
-   # yum update
-   # yum install zabbix-cli
+   # yum install <rpm_file>
 
 
 Installing via Deb packages
@@ -138,13 +126,12 @@ repository (unstable). It is available for Debian and Ubuntu
 systems. Check https://packages.qa.debian.org/z/zabbix-cli.html for
 details.
 
+You can also download the latest DEB package from
+https://github.com/usit-gd/zabbix-cli/releases and install it with:
+
 ::
 
-   TODO
-
-   # echo "" >  /etc
-   # apt-get update
-   # apt-get install zabbix-cli
+   # dpkg -i <debian_package>
 
 
 Configuration
