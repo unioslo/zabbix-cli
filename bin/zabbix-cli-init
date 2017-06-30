@@ -13,26 +13,24 @@
 #
 ###########################################################################################
 
-from os import getenv,path,remove,close,makedirs
+from os import getenv, path, remove, close, makedirs
 from tempfile import mkstemp
 from shutil import move, copy2
 import sys
-import os
 import argparse
 
 def replace(file_path, pattern, subst):
 
     #
-    #  changing the line having log configuration option 
-    #  replacing 
+    #  changing the line having log configuration option
+    #  replacing
     #  log_file=/var/log/zabbix-cli/zabbix-cli.log
     #  to log_file=~/.zabbix-cli/zabbix-cli.log
-    
-    try:
 
+    try:
         #Create temp file
         fh, abs_path = mkstemp()
-        with open(abs_path,'w') as new_file:
+        with open(abs_path, 'w') as new_file:
             with open(file_path) as old_file:
                 for line in old_file:
                     new_file.write(line.replace(pattern, subst))
@@ -43,32 +41,31 @@ def replace(file_path, pattern, subst):
         move(abs_path, file_path)
 
     except Exception as e:
-        print '\n[ERROR]: %s\n',e
+        print '\n[ERROR]: %s\n', e
 
 if __name__ == "__main__":
 
-    if os.getenv('HOME') is not None:
+    if getenv('HOME') is not None:
         zabbixconfdir = getenv('HOME')+"/.zabbix-cli/"
 
     else:
         print '\n[ERROR]: The $HOME environment variable is not defined. zabbix-cli-init cannot generate the configuration file in your home directory.'
         sys.exit(1)
 
-    defconf="/usr/share/zabbix-cli/zabbix-cli.conf"
-    filename="zabbix-cli.conf"
+    defconf = "/usr/share/zabbix-cli/zabbix-cli.conf"
+    filename = "zabbix-cli.conf"
 
-    file_path=path.join(zabbixconfdir,filename)
+    file_path = path.join(zabbixconfdir, filename)
 
     try:
+        parser = argparse.ArgumentParser(prog=sys.argv[0], description='zabbix-cli-init - Zabbix-cli initialization program')
 
-        parser = argparse.ArgumentParser(prog=sys.argv[0],description='zabbix-cli-init - Zabbix-cli initialization program')
-
-        parser.add_argument('--zabbix-url','-z',  metavar='<zabbix URL>', required=True, dest='zabbix_api_url')        
-        args = parser.parse_args()  
+        parser.add_argument('--zabbix-url', '-z', metavar='<zabbix URL>', required=True, dest='zabbix_api_url')
+        args = parser.parse_args()
 
         if args.zabbix_api_url:
             zabbix_api_url = args.zabbix_api_url
-        
+
     except Exception as e:
         print e
         sys.exit(1)
@@ -78,38 +75,37 @@ if __name__ == "__main__":
     #
 
     if not path.exists(zabbixconfdir):
-
         try:
             makedirs(zabbixconfdir)
         except Exception as e:
-            print '\n[ERROR]: %s\n',e
+            print '\n[ERROR]: %s\n', e
 
     #
     # /etc/zabbix-cli.conf will be created under installation of
     # zabbix-cli package.  copying /etc/zabbix-cli.conf file to
     # ~/.zabbix-cli/zabbix-cli.conf
-    # 
+    #
 
     if path.isfile(defconf):
         try:
-            copy2(defconf,zabbixconfdir)
+            copy2(defconf, zabbixconfdir)
 
         except Exception as e:
-            print '\n[ERROR]: %s\n',e
+            print '\n[ERROR]: %s\n', e
     else:
         print "Cannot find /etc/zabbix-cli/zabbix-cli.conf file. ERROR with zabbix-cli installation."
         sys.exit(1)
-    
+
     #
-    #  changing the line having log configuration option 
-    #  replacing log file option 
+    #  changing the line having log configuration option
+    #  replacing log file option
     #  log_file=/var/log/zabbix-cli/zabbix-cli.log
     #  to log_file=~/.zabbix-cli/zabbix-cli.log
     #
-    replace(file_path,'log_file=/var/log/zabbix-cli/zabbix-cli.log','log_file=' + getenv('HOME') + '/.zabbix-cli/zabbix-cli.log')
+    replace(file_path, 'log_file=/var/log/zabbix-cli/zabbix-cli.log', 'log_file=' + getenv('HOME') + '/.zabbix-cli/zabbix-cli.log')
 
     #
     #  Changing the line having the zabbix API url example with real
     #  URL.
     #
-    replace(file_path,';zabbix_api_url=https://zabbix.example.net/zabbix','zabbix_api_url=' + zabbix_api_url)
+    replace(file_path, ';zabbix_api_url=https://zabbix.example.net/zabbix', 'zabbix_api_url=' + zabbix_api_url)

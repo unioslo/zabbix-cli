@@ -25,10 +25,11 @@ import sys
 import os
 import getpass
 import argparse
+import logging
 
-from zabbix_cli.config import *
-from zabbix_cli.logs import * 
-from zabbix_cli.cli import * 
+from zabbix_cli.config import configuration
+from zabbix_cli.logs import log
+from zabbix_cli.cli import zabbixcli
 
 if __name__ == '__main__':
 
@@ -43,45 +44,45 @@ if __name__ == '__main__':
         zabbix_command = ''
         input_file = ''
 
-        parser = argparse.ArgumentParser(prog=sys.argv[0],description='zabbix-cli - Zabbix client')
+        parser = argparse.ArgumentParser(prog=sys.argv[0], description='zabbix-cli - Zabbix client')
 
-        parser.add_argument('--output','-o',  metavar='[csv|json|table]', choices=['csv','json','table'], required=False, dest='output_format')
-        parser.add_argument('--config','-c', metavar='<config file>', required=False, dest='config_file')
-        parser.add_argument('--command','-C', metavar='<Zabbix-cli command>',required=False,dest='zabbix_command')
-        parser.add_argument('--file','-f', metavar='<Zabbix-cli input file>',required=False,dest='input_file')
-        
-        args = parser.parse_args()  
-        
+        parser.add_argument('--output', '-o', metavar='[csv|json|table]', choices=['csv', 'json', 'table'], required=False, dest='output_format')
+        parser.add_argument('--config', '-c', metavar='<config file>', required=False, dest='config_file')
+        parser.add_argument('--command', '-C', metavar='<Zabbix-cli command>', required=False, dest='zabbix_command')
+        parser.add_argument('--file', '-f', metavar='<Zabbix-cli input file>', required=False, dest='input_file')
+
+        args = parser.parse_args()
+
         if args.output_format:
-            output_format = args.output_format 
-        
+            output_format = args.output_format
+
         if args.config_file:
-            config_file = args.config_file 
-    
+            config_file = args.config_file
+
         if args.zabbix_command:
-            zabbix_command = args.zabbix_command 
+            zabbix_command = args.zabbix_command
 
         if args.input_file:
-            input_file = args.input_file 
+            input_file = args.input_file
 
         conf = configuration(config_file)
-    
+
         #
         # If logging is activated, start logging to the file defined
         # with log_file in the config file.
         #
 
         if conf.logging == 'ON':
-            logs = log("zabbix-cli",config_file)
+            logs = log("zabbix-cli", config_file)
         else:
             logs = None
-            
+
         if conf.logging == 'ON':
             logs.logger.debug('**** Zabbix-CLI startet. ****')
 
         #
         # Non-interactive authentication procedure
-        # 
+        #
         # If the file .zabbix_cli_auth exists at $HOME, use the
         # information in this file to authenticate into Zabbix API
         #
@@ -105,13 +106,13 @@ if __name__ == '__main__':
 
             zabbix_auth_file = os.getenv('HOME') + '/.zabbix-cli_auth'
             zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
-            
+
         else:
             print '\n[ERROR]: The $HOME environment variable is not defined. Zabbix-CLI cannot read ~/.zabbix-cli_auth or ~/.zabbix-cli_auth_token'
 
             if conf.logging == 'ON':
                 logs.logger.error('The $HOME environment variable is not defined. Zabbix-CLI cannot read ~/.zabbix-cli_auth or ~/.zabbix-cli_auth_token')
-            
+
             sys.exit(1)
 
         env_username = os.getenv('ZABBIX_USERNAME')
@@ -128,58 +129,58 @@ if __name__ == '__main__':
         elif os.path.isfile(zabbix_auth_file):
 
             try:
-                os.chmod(zabbix_auth_file,0400)
-            
-                with open(zabbix_auth_file,'r') as file:
-                    for line in file:
+                os.chmod(zabbix_auth_file, 0400)
+
+                with open(zabbix_auth_file, 'r') as f:
+                    for line in f:
                         (username, password) = line.split('::')
 
-                password = password.replace('\n','')
-                
+                password = password.replace('\n', '')
+
                 if conf.logging == 'ON':
-                    logs.logger.info('File %s exists. Using this file to get authentication information',zabbix_auth_file)
+                    logs.logger.info('File %s exists. Using this file to get authentication information', zabbix_auth_file)
 
             except Exception as e:
-                print '\n[ERROR]: %s\n',e
+                print '\n[ERROR]: %s\n', e
 
                 if conf.logging == 'ON':
-                    logs.logger.error('Problems using file %s - %s',zabbix_auth_file,e)
+                    logs.logger.error('Problems using file %s - %s', zabbix_auth_file, e)
 
         elif os.path.isfile(zabbix_auth_token_file):
 
             try:
-                os.chmod(zabbix_auth_token_file,0600)
-            
-                with open(zabbix_auth_token_file,'r') as file:
-                    for line in file:
+                os.chmod(zabbix_auth_token_file, 0600)
+
+                with open(zabbix_auth_token_file, 'r') as f:
+                    for line in f:
                         (username, auth_token) = line.split('::')
-                
+
                 if conf.logging == 'ON':
-                    logs.logger.info('File %s exists. Using this file to get authentication token information',zabbix_auth_token_file)
+                    logs.logger.info('File %s exists. Using this file to get authentication token information', zabbix_auth_token_file)
 
             except Exception as e:
-                print '\n[ERROR]: %s\n',e
+                print '\n[ERROR]: %s\n', e
 
                 if conf.logging == 'ON':
-                    logs.logger.error('Problems using file %s - %s',zabbix_auth_token_file,e)
+                    logs.logger.error('Problems using file %s - %s', zabbix_auth_token_file, e)
 
 
         #
         # Interactive authentication procedure
         #
- 
+
         else:
 
             default_user = getpass.getuser()
-            
+
             print '-------------------------'
             print 'Zabbix-CLI authentication'
             print '-------------------------'
-        
+
             try:
                 username = raw_input('# Username[' + default_user +']: ')
                 password = getpass.getpass('# Password: ')
-            
+
             except Exception as e:
                 print '\n[Aborted]'
                 sys.exit(0)
@@ -193,24 +194,24 @@ if __name__ == '__main__':
         # API-auth-token is empty ($HOME/.zabbix-cli_auth_token does
         # not exist)
         #
-        
+
         if auth_token == '':
 
             if username == '' or password == '':
                 print '\n[ERROR]: Username or password is empty\n'
-                                    
+
                 if conf.logging == 'ON':
                     logs.logger.error('Username or password is empty')
-                
+
                 sys.exit(1)
-                
+
         if conf.logging == 'ON':
-         
+
             #
             # Activate the username information in the log
             # name as soon as we have this information
             #
-            
+
             logs.formatter = logging.Formatter("%(asctime)s [%(name)s][" +  username + "][%(process)d][%(levelname)s]: %(message)s")
             logs.fh.setFormatter(logs.formatter)
             logs.logger.addHandler(logs.fh)
@@ -218,51 +219,51 @@ if __name__ == '__main__':
 
         #
         # Zabbix-CLI in interactive modus
-        # 
+        #
 
         if zabbix_command == '' and input_file == '':
 
             if conf.logging == 'ON':
                 logs.logger.debug('Zabbix-CLI running in interactive modus')
-        
+
             os.system('clear')
-            
-            cli = zabbixcli(logs,conf,username,password,auth_token)
+
+            cli = zabbixcli(logs, conf, username, password, auth_token)
 
             cli.cmdloop()
 
         #
-        # Zabbix-CLI in bulk execution modus. 
+        # Zabbix-CLI in bulk execution modus.
         #
         # This mode is activated when we run zabbix-cli with the
         # parameter -f to define a file with zabbix-cli commands.
-        # 
+        #
 
         elif zabbix_command == '' and input_file != '':
 
-            cli = zabbixcli(logs,conf,username,password,auth_token)
+            cli = zabbixcli(logs, conf, username, password, auth_token)
 
             # Normalized absolutized version of the pathname if
             # files does not include an absolute path
 
-            if os.path.isabs(input_file) == False:
-                input_file = os.path.abspath(input_file) 
+            if os.path.isabs(input_file) is False:
+                input_file = os.path.abspath(input_file)
 
             if os.path.exists(input_file):
 
                 if conf.logging == 'ON':
-                    logs.logger.info('File [%s] exists. Bulk execution of commands defined in this file.',input_file)
+                    logs.logger.info('File [%s] exists. Bulk execution of commands defined in this file.', input_file)
 
                 print '[OK] File [' + input_file + '] exists. Bulk execution of commands defined in this file started.'
-                
+
                 #
                 # Register that this is a bulk execution via -f
                 # parameter. This will activate some performance
                 # improvements to boost bulk execution.
                 #
-                
+
                 cli.bulk_execution = True
-                
+
                 #
                 # Processing zabbix commands in file.
                 #
@@ -270,59 +271,59 @@ if __name__ == '__main__':
                 # not be considered.
 
                 try:
-                    with open(input_file,'r') as file:
-                        
-                        for input_line in file:
-                                                        
-                            if input_line.find('#',0) == -1 and input_line.strip() != '': 
+                    with open(input_file, 'r') as f:
+
+                        for input_line in f:
+
+                            if input_line.find('#', 0) == -1 and input_line.strip() != '':
 
                                 zabbix_cli_command = input_line.strip()
                                 cli.onecmd(zabbix_cli_command)
 
                                 if conf.logging == 'ON':
-                                    logs.logger.info('Zabbix-cli command [%s] executed via input file',zabbix_cli_command)
-                                                
+                                    logs.logger.info('Zabbix-cli command [%s] executed via input file', zabbix_cli_command)
+
                 except Exception as e:
 
                     if conf.logging == 'ON':
-                        logs.logger.error('Problems using input file [%s] - %s',input_file,e)
+                        logs.logger.error('Problems using input file [%s] - %s', input_file, e)
 
                     print '[ERROR] Problems using input file [' + input_file + '] - ' + str(e)
                     sys.exit(1)
 
             else:
-            
+
                 if conf.logging == 'ON':
-                    logs.logger.info('Input file [%s] does not exist. Bulk execution of commands aborted.',input_file)
+                    logs.logger.info('Input file [%s] does not exist. Bulk execution of commands aborted.', input_file)
 
                 print '[ERROR] Input file [' + input_file + '] does not exist. Bulk execution of commands aborted'
 
 
-            
+
         #
         # Zabbix-CLI in non-interactive modus(command line)
-        # 
-        
+        #
+
         elif zabbix_command != '':
-            
+
             if conf.logging == 'ON':
                 logs.logger.debug('Zabbix-CLI running in non-interactive modus')
-            
+
             # CSV format output
-                
+
             if output_format == 'csv':
-                
-                cli = zabbixcli(logs,conf,username,password,auth_token)
+
+                cli = zabbixcli(logs, conf, username, password, auth_token)
                 cli.output_format = 'csv'
                 cli.non_interactive = True
-                                                              
+
                 cli.onecmd(zabbix_command)
 
             # JSON format output
-            
+
             elif output_format == 'json':
-                
-                cli = zabbixcli(logs,conf,username,password,auth_token)
+
+                cli = zabbixcli(logs, conf, username, password, auth_token)
                 cli.output_format = 'json'
                 cli.non_interactive = True
 
@@ -331,26 +332,26 @@ if __name__ == '__main__':
             # Table format output
 
             else:
-                cli = zabbixcli(logs,conf,username,password,auth_token)
+                cli = zabbixcli(logs, conf, username, password, auth_token)
                 cli.output_format = 'table'
                 cli.non_interactive = True
-                                
+
                 cli.onecmd(zabbix_command)
 
         else:
             raise NotImplementedError
-            
+
         if conf.logging == 'ON':
             logs.logger.debug('**** Zabbix-CLI stopped. ****')
-        
+
     except KeyboardInterrupt:
         print
         print "\nDone, thank you for using Zabbix-CLI"
-        
+
         if conf.logging == 'ON':
             logs.logger.debug('**** Zabbix-CLI stopped. ****')
 
         sys.exit(0)
 
     except Exception as e:
-        print '\n[ERROR]: %s\n',e
+        print '\n[ERROR]: %s\n', e
