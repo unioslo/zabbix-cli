@@ -6,7 +6,7 @@ Uploaders: Petter Reinholdtsen <pere@debian.org>
 Build-Depends: debhelper (>= 9~)
  , python | python-all | python-dev | python-all-dev
  , python-setuptools
-Standards-Version: 3.9.8
+Standards-Version: 4.0.0
 Homepage: https://github.com/usit-gd/zabbix-cli
 Vcs-Browser: https://github.com/usit-gd/zabbix-cli
 Vcs-Git: https://github.com/usit-gd/zabbix-cli
