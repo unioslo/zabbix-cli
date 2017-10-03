@@ -107,7 +107,7 @@ if __name__ == '__main__':
             zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
             
         else:
-            print '\n[ERROR]: The $HOME environment variable is not defined. Zabbix-CLI cannot read ~/.zabbix-cli_auth or ~/.zabbix-cli_auth_token'
+            print('\n[ERROR]: The $HOME environment variable is not defined. Zabbix-CLI cannot read ~/.zabbix-cli_auth or ~/.zabbix-cli_auth_token')
 
             if conf.logging == 'ON':
                 logs.logger.error('The $HOME environment variable is not defined. Zabbix-CLI cannot read ~/.zabbix-cli_auth or ~/.zabbix-cli_auth_token')
@@ -128,7 +128,7 @@ if __name__ == '__main__':
         elif os.path.isfile(zabbix_auth_file):
 
             try:
-                os.chmod(zabbix_auth_file,0400)
+                os.chmod(zabbix_auth_file,mode=0o400)
             
                 with open(zabbix_auth_file,'r') as file:
                     for line in file:
@@ -140,7 +140,7 @@ if __name__ == '__main__':
                     logs.logger.info('File %s exists. Using this file to get authentication information',zabbix_auth_file)
 
             except Exception as e:
-                print '\n[ERROR]: %s\n',e
+                print('\n[ERROR]:' + str(e) + '\n')
 
                 if conf.logging == 'ON':
                     logs.logger.error('Problems using file %s - %s',zabbix_auth_file,e)
@@ -148,7 +148,7 @@ if __name__ == '__main__':
         elif os.path.isfile(zabbix_auth_token_file):
 
             try:
-                os.chmod(zabbix_auth_token_file,0600)
+                os.chmod(zabbix_auth_token_file,mode=0o600)
             
                 with open(zabbix_auth_token_file,'r') as file:
                     for line in file:
@@ -158,7 +158,7 @@ if __name__ == '__main__':
                     logs.logger.info('File %s exists. Using this file to get authentication token information',zabbix_auth_token_file)
 
             except Exception as e:
-                print '\n[ERROR]: %s\n',e
+                print('\n[ERROR]:' + str(e) + '\n')
 
                 if conf.logging == 'ON':
                     logs.logger.error('Problems using file %s - %s',zabbix_auth_token_file,e)
@@ -172,16 +172,16 @@ if __name__ == '__main__':
 
             default_user = getpass.getuser()
             
-            print '-------------------------'
-            print 'Zabbix-CLI authentication'
-            print '-------------------------'
+            print('-------------------------')
+            print('Zabbix-CLI authentication')
+            print('-------------------------')
         
             try:
                 username = raw_input('# Username[' + default_user +']: ')
                 password = getpass.getpass('# Password: ')
             
             except Exception as e:
-                print '\n[Aborted]'
+                print('\n[Aborted]\n')
                 sys.exit(0)
 
             if username == '':
@@ -197,7 +197,7 @@ if __name__ == '__main__':
         if auth_token == '':
 
             if username == '' or password == '':
-                print '\n[ERROR]: Username or password is empty\n'
+                print('\n[ERROR]: Username or password is empty\n')
                                     
                 if conf.logging == 'ON':
                     logs.logger.error('Username or password is empty')
@@ -253,7 +253,7 @@ if __name__ == '__main__':
                 if conf.logging == 'ON':
                     logs.logger.info('File [%s] exists. Bulk execution of commands defined in this file.',input_file)
 
-                print '[OK] File [' + input_file + '] exists. Bulk execution of commands defined in this file started.'
+                print('[OK] File [' + input_file + '] exists. Bulk execution of commands defined in this file started.')
                 
                 #
                 # Register that this is a bulk execution via -f
@@ -287,7 +287,7 @@ if __name__ == '__main__':
                     if conf.logging == 'ON':
                         logs.logger.error('Problems using input file [%s] - %s',input_file,e)
 
-                    print '[ERROR] Problems using input file [' + input_file + '] - ' + str(e)
+                    print('[ERROR] Problems using input file [' + input_file + '] - ' + str(e))
                     sys.exit(1)
 
             else:
@@ -295,7 +295,7 @@ if __name__ == '__main__':
                 if conf.logging == 'ON':
                     logs.logger.info('Input file [%s] does not exist. Bulk execution of commands aborted.',input_file)
 
-                print '[ERROR] Input file [' + input_file + '] does not exist. Bulk execution of commands aborted'
+                print('[ERROR] Input file [' + input_file + '] does not exist. Bulk execution of commands aborted')
 
 
             
@@ -344,8 +344,7 @@ if __name__ == '__main__':
             logs.logger.debug('**** Zabbix-CLI stopped. ****')
         
     except KeyboardInterrupt:
-        print
-        print "\nDone, thank you for using Zabbix-CLI"
+        print("\nDone, thank you for using Zabbix-CLI")
         
         if conf.logging == 'ON':
             logs.logger.debug('**** Zabbix-CLI stopped. ****')
@@ -353,4 +352,4 @@ if __name__ == '__main__':
         sys.exit(0)
 
     except Exception as e:
-        print '\n[ERROR]: %s\n',e
+        print('\n[ERROR]:' + str(e) + '\n')
