@@ -6701,7 +6701,7 @@ class zabbixcli(cmd.Cmd):
                                 data = self.zapi.confimport(format=format,
                                                             source=import_data,
                                                             rules={
-                                                                'applications':{'createMissing':True,'updateExisting':True},
+                                                                'applications':{'createMissing':True},
                                                                 'discoveryRules':{'createMissing':True,'updateExisting':True},
                                                                 'graphs':{'createMissing':True,'updateExisting':True},
                                                                 'groups':{'createMissing':True},
