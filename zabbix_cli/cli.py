@@ -6701,19 +6701,19 @@ class zabbixcli(cmd.Cmd):
                                 data = self.zapi.confimport(format=format,
                                                             source=import_data,
                                                             rules={
-                                                                'applications':{'createMissing':'true','updateExisting':'true'},
-                                                                'discoveryRules':{'createMissing':'true','updateExisting':'true'},
-                                                                'graphs':{'createMissing':'true','updateExisting':'true'},
-                                                                'groups':{'createMissing':'true'},
-                                                                'hosts':{'createMissing':'true','updateExisting':'true'},
-                                                                'images':{'createMissing':'true','updateExisting':'true'},
-                                                                'items':{'createMissing':'true','updateExisting':'true'},
-                                                                'maps':{'createMissing':'true','updateExisting':'true'},
-                                                                'screens':{'createMissing':'true','updateExisting':'true'},
-                                                                'templateLinkage':{'createMissing':'true'},
-                                                                'templates':{'createMissing':'true','updateExisting':'true'},
-                                                                'templateScreens':{'createMissing':'true','updateExisting':'true'},
-                                                                'triggers':{'createMissing':'true','updateExisting':'true'}
+                                                                'applications':{'createMissing':True,'updateExisting':True},
+                                                                'discoveryRules':{'createMissing':True,'updateExisting':True},
+                                                                'graphs':{'createMissing':True,'updateExisting':True},
+                                                                'groups':{'createMissing':True},
+                                                                'hosts':{'createMissing':True,'updateExisting':True},
+                                                                'images':{'createMissing':True,'updateExisting':True},
+                                                                'items':{'createMissing':True,'updateExisting':True},
+                                                                'maps':{'createMissing':True,'updateExisting':True},
+                                                                'screens':{'createMissing':True,'updateExisting':True},
+                                                                'templateLinkage':{'createMissing':True},
+                                                                'templates':{'createMissing':True,'updateExisting':True},
+                                                                'templateScreens':{'createMissing':True,'updateExisting':True},
+                                                                'triggers':{'createMissing':True,'updateExisting':True}
                                                             })    
                                 
                                 if data == True:
