@@ -6846,7 +6846,7 @@ class zabbixcli(cmd.Cmd):
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Hosts from SRC Proxy %s have been moved to DST proxy %s',proxy_src,proxy_dst)
 
-            self.generate_feedback('Error','Hosts from SRC Proxy ' + proxy_src + ' have been moved to DST proxy ' + proxy_dst)
+            self.generate_feedback('Done','Hosts from SRC Proxy ' + proxy_src + ' have been moved to DST proxy ' + proxy_dst)
 
         except Exception as e:
             if self.conf.logging == 'ON':
