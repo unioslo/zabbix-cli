@@ -54,7 +54,7 @@ class log(logging.Logger):
             self.logger.addHandler(self.fh)
             
         except Exception as e:
-            print "ERROR: Problems with the log configuration needed by Zabbix-CLI: %s" % e
+            print("ERROR: Problems with the log configuration needed by Zabbix-CLI: %s" % e)
             sys.exit(1)
         
         

@@ -23,7 +23,10 @@
 
 import socket
 import os
-import ConfigParser
+try: #python 2 vs 3
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 import sys
 
 class configuration():
@@ -94,7 +97,7 @@ class configuration():
 
         if not self.config_file_list:
             
-            print '\n[ERROR]: No config file found. Exiting.\n'
+            print('\n[ERROR]: No config file found. Exiting.\n')
             sys.exit(1)
 
 
@@ -107,7 +110,7 @@ class configuration():
 
         for config_file in self.config_file_list:
 
-            config = ConfigParser.RawConfigParser()
+            config = configparser.RawConfigParser()
             config.read(config_file)
             
             #

@@ -168,8 +168,7 @@ class zabbixcli(cmd.Cmd):
             self.hostgroupname_cache = self.populate_hostgroupname_cache()
 
         except Exception as e:        
-            print '\n[ERROR]: ',e
-            print
+            print('\n[ERROR]: ' + str(e) + '\n')
         
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems logging to %s',self.conf.zabbix_api_url)
@@ -185,7 +184,7 @@ class zabbixcli(cmd.Cmd):
                         self.logs.logger.info('API-auth-token has probably expired. File %s deleted.',zabbix_auth_token_file)
 
                 except Exception as e:
-                    print '\n[ERROR]: ',e
+                    print('\n[ERROR]: ' + str(e) + '\n')
 
                     if self.conf.logging == 'ON':
                         self.logs.logger.error('Problems deleting file %s - %s',zabbix_auth_token_file,e)
@@ -233,7 +232,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -242,15 +241,15 @@ class zabbixcli(cmd.Cmd):
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 maintenances = raw_input('# MaintenanceID [*]: ').strip()
                 hostgroups = raw_input('# Hostgroups [*]: ').strip()
                 hostnames = raw_input('# Hosts [*]: ').strip() 
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         #
@@ -438,7 +437,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -447,13 +446,13 @@ class zabbixcli(cmd.Cmd):
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 maintenances = raw_input('# MaintenanceID [*]: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         #
@@ -712,7 +711,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -721,13 +720,13 @@ class zabbixcli(cmd.Cmd):
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 hostgroup = raw_input('# Hostgroup: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         #
@@ -875,7 +874,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -885,14 +884,14 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 host = raw_input('# Host: ').strip()
                 filter = raw_input('# Filter: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------' )
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -1042,7 +1041,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -1052,15 +1051,15 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 host = raw_input('# Host: ')
                 inventory_key = raw_input('# Inventory key: ')
                 inventory_value = raw_input('# Inventory value: ')
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -1102,7 +1101,7 @@ class zabbixcli(cmd.Cmd):
             host_id = str(self.get_host_id(host))
 
         except Exception as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: '+ e + '\n')
             return False
         
         #
@@ -1172,7 +1171,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -1182,14 +1181,14 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 host = raw_input('# Host: ').strip()
                 filter = raw_input('# Filter: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -1333,7 +1332,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -1342,13 +1341,13 @@ class zabbixcli(cmd.Cmd):
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 usergroup = raw_input('# Usergroup: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         #
@@ -1585,7 +1584,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -1595,16 +1594,16 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 description = raw_input('# Description []: ').strip()
                 filters = raw_input('# Filter []: ').strip()
                 hostgroups = raw_input('# Hostgroups []: ').strip()
                 ack_filter = raw_input('# Last event unacknowledged [true]: ').strip().lower()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -1806,7 +1805,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -1816,14 +1815,14 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 hostnames = raw_input('# Hostnames: ').strip()
                 hostgroups = raw_input('# Hostgroups: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -1940,7 +1939,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -1950,14 +1949,14 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 hostnames = raw_input('# Hostnames: ').strip()
                 hostgroups = raw_input('# Hostgroups: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -2075,7 +2074,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -2085,14 +2084,14 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 usernames = raw_input('# Usernames: ').strip()
                 usergroups = raw_input('# Usergroups: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -2199,7 +2198,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -2209,14 +2208,14 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 username = raw_input('# Username: ').strip()
                 usergroups = raw_input('# Usergroups: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -2335,7 +2334,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -2345,14 +2344,14 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 templates = raw_input('# Templates: ').strip()
                 hostnames = raw_input('# Hostnames: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -2469,7 +2468,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -2479,14 +2478,14 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 templates = raw_input('# Templates: ').strip()
                 hostnames = raw_input('# Hostnames: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -2616,7 +2615,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -2626,15 +2625,15 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 groupname = raw_input('# Name: ').strip()
                 gui_access = raw_input('# GUI access ['+ gui_access_default + ']: ').strip()
                 users_status = raw_input('# Status ['+ users_status_default + ']: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -2802,7 +2801,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -2812,16 +2811,16 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 host = raw_input('# Hostname|IP: ').strip()
                 hostgroups = raw_input('# Hostgroups[' + hostgroup_default + ']: ').strip()
                 proxy = raw_input('# Proxy ['+ proxy_default + ']: ').strip()
                 host_status = raw_input('# Status ['+ host_status_default + ']: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -3011,7 +3010,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -3021,13 +3020,13 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 hostname = raw_input('# Hostname: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -3118,7 +3117,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -3128,13 +3127,13 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 maintenanceid = raw_input('# maintenanceID: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -3265,7 +3264,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -3275,17 +3274,17 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 maintenance_name = raw_input('# Maintenance name [' + maintenance_name_default + ']: ').strip()
                 maintenance_description = raw_input('# Maintenance description []: ').strip()
                 host_hostgroup = raw_input('# Host/Hostgroup []: ').strip()
                 time_period = raw_input('# Time period [' + time_period_default + ']: ').strip()
                 maintenance_type_ = raw_input('# Maintenance type [' + str(maintenance_type_default) + ']: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -3502,14 +3501,14 @@ class zabbixcli(cmd.Cmd):
         # Interface connection. 0:DNS
         interface_useip_default = '0'
 
-	# The default DNS will be set to hostname when parsed
-	interface_dns_default = ''
+        # The default DNS will be set to hostname when parsed
+        interface_dns_default = ''
 
-        try: 
+        try:
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -3519,7 +3518,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 hostname = raw_input('# Hostname: ').strip()
                 interface_useip = raw_input('# Interface connection[' + interface_useip_default + ']: ').strip()
                 interface_type = raw_input('# Interface type[' + interface_type_default + ']: ').strip()
@@ -3527,16 +3526,16 @@ class zabbixcli(cmd.Cmd):
                 interface_ip = raw_input('# Interface IP[' + interface_ip_default + ']: ').strip()
                 interface_dns = raw_input('# Interface DNS[' + interface_dns_default + ']: ').strip()
                 interface_main = raw_input('# Default interface[' + interface_main_default + ']: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
-        #
-        # Command without filters attributes
-        #
+            #
+            # Command without filters attributes
+            #
 
         elif len(arg_list) == 7:
 
@@ -3564,99 +3563,99 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error','Hostname value is empty')
             return False
 
-	interface_dns_default = hostname
+            interface_dns_default = hostname
 
-        if interface_useip == '' or interface_useip not in ('0','1'):
-            interface_useip = interface_useip_default
+            if interface_useip == '' or interface_useip not in ('0','1'):
+                interface_useip = interface_useip_default
 
-        if interface_type == '' or interface_type not in ('1','2','3','4'):
-            interface_type = interface_type_default
-        
-        if interface_port == '' :
-            interface_port = interface_port_default
+            if interface_type == '' or interface_type not in ('1','2','3','4'):
+                interface_type = interface_type_default
+            
+            if interface_port == '' :
+                interface_port = interface_port_default
 
-        if interface_dns == '':
-            interface_dns = interface_dns_default
+            if interface_dns == '':
+                interface_dns = interface_dns_default
 
-        if interface_useip == '1' and interface_ip == '':
-            self.generate_feedback('Error','Host IP value is empty and connection type is 1:IP')
-            return False
+            if interface_useip == '1' and interface_ip == '':
+                self.generate_feedback('Error','Host IP value is empty and connection type is 1:IP')
+                return False
 
-        if interface_main == '' or interface_main not in ('0','1'):
-            interface_main = interface_main_default
+            if interface_main == '' or interface_main not in ('0','1'):
+                interface_main = interface_main_default
 
-        
-        # Generate interface definition
+            
+            # Generate interface definition
 
-        if interface_useip == '0':
+            if interface_useip == '0':
 
-            interfaces_def = '"type":' + interface_type + \
-                             ',"main":' + interface_main + \
-                             ',"useip":' + interface_useip + \
-                             ',"ip":"' + \
-                             '","dns":"' + interface_dns + \
-                             '","port":"' + interface_port + '"'
+                interfaces_def = '"type":' + interface_type + \
+                                ',"main":' + interface_main + \
+                                ',"useip":' + interface_useip + \
+                                ',"ip":"' + \
+                                '","dns":"' + interface_dns + \
+                                '","port":"' + interface_port + '"'
 
-        elif interface_useip == '1':
+            elif interface_useip == '1':
 
-            interfaces_def = '"type":' + interface_type + \
-                             ',"main":' + interface_main + \
-                             ',"useip":' + interface_useip + \
-                             ',"ip":"' + interface_ip + \
-                             '","dns":"' + \
-                             '","port":"' + interface_port + '"'
+                interfaces_def = '"type":' + interface_type + \
+                                ',"main":' + interface_main + \
+                                ',"useip":' + interface_useip + \
+                                ',"ip":"' + interface_ip + \
+                                '","dns":"' + \
+                                '","port":"' + interface_port + '"'
 
-        #
-        # Checking if hostname exists
-        #
+            #
+            # Checking if hostname exists
+            #
 
-        try:
-            host_exists = self.host_exists(hostname)
+            try:
+                host_exists = self.host_exists(hostname)
 
-            if self.conf.logging == 'ON':
-                self.logs.logger.debug('Cheking if host (%s) exists',hostname)
-
-            if host_exists == False:
-                
                 if self.conf.logging == 'ON':
-                    self.logs.logger.error('Host (%s) does not exists. Host Interface can not be created',hostname)
+                    self.logs.logger.debug('Cheking if host (%s) exists',hostname)
 
-                self.generate_feedback('Error','Host (' + hostname + ') does not exists. Host Interface can not be created')
+                if host_exists == False:
+                    
+                    if self.conf.logging == 'ON':
+                        self.logs.logger.error('Host (%s) does not exists. Host Interface can not be created',hostname)
+
+                    self.generate_feedback('Error','Host (' + hostname + ') does not exists. Host Interface can not be created')
+                    return False   
+
+                elif host_exists == True:
+                    hostid = str(self.get_host_id(hostname))
+                    
+            except Exception as e:
+
+                if self.conf.logging == 'ON':
+                    self.logs.logger.error('Problems checking if host (%s) exists - %s',hostname,e)
+
+                self.generate_feedback('Error','Problems checking if host (' + hostname + ') exists')
                 return False   
 
-            elif host_exists == True:
-                hostid = str(self.get_host_id(hostname))
-                
-        except Exception as e:
 
-            if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems checking if host (%s) exists - %s',hostname,e)
+            #
+            # Create host interface if it does not exist
+            #
 
-            self.generate_feedback('Error','Problems checking if host (' + hostname + ') exists')
-            return False   
+            try:
 
+                query=ast.literal_eval("{\"hostid\":\"" + hostid + "\"," + interfaces_def + "}")
+                result = self.zapi.hostinterface.create(**query)
 
-        #
-        # Create host interface if it does not exist
-        #
+                if self.conf.logging == 'ON':
+                    self.logs.logger.info('Host interface with ID: %s created on %s',str(result['interfaceids'][0]),hostname)
+                    
+                self.generate_feedback('Done','Host interface with ID: ' + str(result['interfaceids'][0]) + ' created on ' + hostname)
 
-        try:
+            except Exception as e:
 
-            query=ast.literal_eval("{\"hostid\":\"" + hostid + "\"," + interfaces_def + "}")
-            result = self.zapi.hostinterface.create(**query)
+                if self.conf.logging == 'ON':
+                    self.logs.logger.error('Problems creating host interface on %s- %s',hostname,e)
 
-            if self.conf.logging == 'ON':
-                self.logs.logger.info('Host interface with ID: %s created on %s',str(result['interfaceids'][0]),hostname)
-                
-            self.generate_feedback('Done','Host interface with ID: ' + str(result['interfaceids'][0]) + ' created on ' + hostname)
-
-        except Exception as e:
-
-            if self.conf.logging == 'ON':
-                self.logs.logger.error('Problems creating host interface on %s- %s',hostname,e)
-
-            self.generate_feedback('Error','Problems creating host interface on ' + hostname + '')
-            return False   
+                self.generate_feedback('Error','Problems creating host interface on ' + hostname + '')
+                return False   
 
 
 
@@ -3741,7 +3740,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -3751,7 +3750,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 alias = raw_input('# Alias []: ').strip()
                 name = raw_input('# Name []: ').strip()
                 surname = raw_input('# Surname []: ').strip()
@@ -3760,11 +3759,11 @@ class zabbixcli(cmd.Cmd):
                 autologin = raw_input('# Autologin [' + autologin_default + ']: ').strip()
                 autologout = raw_input('# Autologout [' + autologout_default + ']: ').strip()
                 usrgrps = raw_input('# Usergroups []: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -3952,7 +3951,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -3962,15 +3961,15 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 sendto = raw_input('# SendTo []: ').strip()
                 mediatype = raw_input('# Media type []: ').strip()
                 remarks = raw_input('# Remarks []: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -4151,7 +4150,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
             
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -4161,13 +4160,13 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
 
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 username = raw_input('# Username: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------' 
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------') 
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False   
 
         #
@@ -4240,18 +4239,18 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 hostgroup = raw_input('# Name: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 1:
@@ -4395,20 +4394,20 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 usergroup = raw_input('# Usergroup: ').strip()
                 hostgroups = raw_input('# Hostgroup: ').strip()
                 permission = raw_input('# Permission: ').strip().lower()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 3:
@@ -4502,20 +4501,20 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 usergroup = raw_input('# Usergroup: ').strip()
                 hostgroups = raw_input('# Hostgroup: ').strip()
                 permission = raw_input('# Permission: ').strip().lower()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 3:
@@ -4601,19 +4600,19 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 global_macro_name = raw_input('# Global macro name: ').strip()
                 global_macro_value = raw_input('# Global macro value: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 2:
@@ -4735,20 +4734,20 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 hostname = raw_input('# Hostname: ').strip()
                 host_macro_name = raw_input('# Macro name: ').strip()
                 host_macro_value = raw_input('# Macro value: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 3:
@@ -4881,19 +4880,19 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 hostname = raw_input('# Hostname: ').strip()
                 monitoring_status = raw_input('# Monitoring status[ON|OFF]: ').strip().lower()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 2:
@@ -5005,19 +5004,19 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 hostname = raw_input('# Hostname: ').strip()
                 proxy = raw_input('# Proxy: ').strip().lower()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 2:
@@ -5141,19 +5140,19 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 event_ids = raw_input('# EventIDs: ').strip()
                 ack_message = raw_input('# Message[' + ack_message_default + ']:').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 2:
@@ -5223,19 +5222,19 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 trigger_ids = raw_input('# TriggerIDs: ').strip()
                 ack_message = raw_input('# Message[' + ack_message_default + ']:').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 2:
@@ -5319,19 +5318,19 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 trigger_id = raw_input('# TriggerIDs: ').strip()
                 events_count = raw_input('# Events count[' + str(events_count_default) + ']: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 2:
@@ -5444,7 +5443,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -5453,13 +5452,13 @@ class zabbixcli(cmd.Cmd):
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 template = raw_input('# Template: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         #
@@ -5623,18 +5622,18 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 hostname = raw_input('# Hostname: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 1:
@@ -5738,18 +5737,18 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 host_macro_name= raw_input('# Host macro name: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 1:
@@ -5852,18 +5851,18 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 template_macro_name= raw_input('# Host macro name: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 1:
@@ -5964,7 +5963,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -5973,13 +5972,13 @@ class zabbixcli(cmd.Cmd):
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 template = raw_input('# Template: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         #
@@ -6103,7 +6102,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -6112,13 +6111,13 @@ class zabbixcli(cmd.Cmd):
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 template = raw_input('# Template: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         #
@@ -6274,7 +6273,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -6283,15 +6282,15 @@ class zabbixcli(cmd.Cmd):
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 directory_exports = raw_input('# Directory [' + self.conf.default_directory_exports + ']: ').strip()
                 object_type = raw_input('# Object type [' + default_object_type + ']: ').strip().lower()
                 object_name = raw_input('# Object name [' + default_object_name + ']: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         #
@@ -6323,7 +6322,7 @@ class zabbixcli(cmd.Cmd):
             if os.path.exists(directory_exports + '/' + obj_type) == False:
 
                 try:
-                    os.makedirs(directory_exports + '/' + obj_type,0700)
+                    os.makedirs(directory_exports + '/' + obj_type, mode=0o700)
 
                     if self.conf.logging == 'ON':
                         self.logs.logger.info('Export directory created: %s',directory_exports + '/' + obj_type)
@@ -6567,7 +6566,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         #
@@ -6576,14 +6575,14 @@ class zabbixcli(cmd.Cmd):
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 files = raw_input('# Import file []: ').strip()
                 dry_run = raw_input('# Dry run [' + dry_run_default + ']: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         #
@@ -6653,12 +6652,12 @@ class zabbixcli(cmd.Cmd):
             # without running the import process.
             #
             
-            print 
-            print '# -----------------------------------------------'
-            print '# Dry run: ON'
-            print '# These files would be imported with dry run: OFF'
-            print '# -----------------------------------------------'
-            print
+            print('\n')
+            print('# -----------------------------------------------')
+            print('# Dry run: ON')
+            print('# These files would be imported with dry run: OFF')
+            print('# -----------------------------------------------')
+            print('\n')
 
         for file in expanded_files:
             if os.path.exists(file):
@@ -6686,7 +6685,7 @@ class zabbixcli(cmd.Cmd):
                         # without running the import process.
                         #
 
-                        print '# File: ' + file
+                        print('# File: ' + file)
 
                     elif dry_run == '0':
                     
@@ -6771,19 +6770,19 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 proxy_src = raw_input('# SRC Proxy: ').strip()
                 proxy_dst = raw_input('# DST Proxy: ').strip().lower()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 2:
@@ -6886,18 +6885,18 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print '\n[ERROR]: ',e,'\n'
+            print('\n[ERROR]: ' + e + '\n')
             return False
 
         if len(arg_list) == 0:
             try:
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
                 proxies = raw_input('# Proxies: ').strip()
-                print '--------------------------------------------------------'
+                print('--------------------------------------------------------')
 
             except Exception as e:
-                print '\n--------------------------------------------------------'
-                print '\n[Aborted] Command interrupted by the user.\n'
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
                 return False
 
         elif len(arg_list) == 1:
@@ -7375,12 +7374,11 @@ class zabbixcli(cmd.Cmd):
                     
                     x.add_row(columns)
             
-                print x.get_string()
-                print
+                print(x.get_string() + '\n')
 
             elif self.output_format == 'csv':
 
-                print ",".join(colnames)
+                print(",".join(colnames))
 
                 for records in result:
                     columns = []
@@ -7388,14 +7386,14 @@ class zabbixcli(cmd.Cmd):
                     for column in sorted(result[records]):
                         columns.append(result[records][column])
 
-                    print '"' +  '","'.join(columns) + '"'
+                    print('"' +  '","'.join(columns) + '"')
              
             elif self.output_format == 'json':
                 
-                print json.dumps(result,sort_keys=True,indent=2)
+                print(json.dumps(result,sort_keys=True,indent=2))
 
         except Exception as e: 
-            print '\n[Error] Problems generating the output ',e
+            print('\n[Error] Problems generating the output ' + e)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems generating the output')
@@ -7411,8 +7409,7 @@ class zabbixcli(cmd.Cmd):
         '''
         
         if self.output_format == 'table':
-            print '\n[' + return_code.title() + ']: ' + str(message) + '\n'   
-            print 
+            print('\n[' + return_code.title() + ']: ' + str(message) + '\n\n')
 
             if self.non_interactive == True or self.bulk_execution == True: 
 
@@ -7422,7 +7419,7 @@ class zabbixcli(cmd.Cmd):
                     sys.exit(1)
 
         elif self.output_format == 'csv':
-            print '"' + return_code.lower() + '","' + str(message) + '"\n'   
+            print('"' + return_code.lower() + '","' + str(message) + '"\n')
 
             if self.non_interactive == True or self.bulk_execution == True: 
             
@@ -7433,7 +7430,7 @@ class zabbixcli(cmd.Cmd):
     
         elif self.output_format == 'json':
             output = {"return_code":return_code.lower(),"message":str(message)}
-            print json.dumps(output,sort_keys=True,indent=2)
+            print(json.dumps(output,sort_keys=True,indent=2))
 
             if self.non_interactive == True or self.bulk_execution == True: 
 
@@ -7458,7 +7455,7 @@ class zabbixcli(cmd.Cmd):
         '''
         
         os.system('clear')
-        print self.intro
+        print(self.intro)
 
 
     # ############################################
@@ -7532,8 +7529,7 @@ class zabbixcli(cmd.Cmd):
         try:
             proc = subprocess.Popen([line],stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
             output, errors = proc.communicate()
-            print output,errors
-            print
+            print(output + errors + '\n')
 
         except Exception as e:
             self.generate_feedback('Error','Problems running %s' % line)
@@ -7553,7 +7549,7 @@ class zabbixcli(cmd.Cmd):
         
         '''
         
-        print '\nDone, thank you for using Zabbix-CLI'
+        print('\nDone, thank you for using Zabbix-CLI')
         return True
 
 
@@ -7571,8 +7567,7 @@ class zabbixcli(cmd.Cmd):
         
         '''
 
-        print
-        print '\nDone, thank you for using Zabbix-CLI'
+        print('\n\nDone, thank you for using Zabbix-CLI')
         return True
 
 
@@ -7595,7 +7590,7 @@ class zabbixcli(cmd.Cmd):
         print
 
         for line in self._hist:
-            print '[' + str(cnt) + ']: ' + line
+            print('[' + str(cnt) + ']: ' + line)
             cnt = cnt +1
 
         print
@@ -7791,12 +7786,12 @@ class zabbixcli(cmd.Cmd):
         Get the imageid for a image
         '''
 
-        print image
+        print(image)
 
         try:
             data = self.zapi.image.get(filter={"name":image})
 
-            print data
+            print(data)
 
             if data != []:
                 imageid = data[0]['imageid']
@@ -8154,7 +8149,7 @@ class zabbixcli(cmd.Cmd):
         Help information about shortcuts in Zabbix-CLI
         '''
         
-        print '''
+        print('''
         Shortcuts in Zabbix-CLI:
 
         \s - display history 
@@ -8163,7 +8158,7 @@ class zabbixcli(cmd.Cmd):
         \! [COMMAND] - Execute a command in shell
         !  [COMMAND] - Execute a command in shell
 
-        '''
+        ''')
 
 
     # ############################################
@@ -8175,7 +8170,7 @@ class zabbixcli(cmd.Cmd):
         Help information about Zabbix-CLI support
         '''
         
-        print '''
+        print('''
         The latest information and versions of Zabbix-CLI can be obtained 
         from: https://github.com/usit-gd/zabbix-cli
 
@@ -8185,7 +8180,7 @@ class zabbixcli(cmd.Cmd):
         Zabbix documentation:
         http://www.zabbix.com/documentation.php
           
-        '''
+        ''')
 
 
     # ############################################

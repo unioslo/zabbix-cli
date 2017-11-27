@@ -41,7 +41,7 @@ def replace(file_path, pattern, subst):
         move(abs_path, file_path)
 
     except Exception as e:
-        print '\n[ERROR]: %s\n', e
+        print('\n[ERROR]: + str(e) + \n')
 
 if __name__ == "__main__":
 
@@ -49,7 +49,7 @@ if __name__ == "__main__":
         zabbixconfdir = getenv('HOME')+"/.zabbix-cli/"
 
     else:
-        print '\n[ERROR]: The $HOME environment variable is not defined. zabbix-cli-init cannot generate the configuration file in your home directory.'
+        print('\n[ERROR]: The $HOME environment variable is not defined. zabbix-cli-init cannot generate the configuration file in your home directory.')
         sys.exit(1)
 
     defconf = "/usr/share/zabbix-cli/zabbix-cli.conf"
@@ -67,7 +67,7 @@ if __name__ == "__main__":
             zabbix_api_url = args.zabbix_api_url
 
     except Exception as e:
-        print e
+        print(str(e))
         sys.exit(1)
 
     #
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         try:
             makedirs(zabbixconfdir)
         except Exception as e:
-            print '\n[ERROR]: %s\n', e
+            print('\n[ERROR]: '+ str(e) + '\n')
 
     #
     # /etc/zabbix-cli.conf will be created under installation of
@@ -91,9 +91,10 @@ if __name__ == "__main__":
             copy2(defconf, zabbixconfdir)
 
         except Exception as e:
-            print '\n[ERROR]: %s\n', e
+            print('\n[ERROR]: '+ str(e) + '\n')
+
     else:
-        print "Cannot find /etc/zabbix-cli/zabbix-cli.conf file. ERROR with zabbix-cli installation."
+        print("Cannot find /etc/zabbix-cli/zabbix-cli.conf file. ERROR with zabbix-cli installation.")
         sys.exit(1)
 
     #
