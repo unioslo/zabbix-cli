@@ -26,8 +26,8 @@ import os
 import argparse
 import subprocess
 
-from zabbix_cli.config import *
-from zabbix_cli.logs import * 
+from zabbix_cli.config import configuration
+from zabbix_cli.logs import log
 
 if __name__ == '__main__':
 
@@ -42,14 +42,14 @@ if __name__ == '__main__':
 
         parser = argparse.ArgumentParser(prog=sys.argv[0])
         parser.add_argument('--input-file', '-f', metavar='[Filename]', required=True, help='Input file', dest='input_file')
-        parser.add_argument('--config','-c', metavar='<config file>', required=False, dest='config_file')
+        parser.add_argument('--config', '-c', metavar='<config file>', required=False, dest='config_file')
 
-        args = parser.parse_args() 
+        args = parser.parse_args()
         input_file = args.input_file
 
         if args.config_file:
-            config_file = args.config_file 
-        
+            config_file = args.config_file
+
         conf = configuration(config_file)
 
         #
@@ -58,23 +58,23 @@ if __name__ == '__main__':
         #
 
         if conf.logging == 'ON':
-            logs = log("zabbix-cli-bulk-execution",config_file)
+            logs = log("zabbix-cli-bulk-execution", config_file)
         else:
             logs = None
-            
+
         if conf.logging == 'ON':
             logs.logger.debug('**** Zabbix-cli-bulk-execution startet. ****')
 
         # Normalized absolutized version of the pathname if
         # files does not include an absolute path
 
-        if os.path.isabs(input_file) == False:
-            input_file = os.path.abspath(input_file) 
+        if os.path.isabs(input_file) is False:
+            input_file = os.path.abspath(input_file)
 
         if os.path.exists(input_file):
 
             if conf.logging == 'ON':
-                logs.logger.info('File [%s] exists. Bulk execution of commands defined in this file.',input_file)
+                logs.logger.info('File [%s] exists. Bulk execution of commands defined in this file.', input_file)
 
             print '[OK] File [' + input_file + '] exists. Bulk execution of commands defined in this file started.'
 
@@ -83,40 +83,40 @@ if __name__ == '__main__':
             #
 
             try:
-                with open(input_file,'r') as file:
-                    for line in file:
+                with open(input_file, 'r') as f:
+                    for line in f:
                         zabbix_cli_command = line.strip()
 
                         command = 'zabbix-cli -o json -C "' + zabbix_cli_command + '"'
-                        
+
                         DEVNULL = open(os.devnull, 'w')
-                        proc = subprocess.Popen([command],stdout=DEVNULL,stderr=DEVNULL,shell=True)
+                        proc = subprocess.Popen([command], stdout=DEVNULL, stderr=DEVNULL, shell=True)
                         proc.wait()
-                
+
                         if proc.returncode == 0:
                             if conf.logging == 'ON':
-                                logs.logger.info('Zabbix-cli command [%s] executed',command)
-                        
+                                logs.logger.info('Zabbix-cli command [%s] executed', command)
+
                             print '[OK] Zabbix-cli command [' + command +  '] executed'
-                                
+
                         else:
                             if conf.logging == 'ON':
-                                logs.logger.error('Zabbix-cli command [%s] could not be executed',command)
-                            
+                                logs.logger.error('Zabbix-cli command [%s] could not be executed', command)
+
                             print '[ERROR] Zabbix-cli command [' + command + '] could not bed executed'
-                        
+
             except Exception as e:
 
                 if conf.logging == 'ON':
-                    logs.logger.error('Problems using file [%s] - %s',input_file,e)
+                    logs.logger.error('Problems using file [%s] - %s', input_file, e)
 
                 print '[ERROR] Problems using file [' + input_file + '] - ' + str(e)
                 sys.exit(1)
 
         else:
-            
+
             if conf.logging == 'ON':
-                logs.logger.info('File [%s] does not exist. Bulk execution of commands aborted.',input_file)
+                logs.logger.info('File [%s] does not exist. Bulk execution of commands aborted.', input_file)
 
             print '[ERROR] File [' + input_file + '] does not exist. Bulk execution of commands aborted'
 
@@ -125,10 +125,10 @@ if __name__ == '__main__':
             logs.logger.debug('**** Zabbix-cli-bulk-execution finished. ****')
 
     except Exception as e:
-        print '\n[ERROR]: %s\n',e
-        
+        print '\n[ERROR]: %s\n', e
+
         if conf.logging == 'ON':
-            logs.logger.error('Problems running zabbix-cli-bulk-execution - %s',e)
-        
+            logs.logger.error('Problems running zabbix-cli-bulk-execution - %s', e)
+
         print 'Problems running zabbix-cli-bulk-execution - ' + str(e)
         sys.exit(1)
