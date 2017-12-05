@@ -100,6 +100,9 @@ class zabbixcli(cmd.Cmd):
             
             # Use of auth-token file (on|off)
             self.use_auth_token_file = self.conf.use_auth_token_file
+
+            # Use paging (on|off)
+            self.use_paging = self.conf.use_paging
             
             # Bulk execution of commands (True|False)
             self.bulk_execution = False

@@ -55,6 +55,7 @@ class configuration():
         self.include_timestamp_export_filename = 'ON'
         self.use_colors = 'ON'
         self.use_auth_token_file = 'OFF'
+        self.use_paging = 'OFF'
 
         # Logging section
         self.logging = 'OFF'
@@ -158,6 +159,9 @@ class configuration():
 
             if config.has_option('zabbix_config','use_auth_token_file'):
                 self.use_auth_token_file = config.get('zabbix_config','use_auth_token_file')
+
+            if config.has_option('zabbix_config','use_paging'):
+                self.use_paging = config.get('zabbix_config','use_paging')
 
             #
             # Logging section
