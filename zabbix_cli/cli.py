@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 #
 # Authors:
-# rafael@postgresql.org.es / http://www.postgresql.org.es/
+# rafael@e-mc2.net / https://e-mc2.net/
 #
-# Copyright (c) 2014-2015 USIT-University of Oslo
+# Copyright (c) 2014-2017 USIT-University of Oslo
 #
 # This file is part of Zabbix-CLI
-# https://github.com/rafaelma/zabbix-cli
+# https://github.com/usit-gd/zabbix-cli
 #
 # Zabbix-CLI is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -7412,20 +7412,16 @@ class zabbixcli(cmd.Cmd):
             print('\n[' + return_code.title() + ']: ' + str(message) + '\n\n')
 
             if self.non_interactive == True or self.bulk_execution == True: 
-
-                if return_code.lower() == 'done':
-                    sys.exit(0)
-                elif return_code.lower() == 'error':
+                
+                if return_code.lower() == 'error':
                     sys.exit(1)
-
+                    
         elif self.output_format == 'csv':
             print('"' + return_code.lower() + '","' + str(message) + '"\n')
 
             if self.non_interactive == True or self.bulk_execution == True: 
             
-                if return_code.lower() == 'done':
-                    sys.exit(0)
-                elif return_code.lower() == 'error':
+                if return_code.lower() == 'error':
                     sys.exit(1)
     
         elif self.output_format == 'json':
@@ -7434,11 +7430,9 @@ class zabbixcli(cmd.Cmd):
 
             if self.non_interactive == True or self.bulk_execution == True: 
 
-                if return_code.lower() == 'done':
-                    sys.exit(0)
-                elif return_code.lower() == 'error':
+                if return_code.lower() == 'error':
                     sys.exit(1)
-
+                    
 
     # ############################################
     # Method do_clear

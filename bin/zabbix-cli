@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 #
 # Authors:
-# rafael@postgresql.org.es / http://www.postgresql.org.es/
+# rafael@e-mc2.net / https://e-mc2.net/
 #
-# Copyright (c) 2014-2015 USIT-University of Oslo
+# Copyright (c) 2014-2017 USIT-University of Oslo
 #
 # This file is part of Zabbix-cli
-# https://github.com/rafaelma/zabbix-cli
+# https://github.com/usit-gd/zabbix-cli
 #
 # Zabbix-CLI is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -270,6 +270,21 @@ if __name__ == '__main__':
                 #
 
                 cli.bulk_execution = True
+ 
+                # Register CSV output format
+               
+                if output_format == 'csv':
+                    cli.output_format = 'csv'
+
+                # Register JSON output format
+
+                elif output_format == 'json':
+                    cli.output_format = 'json'
+
+                # Register Table output format
+
+                else:
+                    cli.output_format = 'table'
 
                 #
                 # Processing zabbix commands in file.
@@ -304,7 +319,6 @@ if __name__ == '__main__':
                     logs.logger.info('Input file [%s] does not exist. Bulk execution of commands aborted.', input_file)
 
                 print('[ERROR] Input file [' + input_file + '] does not exist. Bulk execution of commands aborted')
-
 
 
         #
@@ -350,6 +364,8 @@ if __name__ == '__main__':
 
         if conf.logging == 'ON':
             logs.logger.debug('**** Zabbix-CLI stopped. ****')
+
+        sys.exit(0)
 
     except KeyboardInterrupt:
         print
