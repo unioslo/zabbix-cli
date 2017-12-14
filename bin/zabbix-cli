@@ -26,6 +26,7 @@ import os
 import getpass
 import argparse
 import logging
+import textwrap
 
 from zabbix_cli.config import configuration
 from zabbix_cli.logs import log
@@ -44,13 +45,59 @@ if __name__ == '__main__':
         zabbix_command = ''
         input_file = ''
 
-        parser = argparse.ArgumentParser(prog=sys.argv[0], description='zabbix-cli - Zabbix client')
+        parser = argparse.ArgumentParser(prog=sys.argv[0],
+                                         formatter_class=argparse.RawDescriptionHelpFormatter,
+                                         description=textwrap.dedent('''\
+                                         
+                                         =======
+                                          About
+                                         =======
 
-        parser.add_argument('--output', '-o', metavar='[csv|json|table]', choices=['csv', 'json', 'table'], required=False, dest='output_format')
-        parser.add_argument('--config', '-c', metavar='<config file>', required=False, dest='config_file')
-        parser.add_argument('--command', '-C', metavar='<Zabbix-cli command>', required=False, dest='zabbix_command')
-        parser.add_argument('--file', '-f', metavar='<Zabbix-cli input file>', required=False, dest='input_file')
+                                         Zabbix-CLI is a command-line interface for the Zabbix monitoring system. 
+                                         It is a terminal client for managing some Zabbix administration tasks 
+                                         via the zabbix-API.
+                                         ''')
+                                         ,epilog=textwrap.dedent('''\
+                                         
+                                         ================
+                                          Initialization
+                                         ================
 
+                                         '/usr/bin/zabbix-cli-init -z YOUR_ZABBIX_URL' has to be run before you start using zabbix-cli for the first time.
+
+                                         ==========
+                                          Examples
+                                         ==========
+
+                                         Run Zabbix-CLI in interactive mode:
+                                         # zabbix-cli
+
+                                         Get all zabbix-CLI commands in command-line mode:
+                                         # zabbix-cli -C "help"
+                                         
+                                         Get help for the zabbix-CLI command 'update_host_proxy' in command-line mode:
+                                         # zabbix-cli -C "help update_host_proxy"
+
+                                         Change the proxy definition for a host in command-line mode:
+                                         # zabbix-cli -o json -C "update_host_proxy myhost.domain.net zbx-proxy.domain.net"
+                                         
+                                         =======
+                                          Links
+                                         =======
+
+                                         The latest information and versions of Zabbix-CLI can be obtained 
+                                         from: https://e-mc2.net/zabbix-cli
+
+                                         The latest Zabbix-CLI documentation is available from:
+                                         https://github.com/usit-gd/zabbix-cli/blob/master/docs/manual.rst
+
+                                         '''))
+
+        parser.add_argument('-c', required=False, dest='config_file', help="Define an alternative configuration file.")
+        parser.add_argument('-C', required=False, dest='zabbix_command', help="Zabbix-CLI command to execute when running in command-line mode.")
+        parser.add_argument('-f', required=False, dest='input_file', help="File with Zabbix-CLI commands to be executed in bulk mode.")
+        parser.add_argument('-o', choices=['csv', 'json', 'table'], required=False, dest='output_format', help="Define the output format when running in command-line mode.")
+        
         args = parser.parse_args()
 
         if args.output_format:
