@@ -878,7 +878,7 @@ This command defines a host usermacro.
   
    define_host_usermacro [hostname] 
                          [macro name]
-                          [macro value]
+                         [macro value]
 
 Parameters:
 
