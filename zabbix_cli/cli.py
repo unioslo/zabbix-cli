@@ -202,12 +202,12 @@ class zabbixcli(cmd.Cmd):
 
     def do_show_maintenance_definitions(self, args):
         '''
-        DESCRIPTION: 
+        DESCRIPTION:
         This command shows maintenance definitions global
         information. The logical operator AND will be used if one
         defines more than one parameter.
 
-        COMMAND: 
+        COMMAND:
         show_maintenance_definitions [definitionID]
                                      [hostgroup]
                                      [host]
@@ -412,8 +412,8 @@ class zabbixcli(cmd.Cmd):
 
     def do_show_maintenance_periods(self, args):
         '''
-        DESCRIPTION: 
-        This command shows maintenance periods global information. 
+        DESCRIPTION:
+        This command shows maintenance periods global information.
 
         COMMAND: show_maintenance_periods [definitionID]
 
@@ -572,7 +572,7 @@ class zabbixcli(cmd.Cmd):
 
     def do_show_zabbixcli_config(self, args):
         '''
-        DESCRIPTION: 
+        DESCRIPTION:
         This command shows information about the
         configuration used by this zabbix-cli instance.
 
@@ -673,7 +673,7 @@ class zabbixcli(cmd.Cmd):
 
     def do_show_hostgroup(self, args):
         '''
-        DESCRIPTION: 
+        DESCRIPTION:
         This command shows hostgroup information
 
         COMMAND:
@@ -825,13 +825,13 @@ class zabbixcli(cmd.Cmd):
 
         [HostID / Hostname]:
         -------------------
-        One can search by HostID or by Hostname. One can use wildcards 
+        One can search by HostID or by Hostname. One can use wildcards
         if we search by Hostname
 
         [Filter]:
         --------
-        * Zabbix agent: 'available': 0=Unknown  
-                                     1=Available  
+        * Zabbix agent: 'available': 0=Unknown
+                                     1=Available
                                      2=Unavailable
 
         * Maintenance: 'maintenance_status': 0:No maintenance
@@ -995,16 +995,16 @@ class zabbixcli(cmd.Cmd):
     def do_update_host_inventory(self, args):
         '''
         DESCRIPTION:
-        This command updates one hosts' inventory 
+        This command updates one hosts' inventory
 
         COMMAND:
-        update_host_inventory [hostname] 
-                              [inventory_key] 
+        update_host_inventory [hostname]
+                              [inventory_key]
                               [inventory value]
 
         Inventory key is not the same as seen in web-gui. To
-        look at possible keys and their current values, use 
-        "zabbix-cli --use-json-format show_host_inventory <hostname>"  
+        look at possible keys and their current values, use
+        "zabbix-cli --use-json-format show_host_inventory <hostname>"
 
 
         '''
@@ -1496,7 +1496,7 @@ class zabbixcli(cmd.Cmd):
         show_alarms [description]
                     [filters]
                     [hostgroups]
-                    [Last event unacknowledged]                    
+                    [Last event unacknowledged]
 
         [description]
         -------------
@@ -1506,16 +1506,16 @@ class zabbixcli(cmd.Cmd):
 
         [filters]
         ---------
-        One can filter the result by host and priority. No wildcards 
+        One can filter the result by host and priority. No wildcards
         can be used.
 
         Priority values:
 
-        0 - (default) not classified; 
-        1 - information; 
-        2 - warning; 
-        3 - average; 
-        4 - high; 
+        0 - (default) not classified;
+        1 - information;
+        2 - warning;
+        3 - average;
+        4 - high;
         5 - disaster.
 
         [hostgroups]
@@ -1526,7 +1526,7 @@ class zabbixcli(cmd.Cmd):
 
         [Last event unacknowledged]
         ---------------------------
-        One can filter the result after the acknowledged value of the 
+        One can filter the result after the acknowledged value of the
         last event of an alarm.
 
         Values:
@@ -1535,7 +1535,7 @@ class zabbixcli(cmd.Cmd):
         false - Show all active alarms, also those with the last event acknowledged.
 
 
-        e.g.: Get all alarms with priority 'High' that contain the word 
+        e.g.: Get all alarms with priority 'High' that contain the word
               'disk' in the description for the host 'host.example.org' and
               the last event unacknowledged
 
@@ -2549,7 +2549,7 @@ class zabbixcli(cmd.Cmd):
         ------------
         0:'System default' [*]
         1:'Internal'
-        2:'Disable'        
+        2:'Disable'
 
         [Status]
         --------
@@ -2699,8 +2699,8 @@ class zabbixcli(cmd.Cmd):
         This command will fail if both 'default_hostgroup' and
         [hostgroups] are empty.
 
-        [proxy] 
-        ------- 
+        [proxy]
+        -------
         Proxy server used to monitor this host. One can use regular
         expressions to define a group of proxy servers from where the
         system will choose a random proxy.
@@ -2714,8 +2714,8 @@ class zabbixcli(cmd.Cmd):
         e.g. Some regular expressions that can be used:
 
         * proxy-(prod|test)+d\.example\.org
-          e.g. proxy-prod1.example.org and proxy-test8.example.org 
-               will match this expression.  
+          e.g. proxy-prod1.example.org and proxy-test8.example.org
+               will match this expression.
 
         * .+
           All proxies will match this expression.
@@ -3141,7 +3141,7 @@ class zabbixcli(cmd.Cmd):
 
     def do_create_maintenance_definition(self, args):
         '''
-        DESCRIPTION: 
+        DESCRIPTION:
 
         This command creates a 'one time only' maintenance definition
         for a defined period of time. Use the zabbix dashboard for
@@ -3165,7 +3165,7 @@ class zabbixcli(cmd.Cmd):
         [host/hostgroup]
         ----------------
         Host/s and/or hostgroup/s the that will undergo
-        maintenance. 
+        maintenance.
 
         One can define more than one value in a comma separated list
         and mix host and hostgroup values.
@@ -3627,7 +3627,7 @@ class zabbixcli(cmd.Cmd):
 
         [passwd]
         --------
-        Password. 
+        Password.
 
         The system will generate an automatic password if this value
         is not defined.
@@ -3641,15 +3641,15 @@ class zabbixcli(cmd.Cmd):
         [autologin]
         -----------
         0:'Disable' [*]
-        1:'Enable'        
+        1:'Enable'
 
         [autologout]
         ------------
         In seconds [86400]
 
         [groups]
-        --------   
-        Usergroup names where this user will be registered. 
+        --------
+        Usergroup names where this user will be registered.
 
         One can define several values in a comma separated list.
 
@@ -3833,7 +3833,7 @@ class zabbixcli(cmd.Cmd):
 
         Sometimes we need to send a notification to a place not owned by any
         user in particular, e.g. an email list or jabber channel but Zabbix has
-        not the possibility of defining media for a usergroup. 
+        not the possibility of defining media for a usergroup.
 
         This is the reason we use *notification users*. They are users nobody
         owns, but that can be used by other users to send notifications to the
@@ -4305,7 +4305,7 @@ class zabbixcli(cmd.Cmd):
 
         [hostgroups]
         ------------
-        Hostgroup names where the permission will apply. 
+        Hostgroup names where the permission will apply.
 
         One can define several values in a comma separated list.
 
@@ -4411,7 +4411,7 @@ class zabbixcli(cmd.Cmd):
 
         [hostgroups]
         ------------
-        Hostgroup names where the permission will apply. 
+        Hostgroup names where the permission will apply.
 
         One can define several values in a comma separated list.
 
@@ -4512,7 +4512,7 @@ class zabbixcli(cmd.Cmd):
         [macro name]
         ------------
         Name of the zabbix macro. The system will format this value to
-        use the macro format definition needed by Zabbix. 
+        use the macro format definition needed by Zabbix.
         e.g. site_url will be converted to ${SITE_URL}
 
         [macro value]
@@ -4633,7 +4633,7 @@ class zabbixcli(cmd.Cmd):
         This command defines a host usermacro
 
         COMMAND:
-        defines_host_usermacro [hostname] 
+        defines_host_usermacro [hostname]
                                [macro name]
                                [macro value]
 
@@ -4645,7 +4645,7 @@ class zabbixcli(cmd.Cmd):
         [macro name]
         ------------
         Name of the zabbix macro. The system will format this value to
-        use the macro format definition needed by Zabbix. 
+        use the macro format definition needed by Zabbix.
         e.g. site_url will be converted to ${SITE_URL}
 
         [macro value]
@@ -4788,7 +4788,7 @@ class zabbixcli(cmd.Cmd):
         This command defines the monitoring status of a host
 
         COMMAND:
-        defines_host_monitoring_status [hostname] 
+        defines_host_monitoring_status [hostname]
                                        [on/off]
 
         [hostname]
@@ -4905,7 +4905,7 @@ class zabbixcli(cmd.Cmd):
         This command defines the proxy used to monitor a host
 
         COMMAND:
-        update_host_proxy [hostname] 
+        update_host_proxy [hostname]
                           [proxy]
 
         [hostname]
@@ -5037,7 +5037,7 @@ class zabbixcli(cmd.Cmd):
         This command acknowledges an event
 
         COMMAND:
-        acknowledge_events [eventIDs] 
+        acknowledge_events [eventIDs]
                            [message]
 
         [eventIDs]
@@ -5047,7 +5047,7 @@ class zabbixcli(cmd.Cmd):
 
         [message]
         ---------
-        Text of the acknowledgement message. 
+        Text of the acknowledgement message.
         '''
 
         ack_message_default = '[Zabbix-CLI] Acknowledged via acknowledge_events'
@@ -5117,7 +5117,7 @@ class zabbixcli(cmd.Cmd):
         This command acknowledges the last event of a trigger.
 
         COMMAND:
-        acknowledge_trigger_last_event [triggerIDs] 
+        acknowledge_trigger_last_event [triggerIDs]
                                        [message]
 
         [triggerIDs]
@@ -5208,7 +5208,7 @@ class zabbixcli(cmd.Cmd):
         This command shows the events generated by a trigger.
 
         COMMAND:
-        show_trigger_events [triggerID] 
+        show_trigger_events [triggerID]
                             [count]
 
         [triggerID]
@@ -6267,9 +6267,9 @@ class zabbixcli(cmd.Cmd):
     def do_export_configuration(self, args):
         '''
         DESCRIPTION:
-        This command exports the configuration of different 
-        Zabbix components to a JSON or XML file. Several 
-        parameters in the zabbix-cli.conf configuration file 
+        This command exports the configuration of different
+        Zabbix components to a JSON or XML file. Several
+        parameters in the zabbix-cli.conf configuration file
         can be used to control some export options.
 
         COMMAND:
@@ -6288,8 +6288,8 @@ class zabbixcli(cmd.Cmd):
 
         [object name]
         -------------
-        Object name or Zabbix-ID. One can define several values in a comma 
-        separated list. 
+        Object name or Zabbix-ID. One can define several values in a comma
+        separated list.
 
         One can use the special value #ALL# to export all objects in a object
         type group. This parameter will be defined automatically as #all# if [object type] == #all#
@@ -6555,7 +6555,7 @@ class zabbixcli(cmd.Cmd):
 
     def do_import_configuration(self, args):
         '''DESCRIPTION:
-        This command imports the configuration of a 
+        This command imports the configuration of a
         Zabbix component.
 
         We use the options createMissing=True and updateExisting=True
@@ -6569,7 +6569,7 @@ class zabbixcli(cmd.Cmd):
 
         [import file]
         -------------
-        File with the JSON or XML code to import. This command will 
+        File with the JSON or XML code to import. This command will
         use the file extension (.json or .xml) to find out the import format.
 
         This command finds all the pathnames matching a specified
@@ -6791,7 +6791,7 @@ class zabbixcli(cmd.Cmd):
 
         [proxy_src]
         -----------
-        Source proxy server. 
+        Source proxy server.
 
         [proxy_dst]
         -----------
@@ -7448,10 +7448,10 @@ class zabbixcli(cmd.Cmd):
 
     def do_clear(self, args):
         '''
-        DESCRIPTION: 
+        DESCRIPTION:
         Clears the screen and shows the welcome banner.
 
-        COMMAND: 
+        COMMAND:
         clear
 
         '''
@@ -7538,10 +7538,10 @@ class zabbixcli(cmd.Cmd):
 
     def do_quit(self, args):
         '''
-        DESCRIPTION: 
+        DESCRIPTION:
         Quits/terminate the Zabbix-CLI shell.
 
-        COMMAND: 
+        COMMAND:
         quit
 
         '''
@@ -7555,10 +7555,10 @@ class zabbixcli(cmd.Cmd):
 
     def do_EOF(self, line):
         '''
-        DESCRIPTION: 
+        DESCRIPTION:
         Quit/terminate the Zabbix-CLI shell.
 
-        COMMAND: 
+        COMMAND:
         EOF
 
         '''
@@ -7572,11 +7572,11 @@ class zabbixcli(cmd.Cmd):
 
     def do_show_history(self, args):
         '''
-        DESCRIPTION: 
+        DESCRIPTION:
         This command shows the list of commands that have been entered
         during the Zabbix-CLI shell session.
 
-        COMMAND: 
+        COMMAND:
         show_history
 
         '''
@@ -8123,7 +8123,7 @@ class zabbixcli(cmd.Cmd):
         print('''
         Shortcuts in Zabbix-CLI:
 
-        \s - display history 
+        \s - display history
         \q - quit Zabbix-CLI shell
 
         \! [COMMAND] - Execute a command in shell
@@ -8141,7 +8141,7 @@ class zabbixcli(cmd.Cmd):
         '''
 
         print('''
-        The latest information and versions of Zabbix-CLI can be obtained 
+        The latest information and versions of Zabbix-CLI can be obtained
         from: https://github.com/usit-gd/zabbix-cli
 
         The Zabbix-CLI documentation is available from:
@@ -8149,7 +8149,7 @@ class zabbixcli(cmd.Cmd):
 
         Zabbix documentation:
         http://www.zabbix.com/documentation.php
-          
+
         ''')
 
     # ############################################
