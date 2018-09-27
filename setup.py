@@ -47,6 +47,14 @@ try:
     #
     # Setup
     #
+    data_files = None
+    current_os = platform.platform()
+    if "Linux" in current_os:
+      data_files = [('/usr/share/zabbix-cli', ['etc/zabbix-cli.conf'])]
+    elif "Darwin" in current_os:
+      data_files = [('/usr/local/bin/zabbixcli', ['etc/zabbix-cli.conf'])]
+
+
 
     setup(name='zabbix_cli',
           version=zabbix_cli['__version__'],
@@ -56,7 +64,7 @@ try:
           url='https://github.com/usit-gd/zabbix-cli',
           packages=['zabbix_cli',],
           scripts=['bin/zabbix-cli','bin/zabbix-cli-bulk-execution','bin/zabbix-cli-init'],
-          data_files=[('/usr/share/zabbix-cli', ['etc/zabbix-cli.conf'])],
+          data_files=data_files,
           install_requires=install_requires,
           platforms=['Linux'],
           classifiers=[
