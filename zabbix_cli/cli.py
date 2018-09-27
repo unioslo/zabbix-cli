@@ -5826,6 +5826,157 @@ class zabbixcli(cmd.Cmd):
                              ['HostID'],
                              FRAME)
 
+    # #######################################
+    # do_show_last_values
+    # #######################################
+    def do_show_last_values(self, args):
+        '''
+        DESCRIPTION:
+        Shows the last values of given item.
+
+        COMMAND:
+        show_last_values [item_name]
+                         [group]
+
+        [item_name]
+        ----------
+        Name of the items to get. Supports wildcard.
+
+        [group]
+        Whether the output should group items with the same values.
+
+        0 - (default) Do not group items.
+        1 - Group items.
+        '''
+
+        try:
+            arg_list = [arg.strip() for arg in shlex.split(args)]
+        except ValueError as e:
+            print '\n[ERROR]: ',e,'\n'
+            return False
+
+        if len(arg_list) == 1:
+            item_name = arg_list[0]
+            group = '0'
+        elif len(arg_list) == 2:
+            item_name = arg_list[0]
+            group = arg_list[1]
+            if group not in ('1', '0'):
+                group = '0'
+        else:
+            self.generate_feedback('Error',' Wrong number of parameters used.\n          Type help or \? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if item_name == '':
+            self.generate_feedback('Error','Item name is empty')
+            return False
+
+        #
+        # Getting items
+        #
+        try:
+            result = self.zapi.item.get(output='extend', monitored=True, search={'name': item_name}, searchWildcardsEnabled=True, sortfield='name', sortorder='ASC')
+        except Exception as e:
+            if self.conf.logging == 'ON':
+                self.logs.logger.error('Problems getting items - %s', e)
+
+            self.generate_feedback('Error', 'Problems getting items')
+
+            return False
+
+        #
+        # Get the columns we want to show from result
+        #
+
+        if group == '0':
+            result_columns = {}
+            result_columns_key = 0
+
+            for item in result:
+                if item['error'] != '':
+                    continue
+                host_name = self.get_host_name(item['hostid'])
+
+                if self.output_format == 'json':
+                    result_columns[result_columns_key] = {'itemid': item['itemid'],
+                                                          'name': item['name'],
+                                                          'key': item['key_'],
+                                                          'lastvalue': item['lastvalue'],
+                                                          'host': host_name}
+                else:
+                    result_columns[result_columns_key] = {'1': item['itemid'],
+                                                          '2': item['name'],
+                                                          '3': item['key_'],
+                                                          '4': item['lastvalue'],
+                                                          '5': host_name}
+
+                result_columns_key = result_columns_key + 1
+            #
+            # Generate output
+            #
+            self.generate_output(result_columns,
+                                 ['ItemID', 'Name', 'Key', 'Last value', 'Host name'],
+                                 ['Name', 'Key', 'Host name'],
+                                 ['ItemID', 'Last value'],
+                                 FRAME)
+        else:
+            key_values = {}
+
+            for item in result:
+                if item['error'] != '':
+                    continue
+                if 'error' in item and item['error'] != '':
+                    print self.get_host_name(item['hostid'])
+                    print item
+                name = item['name']
+                key = item['key_']
+                lastvalue = item['lastvalue']
+                host_name = self.get_host_name(item['hostid'])
+
+                short_item = {'name': name,
+                              'key': key,
+                              'lastvalue': lastvalue,
+                              'host': host_name}
+
+                if key in key_values:
+                    if lastvalue in key_values[key]:
+                        key_values[key][lastvalue].append(short_item)
+                    else:
+                        key_values[key][lastvalue] = [short_item]
+                else:
+                    key_values[key] = {lastvalue: [short_item]}
+
+            result_columns = {}
+            result_columns_key = 0
+
+            for key,values in key_values.iteritems():
+                for value,short_items in values.iteritems():
+                    if self.output_format == 'json':
+                        result_columns[result_columns_key] = {'name': short_items[0]['name'],
+                                                              'key': key,
+                                                              'lastvalue': value,
+                                                              'host': '\n'.join([item['host'] for item in short_items])}
+                    else:
+                        result_columns[result_columns_key] = {'1': short_items[0]['name'],
+                                                              '2': key,
+                                                              '3': value,
+                                                              '4': '\n'.join([item['host'] for item in short_items])}
+
+                    result_columns_key = result_columns_key + 1
+
+
+            #
+            # Generate output
+            #
+            self.generate_output(result_columns,
+                                 ['Name', 'Key', 'Last value', 'Host name'],
+                                 ['Name', 'Key', 'Host name'],
+                                 ['Last value'],
+                                 FRAME)
 
     # ########################################
     # do_show_usermacro_template_list 
