@@ -21,7 +21,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
 
-import socket
 import os
 try:  # python 2 vs 3
     import configparser

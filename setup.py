@@ -21,13 +21,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-Cli.  If not, see <http://www.gnu.org/licenses/>.
 
-import subprocess
 import platform
-import shutil
 import sys
-import os
-import pwd
-import grp
 from setuptools import setup
 
 '''
