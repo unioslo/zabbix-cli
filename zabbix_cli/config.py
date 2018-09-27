@@ -23,21 +23,22 @@
 
 import socket
 import os
-try: #python 2 vs 3
+try:  # python 2 vs 3
     import configparser
 except ImportError:
     import ConfigParser as configparser
 import sys
+
 
 class configuration():
 
     # ############################################
     # Constructor
     # ############################################
-    
-    def __init__(self,config_file_from_parameter):
+
+    def __init__(self, config_file_from_parameter):
         """ The Constructor."""
-        
+
         self.config_file_from_parameter = config_file_from_parameter
         self.config_file_list = []
 
@@ -45,12 +46,12 @@ class configuration():
         self.zabbix_api_url = ''
 
         # Zabbix_config section
-        self.system_id = 'zabbix-ID' 
+        self.system_id = 'zabbix-ID'
         self.default_hostgroup = 'All-hosts'
         self.default_admin_usergroup = 'Zabbix-root'
         self.default_create_user_usergroup = 'All-users'
         self.default_notification_users_usergroup = 'All-notification-users'
-        self.default_directory_exports = os.getenv('HOME') + '/zabbix_exports' 
+        self.default_directory_exports = os.getenv('HOME') + '/zabbix_exports'
         self.default_export_format = 'XML'
         self.include_timestamp_export_filename = 'ON'
         self.use_colors = 'ON'
@@ -65,14 +66,13 @@ class configuration():
         self.set_configuration_file()
         self.set_configuration_parameters()
 
-
     # ############################################
     # Method
     # ############################################
-    
+
     def set_configuration_file(self):
         """Set the zabbix-cli configuration file"""
-        
+
         # This list defines the priority list of configuration files
         # that can exist in the system. Files close to the top of the
         # list will have priority to define configuration parameters
@@ -86,26 +86,25 @@ class configuration():
         # 6. /usr/share/zabbix-cli/zabbix-cli.conf
         #
 
-        config_file_priority_list = ['/usr/share/zabbix-cli/zabbix-cli.conf', '/etc/zabbix-cli/zabbix-cli.conf', os.getenv('HOME') + '/.zabbix-cli/zabbix-cli.conf'] + [self.config_file_from_parameter] + ['/etc/zabbix-cli/zabbix-cli.fixed.conf','/usr/share/zabbix-cli/zabbix-cli.fixed.conf']
+        config_file_priority_list = ['/usr/share/zabbix-cli/zabbix-cli.conf', '/etc/zabbix-cli/zabbix-cli.conf', os.getenv('HOME') + '/.zabbix-cli/zabbix-cli.conf'] + [self.config_file_from_parameter] + ['/etc/zabbix-cli/zabbix-cli.fixed.conf', '/usr/share/zabbix-cli/zabbix-cli.fixed.conf']
 
         # We check if the configuration files defined in
         # config_file_priority_list exist before we start reading
         # them.
-        
+
         for file in config_file_priority_list:
             if os.path.isfile(file):
-                self.config_file_list.append(file) 
+                self.config_file_list.append(file)
 
         if not self.config_file_list:
-            
+
             print('\n[ERROR]: No config file found. Exiting.\n')
             sys.exit(1)
-
 
     # ############################################
     # Method
     # ############################################
-    
+
     def set_configuration_parameters(self):
         """Set configuration parameters"""
 
@@ -113,35 +112,35 @@ class configuration():
 
             config = configparser.RawConfigParser()
             config.read(config_file)
-            
+
             #
             # Zabbix APIsection
             #
-            
-            if config.has_option('zabbix_api','zabbix_api_url'):
-                self.zabbix_api_url = config.get('zabbix_api','zabbix_api_url')
-                 
+
+            if config.has_option('zabbix_api', 'zabbix_api_url'):
+                self.zabbix_api_url = config.get('zabbix_api', 'zabbix_api_url')
+
             #
             # Zabbix configuration
             #
 
-            if config.has_option('zabbix_config','system_id'):
-                self.system_id = config.get('zabbix_config','system_id')
+            if config.has_option('zabbix_config', 'system_id'):
+                self.system_id = config.get('zabbix_config', 'system_id')
 
-            if config.has_option('zabbix_config','default_hostgroup'):
-                self.default_hostgroup = config.get('zabbix_config','default_hostgroup')
+            if config.has_option('zabbix_config', 'default_hostgroup'):
+                self.default_hostgroup = config.get('zabbix_config', 'default_hostgroup')
 
-            if config.has_option('zabbix_config','default_admin_usergroup'):
-                self.default_admin_usergroup = config.get('zabbix_config','default_admin_usergroup')
+            if config.has_option('zabbix_config', 'default_admin_usergroup'):
+                self.default_admin_usergroup = config.get('zabbix_config', 'default_admin_usergroup')
 
-            if config.has_option('zabbix_config','default_create_user_usergroup'):
-                self.default_create_user_usergroup = config.get('zabbix_config','default_create_user_usergroup')
+            if config.has_option('zabbix_config', 'default_create_user_usergroup'):
+                self.default_create_user_usergroup = config.get('zabbix_config', 'default_create_user_usergroup')
 
-            if config.has_option('zabbix_config','default_notification_users_usergroup'):
-                self.default_notification_users_usergroup = config.get('zabbix_config','default_notification_users_usergroup')
+            if config.has_option('zabbix_config', 'default_notification_users_usergroup'):
+                self.default_notification_users_usergroup = config.get('zabbix_config', 'default_notification_users_usergroup')
 
-            if config.has_option('zabbix_config','default_directory_exports'):
-                self.default_directory_exports = config.get('zabbix_config','default_directory_exports')
+            if config.has_option('zabbix_config', 'default_directory_exports'):
+                self.default_directory_exports = config.get('zabbix_config', 'default_directory_exports')
 
             #
             # We deactivate this until https://support.zabbix.com/browse/ZBX-10607 gets fixed.
@@ -151,28 +150,27 @@ class configuration():
             #    self.default_export_format = config.get('zabbix_config','default_export_format')
             #
 
-            if config.has_option('zabbix_config','include_timestamp_export_filename'):
-                self.include_timestamp_export_filename = config.get('zabbix_config','include_timestamp_export_filename')
+            if config.has_option('zabbix_config', 'include_timestamp_export_filename'):
+                self.include_timestamp_export_filename = config.get('zabbix_config', 'include_timestamp_export_filename')
 
-            if config.has_option('zabbix_config','use_colors'):
-                self.use_colors = config.get('zabbix_config','use_colors')
+            if config.has_option('zabbix_config', 'use_colors'):
+                self.use_colors = config.get('zabbix_config', 'use_colors')
 
-            if config.has_option('zabbix_config','use_auth_token_file'):
-                self.use_auth_token_file = config.get('zabbix_config','use_auth_token_file')
+            if config.has_option('zabbix_config', 'use_auth_token_file'):
+                self.use_auth_token_file = config.get('zabbix_config', 'use_auth_token_file')
 
-            if config.has_option('zabbix_config','use_paging'):
-                self.use_paging = config.get('zabbix_config','use_paging')
+            if config.has_option('zabbix_config', 'use_paging'):
+                self.use_paging = config.get('zabbix_config', 'use_paging')
 
             #
             # Logging section
             #
 
-            if config.has_option('logging','logging'):
-                self.logging = config.get('logging','logging')
+            if config.has_option('logging', 'logging'):
+                self.logging = config.get('logging', 'logging')
 
-            if config.has_option('logging','log_level'):
-                self.log_level = config.get('logging','log_level')
+            if config.has_option('logging', 'log_level'):
+                self.log_level = config.get('logging', 'log_level')
 
-            if config.has_option('logging','log_file'):
-                self.log_file = config.get('logging','log_file')
-            
+            if config.has_option('logging', 'log_file'):
+                self.log_file = config.get('logging', 'log_file')
