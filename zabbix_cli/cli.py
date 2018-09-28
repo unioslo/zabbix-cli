@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Authors:
 # rafael@e-mc2.net / https://e-mc2.net/
 #

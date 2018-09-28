@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Authors:
 # rafael@postgresql.org.es / http://www.postgresql.org.es/
 #
