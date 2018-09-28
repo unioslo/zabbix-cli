@@ -21,16 +21,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-Cli.  If not, see <http://www.gnu.org/licenses/>.
 
+import os.path
 import platform
 import sys
 from setuptools import setup
+
+here = os.path.abspath(os.path.dirname(__file__))
 
 '''
 setup.py installation file
 '''
 try:
     zabbix_cli = {}
-    with open('zabbix_cli/version.py', 'r') as version_file:
+    with open(os.path.join(here, 'zabbix_cli', '__version__.py'), 'r') as version_file:
         exec(version_file.read(), zabbix_cli)
 
     if sys.version_info < (2, 6):

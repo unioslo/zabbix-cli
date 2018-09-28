@@ -42,7 +42,7 @@ from zabbix_cli.config import *
 from zabbix_cli.logs import *
 
 from zabbix_cli.prettytable import *
-import zabbix_cli.version
+import zabbix_cli
 
 from zabbix_cli.pyzabbix import ZabbixAPI, ZabbixAPIException
 
@@ -8168,7 +8168,7 @@ class zabbixcli(cmd.Cmd):
         '''
 
         try:
-            return zabbix_cli.version.__version__
+            return zabbix_cli.__version__
 
         except Exception as e:
             return 'Unknown'
