@@ -1003,9 +1003,6 @@ class zabbixcli(cmd.Cmd):
 
         '''
 
-        result_columns = {}
-        result_columns_key = 0
-
         try:
             arg_list = shlex.split(args)
 
@@ -1099,7 +1096,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            result = self.zapi.host.update(**query)
+            self.zapi.host.update(**query)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Command update_host_inventory executed [%s] [%s] [%s].', host, inventory_key, inventory_value)
@@ -1850,7 +1847,7 @@ class zabbixcli(cmd.Cmd):
             # Add hosts to hostgroups
             #
 
-            result = self.zapi.hostgroup.massadd(**query)
+            self.zapi.hostgroup.massadd(**query)
 
             self.generate_feedback('Done', 'Hosts ' + hostnames + ' (' + host_ids + ') added to these groups: ' + hostgroups + ' (' + hostgroup_ids + ')')
 
@@ -1983,7 +1980,7 @@ class zabbixcli(cmd.Cmd):
             # Remove hosts from hostgroups
             #
 
-            result = self.zapi.hostgroup.massremove(**query)
+            self.zapi.hostgroup.massremove(**query)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Hosts: %s (%s) removed from these groups: %s (%s)', hostnames, host_ids, hostgroups, hostgroup_ids)
@@ -2106,7 +2103,7 @@ class zabbixcli(cmd.Cmd):
             # Add users to usergroups
             #
 
-            result = self.zapi.usergroup.massadd(usrgrpids=usergroups_list, userids=usernames_list)
+            self.zapi.usergroup.massadd(usrgrpids=usergroups_list, userids=usernames_list)
 
             self.generate_feedback('Done', 'Users ' + usernames + ' added to these usergroups: ' + usergroups)
 
@@ -2373,7 +2370,7 @@ class zabbixcli(cmd.Cmd):
             # Link templates to hosts
             #
 
-            result = self.zapi.template.massadd(**query)
+            self.zapi.template.massadd(**query)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Templates: %s (%s) linked to these hosts: %s (%s)', templates, template_ids, hostnames, host_ids)
@@ -2506,7 +2503,7 @@ class zabbixcli(cmd.Cmd):
             # Unlink templates from hosts
             #
 
-            result = self.zapi.host.massremove(**query)
+            self.zapi.host.massremove(**query)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Templates: %s (%s) unlinked and cleared from these hosts: %s (%s)', templates, template_ids, hostnames, host_ids)
@@ -3114,7 +3111,7 @@ class zabbixcli(cmd.Cmd):
             #
 
             for maintenance in maintenances:
-                result = self.zapi.maintenance.delete(maintenance)
+                self.zapi.maintenance.delete(maintenance)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Maintenances defintions with IDs: [%s] removed', maintenanceid.replace(' ', ''))
@@ -3335,20 +3332,20 @@ class zabbixcli(cmd.Cmd):
             #
             # Create maintenance period
             #
-            result = self.zapi.maintenance.create(name=maintenance_name,
-                                                  maintenance_type=maintenance_type_,
-                                                  active_since=since,
-                                                  active_till=till,
-                                                  description=maintenance_description,
-                                                  hostids=host_ids,
-                                                  groupids=hostgroup_ids,
-                                                  timeperiods=[
-                                                      {
-                                                          'start_date': since,
-                                                          'period': sec,
-                                                          'timeperiod_type': 0
-                                                      }
-                                                  ])
+            self.zapi.maintenance.create(name=maintenance_name,
+                                         maintenance_type=maintenance_type_,
+                                         active_since=since,
+                                         active_till=till,
+                                         description=maintenance_description,
+                                         hostids=host_ids,
+                                         groupids=hostgroup_ids,
+                                         timeperiods=[
+                                             {
+                                                 'start_date': since,
+                                                 'period': sec,
+                                                 'timeperiod_type': 0
+                                             }
+                                         ])
 
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Maintenances definition with name [%s] created', maintenance_name)
@@ -4369,7 +4366,7 @@ class zabbixcli(cmd.Cmd):
             for group in hostgroups.split(','):
                 hostgroupid = self.get_hostgroup_id(group)
 
-                result = self.zapi.usergroup.massadd(usrgrpids=[usrgrpid], rights={'id': hostgroupid, 'permission': permission_code})
+                self.zapi.usergroup.massadd(usrgrpids=[usrgrpid], rights={'id': hostgroupid, 'permission': permission_code})
 
                 if self.conf.logging == 'ON':
                     self.logs.logger.info('Usergroup [%s] has got [%s] permission on hostgroup [%s] ', usergroup, permission, group)
@@ -4475,7 +4472,7 @@ class zabbixcli(cmd.Cmd):
             for group in hostgroups.split(','):
                 hostgroupid = self.get_hostgroup_id(group)
 
-                result = self.zapi.usergroup.massupdate(usrgrpids=[usrgrpid], rights={'id': hostgroupid, 'permission': permission_code})
+                self.zapi.usergroup.massupdate(usrgrpids=[usrgrpid], rights={'id': hostgroupid, 'permission': permission_code})
 
                 if self.conf.logging == 'ON':
                     self.logs.logger.info('Usergroup [%s] has got [%s] permission on hostgroup [%s] ', usergroup, permission, group)
@@ -4865,8 +4862,8 @@ class zabbixcli(cmd.Cmd):
 
                 hostid = self.get_host_id(hostname.strip())
 
-                data = self.zapi.host.update(hostid=hostid,
-                                             status=monitoring_status)
+                self.zapi.host.update(hostid=hostid,
+                                      status=monitoring_status)
 
                 if self.conf.logging == 'ON':
                     self.logs.logger.info('Monitoring status for hostname (%s) changed to (%s)', hostname, monitoring_status)
@@ -4997,8 +4994,8 @@ class zabbixcli(cmd.Cmd):
                 # Update proxy used to monitor the host
                 #
 
-                data = self.zapi.host.update(hostid=hostid,
-                                             proxy_hostid=proxy_id)
+                self.zapi.host.update(hostid=hostid,
+                                      proxy_hostid=proxy_id)
 
                 if self.conf.logging == 'ON':
                     self.logs.logger.info('Proxy for hostname (%s) changed to (%s)', hostname, proxy)
@@ -5084,8 +5081,8 @@ class zabbixcli(cmd.Cmd):
 
         try:
 
-            data = self.zapi.event.acknowledge(eventids=event_ids,
-                                               message=ack_message)
+            self.zapi.event.acknowledge(eventids=event_ids,
+                                        message=ack_message)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Acknowledge message [%s] for eventID [%s] registered', ack_message, event_ids)
@@ -5171,8 +5168,8 @@ class zabbixcli(cmd.Cmd):
                 data = self.zapi.event.get(objectids=trigger_id, sortfield=['clock'], sortorder='DESC', limit=1)
                 event_ids.append(data[0]['eventid'])
 
-            result = self.zapi.event.acknowledge(eventids=event_ids,
-                                                 message=ack_message)
+            self.zapi.event.acknowledge(eventids=event_ids,
+                                        message=ack_message)
 
             if self.conf.logging == 'ON':
                 self.logs.logger.info('Acknowledge message [%s] for last eventIDs [%s] on triggerIDs [%s] registered', ack_message, ','.join(event_ids), ','.join(trigger_ids))
@@ -5218,7 +5215,6 @@ class zabbixcli(cmd.Cmd):
         result_columns = {}
         result_columns_key = 0
 
-        event_ids = []
         events_count_default = 1
 
         try:
@@ -6639,8 +6635,6 @@ class zabbixcli(cmd.Cmd):
         # Sanity check
         #
 
-        files_orig = files
-
         if files == '':
             self.generate_feedback('Error', 'Files value is empty')
             return False
@@ -7523,7 +7517,7 @@ class zabbixcli(cmd.Cmd):
             output, errors = proc.communicate()
             print(output + errors + '\n')
 
-        except Exception as e:
+        except Exception:
             self.generate_feedback('Error', 'Problems running %s' % line)
 
     # ############################################
@@ -8166,7 +8160,7 @@ class zabbixcli(cmd.Cmd):
         try:
             return zabbix_cli.__version__
 
-        except Exception as e:
+        except Exception:
             return 'Unknown'
 
 
