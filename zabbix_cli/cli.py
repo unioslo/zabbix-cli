@@ -4777,7 +4777,7 @@ class zabbixcli(cmd.Cmd):
             if self.conf.logging == 'ON':
                 self.logs.logger.error('Problems defining host macro (%s:%s) - %s', hostname, host_macro_name, e)
 
-            self.generate_feedback('Error', 'Problems defining host macro (' + hostname + ':' + global_macro_name + ')')
+            self.generate_feedback('Error', 'Problems defining host macro (' + hostname + ':' + host_macro_name + ')')
             return False
 
     # ############################################
