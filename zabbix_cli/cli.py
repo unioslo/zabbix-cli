@@ -33,18 +33,14 @@ import random
 import hashlib
 import textwrap
 import json
-import xml.dom.minidom
 import glob
 import re
 import ipaddr
 
-from zabbix_cli.config import *
-from zabbix_cli.logs import *
-
-from zabbix_cli.prettytable import *
+from zabbix_cli.prettytable import PrettyTable, ALL, FRAME
 import zabbix_cli
 
-from zabbix_cli.pyzabbix import ZabbixAPI, ZabbixAPIException
+from zabbix_cli.pyzabbix import ZabbixAPI
 
 
 # ############################################
