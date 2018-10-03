@@ -66,10 +66,10 @@ class zabbixcli(cmd.Cmd):
             self.version = self.get_version()
 
             # Zabbix-cli welcome intro
-            self.intro =  '\n#############################################################\n' + \
-                          'Welcome to the Zabbix command-line interface (v.' + self.version + ')\n' + \
-                          '#############################################################\n' + \
-                          'Type help or \? to list commands.\n'
+            self.intro = '\n#############################################################\n' + \
+                         'Welcome to the Zabbix command-line interface (v.' + self.version + ')\n' + \
+                         '#############################################################\n' + \
+                         'Type help or \? to list commands.\n'
 
             # Pointer to Configuration class
             self.conf = conf
