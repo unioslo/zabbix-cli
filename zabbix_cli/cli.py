@@ -134,7 +134,7 @@ class zabbixcli(cmd.Cmd):
             # USERNAME::API-auth-token returned after the las login.
             #
 
-            if self.use_auth_token_file == 'ON' and os.path.isfile(zabbix_auth_token_file) == False:
+            if self.use_auth_token_file == 'ON' and not os.path.isfile(zabbix_auth_token_file):
 
                 with open(zabbix_auth_token_file, 'w') as auth_token_file:
                     auth_token_file.write(self.api_username + '::' + self.api_auth_token)
@@ -1616,7 +1616,7 @@ class zabbixcli(cmd.Cmd):
 
             for hostgroup in hostgroups.split(','):
 
-                if hostgroup.isdigit() == True:
+                if hostgroup.isdigit():
                     hostgroup_list.append(hostgroup)
                 else:
                     try:
@@ -2636,7 +2636,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
 
-            if result == True:
+            if result:
 
                 if self.conf.logging == 'ON':
                     self.logs.logger.debug('Usergroup (%s) already exists', groupname)
@@ -2644,7 +2644,7 @@ class zabbixcli(cmd.Cmd):
                 self.generate_feedback('Warning', 'This usergroup (' + groupname + ') already exists.')
                 return False
 
-            elif result == False:
+            else:
                 result = self.zapi.usergroup.create(name=groupname,
                                                     gui_access=gui_access,
                                                     users_status=users_status)
@@ -2731,7 +2731,7 @@ class zabbixcli(cmd.Cmd):
 
         for hostgroup in self.conf.default_hostgroup.split(','):
 
-            if self.hostgroup_exists(hostgroup.strip()) == False:
+            if not self.hostgroup_exists(hostgroup.strip()):
                 hostgroup_default = ''
                 break
 
@@ -2894,7 +2894,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
 
-            if result == True:
+            if result:
 
                 if self.conf.logging == 'ON':
                     self.logs.logger.debug('Host (%s) already exists', host)
@@ -2902,7 +2902,7 @@ class zabbixcli(cmd.Cmd):
                 self.generate_feedback('Warning', 'This host (' + host + ') already exists.')
                 return False
 
-            elif result == False:
+            else:
 
                 #
                 # Create host via Zabbix-API
@@ -3001,7 +3001,7 @@ class zabbixcli(cmd.Cmd):
             # Generate hostnames IDs
             #
 
-            if hostname.isdigit() == False:
+            if not hostname.isdigit():
                 hostid = str(self.get_host_id(hostname))
             else:
                 hostid = str(hostname)
@@ -3548,7 +3548,7 @@ class zabbixcli(cmd.Cmd):
                 if self.conf.logging == 'ON':
                     self.logs.logger.debug('Cheking if host (%s) exists', hostname)
 
-                if host_exists == False:
+                if not host_exists:
 
                     if self.conf.logging == 'ON':
                         self.logs.logger.error('Host (%s) does not exists. Host Interface can not be created', hostname)
@@ -3556,7 +3556,7 @@ class zabbixcli(cmd.Cmd):
                     self.generate_feedback('Error', 'Host (' + hostname + ') does not exists. Host Interface can not be created')
                     return False
 
-                elif host_exists == True:
+                else:
                     hostid = str(self.get_host_id(hostname))
 
             except Exception as e:
@@ -4119,7 +4119,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
 
-            if username.isdigit() == False:
+            if not username.isdigit():
                 userid = str(self.get_user_id(username))
             else:
                 userid = str(username)
@@ -4215,7 +4215,7 @@ class zabbixcli(cmd.Cmd):
             # Create hostgroup if it does not exist
             #
 
-            if result == False:
+            if not result:
 
                 data = self.zapi.hostgroup.create(name=hostgroup)
                 hostgroupid = data['groupids'][0]
@@ -4696,7 +4696,7 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Hostname is empty')
             return False
 
-        if hostname.isdigit() == True:
+        if hostname.isdigit():
             hostid = hostname
         else:
             try:
@@ -4857,7 +4857,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
 
-            if result == True:
+            if result:
 
                 #
                 # Update host monitoring status
@@ -4947,7 +4947,7 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Hostname is empty')
             return False
 
-        if hostname.isdigit() == True:
+        if hostname.isdigit():
             hostid = hostname
         else:
             try:
@@ -4991,7 +4991,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
 
-            if result == True:
+            if result:
 
                 #
                 # Update proxy used to monitor the host
@@ -5552,7 +5552,7 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Hostname is empty')
             return False
 
-        if hostname.isdigit() == True:
+        if hostname.isdigit():
             hostid = hostname
         else:
             try:
@@ -6048,7 +6048,7 @@ class zabbixcli(cmd.Cmd):
         # Getting template ID
         #
 
-        if template.isdigit() == False:
+        if not template.isdigit():
 
             try:
                 templateid = self.get_template_id(template)
@@ -6185,7 +6185,7 @@ class zabbixcli(cmd.Cmd):
         # Getting template ID
         #
 
-        if template.isdigit() == False:
+        if not template.isdigit():
 
             try:
                 templateid = self.get_template_id(template)
@@ -6353,7 +6353,7 @@ class zabbixcli(cmd.Cmd):
 
         for obj_type in object_type_list:
 
-            if os.path.exists(directory_exports + '/' + obj_type) == False:
+            if not os.path.exists(directory_exports + '/' + obj_type):
 
                 try:
                     os.makedirs(directory_exports + '/' + obj_type, mode=0o700)
@@ -6459,10 +6459,10 @@ class zabbixcli(cmd.Cmd):
             else:
                 for name in object_name.split(','):
 
-                    if name.strip().isdigit() == True and name.strip() != '':
+                    if name.strip().isdigit() and name.strip() != '':
                         object_name_list[str(name).strip()] = str(name).strip()
 
-                    elif name.strip().isdigit() == False and name.strip() != '':
+                    elif not name.strip().isdigit() and name.strip() != '':
 
                         try:
                             if obj_type == 'groups':
@@ -6656,7 +6656,7 @@ class zabbixcli(cmd.Cmd):
         # Normalized absolutized version of the pathname if
         # files does not include an absolute path
 
-        if os.path.isabs(files) == False:
+        if not os.path.isabs(files):
             files = os.path.abspath(files)
 
         #
@@ -6744,14 +6744,14 @@ class zabbixcli(cmd.Cmd):
                                                                 'triggers': {'createMissing': True, 'updateExisting': True}
                                                             })
 
-                                if data == True:
+                                if data:
 
                                     total_files_imported = total_files_imported + 1
 
                                     if self.conf.logging == 'ON':
                                         self.logs.logger.info('The file %s has been imported into Zabbix', file)
 
-                                elif data == False:
+                                else:
 
                                     total_files_not_imported = total_files_not_imported + 1
 
@@ -7414,7 +7414,7 @@ class zabbixcli(cmd.Cmd):
         if self.output_format == 'table':
             print('\n[' + return_code.title() + ']: ' + str(message) + '\n\n')
 
-            if self.non_interactive == True or self.bulk_execution == True:
+            if self.non_interactive or self.bulk_execution:
 
                 if return_code.lower() == 'error':
                     sys.exit(1)
@@ -7422,7 +7422,7 @@ class zabbixcli(cmd.Cmd):
         elif self.output_format == 'csv':
             print('"' + return_code.lower() + '","' + str(message) + '"\n')
 
-            if self.non_interactive == True or self.bulk_execution == True:
+            if self.non_interactive or self.bulk_execution:
 
                 if return_code.lower() == 'error':
                     sys.exit(1)
@@ -7431,7 +7431,7 @@ class zabbixcli(cmd.Cmd):
             output = {"return_code": return_code.lower(), "message": str(message)}
             print(json.dumps(output, sort_keys=True, indent=2))
 
-            if self.non_interactive == True or self.bulk_execution == True:
+            if self.non_interactive or self.bulk_execution:
 
                 if return_code.lower() == 'error':
                     sys.exit(1)
@@ -7618,7 +7618,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
 
-            if self.bulk_execution == True:
+            if self.bulk_execution:
 
                 if hostgroup in self.hostgroupname_cache:
                     hostgroupid = self.hostgroupname_cache[hostgroup]
@@ -7652,7 +7652,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
 
-            if self.bulk_execution == True:
+            if self.bulk_execution:
 
                 if host in self.hostid_cache.values():
                     return True
@@ -7966,7 +7966,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
 
-            if self.bulk_execution == True:
+            if self.bulk_execution:
 
                 for proxyid, proxy_name in self.proxyid_cache.iteritems():
                     if match_pattern.match(proxy_name):
