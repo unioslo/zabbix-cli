@@ -13,6 +13,8 @@
 #
 ###########################################################################################
 
+from __future__ import print_function
+
 from os import getenv, path, remove, close, makedirs
 from tempfile import mkstemp
 from shutil import move, copy2

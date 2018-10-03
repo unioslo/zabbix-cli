@@ -20,6 +20,8 @@
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from __future__ import print_function
+
 import cmd
 import sys
 import os
@@ -42,6 +44,15 @@ import zabbix_cli
 
 from zabbix_cli.pyzabbix import ZabbixAPI
 
+# Python 2, 3 support
+try:
+    input = raw_input
+except NameError:
+    pass
+try:
+    from past.builtins import long
+except ImportError:
+    pass
 
 # ############################################
 # class zabbix_cli
@@ -237,9 +248,9 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                maintenances = raw_input('# MaintenanceID [*]: ').strip()
-                hostgroups = raw_input('# Hostgroups [*]: ').strip()
-                hostnames = raw_input('# Hosts [*]: ').strip()
+                maintenances = input('# MaintenanceID [*]: ').strip()
+                hostgroups = input('# Hostgroups [*]: ').strip()
+                hostnames = input('# Hosts [*]: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -434,7 +445,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                maintenances = raw_input('# MaintenanceID [*]: ').strip()
+                maintenances = input('# MaintenanceID [*]: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -696,7 +707,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                hostgroup = raw_input('# Hostgroup: ').strip()
+                hostgroup = input('# Hostgroup: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -857,8 +868,8 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                host = raw_input('# Host: ').strip()
-                filter = raw_input('# Filter: ').strip()
+                host = input('# Host: ').strip()
+                filter = input('# Filter: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -1018,9 +1029,9 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                host = raw_input('# Host: ')
-                inventory_key = raw_input('# Inventory key: ')
-                inventory_value = raw_input('# Inventory value: ')
+                host = input('# Host: ')
+                inventory_key = input('# Inventory key: ')
+                inventory_value = input('# Inventory value: ')
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -1035,8 +1046,8 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 1:
 
             host = arg_list[0]
-            inventory_key = raw_input('# Inventory key: ')
-            inventory_value = raw_input('# Inventory value: ')
+            inventory_key = input('# Inventory key: ')
+            inventory_value = input('# Inventory value: ')
 
         #
         # Command cithout inventory value attribute
@@ -1046,7 +1057,7 @@ class zabbixcli(cmd.Cmd):
 
             host = arg_list[0]
             inventory_key = arg_list[1]
-            inventory_value = raw_input('# Inventory value: ')
+            inventory_value = input('# Inventory value: ')
 
         elif len(arg_list) == 3:
 
@@ -1145,8 +1156,8 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                host = raw_input('# Host: ').strip()
-                filter = raw_input('# Filter: ').strip()
+                host = input('# Host: ').strip()
+                filter = input('# Filter: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -1303,7 +1314,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                usergroup = raw_input('# Usergroup: ').strip()
+                usergroup = input('# Usergroup: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -1554,10 +1565,10 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                description = raw_input('# Description []: ').strip()
-                filters = raw_input('# Filter []: ').strip()
-                hostgroups = raw_input('# Hostgroups []: ').strip()
-                ack_filter = raw_input('# Last event unacknowledged [true]: ').strip().lower()
+                description = input('# Description []: ').strip()
+                filters = input('# Filter []: ').strip()
+                hostgroups = input('# Hostgroups []: ').strip()
+                ack_filter = input('# Last event unacknowledged [true]: ').strip().lower()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -1770,8 +1781,8 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                hostnames = raw_input('# Hostnames: ').strip()
-                hostgroups = raw_input('# Hostgroups: ').strip()
+                hostnames = input('# Hostnames: ').strip()
+                hostgroups = input('# Hostgroups: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -1903,8 +1914,8 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                hostnames = raw_input('# Hostnames: ').strip()
-                hostgroups = raw_input('# Hostgroups: ').strip()
+                hostnames = input('# Hostnames: ').strip()
+                hostgroups = input('# Hostgroups: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -2037,8 +2048,8 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                usernames = raw_input('# Usernames: ').strip()
-                usergroups = raw_input('# Usergroups: ').strip()
+                usernames = input('# Usernames: ').strip()
+                usergroups = input('# Usergroups: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -2159,8 +2170,8 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                username = raw_input('# Username: ').strip()
-                usergroups = raw_input('# Usergroups: ').strip()
+                username = input('# Username: ').strip()
+                usergroups = input('# Usergroups: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -2293,8 +2304,8 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                templates = raw_input('# Templates: ').strip()
-                hostnames = raw_input('# Hostnames: ').strip()
+                templates = input('# Templates: ').strip()
+                hostnames = input('# Hostnames: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -2426,8 +2437,8 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                templates = raw_input('# Templates: ').strip()
-                hostnames = raw_input('# Hostnames: ').strip()
+                templates = input('# Templates: ').strip()
+                hostnames = input('# Hostnames: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -2570,9 +2581,9 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                groupname = raw_input('# Name: ').strip()
-                gui_access = raw_input('# GUI access [' + gui_access_default + ']: ').strip()
-                users_status = raw_input('# Status [' + users_status_default + ']: ').strip()
+                groupname = input('# Name: ').strip()
+                gui_access = input('# GUI access [' + gui_access_default + ']: ').strip()
+                users_status = input('# Status [' + users_status_default + ']: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -2753,10 +2764,10 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                host = raw_input('# Hostname|IP: ').strip()
-                hostgroups = raw_input('# Hostgroups[' + hostgroup_default + ']: ').strip()
-                proxy = raw_input('# Proxy [' + proxy_default + ']: ').strip()
-                host_status = raw_input('# Status [' + host_status_default + ']: ').strip()
+                host = input('# Hostname|IP: ').strip()
+                hostgroups = input('# Hostgroups[' + hostgroup_default + ']: ').strip()
+                proxy = input('# Proxy [' + proxy_default + ']: ').strip()
+                host_status = input('# Status [' + host_status_default + ']: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -2960,7 +2971,7 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                hostname = raw_input('# Hostname: ').strip()
+                hostname = input('# Hostname: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -3066,7 +3077,7 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                maintenanceid = raw_input('# maintenanceID: ').strip()
+                maintenanceid = input('# maintenanceID: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -3211,11 +3222,11 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                maintenance_name = raw_input('# Maintenance name [' + maintenance_name_default + ']: ').strip()
-                maintenance_description = raw_input('# Maintenance description []: ').strip()
-                host_hostgroup = raw_input('# Host/Hostgroup []: ').strip()
-                time_period = raw_input('# Time period [' + time_period_default + ']: ').strip()
-                maintenance_type_ = raw_input('# Maintenance type [' + str(maintenance_type_default) + ']: ').strip()
+                maintenance_name = input('# Maintenance name [' + maintenance_name_default + ']: ').strip()
+                maintenance_description = input('# Maintenance description []: ').strip()
+                host_hostgroup = input('# Host/Hostgroup []: ').strip()
+                time_period = input('# Time period [' + time_period_default + ']: ').strip()
+                maintenance_type_ = input('# Maintenance type [' + str(maintenance_type_default) + ']: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -3450,13 +3461,13 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                hostname = raw_input('# Hostname: ').strip()
-                interface_useip = raw_input('# Interface connection[' + interface_useip_default + ']: ').strip()
-                interface_type = raw_input('# Interface type[' + interface_type_default + ']: ').strip()
-                interface_port = raw_input('# Interface port[' + interface_port_default + ']: ').strip()
-                interface_ip = raw_input('# Interface IP[' + interface_ip_default + ']: ').strip()
-                interface_dns = raw_input('# Interface DNS[' + interface_dns_default + ']: ').strip()
-                interface_main = raw_input('# Default interface[' + interface_main_default + ']: ').strip()
+                hostname = input('# Hostname: ').strip()
+                interface_useip = input('# Interface connection[' + interface_useip_default + ']: ').strip()
+                interface_type = input('# Interface type[' + interface_type_default + ']: ').strip()
+                interface_port = input('# Interface port[' + interface_port_default + ']: ').strip()
+                interface_ip = input('# Interface IP[' + interface_ip_default + ']: ').strip()
+                interface_dns = input('# Interface DNS[' + interface_dns_default + ']: ').strip()
+                interface_main = input('# Default interface[' + interface_main_default + ']: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -3678,14 +3689,14 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                alias = raw_input('# Alias []: ').strip()
-                name = raw_input('# Name []: ').strip()
-                surname = raw_input('# Surname []: ').strip()
-                passwd = raw_input('# Password []: ').strip()
-                type = raw_input('# User type [' + type_default + ']: ').strip()
-                autologin = raw_input('# Autologin [' + autologin_default + ']: ').strip()
-                autologout = raw_input('# Autologout [' + autologout_default + ']: ').strip()
-                usrgrps = raw_input('# Usergroups []: ').strip()
+                alias = input('# Alias []: ').strip()
+                name = input('# Name []: ').strip()
+                surname = input('# Surname []: ').strip()
+                passwd = input('# Password []: ').strip()
+                type = input('# User type [' + type_default + ']: ').strip()
+                autologin = input('# Autologin [' + autologin_default + ']: ').strip()
+                autologout = input('# Autologout [' + autologout_default + ']: ').strip()
+                usrgrps = input('# Usergroups []: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -3888,9 +3899,9 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                sendto = raw_input('# SendTo []: ').strip()
-                mediatype = raw_input('# Media type []: ').strip()
-                remarks = raw_input('# Remarks []: ').strip()
+                sendto = input('# SendTo []: ').strip()
+                mediatype = input('# Media type []: ').strip()
+                remarks = input('# Remarks []: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -4082,7 +4093,7 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                username = raw_input('# Username: ').strip()
+                username = input('# Username: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -4164,7 +4175,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                hostgroup = raw_input('# Name: ').strip()
+                hostgroup = input('# Name: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -4318,9 +4329,9 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                usergroup = raw_input('# Usergroup: ').strip()
-                hostgroups = raw_input('# Hostgroup: ').strip()
-                permission = raw_input('# Permission: ').strip().lower()
+                usergroup = input('# Usergroup: ').strip()
+                hostgroups = input('# Hostgroup: ').strip()
+                permission = input('# Permission: ').strip().lower()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -4424,9 +4435,9 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                usergroup = raw_input('# Usergroup: ').strip()
-                hostgroups = raw_input('# Hostgroup: ').strip()
-                permission = raw_input('# Permission: ').strip().lower()
+                usergroup = input('# Usergroup: ').strip()
+                hostgroups = input('# Hostgroup: ').strip()
+                permission = input('# Permission: ').strip().lower()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -4522,8 +4533,8 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                global_macro_name = raw_input('# Global macro name: ').strip()
-                global_macro_value = raw_input('# Global macro value: ').strip()
+                global_macro_name = input('# Global macro name: ').strip()
+                global_macro_value = input('# Global macro value: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -4655,9 +4666,9 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                hostname = raw_input('# Hostname: ').strip()
-                host_macro_name = raw_input('# Macro name: ').strip()
-                host_macro_value = raw_input('# Macro value: ').strip()
+                hostname = input('# Hostname: ').strip()
+                host_macro_name = input('# Macro name: ').strip()
+                host_macro_value = input('# Macro value: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -4798,8 +4809,8 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                hostname = raw_input('# Hostname: ').strip()
-                monitoring_status = raw_input('# Monitoring status[ON|OFF]: ').strip().lower()
+                hostname = input('# Hostname: ').strip()
+                monitoring_status = input('# Monitoring status[ON|OFF]: ').strip().lower()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -4919,8 +4930,8 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                hostname = raw_input('# Hostname: ').strip()
-                proxy = raw_input('# Proxy: ').strip().lower()
+                hostname = input('# Hostname: ').strip()
+                proxy = input('# Proxy: ').strip().lower()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -5053,8 +5064,8 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                event_ids = raw_input('# EventIDs: ').strip()
-                ack_message = raw_input('# Message[' + ack_message_default + ']:').strip()
+                event_ids = input('# EventIDs: ').strip()
+                ack_message = input('# Message[' + ack_message_default + ']:').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -5135,8 +5146,8 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                trigger_ids = raw_input('# TriggerIDs: ').strip()
-                ack_message = raw_input('# Message[' + ack_message_default + ']:').strip()
+                trigger_ids = input('# TriggerIDs: ').strip()
+                ack_message = input('# Message[' + ack_message_default + ']:').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -5227,8 +5238,8 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                trigger_id = raw_input('# TriggerIDs: ').strip()
-                events_count = raw_input('# Events count[' + str(events_count_default) + ']: ').strip()
+                trigger_id = input('# TriggerIDs: ').strip()
+                events_count = input('# Events count[' + str(events_count_default) + ']: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -5354,7 +5365,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                template = raw_input('# Template: ').strip()
+                template = input('# Template: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -5525,7 +5536,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                hostname = raw_input('# Hostname: ').strip()
+                hostname = input('# Hostname: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -5638,7 +5649,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                host_macro_name = raw_input('# Host macro name: ').strip()
+                host_macro_name = input('# Host macro name: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -5741,7 +5752,7 @@ class zabbixcli(cmd.Cmd):
         try:
             arg_list = [arg.strip() for arg in shlex.split(args)]
         except ValueError as e:
-            print '\n[ERROR]: ', e, '\n'
+            print('\n[ERROR]: ', e, '\n')
             return False
 
         if len(arg_list) == 1:
@@ -5819,8 +5830,8 @@ class zabbixcli(cmd.Cmd):
                 if item['error'] != '':
                     continue
                 if 'error' in item and item['error'] != '':
-                    print self.get_host_name(item['hostid'])
-                    print item
+                    print(self.get_host_name(item['hostid']))
+                    print(item)
                 name = item['name']
                 key = item['key_']
                 lastvalue = item['lastvalue']
@@ -5898,7 +5909,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                template_macro_name = raw_input('# Host macro name: ').strip()
+                template_macro_name = input('# Host macro name: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -6009,7 +6020,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                template = raw_input('# Template: ').strip()
+                template = input('# Template: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -6146,7 +6157,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                template = raw_input('# Template: ').strip()
+                template = input('# Template: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -6314,9 +6325,9 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                directory_exports = raw_input('# Directory [' + self.conf.default_directory_exports + ']: ').strip()
-                object_type = raw_input('# Object type [' + default_object_type + ']: ').strip().lower()
-                object_name = raw_input('# Object name [' + default_object_name + ']: ').strip()
+                directory_exports = input('# Directory [' + self.conf.default_directory_exports + ']: ').strip()
+                object_type = input('# Object type [' + default_object_type + ']: ').strip().lower()
+                object_name = input('# Object name [' + default_object_name + ']: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -6602,8 +6613,8 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                files = raw_input('# Import file []: ').strip()
-                dry_run = raw_input('# Dry run [' + dry_run_default + ']: ').strip()
+                files = input('# Import file []: ').strip()
+                dry_run = input('# Dry run [' + dry_run_default + ']: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -6797,8 +6808,8 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                proxy_src = raw_input('# SRC Proxy: ').strip()
-                proxy_dst = raw_input('# DST Proxy: ').strip().lower()
+                proxy_src = input('# SRC Proxy: ').strip()
+                proxy_dst = input('# DST Proxy: ').strip().lower()
                 print('--------------------------------------------------------')
 
             except Exception as e:
@@ -6910,7 +6921,7 @@ class zabbixcli(cmd.Cmd):
         if len(arg_list) == 0:
             try:
                 print('--------------------------------------------------------')
-                proxies = raw_input('# Proxies: ').strip()
+                proxies = input('# Proxies: ').strip()
                 print('--------------------------------------------------------')
 
             except Exception as e:
