@@ -22,7 +22,7 @@
 import sys
 import logging
 
-from zabbix_cli.config import *
+from zabbix_cli.config import configuration
 
 
 class log(logging.Logger):
