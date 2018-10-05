@@ -1,1 +1,1 @@
-from zabbix_cli.__version__ import __version__
+__version__ = '1.7.0'
