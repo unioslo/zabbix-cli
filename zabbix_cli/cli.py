@@ -22,26 +22,26 @@
 
 from __future__ import print_function
 
-import cmd
-import sys
-import os
-import time
-import signal
-import shlex
-import datetime
-import subprocess
 import ast
-import random
-import hashlib
-import textwrap
-import json
+import cmd
+import datetime
 import glob
+import hashlib
+import json
+import os
+import random
 import re
+import shlex
+import signal
+import subprocess
+import sys
+import textwrap
+import time
+
 import ipaddr
 
-from zabbix_cli.prettytable import PrettyTable, ALL, FRAME
 import zabbix_cli
-
+from zabbix_cli.prettytable import ALL, FRAME, PrettyTable
 from zabbix_cli.pyzabbix import ZabbixAPI
 
 # Python 2, 3 support
