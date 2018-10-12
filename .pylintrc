@@ -1,0 +1,15 @@
+[MASTER]
+ignore =
+      prettytable.py,
+      pyzabbix.py
+
+[MESSAGES CONTROL]
+disable=C0301
+good-names =
+      e,
+      f,
+      i,
+      j
+
+[EXCEPTIONS]
+overgeneral-exceptions=Exception
