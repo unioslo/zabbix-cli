@@ -95,6 +95,13 @@ latest code from the master branch.
  [root@server]# ./setup.py install
  .....
 
+If using a python virtual enviroment, instead of ./setup.py install one can use pip install ( -e / -- editable for setuptools "develop mode" ) 
+
+::
+
+ [user@host zabbix-cli]$ pip install -e .
+
+
 **NOTE**: The code in the master branch can be unstable and with bugs between releases. Use it at your own risk.
 
 For stable code to be used in production use the source code

@@ -12,9 +12,14 @@
 # $HOME/.zabbix-cli/
 #
 ##############################################################################
+from __future__ import print_function
 
 import logging
 import os
+
+from tempfile import mkstemp
+from shutil import move, copy2
+import sys
 import argparse
 
 from zabbix_cli.config import (
