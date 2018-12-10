@@ -38,12 +38,6 @@ from zabbix_cli.cli import zabbixcli
 logger = logging.getLogger('zabbix-cli')
 
 
-def config_type(value):
-    config = get_config(value)
-    validate_config(config)
-    return config
-
-
 if __name__ == '__main__':
 
     try:
@@ -107,8 +101,7 @@ if __name__ == '__main__':
         parser.add_argument(
             '-c',
             required=False,
-            dest='config',
-            type=config_type,
+            dest='config_file',
             help="Define an alternative configuration file.")
         parser.add_argument(
             '-C',
@@ -138,7 +131,8 @@ if __name__ == '__main__':
         if args.input_file:
             input_file = args.input_file
 
-        conf = args.config
+        conf = get_config(args.config_file)
+        validate_config(conf)
         configure_logging(conf)
 
         #

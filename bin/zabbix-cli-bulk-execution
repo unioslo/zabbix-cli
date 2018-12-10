@@ -35,12 +35,6 @@ from zabbix_cli.logs import configure_logging
 logger = logging.getLogger('zabbix-cli-bulk-execution')
 
 
-def config_type(value):
-    config = get_config(value)
-    validate_config(config)
-    return config
-
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -53,17 +47,15 @@ if __name__ == '__main__':
         help='Read commands from %(metavar)s, defaults to stdin'),
     parser.add_argument(
         '--config', '-c',
-        type=config_type,
         metavar='<config file>',
         required=False,
-        dest='config')
+        dest='config_file')
 
     args = parser.parse_args()
 
-    conf = args.config
-
-    logging.basicConfig(level=logging.DEBUG)
-    # configure_logging(conf)
+    conf = get_config(args.config_file)
+    validate_config(conf)
+    configure_logging(conf)
 
     # Make a sub-logger that outputs to stdout
     messages = logger.getChild('messages')

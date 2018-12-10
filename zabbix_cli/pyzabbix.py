@@ -22,6 +22,7 @@ class _NullHandler(logging.Handler):
 
 logger = logging.getLogger(__name__)
 logger.addHandler(_NullHandler())
+logger.setLevel(logging.INFO)
 
 
 class ZabbixAPIException(Exception):
