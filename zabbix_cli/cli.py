@@ -42,7 +42,6 @@ import textwrap
 import time
 
 import zabbix_cli
-import zabbix_cli.version
 
 from zabbix_cli.prettytable import ALL, FRAME, PrettyTable
 from zabbix_cli.pyzabbix import ZabbixAPI
