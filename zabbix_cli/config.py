@@ -18,158 +18,341 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
-
 from __future__ import print_function
 
+import collections
+import logging
 import os
-try:  # python 2 vs 3
+import sys
+
+try:
+    # PY3
     import configparser
 except ImportError:
     import ConfigParser as configparser
-import sys
+
+# Config file basename
+CONFIG_FILENAME = 'zabbix-cli.conf'
+CONFIG_FIXED_NAME = 'zabbix-cli.fixed.conf'
+
+# Config file locations
+CONFIG_DEFAULT_DIR = '/usr/share/zabbix-cli'
+CONFIG_SYSTEM_DIR = '/etc/zabbix-cli'
+CONFIG_USER_DIR = os.path.expanduser('~/.zabbix-cli')
+
+# Any item will overwrite values from the previous
+CONFIG_PRIORITY = tuple((
+    os.path.join(d, f) for d, f in (
+        (CONFIG_DEFAULT_DIR, CONFIG_FILENAME),
+        (CONFIG_SYSTEM_DIR, CONFIG_FILENAME),
+        (CONFIG_USER_DIR, CONFIG_FILENAME),
+        (CONFIG_SYSTEM_DIR, CONFIG_FIXED_NAME),
+        (CONFIG_DEFAULT_DIR, CONFIG_FIXED_NAME),
+    )))
+
+# Where custom configs should be put into the order
+CONFIG_CUSTOM_GOES_AFTER = os.path.join(CONFIG_USER_DIR, CONFIG_FILENAME)
+
+logger = logging.getLogger(__name__)
 
 
-class configuration():
+def get_priority(filename=None):
+    """ Get and ordered list of config file locations. """
+    priority = CONFIG_PRIORITY[:]
+    if filename:
+        if CONFIG_CUSTOM_GOES_AFTER in priority:
+            priority.insert(priority.index(CONFIG_CUSTOM_GOES_AFTER) + 1,
+                            filename)
+        else:
+            priority.append(filename)
+    return priority
 
-    # ############################################
-    # Constructor
-    # ############################################
 
-    def __init__(self, config_file_from_parameter):
-        """ The Constructor."""
+def find_config(filename=None):
+    """ Find all available configuration files.
 
-        self.config_file_from_parameter = config_file_from_parameter
-        self.config_file_list = []
+    :param filename: An optional user supplied file to throw into the mix
+    """
+    for filename in get_priority(filename):
+        if os.path.isfile(filename):
+            logger.debug('found config %r', filename)
+            yield filename
 
-        # Zabbix API section
-        self.zabbix_api_url = ''
 
-        # Zabbix_config section
-        self.system_id = 'zabbix-ID'
-        self.default_hostgroup = 'All-hosts'
-        self.default_admin_usergroup = 'Zabbix-root'
-        self.default_create_user_usergroup = 'All-users'
-        self.default_notification_users_usergroup = 'All-notification-users'
-        self.default_directory_exports = os.getenv('HOME') + '/zabbix_exports'
-        self.default_export_format = 'XML'
-        self.include_timestamp_export_filename = 'ON'
-        self.use_colors = 'ON'
-        self.use_auth_token_file = 'OFF'
-        self.use_paging = 'OFF'
+class OptionDescriptor(object):
+    """ Descriptor to access ConfigParser settings as attributes. """
 
-        # Logging section
-        self.logging = 'OFF'
-        self.log_level = 'ERROR'
-        self.log_file = '/var/log/zabbix-cli/zabbix-cli.log'
+    # TODO: Add serialization, so that 'ON', 'OFF' -> boolean, etc...
 
-        self.set_configuration_file()
-        self.set_configuration_parameters()
+    def __init__(self, section, option,
+                 default=None, required=False, disable=False):
+        self.section = section
+        self.option = option
+        self.default = default
+        self.required = required
+        self.disable = disable
 
-    # ############################################
-    # Method
-    # ############################################
+    def __get__(self, obj, cls=None):
+        if not obj:
+            return self
+        return obj.get(self.section, self.option)
 
-    def set_configuration_file(self):
-        """Set the zabbix-cli configuration file"""
+    def __set__(self, obj, value):
+        return obj.set(self.section, self.option, value)
 
-        # This list defines the priority list of configuration files
-        # that can exist in the system. Files close to the top of the
-        # list will have priority to define configuration parameters
-        # in the system.
-        #
-        # 1. /usr/share/zabbix-cli/zabbix-cli.fixed.conf
-        # 2. /etc/zabbix-cli/zabbix-cli.fixed.conf
-        # 3. Configuration file defined with the parameter -c / --config when executing zabbix-cli
-        # 4. $HOME/.zabbix-cli/zabbix-cli.conf
-        # 5. /etc/zabbix-cli/zabbix-cli.conf
-        # 6. /usr/share/zabbix-cli/zabbix-cli.conf
-        #
+    def __delete__(self, obj):
+        return obj.set(self.section, self.option, self.default)
 
-        config_file_priority_list = ['/usr/share/zabbix-cli/zabbix-cli.conf', '/etc/zabbix-cli/zabbix-cli.conf', os.getenv('HOME') + '/.zabbix-cli/zabbix-cli.conf'] + [self.config_file_from_parameter] + ['/etc/zabbix-cli/zabbix-cli.fixed.conf', '/usr/share/zabbix-cli/zabbix-cli.fixed.conf']
+    def __repr__(self):
+        return ('<{cls.__name__} {obj.section}.{obj.option}'
+                ' default={obj.default!r}'
+                ' required={obj.required!r}'
+                ' disable={obj.disable!r}'
+                '>').format(cls=type(self), obj=self)
 
-        # We check if the configuration files defined in
-        # config_file_priority_list exist before we start reading
-        # them.
 
-        for file in config_file_priority_list:
-            if os.path.isfile(file):
-                self.config_file_list.append(file)
+class OptionRegister(collections.Mapping):
+    """ A registry of ConfigParser sections, options and default values. """
 
-        if not self.config_file_list:
+    def __init__(self):
+        self._settings = collections.OrderedDict()
 
-            print('\n[ERROR]: No config file found. Exiting.\n')
-            sys.exit(1)
+    def __len__(self):
+        return len(self._settings)
 
-    # ############################################
-    # Method
-    # ############################################
+    def __iter__(self):
+        return iter(self._settings)
 
-    def set_configuration_parameters(self):
-        """Set configuration parameters"""
+    def __getitem__(self, option_tuple):
+        return self._settings[option_tuple]
 
-        for config_file in self.config_file_list:
+    def add(self, section, option, *args, **kwargs):
+        self._settings[(section, option)] = OptionDescriptor(section, option,
+                                                             *args, **kwargs)
+        return self._settings[(section, option)]
 
-            config = configparser.RawConfigParser()
-            config.read(config_file)
+    @property
+    def sections(self):
+        def _get():
+            seen = set()
+            for section, option in self:
+                if section not in seen:
+                    seen.add(section)
+                    yield section
+        return tuple(_get())
 
-            #
-            # Zabbix APIsection
-            #
+    def initialize(self, obj):
+        seen = set()
+        for section, option in self:
+            if section not in seen:
+                seen.add(section)
+                obj.add_section(section)
+            obj.set(section, option, self[(section, option)].default)
 
-            if config.has_option('zabbix_api', 'zabbix_api_url'):
-                self.zabbix_api_url = config.get('zabbix_api', 'zabbix_api_url')
 
-            #
-            # Zabbix configuration
-            #
+class Configuration(configparser.RawConfigParser, object):
+    """ A custom ConfigParser object with zabbix-cli settings. """
 
-            if config.has_option('zabbix_config', 'system_id'):
-                self.system_id = config.get('zabbix_config', 'system_id')
+    _registry = OptionRegister()
 
-            if config.has_option('zabbix_config', 'default_hostgroup'):
-                self.default_hostgroup = config.get('zabbix_config', 'default_hostgroup')
+    zabbix_api_url = _registry.add(
+        'zabbix_api', 'zabbix_api_url',
+        required=True)
 
-            if config.has_option('zabbix_config', 'default_admin_usergroup'):
-                self.default_admin_usergroup = config.get('zabbix_config', 'default_admin_usergroup')
+    system_id = _registry.add(
+        'zabbix_config', 'system_id',
+        default='zabbix-ID')
 
-            if config.has_option('zabbix_config', 'default_create_user_usergroup'):
-                self.default_create_user_usergroup = config.get('zabbix_config', 'default_create_user_usergroup')
+    default_hostgroup = _registry.add(
+        'zabbix_config', 'default_hostgroup',
+        default='All-hosts')
 
-            if config.has_option('zabbix_config', 'default_notification_users_usergroup'):
-                self.default_notification_users_usergroup = config.get('zabbix_config', 'default_notification_users_usergroup')
+    default_admin_usergroup = _registry.add(
+        'zabbix_config', 'default_admin_usergroup',
+        default='All-root')
 
-            if config.has_option('zabbix_config', 'default_directory_exports'):
-                self.default_directory_exports = config.get('zabbix_config', 'default_directory_exports')
+    default_create_user_usergroup = _registry.add(
+        'zabbix_config', 'default_create_user_usergroup',
+        default='All-users')
 
-            #
-            # We deactivate this until https://support.zabbix.com/browse/ZBX-10607 gets fixed.
-            # We use XML as the export format.
-            #
-            # if config.has_option('zabbix_config','default_export_format'):
-            #    self.default_export_format = config.get('zabbix_config','default_export_format')
-            #
+    default_notification_users_usergroup = _registry.add(
+        'zabbix_config', 'default_notification_users_usergroup',
+        default='All-notification-users')
 
-            if config.has_option('zabbix_config', 'include_timestamp_export_filename'):
-                self.include_timestamp_export_filename = config.get('zabbix_config', 'include_timestamp_export_filename')
+    default_directory_exports = _registry.add(
+        'zabbix_config', 'default_directory_exports',
+        default=os.path.expanduser('~/zabbix_exports'))
 
-            if config.has_option('zabbix_config', 'use_colors'):
-                self.use_colors = config.get('zabbix_config', 'use_colors')
+    default_export_format = _registry.add(
+        'zabbix_config', 'default_export_format',
+        default='XML',
+        # We deactivate this until https://support.zabbix.com/browse/ZBX-10607
+        # gets fixed.  We use XML as the export format.
+        disable=True)
 
-            if config.has_option('zabbix_config', 'use_auth_token_file'):
-                self.use_auth_token_file = config.get('zabbix_config', 'use_auth_token_file')
+    include_timestamp_export_filename = _registry.add(
+        'zabbix_config', 'include_timestamp_export_filename',
+        default='ON'
+    )
 
-            if config.has_option('zabbix_config', 'use_paging'):
-                self.use_paging = config.get('zabbix_config', 'use_paging')
+    use_colors = _registry.add(
+        'zabbix_config', 'use_colors',
+        default='ON')
 
-            #
-            # Logging section
-            #
+    use_auth_token_file = _registry.add(
+        'zabbix_config', 'use_auth_token_file',
+        default='OFF')
 
-            if config.has_option('logging', 'logging'):
-                self.logging = config.get('logging', 'logging')
+    use_paging = _registry.add(
+        'zabbix_config', 'use_paging',
+        default='OFF')
 
-            if config.has_option('logging', 'log_level'):
-                self.log_level = config.get('logging', 'log_level')
+    logging = _registry.add(
+        'logging', 'logging',
+        default='OFF')
 
-            if config.has_option('logging', 'log_file'):
-                self.log_file = config.get('logging', 'log_file')
+    log_level = _registry.add(
+        'logging', 'log_level',
+        default='ERROR')
+
+    log_file = _registry.add(
+        'logging', 'log_file',
+        default='/var/log/zabbix-cli/zabbix-cli.log')
+
+    def __init__(self):
+        super(Configuration, self).__init__()
+        self._registry.initialize(self)
+        self.loaded_files = []
+
+    def set(self, section, option, value):
+        descriptor = self._registry[(section, option)]
+        if descriptor.disable and value != descriptor.default:
+            logger.warning('setting %s.%s is disabled, setting to %r',
+                           section, option, descriptor.default)
+            value = descriptor.default
+        return super(Configuration, self).set(section, option, value)
+
+    def read(self, filenames):
+        files_read = super(Configuration, self).read(filenames)
+        for filename in files_read:
+            if filename in self.loaded_files:
+                self.loaded_files.remove(filename)
+            self.loaded_files.append(filename)
+        return files_read
+
+    def readfp(self, fp, filename=None):
+        try:
+            add_filename = filename or fp.name
+        except AttributeError:
+            pass
+        retval = super(Configuration, self).readfp(fp, filename=filename)
+        if add_filename:
+            self.loaded_files.append(add_filename)
+        return retval  # should be None
+
+    def iter_descriptors(self):
+        return iter(self._registry.values())
+
+    def iter_required(self):
+        for descriptor in self.iter_descriptors():
+            if descriptor.required:
+                yield descriptor
+
+    def iter_missing(self):
+        for descriptor in self.iter_required():
+            value = self.get(descriptor.section, descriptor.option)
+            if value == descriptor.default:
+                yield descriptor
+
+
+def get_config(filename=None):
+    config = Configuration()
+    for filename in find_config(filename):
+        logger.debug('loading config %r', filename)
+        config.read(filename)
+    return config
+
+
+def validate_config(config):
+    missing = ['{0.section}.{0.option}'.format(d)
+               for d in config.iter_missing()]
+    if missing:
+        raise ValueError("Missing settings: " + ', '.join(missing))
+
+
+#
+# python -m zabbix_cli.config
+#
+
+def main(inargs=None):
+    import argparse
+
+    class Actions(object):
+        """ subparser to function map. """
+        def __init__(self):
+            self.funcmap = dict()
+
+        def __getitem__(self, key):
+            return self.funcmap[key]
+
+        def __call__(self, subparser):
+            def wrapper(func):
+                key = subparser.prog.split(' ')[-1]
+                self.funcmap[key] = func
+                return func
+            return wrapper
+
+    parser = argparse.ArgumentParser(description='write default config')
+    commands = parser.add_subparsers(title='commands', dest='command')
+    actions = Actions()
+
+    #
+    # defaults [filename]
+    #
+    defaults_cmd = commands.add_parser('defaults')
+    defaults_cmd.add_argument(
+        'output',
+        type=argparse.FileType('w'),
+        nargs='?',
+        default='-',
+        metavar='FILE',
+        help='Write an example config to %(metavar)s (default: stdout)')
+
+    @actions(defaults_cmd)
+    def write_default_config(args):
+        config = Configuration()
+        config.write(args.output)
+        args.output.flush()
+        if args.output not in (sys.stdout, sys.stderr):
+            args.output.close()
+
+    #
+    # show
+    #
+    show_cmd = commands.add_parser('show')
+    show_cmd.add_argument(
+        '-c', '--config',
+        default=None,
+        metavar='FILE',
+        help='Use config from %(metavar)s')
+    show_cmd.add_argument(
+        '-v', '--validate',
+        action='store_true',
+        default=False,
+        help='validate config')
+
+    @actions(show_cmd)
+    def show_config(args):
+        config = get_config(args.config)
+        if args.validate:
+            validate_config(config)
+        config.write(sys.stdout)
+        sys.stdout.flush()
+
+    args = parser.parse_args()
+    actions[args.command](args)
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    main()

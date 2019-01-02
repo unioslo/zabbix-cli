@@ -11,104 +11,72 @@
 # configuration in zabbix-cli.conf so that zabbix-cli logs to
 # $HOME/.zabbix-cli/
 #
-###########################################################################################
-
+##############################################################################
 from __future__ import print_function
 
-from os import getenv, path, remove, close, makedirs
+import logging
+import os
+
 from tempfile import mkstemp
 from shutil import move, copy2
 import sys
 import argparse
 
-def replace(file_path, pattern, subst):
+from zabbix_cli.config import (
+    CONFIG_FILENAME,
+    CONFIG_USER_DIR,
+    get_config,
+    validate_config,
+)
 
-    #
-    #  changing the line having log configuration option
-    #  replacing
-    #  log_file=/var/log/zabbix-cli/zabbix-cli.log
-    #  to log_file=~/.zabbix-cli/zabbix-cli.log
+logger = logging.getLogger('zabbix-cli-init')
+description = 'zabbix-cli-init - Zabbix-cli initialization program'
 
-    try:
-        #Create temp file
-        fh, abs_path = mkstemp()
-        with open(abs_path, 'w') as new_file:
-            with open(file_path) as old_file:
-                for line in old_file:
-                    new_file.write(line.replace(pattern, subst))
-        close(fh)
-        #Remove original file
-        remove(file_path)
-        #Move new file
-        move(abs_path, file_path)
 
-    except Exception as e:
-        print('\n[ERROR]: + str(e) + \n')
+def assert_directory(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO,
+                        format='[%(levelname)s]: %(message)s')
 
-    if getenv('HOME') is not None:
-        zabbixconfdir = getenv('HOME')+"/.zabbix-cli/"
+    if os.getenv('HOME') is None:
+        logger.error("Unable to write configuration: "
+                     "no $HOME environment variable set")
+        raise SystemExit(1)
 
-    else:
-        print('\n[ERROR]: The $HOME environment variable is not defined. zabbix-cli-init cannot generate the configuration file in your home directory.')
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description=description)
+    # TODO: Required 'option' - should be positional argument ...
+    parser.add_argument(
+        '--zabbix-url', '-z',
+        metavar='<zabbix URL>',
+        required=True,
+        dest='zabbix_api_url')
+    args = parser.parse_args()
 
-    defconf = "/usr/share/zabbix-cli/zabbix-cli.conf"
-    filename = "zabbix-cli.conf"
+    # creating ~/.zabbix-cli folder if not exists
+    try:
+        assert_directory(CONFIG_USER_DIR)
+    except:
+        logger.error('unable to create directory %r',
+                     CONFIG_USER_DIR,
+                     exc_info=True)
 
-    file_path = path.join(zabbixconfdir, filename)
+    # building config from defaults + system configs
+    config = get_config()
+    logging.debug('building config from %r', config.loaded_files)
+
+    config.zabbix_api_url = args.zabbix_api_url
+    if config.log_file:
+        config.log_file = os.path.join(CONFIG_USER_DIR, 'zabbix-cli.log')
 
     try:
-        parser = argparse.ArgumentParser(prog=sys.argv[0], description='zabbix-cli-init - Zabbix-cli initialization program')
-
-        parser.add_argument('--zabbix-url', '-z', metavar='<zabbix URL>', required=True, dest='zabbix_api_url')
-        args = parser.parse_args()
-
-        if args.zabbix_api_url:
-            zabbix_api_url = args.zabbix_api_url
-
+        validate_config(config)
     except Exception as e:
-        print(str(e))
-        sys.exit(1)
+        logger.error('invalid configuration', exc_info=True)
 
-    #
-    # creating ~/.zabbix-cli folder if not exists
-    #
-
-    if not path.exists(zabbixconfdir):
-        try:
-            makedirs(zabbixconfdir)
-        except Exception as e:
-            print('\n[ERROR]: '+ str(e) + '\n')
-
-    #
-    # /etc/zabbix-cli.conf will be created under installation of
-    # zabbix-cli package.  copying /etc/zabbix-cli.conf file to
-    # ~/.zabbix-cli/zabbix-cli.conf
-    #
-
-    if path.isfile(defconf):
-        try:
-            copy2(defconf, zabbixconfdir)
-
-        except Exception as e:
-            print('\n[ERROR]: '+ str(e) + '\n')
-
-    else:
-        print("Cannot find /etc/zabbix-cli/zabbix-cli.conf file. ERROR with zabbix-cli installation.")
-        sys.exit(1)
-
-    #
-    #  changing the line having log configuration option
-    #  replacing log file option
-    #  log_file=/var/log/zabbix-cli/zabbix-cli.log
-    #  to log_file=~/.zabbix-cli/zabbix-cli.log
-    #
-    replace(file_path, 'log_file=/var/log/zabbix-cli/zabbix-cli.log', 'log_file=' + getenv('HOME') + '/.zabbix-cli/zabbix-cli.log')
-
-    #
-    #  Changing the line having the zabbix API url example with real
-    #  URL.
-    #
-    replace(file_path, ';zabbix_api_url=https://zabbix.example.net/zabbix', 'zabbix_api_url=' + zabbix_api_url)
+    with open(os.path.join(CONFIG_USER_DIR, CONFIG_FILENAME), 'w') as stream:
+        config.write(stream)
+        logger.info('wrote config to %r', stream.name)
