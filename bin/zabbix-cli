@@ -34,6 +34,12 @@ from zabbix_cli.config import get_config, validate_config
 from zabbix_cli.logs import configure_logging, LogContext
 from zabbix_cli.cli import zabbixcli
 
+# Python 2, 3 support
+try:
+    input = raw_input
+except NameError:
+    pass
+
 
 logger = logging.getLogger('zabbix-cli')
 
@@ -242,7 +248,7 @@ if __name__ == '__main__':
         
 
             try:
-                username = raw_input('# Username[' + default_user +']: ')
+                username = input('# Username[' + default_user +']: ')
                 password = getpass.getpass('# Password: ')
 
             except Exception as e:
