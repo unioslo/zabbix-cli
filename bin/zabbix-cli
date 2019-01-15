@@ -413,7 +413,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     except KeyboardInterrupt:
-        print
+        print()
         print("\nDone, thank you for using Zabbix-CLI")
 
         logger.debug('**** Zabbix-CLI stopped. ****')

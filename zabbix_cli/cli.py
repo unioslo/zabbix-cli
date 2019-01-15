@@ -7091,13 +7091,13 @@ class zabbixcli(cmd.Cmd):
         '''
 
         cnt = 0
-        print
+        print()
 
         for line in self._hist:
             print('[' + str(cnt) + ']: ' + line)
             cnt = cnt + 1
 
-        print
+        print()
 
     # ########################################################
     # Method hostgroup_exists
