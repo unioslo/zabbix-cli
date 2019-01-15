@@ -363,16 +363,16 @@ class zabbixcli(cmd.Cmd):
             else:
 
                 host_list = []
-                maintenance['hosts'].sort()
-
                 for host in maintenance['hosts']:
                     host_list.append(host['name'])
 
-                group_list = []
-                maintenance['groups'].sort()
+                host_list.sort()
 
+                group_list = []
                 for group in maintenance['groups']:
                     group_list.append(group['name'])
+
+                group_list.sort()
 
                 result_columns[result_columns_key] = {'1': maintenance['maintenanceid'],
                                                       '2': '\n'.join(textwrap.wrap(maintenance['name'], 30)),
@@ -507,16 +507,16 @@ class zabbixcli(cmd.Cmd):
             else:
 
                 host_list = []
-                maintenance['hosts'].sort()
-
                 for host in maintenance['hosts']:
                     host_list.append(host['name'])
 
-                group_list = []
-                maintenance['groups'].sort()
+                host_list.sort()
 
+                group_list = []
                 for group in maintenance['groups']:
                     group_list.append(group['name'])
+
+                group_list.sort()
 
                 for period in maintenance['timeperiods']:
 
@@ -697,7 +697,6 @@ class zabbixcli(cmd.Cmd):
         #
         for group in result:
             if self.output_format == 'json':
-                group['hosts'].sort()
                 result_columns[result_columns_key] = {'groupid': group['groupid'],
                                                       'name': group['name'],
                                                       'flags': self.get_hostgroup_flag(int(group['flags'])),
@@ -705,10 +704,10 @@ class zabbixcli(cmd.Cmd):
                                                       'hosts': group['hosts']}
             else:
                 host_list = []
-                group['hosts'].sort()
-
                 for host in group['hosts']:
                     host_list.append(host['host'])
+
+                host_list.sort()
 
                 result_columns[result_columns_key] = {'1': group['groupid'],
                                                       '2': group['name'],
@@ -881,14 +880,14 @@ class zabbixcli(cmd.Cmd):
                 hostgroup_list = []
                 template_list = []
 
-                host['groups'].sort()
-                host['parentTemplates'].sort()
-
                 for hostgroup in host['groups']:
                     hostgroup_list.append(hostgroup['name'])
 
                 for template in host['parentTemplates']:
                     template_list.append(template['name'])
+
+                hostgroup_list.sort()
+                template_list.sort()
 
                 result_columns[result_columns_key] = {'1': host['hostid'],
                                                       '2': host['host'],
@@ -1262,7 +1261,6 @@ class zabbixcli(cmd.Cmd):
 
             if self.output_format == 'json':
 
-                group['users'].sort()
                 result_columns[result_columns_key] = {'usrgrpid': group['usrgrpid'],
                                                       'name': group['name'],
                                                       'gui_access': self.get_gui_access(int(group['gui_access'])),
@@ -1270,10 +1268,10 @@ class zabbixcli(cmd.Cmd):
                                                       'users': group['users']}
             else:
                 users = []
-                group['users'].sort()
-
                 for user in group['users']:
                     users.append(user['alias'])
+
+                users.sort()
 
                 result_columns[result_columns_key] = {'1': group['usrgrpid'],
                                                       '2': group['name'],
@@ -5018,10 +5016,10 @@ class zabbixcli(cmd.Cmd):
             else:
 
                 host_list = []
-                template['hosts'].sort()
-
                 for host in template['hosts']:
                     host_list.append(host['host'])
+
+                host_list.sort()
 
                 result_columns[result_columns_key] = {'1': template['templateid'],
                                                       '2': template['host'],
