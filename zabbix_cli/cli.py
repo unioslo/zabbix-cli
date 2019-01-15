@@ -6081,7 +6081,7 @@ class zabbixcli(cmd.Cmd):
                     #
                     filename = self.generate_export_filename(directory_exports, obj_type, obj_name_key, object_name_list[obj_name_key])
 
-                    with open(filename, 'w') as export_filename:
+                    with open(filename, 'wb') as export_filename:
                         export_filename.write(output.encode("utf8"))
 
                     logger.info('Export file/s for object type [%s] and object name [%s] generated', obj_type, object_name_list[obj_name_key])
