@@ -3510,11 +3510,13 @@ class zabbixcli(cmd.Cmd):
 
             for usrgrp in usergroup_default.split(','):
                 if usrgrp != '':
-                    usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
+                    usrgrp_id = str(self.get_usergroup_id(usrgrp.strip()))
+                    usergroup_list.append({"usrgrpid": usrgrp_id})
 
             for usrgrp in usrgrps.split(','):
                 if usrgrp != '':
-                    usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
+                    usrgrp_id = str(self.get_usergroup_id(usrgrp.strip()))
+                    usergroup_list.append({"usrgrpid": usrgrp_id})
 
         except Exception as e:
             logger.error('Problems getting usergroupID - %s', e)
