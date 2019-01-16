@@ -528,8 +528,8 @@ class zabbixcli(cmd.Cmd):
                                                           6: period['every'],
                                                           7: format(int(period['month']), "012b"),
                                                           8: datetime.datetime.utcfromtimestamp(float(period['start_date'])).strftime('%Y-%m-%dT%H:%M:%SZ'),
-                                                          9: str(datetime.timedelta(seconds=long(period['start_time']))),
-                                                          10: str(datetime.timedelta(seconds=long(period['period']))),
+                                                          9: str(datetime.timedelta(seconds=int(period['start_time']))),
+                                                          10: str(datetime.timedelta(seconds=int(period['period']))),
                                                           11: self.get_maintenance_period_type(int(period['timeperiod_type'])),
                                                           12: '\n'.join(host_list),
                                                           13: '\n'.join(group_list)}
