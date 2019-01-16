@@ -3276,83 +3276,83 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Hostname value is empty')
             return False
 
-            interface_dns_default = hostname
+        interface_dns_default = hostname
 
-            if interface_useip == '' or interface_useip not in ('0', '1'):
-                interface_useip = interface_useip_default
+        if interface_useip == '' or interface_useip not in ('0', '1'):
+            interface_useip = interface_useip_default
 
-            if interface_type == '' or interface_type not in ('1', '2', '3', '4'):
-                interface_type = interface_type_default
+        if interface_type == '' or interface_type not in ('1', '2', '3', '4'):
+            interface_type = interface_type_default
 
-            if interface_port == '':
-                interface_port = interface_port_default
+        if interface_port == '':
+            interface_port = interface_port_default
 
-            if interface_dns == '':
-                interface_dns = interface_dns_default
+        if interface_dns == '':
+            interface_dns = interface_dns_default
 
-            if interface_useip == '1' and interface_ip == '':
-                self.generate_feedback('Error', 'Host IP value is empty and connection type is 1:IP')
+        if interface_useip == '1' and interface_ip == '':
+            self.generate_feedback('Error', 'Host IP value is empty and connection type is 1:IP')
+            return False
+
+        if interface_main == '' or interface_main not in ('0', '1'):
+            interface_main = interface_main_default
+
+        # Generate interface definition
+
+        if interface_useip == '0':
+
+            interfaces_def = '"type":' + interface_type + \
+                ',"main":' + interface_main + \
+                ',"useip":' + interface_useip + \
+                ',"ip":"' + \
+                '","dns":"' + interface_dns + \
+                '","port":"' + interface_port + '"'
+
+        elif interface_useip == '1':
+
+            interfaces_def = '"type":' + interface_type + \
+                ',"main":' + interface_main + \
+                ',"useip":' + interface_useip + \
+                ',"ip":"' + interface_ip + \
+                '","dns":"' + \
+                '","port":"' + interface_port + '"'
+
+        #
+        # Checking if hostname exists
+        #
+
+        try:
+            host_exists = self.host_exists(hostname)
+            logger.debug('Cheking if host (%s) exists', hostname)
+
+            if not host_exists:
+                logger.error('Host (%s) does not exists. Host Interface can not be created', hostname)
+                self.generate_feedback('Error', 'Host (' + hostname + ') does not exists. Host Interface can not be created')
                 return False
 
-            if interface_main == '' or interface_main not in ('0', '1'):
-                interface_main = interface_main_default
+            else:
+                hostid = str(self.get_host_id(hostname))
 
-            # Generate interface definition
+        except Exception as e:
+            logger.error('Problems checking if host (%s) exists - %s', hostname, e)
+            self.generate_feedback('Error', 'Problems checking if host (' + hostname + ') exists')
+            return False
 
-            if interface_useip == '0':
+        #
+        # Create host interface if it does not exist
+        #
 
-                interfaces_def = '"type":' + interface_type + \
-                    ',"main":' + interface_main + \
-                    ',"useip":' + interface_useip + \
-                    ',"ip":"' + \
-                    '","dns":"' + interface_dns + \
-                    '","port":"' + interface_port + '"'
+        try:
 
-            elif interface_useip == '1':
+            query = ast.literal_eval("{\"hostid\":\"" + hostid + "\"," + interfaces_def + "}")
+            result = self.zapi.hostinterface.create(**query)
+            logger.info('Host interface with ID: %s created on %s', str(result['interfaceids'][0]), hostname)
+            self.generate_feedback('Done', 'Host interface with ID: ' + str(result['interfaceids'][0]) + ' created on ' + hostname)
 
-                interfaces_def = '"type":' + interface_type + \
-                    ',"main":' + interface_main + \
-                    ',"useip":' + interface_useip + \
-                    ',"ip":"' + interface_ip + \
-                    '","dns":"' + \
-                    '","port":"' + interface_port + '"'
-
-            #
-            # Checking if hostname exists
-            #
-
-            try:
-                host_exists = self.host_exists(hostname)
-                logger.debug('Cheking if host (%s) exists', hostname)
-
-                if not host_exists:
-                    logger.error('Host (%s) does not exists. Host Interface can not be created', hostname)
-                    self.generate_feedback('Error', 'Host (' + hostname + ') does not exists. Host Interface can not be created')
-                    return False
-
-                else:
-                    hostid = str(self.get_host_id(hostname))
-
-            except Exception as e:
-                logger.error('Problems checking if host (%s) exists - %s', hostname, e)
-                self.generate_feedback('Error', 'Problems checking if host (' + hostname + ') exists')
-                return False
-
-            #
-            # Create host interface if it does not exist
-            #
-
-            try:
-
-                query = ast.literal_eval("{\"hostid\":\"" + hostid + "\"," + interfaces_def + "}")
-                result = self.zapi.hostinterface.create(**query)
-                logger.info('Host interface with ID: %s created on %s', str(result['interfaceids'][0]), hostname)
-                self.generate_feedback('Done', 'Host interface with ID: ' + str(result['interfaceids'][0]) + ' created on ' + hostname)
-
-            except Exception as e:
-                logger.error('Problems creating host interface on %s- %s', hostname, e)
-                self.generate_feedback('Error', 'Problems creating host interface on ' + hostname + '')
-                return False
+        except Exception as e:
+            logger.error('Problems creating host interface on %s- %s', hostname, e)
+            self.generate_feedback('Error', 'Problems creating host interface on ' + hostname + '')
+            return False
 
     # ############################################
     # Method do_create_user
