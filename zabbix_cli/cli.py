@@ -2980,7 +2980,7 @@ class zabbixcli(cmd.Cmd):
 
         # Default values
         x = hashlib.md5()
-        x.update(str(random.randint(1, 1000000)))
+        x.update(str(random.randint(1, 1000000)).encode('ascii'))
         tag_default = x.hexdigest()[1:10].upper()
 
         maintenance_name_default = 'zabbixCLI-' + tag_default
