@@ -865,7 +865,8 @@ class zabbixcli(cmd.Cmd):
         #
 
         for host in result:
-
+            proxy = self.zapi.proxy.get(proxyids=host['proxy_hostid'])
+            proxy_name = proxy[0]['host'] if proxy else ""
             if self.output_format == 'json':
                 result_columns[result_columns_key] = {'hostid': host['hostid'],
                                                       'host': host['host'],
@@ -873,7 +874,8 @@ class zabbixcli(cmd.Cmd):
                                                       'templates': host['parentTemplates'],
                                                       'zabbix_agent': self.get_zabbix_agent_status(int(host['available'])),
                                                       'maintenance_status': self.get_maintenance_status(int(host['maintenance_status'])),
-                                                      'status': self.get_monitoring_status(int(host['status']))}
+                                                      'status': self.get_monitoring_status(int(host['status'])),
+                                                      'proxy': proxy_name}
 
             else:
 
@@ -895,7 +897,8 @@ class zabbixcli(cmd.Cmd):
                                                       '4': '\n'.join(template_list),
                                                       '5': self.get_zabbix_agent_status(int(host['available'])),
                                                       '6': self.get_maintenance_status(int(host['maintenance_status'])),
-                                                      '7': self.get_monitoring_status(int(host['status']))}
+                                                      '7': self.get_monitoring_status(int(host['status'])),
+                                                      '8': proxy_name}
 
             result_columns_key = result_columns_key + 1
 
@@ -903,7 +906,7 @@ class zabbixcli(cmd.Cmd):
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['HostID', 'Name', 'Hostgroups', 'Templates', 'Zabbix agent', 'Maintenance', 'Status'],
+                             ['HostID', 'Name', 'Hostgroups', 'Templates', 'Zabbix agent', 'Maintenance', 'Status', 'Proxy'],
                              ['Name', 'Hostgroups', 'Templates'],
                              ['HostID'],
                              ALL)
