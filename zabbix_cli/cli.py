@@ -6813,17 +6813,12 @@ class zabbixcli(cmd.Cmd):
         Find out if hostgroup exists
         '''
 
-        try:
+        data = self.zapi.hostgroup.get(filter={'name': hostgroup})
 
-            data = self.zapi.hostgroup.get(filter={'name': hostgroup})
-
-            if data != []:
-                return True
-            else:
-                return False
-
-        except Exception as e:
-            raise e
+        if data != []:
+            return True
+        else:
+            return False
 
     def get_hostgroup_id(self, hostgroup):
         '''
@@ -6831,27 +6826,22 @@ class zabbixcli(cmd.Cmd):
         Get the hostgroup_id for a hostgroup
         '''
 
-        try:
+        if self.bulk_execution:
 
-            if self.bulk_execution:
-
-                if hostgroup in self.hostgroupname_cache:
-                    hostgroupid = self.hostgroupname_cache[hostgroup]
-
-                else:
-                    raise Exception('Could not find hostgroupID for: ' + hostgroup)
+            if hostgroup in self.hostgroupname_cache:
+                hostgroupid = self.hostgroupname_cache[hostgroup]
 
             else:
+                raise Exception('Could not find hostgroupID for: ' + hostgroup)
 
-                data = self.zapi.hostgroup.get(filter={'name': hostgroup})
+        else:
 
-                if data != []:
-                    hostgroupid = data[0]['groupid']
-                else:
-                    raise Exception('Could not find hostgroupID for: ' + hostgroup)
+            data = self.zapi.hostgroup.get(filter={'name': hostgroup})
 
-        except Exception as e:
-            raise e
+            if data != []:
+                hostgroupid = data[0]['groupid']
+            else:
+                raise Exception('Could not find hostgroupID for: ' + hostgroup)
 
         return str(hostgroupid)
 
@@ -6861,26 +6851,21 @@ class zabbixcli(cmd.Cmd):
         Find out if a hostname exists in zabbix
         '''
 
-        try:
+        if self.bulk_execution:
 
-            if self.bulk_execution:
-
-                if host in self.hostid_cache.values():
-                    return True
-                else:
-                    return False
-
+            if host in self.hostid_cache.values():
+                return True
             else:
+                return False
 
-                data = self.zapi.host.get(filter={"host": host})
+        else:
 
-                if data != []:
-                    return True
-                else:
-                    return False
+            data = self.zapi.host.get(filter={"host": host})
 
-        except Exception as e:
-            raise e
+            if data != []:
+                return True
+            else:
+                return False
 
     def get_host_id(self, host):
         '''
@@ -6888,17 +6873,12 @@ class zabbixcli(cmd.Cmd):
         Get the hostid for a host
         '''
 
-        try:
+        data = self.zapi.host.get(filter={"host": host})
 
-            data = self.zapi.host.get(filter={"host": host})
-
-            if data != []:
-                hostid = data[0]['hostid']
-            else:
-                raise Exception('Could not find hostID for:' + host)
-
-        except Exception as e:
-            raise e
+        if data != []:
+            hostid = data[0]['hostid']
+        else:
+            raise Exception('Could not find hostID for:' + host)
 
         return str(hostid)
 
@@ -6908,30 +6888,25 @@ class zabbixcli(cmd.Cmd):
         Get the host name for a hostID
         '''
 
-        try:
+        #
+        # Return the value if it exists from the dictionary
+        # hostid_cache.
+        #
 
-            #
-            # Return the value if it exists from the dictionary
-            # hostid_cache.
-            #
+        if hostid in self.hostid_cache:
+            host_name = self.hostid_cache[hostid]
 
-            if hostid in self.hostid_cache:
-                host_name = self.hostid_cache[hostid]
+        else:
+
+            data = self.zapi.host.get(output=['host'],
+                                      hostids=hostid)
+
+            if data != []:
+                host_name = data[0]['host']
+                self.hostid_cache[hostid] = host_name
 
             else:
-
-                data = self.zapi.host.get(output=['host'],
-                                          hostids=hostid)
-
-                if data != []:
-                    host_name = data[0]['host']
-                    self.hostid_cache[hostid] = host_name
-
-                else:
-                    raise Exception('Could not find hostname for ID:' + hostid)
-
-        except Exception as e:
-            raise e
+                raise Exception('Could not find hostname for ID:' + hostid)
 
         return str(host_name)
 
@@ -6941,18 +6916,13 @@ class zabbixcli(cmd.Cmd):
         Get the template name for a templateID
         '''
 
-        try:
+        data = self.zapi.template.get(output='extend',
+                                      templateids=templateid)
 
-            data = self.zapi.template.get(output='extend',
-                                          templateids=templateid)
-
-            if data != []:
-                template_name = data[0]['name']
-            else:
-                raise Exception('Could not find template for ID:' + templateid)
-
-        except Exception as e:
-            raise e
+        if data != []:
+            template_name = data[0]['name']
+        else:
+            raise Exception('Could not find template for ID:' + templateid)
 
         return str(template_name)
 
@@ -6964,18 +6934,14 @@ class zabbixcli(cmd.Cmd):
 
         print(image)
 
-        try:
-            data = self.zapi.image.get(filter={"name": image})
+        data = self.zapi.image.get(filter={"name": image})
 
-            print(data)
+        print(data)
 
-            if data != []:
-                imageid = data[0]['imageid']
-            else:
-                raise Exception('Could not find imageID for:' + image)
-
-        except Exception as e:
-            raise e
+        if data != []:
+            imageid = data[0]['imageid']
+        else:
+            raise Exception('Could not find imageID for:' + image)
 
         return str(imageid)
 
@@ -6985,16 +6951,12 @@ class zabbixcli(cmd.Cmd):
         Get the mapid for a map
         '''
 
-        try:
-            data = self.zapi.map.getobjects(name=map)
+        data = self.zapi.map.getobjects(name=map)
 
-            if data != []:
-                mapid = data[0]['sysmapid']
-            else:
-                raise Exception('Could not find mapID for:' + map)
-
-        except Exception as e:
-            raise e
+        if data != []:
+            mapid = data[0]['sysmapid']
+        else:
+            raise Exception('Could not find mapID for:' + map)
 
         return str(mapid)
 
@@ -7004,16 +6966,12 @@ class zabbixcli(cmd.Cmd):
         Get the screenid for a screen
         '''
 
-        try:
-            data = self.zapi.screen.get(filter={"name": screen})
+        data = self.zapi.screen.get(filter={"name": screen})
 
-            if data != []:
-                screenid = data[0]['screenid']
-            else:
-                raise Exception('Could not find screenID for:' + screen)
-
-        except Exception as e:
-            raise e
+        if data != []:
+            screenid = data[0]['screenid']
+        else:
+            raise Exception('Could not find screenID for:' + screen)
 
         return str(screenid)
 
@@ -7023,16 +6981,12 @@ class zabbixcli(cmd.Cmd):
         Get the templateid for a template
         '''
 
-        try:
-            data = self.zapi.template.get(filter={"host": template})
+        data = self.zapi.template.get(filter={"host": template})
 
-            if data != []:
-                templateid = data[0]['templateid']
-            else:
-                raise Exception('Could not find TemplateID for:' + template)
-
-        except Exception as e:
-            raise e
+        if data != []:
+            templateid = data[0]['templateid']
+        else:
+            raise Exception('Could not find TemplateID for:' + template)
 
         return str(templateid)
 
@@ -7042,17 +6996,13 @@ class zabbixcli(cmd.Cmd):
         Find out if usergroups exists
         '''
 
-        try:
-            data = self.zapi.usergroup.get(output=['usrgrpid'],
-                                           filter={"name": usergroup})
+        data = self.zapi.usergroup.get(output=['usrgrpid'],
+                                       filter={"name": usergroup})
 
-            if data != []:
-                return True
-            else:
-                return False
-
-        except Exception as e:
-            raise e
+        if data != []:
+            return True
+        else:
+            return False
 
     def get_usergroup_id(self, usergroup):
         '''
@@ -7060,17 +7010,13 @@ class zabbixcli(cmd.Cmd):
         Get the usergroupid for a usergroup
         '''
 
-        try:
-            data = self.zapi.usergroup.get(output=['usrgrpid'],
-                                           filter={"name": usergroup})
+        data = self.zapi.usergroup.get(output=['usrgrpid'],
+                                       filter={"name": usergroup})
 
-            if data != []:
-                usergroupid = data[0]['usrgrpid']
-            else:
-                raise Exception('Could not find usergroupID for: ' + usergroup)
-
-        except Exception as e:
-            raise e
+        if data != []:
+            usergroupid = data[0]['usrgrpid']
+        else:
+            raise Exception('Could not find usergroupID for: ' + usergroup)
 
         return str(usergroupid)
 
@@ -7080,16 +7026,12 @@ class zabbixcli(cmd.Cmd):
         Get the userid for a user
         '''
 
-        try:
-            data = self.zapi.user.get(filter={'alias': user})
+        data = self.zapi.user.get(filter={'alias': user})
 
-            if data != []:
-                userid = data[0]['userid']
-            else:
-                raise Exception('Could not find userID for: ' + user)
-
-        except Exception as e:
-            raise e
+        if data != []:
+            userid = data[0]['userid']
+        else:
+            raise Exception('Could not find userID for: ' + user)
 
         return str(userid)
 
@@ -7099,21 +7041,17 @@ class zabbixcli(cmd.Cmd):
         Get the proxyid for a proxy server
         '''
 
-        try:
-            if proxy != '':
+        if proxy != '':
 
-                data = self.zapi.proxy.get(filter={"host": proxy})
+            data = self.zapi.proxy.get(filter={"host": proxy})
 
-                if data != []:
-                    proxyid = data[0]['proxyid']
-                else:
-                    raise Exception('Could not find proxyID for:' + proxy)
-
+            if data != []:
+                proxyid = data[0]['proxyid']
             else:
-                raise Exception('Cannot get the proxyID of an empty proxy value')
+                raise Exception('Could not find proxyID for:' + proxy)
 
-        except Exception as e:
-            raise e
+        else:
+            raise Exception('Cannot get the proxyID of an empty proxy value')
 
         return str(proxyid)
 
@@ -7127,24 +7065,19 @@ class zabbixcli(cmd.Cmd):
         proxy_list = []
         match_pattern = re.compile(proxy_pattern)
 
-        try:
+        if self.bulk_execution:
 
-            if self.bulk_execution:
+            for proxyid, proxy_name in self.proxyid_cache.iteritems():
+                if match_pattern.match(proxy_name):
+                    proxy_list.append(proxyid)
 
-                for proxyid, proxy_name in self.proxyid_cache.iteritems():
-                    if match_pattern.match(proxy_name):
-                        proxy_list.append(proxyid)
+        else:
 
-            else:
+            data = self.zapi.proxy.get(output=['proxyid', 'host'])
 
-                data = self.zapi.proxy.get(output=['proxyid', 'host'])
-
-                for proxy in data:
-                    if match_pattern.match(proxy['host']):
-                        proxy_list.append(proxy['proxyid'])
-
-        except Exception as e:
-            raise e
+            for proxy in data:
+                if match_pattern.match(proxy['host']):
+                    proxy_list.append(proxy['proxyid'])
 
         proxy_list_len = len(proxy_list)
 
@@ -7177,18 +7110,14 @@ class zabbixcli(cmd.Cmd):
         # deprecated in 2.4 and removed in 3.0.
         #
 
-        try:
-            temp_dict = {}
+        temp_dict = {}
 
-            data = self.zapi.host.get(output=['hostid', 'host'])
+        data = self.zapi.host.get(output=['hostid', 'host'])
 
-            for host in data:
-                temp_dict[host['hostid']] = host['host']
+        for host in data:
+            temp_dict[host['hostid']] = host['host']
 
-            return temp_dict
-
-        except Exception as e:
-            raise e
+        return temp_dict
 
     def populate_hostgroupname_cache(self):
         '''
@@ -7203,18 +7132,14 @@ class zabbixcli(cmd.Cmd):
         # executions because we avoid an extra call to the zabbix-API.
         #
 
-        try:
-            temp_dict = {}
+        temp_dict = {}
 
-            data = self.zapi.hostgroup.get(output=['groupid', 'name'])
+        data = self.zapi.hostgroup.get(output=['groupid', 'name'])
 
-            for hostgroup in data:
-                temp_dict[hostgroup['name']] = hostgroup['groupid']
+        for hostgroup in data:
+            temp_dict[hostgroup['name']] = hostgroup['groupid']
 
-            return temp_dict
-
-        except Exception as e:
-            raise e
+        return temp_dict
 
     def populate_proxyid_cache(self):
         '''
@@ -7229,18 +7154,14 @@ class zabbixcli(cmd.Cmd):
         # executions because we avoid an extra call to the zabbix-API.
         #
 
-        try:
-            temp_dict = {}
+        temp_dict = {}
 
-            data = self.zapi.proxy.get(output=['proxyid', 'host'])
+        data = self.zapi.proxy.get(output=['proxyid', 'host'])
 
-            for proxy in data:
-                temp_dict[proxy['proxyid']] = proxy['host']
+        for proxy in data:
+            temp_dict[proxy['proxyid']] = proxy['host']
 
-            return temp_dict
-
-        except Exception as e:
-            raise e
+        return temp_dict
 
     def preloop(self):
         '''
