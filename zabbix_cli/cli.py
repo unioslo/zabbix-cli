@@ -540,7 +540,6 @@ class zabbixcli(cmd.Cmd):
         result_columns = {}
         for i, filename in enumerate(self.conf.loaded_files):
             result_columns[i] = {1: '* ' + filename}
-        result_columns_key = 0
 
         #
         # Generate output
