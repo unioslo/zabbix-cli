@@ -86,7 +86,7 @@ class zabbixcli(cmd.Cmd):
             self.intro = '\n#############################################################\n' + \
                          'Welcome to the Zabbix command-line interface (v.' + self.version + ')\n' + \
                          '#############################################################\n' + \
-                         'Type help or \? to list commands.\n'
+                         'Type help or \\? to list commands.\n'
 
             # Pointer to Configuration class
             self.conf = conf
@@ -266,7 +266,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -448,7 +448,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -663,7 +663,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -825,7 +825,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -986,7 +986,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         try:
@@ -1096,7 +1096,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -1230,7 +1230,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -1474,7 +1474,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -1670,7 +1670,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -1799,7 +1799,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('ERROR', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('ERROR', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -1926,7 +1926,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -2041,7 +2041,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -2168,7 +2168,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('ERROR', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('ERROR', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -2296,7 +2296,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -2436,7 +2436,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -2529,7 +2529,7 @@ class zabbixcli(cmd.Cmd):
 
         e.g. Some regular expressions that can be used:
 
-        * proxy-(prod|test)+d\.example\.org
+        * proxy-(prod|test)+d\\.example\\.org
           e.g. proxy-prod1.example.org and proxy-test8.example.org
                will match this expression.
 
@@ -2605,7 +2605,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -2783,7 +2783,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -2883,7 +2883,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -3031,7 +3031,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         try:
@@ -3268,7 +3268,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -3484,7 +3484,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -3667,7 +3667,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -3831,7 +3831,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -3899,7 +3899,7 @@ class zabbixcli(cmd.Cmd):
             hostgroup = arg_list[0].strip()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -4034,7 +4034,7 @@ class zabbixcli(cmd.Cmd):
             permission = arg_list[2].strip().lower()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -4133,7 +4133,7 @@ class zabbixcli(cmd.Cmd):
             permission = arg_list[2].strip().lower()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -4221,7 +4221,7 @@ class zabbixcli(cmd.Cmd):
             global_macro_value = arg_list[1].strip()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -4341,7 +4341,7 @@ class zabbixcli(cmd.Cmd):
             host_macro_value = arg_list[2].strip()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -4466,7 +4466,7 @@ class zabbixcli(cmd.Cmd):
             monitoring_status = arg_list[1].strip().lower()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -4572,7 +4572,7 @@ class zabbixcli(cmd.Cmd):
             proxy = arg_list[1].strip()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -4687,7 +4687,7 @@ class zabbixcli(cmd.Cmd):
             ack_message = arg_list[1].strip()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -4763,7 +4763,7 @@ class zabbixcli(cmd.Cmd):
             ack_message = arg_list[1].strip()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -4849,7 +4849,7 @@ class zabbixcli(cmd.Cmd):
             events_count = arg_list[1].strip()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -4979,7 +4979,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -5136,7 +5136,7 @@ class zabbixcli(cmd.Cmd):
             hostname = arg_list[0].strip()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -5244,7 +5244,7 @@ class zabbixcli(cmd.Cmd):
             host_macro_name = arg_list[0].strip()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -5344,7 +5344,7 @@ class zabbixcli(cmd.Cmd):
             if group not in ('1', '0'):
                 group = '0'
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -5501,7 +5501,7 @@ class zabbixcli(cmd.Cmd):
             template_macro_name = arg_list[0].strip()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -5617,7 +5617,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -5748,7 +5748,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -5914,7 +5914,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -6187,7 +6187,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -6356,7 +6356,7 @@ class zabbixcli(cmd.Cmd):
             proxy_dst = arg_list[1].strip()
 
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -6455,7 +6455,7 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 1:
             proxies = arg_list[0].strip()
         else:
-            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \? to list commands')
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
         #
@@ -6976,7 +6976,7 @@ class zabbixcli(cmd.Cmd):
     # ############################################
 
     def default(self, line):
-        self.generate_feedback('Error', ' Unknown command: %s.\n          Type help or \? to list commands' % line)
+        self.generate_feedback('Error', ' Unknown command: %s.\n          Type help or \\? to list commands' % line)
 
     # ############################################
     # Method emptyline
@@ -6994,21 +6994,21 @@ class zabbixcli(cmd.Cmd):
         if line_in != '':
             split_line = line_in.split()
 
-            if split_line[0] not in ['EOF', 'shell', 'SHELL', '\!']:
+            if split_line[0] not in ['EOF', 'shell', 'SHELL', '\\!']:
                 split_line[0] = split_line[0].lower()
                 line_out = ' '.join(split_line)
             else:
                 line_out = line_in
 
-            if split_line[0] == '\h':
+            if split_line[0] == '\\h':
                 line_out = 'help'
-            elif split_line[0] == '\?':
+            elif split_line[0] == '\\?':
                 line_out = 'help'
-            elif split_line[0] == '\!':
-                line_out = line_out.replace('\!', 'shell')
-            elif line_out == '\s':
+            elif split_line[0] == '\\!':
+                line_out = line_out.replace('\\!', 'shell')
+            elif line_out == '\\s':
                 line_out = 'show_history'
-            elif line_out == '\q':
+            elif line_out == '\\q':
                 line_out = 'quit'
 
             self._hist += [line_out.strip()]
@@ -7634,10 +7634,10 @@ class zabbixcli(cmd.Cmd):
         print('''
         Shortcuts in Zabbix-CLI:
 
-        \s - display history
-        \q - quit Zabbix-CLI shell
+        \\s - display history
+        \\q - quit Zabbix-CLI shell
 
-        \! [COMMAND] - Execute a command in shell
+        \\! [COMMAND] - Execute a command in shell
         !  [COMMAND] - Execute a command in shell
 
         ''')
