@@ -232,7 +232,7 @@ class zabbixcli(cmd.Cmd):
                 hostnames = input('# Hosts [*]: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -412,7 +412,7 @@ class zabbixcli(cmd.Cmd):
                 maintenances = input('# MaintenanceID [*]: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -614,7 +614,7 @@ class zabbixcli(cmd.Cmd):
                 hostgroup = input('# Hostgroup: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -757,7 +757,7 @@ class zabbixcli(cmd.Cmd):
                 filter = input('# Filter: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -906,7 +906,7 @@ class zabbixcli(cmd.Cmd):
                 inventory_value = input('# Inventory value: ')
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -1019,7 +1019,7 @@ class zabbixcli(cmd.Cmd):
                 filter = input('# Filter: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -1157,7 +1157,7 @@ class zabbixcli(cmd.Cmd):
                 usergroup = input('# Usergroup: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -1389,7 +1389,7 @@ class zabbixcli(cmd.Cmd):
                 ack_filter = input('# Last event unacknowledged [true]: ').strip().lower()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -1583,7 +1583,7 @@ class zabbixcli(cmd.Cmd):
                 hostgroups = input('# Hostgroups: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -1708,7 +1708,7 @@ class zabbixcli(cmd.Cmd):
                 hostgroups = input('# Hostgroups: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -1830,7 +1830,7 @@ class zabbixcli(cmd.Cmd):
                 usergroups = input('# Usergroups: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -1941,7 +1941,7 @@ class zabbixcli(cmd.Cmd):
                 usergroups = input('# Usergroups: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -2064,7 +2064,7 @@ class zabbixcli(cmd.Cmd):
                 hostnames = input('# Hostnames: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -2187,7 +2187,7 @@ class zabbixcli(cmd.Cmd):
                 hostnames = input('# Hostnames: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -2322,7 +2322,7 @@ class zabbixcli(cmd.Cmd):
                 users_status = input('# Status [' + users_status_default + ']: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -2486,7 +2486,7 @@ class zabbixcli(cmd.Cmd):
                 host_status = input('# Status [' + host_status_default + ']: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -2663,7 +2663,7 @@ class zabbixcli(cmd.Cmd):
                 hostname = input('# Hostname: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -2759,7 +2759,7 @@ class zabbixcli(cmd.Cmd):
                 maintenanceid = input('# maintenanceID: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -2899,7 +2899,7 @@ class zabbixcli(cmd.Cmd):
                 maintenance_type_ = input('# Maintenance type [' + str(maintenance_type_default) + ']: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -3130,7 +3130,7 @@ class zabbixcli(cmd.Cmd):
                 interface_main = input('# Default interface[' + interface_main_default + ']: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -3341,7 +3341,7 @@ class zabbixcli(cmd.Cmd):
                 usrgrps = input('# Usergroups []: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -3525,7 +3525,7 @@ class zabbixcli(cmd.Cmd):
                 remarks = input('# Remarks []: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -3687,7 +3687,7 @@ class zabbixcli(cmd.Cmd):
                 username = input('# Username: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -3760,7 +3760,7 @@ class zabbixcli(cmd.Cmd):
                 hostgroup = input('# Name: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -3888,7 +3888,7 @@ class zabbixcli(cmd.Cmd):
                 permission = input('# Permission: ').strip().lower()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -3983,7 +3983,7 @@ class zabbixcli(cmd.Cmd):
                 permission = input('# Permission: ').strip().lower()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -4069,7 +4069,7 @@ class zabbixcli(cmd.Cmd):
                 global_macro_value = input('# Global macro value: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -4184,7 +4184,7 @@ class zabbixcli(cmd.Cmd):
                 host_macro_value = input('# Macro value: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -4306,7 +4306,7 @@ class zabbixcli(cmd.Cmd):
                 monitoring_status = input('# Monitoring status[ON|OFF]: ').strip().lower()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -4408,7 +4408,7 @@ class zabbixcli(cmd.Cmd):
                 proxy = input('# Proxy: ').strip().lower()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -4519,7 +4519,7 @@ class zabbixcli(cmd.Cmd):
                 ack_message = input('# Message[' + ack_message_default + ']:').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -4591,7 +4591,7 @@ class zabbixcli(cmd.Cmd):
                 ack_message = input('# Message[' + ack_message_default + ']:').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -4673,7 +4673,7 @@ class zabbixcli(cmd.Cmd):
                 events_count = input('# Events count[' + str(events_count_default) + ']: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -4792,7 +4792,7 @@ class zabbixcli(cmd.Cmd):
                 template = input('# Template: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -4957,7 +4957,7 @@ class zabbixcli(cmd.Cmd):
                 hostname = input('# Hostname: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -5065,7 +5065,7 @@ class zabbixcli(cmd.Cmd):
                 host_macro_name = input('# Host macro name: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -5322,7 +5322,7 @@ class zabbixcli(cmd.Cmd):
                 template_macro_name = input('# Host macro name: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -5430,7 +5430,7 @@ class zabbixcli(cmd.Cmd):
                 template = input('# Template: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -5561,7 +5561,7 @@ class zabbixcli(cmd.Cmd):
                 template = input('# Template: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -5722,7 +5722,7 @@ class zabbixcli(cmd.Cmd):
                 object_name = input('# Object name [' + default_object_name + ']: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -5987,7 +5987,7 @@ class zabbixcli(cmd.Cmd):
                 dry_run = input('# Dry run [' + dry_run_default + ']: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -6165,7 +6165,7 @@ class zabbixcli(cmd.Cmd):
                 proxy_dst = input('# DST Proxy: ').strip().lower()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
@@ -6263,7 +6263,7 @@ class zabbixcli(cmd.Cmd):
                 proxies = input('# Proxies: ').strip()
                 print('--------------------------------------------------------')
 
-            except Exception as e:
+            except EOFError:
                 print('\n--------------------------------------------------------')
                 print('\n[Aborted] Command interrupted by the user.\n')
                 return False
