@@ -27,7 +27,6 @@ import cmd
 import datetime
 import glob
 import hashlib
-import io
 import ipaddr
 import json
 import logging
@@ -51,10 +50,6 @@ from zabbix_cli.pyzabbix import ZabbixAPI
 try:
     input = raw_input
 except NameError:
-    pass
-try:
-    from past.builtins import long
-except ImportError:
     pass
 
 logger = logging.getLogger(__name__)
