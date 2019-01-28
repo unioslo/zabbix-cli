@@ -7247,9 +7247,9 @@ class zabbixcli(cmd.Cmd):
         '''
         Initialization before prompting user for commands.
         '''
-        cmd.Cmd.preloop(self)   ## sets up command completion
-        self._hist    = []      ## No history yet
-        self._locals  = {}      ## Initialize execution namespace for user
+        cmd.Cmd.preloop(self)  # sets up command completion
+        self._hist = []        # No history yet
+        self._locals = {}      # Initialize execution namespace for user
         self._globals = {}
 
     def help_shortcuts(self):
