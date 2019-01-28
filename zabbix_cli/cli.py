@@ -4754,10 +4754,6 @@ class zabbixcli(cmd.Cmd):
 
         cmd.Cmd.onecmd(self, 'show_template "*"')
 
-    # ########################################
-    # do_show_template
-    # ########################################
-
     def do_show_template(self, args):
         '''
         DESCRITION
@@ -4871,9 +4867,6 @@ class zabbixcli(cmd.Cmd):
                              ['TemplateID'],
                              ALL)
 
-    # ########################################
-    # do_show_global_macros
-    # ########################################
     def do_show_global_macros(self, args):
         '''
         DESCRITION:
@@ -4924,9 +4917,6 @@ class zabbixcli(cmd.Cmd):
                              ['MacroID'],
                              FRAME)
 
-    # ########################################
-    # do_show_host_usermacros
-    # ########################################
     def do_show_host_usermacros(self, args):
         '''
         DESCRITION:
@@ -5030,9 +5020,6 @@ class zabbixcli(cmd.Cmd):
                              ['MacroID'],
                              FRAME)
 
-    # ########################################
-    # do_show_usermacro_host_list
-    # ########################################
     def do_show_usermacro_host_list(self, args):
         '''
         DESCRITION:
@@ -5136,9 +5123,6 @@ class zabbixcli(cmd.Cmd):
                              ['HostID'],
                              FRAME)
 
-    # #######################################
-    # do_show_last_values
-    # #######################################
     def do_show_last_values(self, args):
         '''
         DESCRIPTION:
@@ -5287,9 +5271,6 @@ class zabbixcli(cmd.Cmd):
                                  ['Last value'],
                                  FRAME)
 
-    # ########################################
-    # do_show_usermacro_template_list
-    # ########################################
     def do_show_usermacro_template_list(self, args):
         '''
         DESCRITION:
@@ -5393,9 +5374,6 @@ class zabbixcli(cmd.Cmd):
                              ['TemplateID'],
                              FRAME)
 
-    # #######################################
-    # do_show_items
-    # #######################################
     def do_show_items(self, args):
         '''
         DESCRIPTION:
@@ -5522,10 +5500,6 @@ class zabbixcli(cmd.Cmd):
                              ['Name', 'Name', 'Key', 'Description'],
                              ['ItemID'],
                              FRAME)
-
-    # ##########################################
-    # do_show_triggers
-    # ##########################################
 
     def do_show_triggers(self, args):
         '''
