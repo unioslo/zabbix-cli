@@ -27,7 +27,6 @@ import cmd
 import datetime
 import glob
 import hashlib
-import ipaddr
 import json
 import logging
 import os
@@ -40,8 +39,9 @@ import sys
 import textwrap
 import time
 
-import zabbix_cli
+import ipaddr
 
+import zabbix_cli
 from zabbix_cli.prettytable import ALL, FRAME, PrettyTable
 from zabbix_cli.pyzabbix import ZabbixAPI
 
