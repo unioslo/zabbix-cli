@@ -4223,7 +4223,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 hostid = self.get_host_id(hostname.strip())
 
-            except Exception as e:
+            except Exception:
                 logger.info('Hostname %s does not exist', hostname)
                 self.generate_feedback('Error', 'Hostname ' + hostname + ' does not exist')
                 return False
@@ -4435,7 +4435,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 hostid = self.get_host_id(hostname.strip())
 
-            except Exception as e:
+            except Exception:
                 logger.error('Hostname %s does not exist', hostname)
                 self.generate_feedback('Error', 'Hostname ' + hostname + ' does not exist')
                 return False
@@ -4443,7 +4443,7 @@ class zabbixcli(cmd.Cmd):
         try:
             proxy_id = self.get_proxy_id(proxy)
 
-        except Exception as e:
+        except Exception:
             logger.error('Proxy %s does not exist', proxy)
             self.generate_feedback('Error', 'Proxy ' + proxy + ' does not exist')
             return False
@@ -4983,7 +4983,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 hostid = self.get_host_id(hostname.strip())
 
-            except Exception as e:
+            except Exception:
                 logger.info('Hostname %s does not exist', hostname)
                 self.generate_feedback('Error', 'Hostname ' + hostname + ' does not exist')
                 return False
@@ -6185,7 +6185,7 @@ class zabbixcli(cmd.Cmd):
         try:
             proxy_src_id = self.get_proxy_id(proxy_src)
 
-        except Exception as e:
+        except Exception:
             logger.error('SRC Proxy %s does not exist', proxy_src)
             self.generate_feedback('Error', 'SRC Proxy ' + proxy_src + ' does not exist')
             return False
@@ -6193,7 +6193,7 @@ class zabbixcli(cmd.Cmd):
         try:
             proxy_dst_id = self.get_proxy_id(proxy_dst)
 
-        except Exception as e:
+        except Exception:
             logger.error('DST Proxy %s does not exist', proxy_dst)
             self.generate_feedback('Error', 'DST Proxy ' + proxy_dst + ' does not exist')
             return False
