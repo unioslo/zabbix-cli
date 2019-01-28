@@ -118,7 +118,7 @@ class zabbixcli(cmd.Cmd):
 
             # Prompt text
             self.prompt = '[zabbix-cli ' + self.api_username + '@' + self.system_id + ']$ '
-            logger.debug('Zabbix API url: %s',self.conf.zabbix_api_url)
+            logger.debug('Zabbix API url: %s', self.conf.zabbix_api_url)
 
             #
             # Connecting to the Zabbix JSON-API
@@ -330,7 +330,7 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.maintenance.get(**query)
             logger.info('Command show_maintenance_definitions executed')
         except Exception as e:
-            logger.error('Problems getting maintenance definitions information - %s',e)
+            logger.error('Problems getting maintenance definitions information - %s', e)
             self.generate_feedback('Error', 'Problems getting maintenance definitions information')
             return False
 
@@ -466,7 +466,7 @@ class zabbixcli(cmd.Cmd):
                 search_data += '\'maintenanceids\':[\'' + maintenance_ids + '\'],'
 
         except Exception as e:
-            logger.error('Problems getting maintenance periods information - %s',e)
+            logger.error('Problems getting maintenance periods information - %s', e)
             self.generate_feedback('Error', 'Problems getting maintenance periods information')
             return False
 
@@ -480,7 +480,7 @@ class zabbixcli(cmd.Cmd):
             logger.info('Command show_maintenance_periods executed')
 
         except Exception as e:
-            logger.error('Problems getting maintenance periods information - %s',e)
+            logger.error('Problems getting maintenance periods information - %s', e)
             self.generate_feedback('Error', 'Problems getting maintenance periods information')
             return False
 
@@ -683,7 +683,7 @@ class zabbixcli(cmd.Cmd):
             logger.info('Command show_hostgroups executed')
 
         except Exception as e:
-            logger.error('Problems getting hostgroups information - %s',e)
+            logger.error('Problems getting hostgroups information - %s', e)
             self.generate_feedback('Error', 'Problems getting hostgroups information')
             return False
 
@@ -839,7 +839,7 @@ class zabbixcli(cmd.Cmd):
         try:
             query = ast.literal_eval("{'output':'extend'," + search_host + ",'selectParentTemplates':['templateid','name'],'selectGroups':['groupid','name'],'selectApplications':['name'],'sortfield':'host','sortorder':'ASC','searchWildcardsEnabled':'True','filter':{" + filter + "}}")
         except Exception as e:
-            logger.error('Problems generating show_host query - %s',e)
+            logger.error('Problems generating show_host query - %s', e)
             self.generate_feedback('Error', 'Problems generating show_host query')
             return False
 
@@ -851,7 +851,7 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.host.get(**query)
             logger.info('Command show_host executed.')
         except Exception as e:
-            logger.error('Problems getting host information - %s',e)
+            logger.error('Problems getting host information - %s', e)
             self.generate_feedback('Error', 'Problems getting host information')
             return False
 
@@ -1110,7 +1110,7 @@ class zabbixcli(cmd.Cmd):
         try:
             query = ast.literal_eval("{'output':'extend'," + search_host + ",'selectInventory':'extend','sortfield':'host','sortorder':'ASC','searchWildcardsEnabled':'True','filter':{" + filter + "}}")
         except Exception as e:
-            logger.error('Problems generating query - %s',e)
+            logger.error('Problems generating query - %s', e)
             self.generate_feedback('Error', 'Problems generating query')
             return False
 
@@ -1123,7 +1123,7 @@ class zabbixcli(cmd.Cmd):
             logger.info('Command show_host_inventory [%s] executed.', host)
         except Exception as e:
             logger.error('Problems getting host inventory information - %s', e)
-            self.generate_feedback('Error','Problems getting host inventory information')
+            self.generate_feedback('Error', 'Problems getting host inventory information')
             return False
 
         #
@@ -1249,7 +1249,7 @@ class zabbixcli(cmd.Cmd):
             logger.info('Command show_usergroup executed')
         except Exception as e:
             logger.error('Problems getting usergroup information - %s', e)
-            self.generate_feedback('Error','Problems getting usergroup information')
+            self.generate_feedback('Error', 'Problems getting usergroup information')
             return False
 
         #
