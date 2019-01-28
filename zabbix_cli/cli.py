@@ -55,11 +55,6 @@ except NameError:
 logger = logging.getLogger(__name__)
 
 
-# ############################################
-# class zabbix_cli
-# ############################################
-
-
 class zabbixcli(cmd.Cmd):
     '''
     This class implements the Zabbix shell. It is based on the python module cmd
@@ -188,11 +183,6 @@ class zabbixcli(cmd.Cmd):
                     sys.exit(1)
 
             sys.exit(1)
-
-
-    # ############################################
-    # Method show_maintenance_definitions
-    # ############################################
 
     def do_show_maintenance_definitions(self, args):
         '''
@@ -389,10 +379,6 @@ class zabbixcli(cmd.Cmd):
                              ['ID'],
                              ALL)
 
-    # ############################################
-    # Method show_maintenance_periods
-    # ############################################
-
     def do_show_maintenance_periods(self, args):
         '''
         DESCRIPTION:
@@ -540,10 +526,6 @@ class zabbixcli(cmd.Cmd):
                              ['DefID'],
                              ALL)
 
-    # ############################################
-    # Method show_zabbixcli_config
-    # ############################################
-
     def do_show_zabbixcli_config(self, args):
         '''
         DESCRIPTION:
@@ -588,10 +570,6 @@ class zabbixcli(cmd.Cmd):
                              ['Configuration parameter'],
                              FRAME)
 
-    # ############################################
-    # Method show_hostgroups
-    # ############################################
-
     def do_show_hostgroups(self, args):
         '''
         DESCRIPTION:
@@ -602,10 +580,6 @@ class zabbixcli(cmd.Cmd):
         '''
 
         cmd.Cmd.onecmd(self, 'show_hostgroup "*"')
-
-    # ############################################
-    # Method show_hostgroup
-    # ############################################
 
     def do_show_hostgroup(self, args):
         '''
@@ -720,10 +694,6 @@ class zabbixcli(cmd.Cmd):
                              ['GroupID'],
                              ALL)
 
-    # ############################################
-    # Method show_hosts
-    # ############################################
-
     def do_show_hosts(self, args):
         '''
         DESCRIPTION:
@@ -734,10 +704,6 @@ class zabbixcli(cmd.Cmd):
         '''
 
         cmd.Cmd.onecmd(self, 'show_host "*"')
-
-    # ############################################
-    # Method show_host
-    # ############################################
 
     def do_show_host(self, args):
         '''
@@ -906,10 +872,6 @@ class zabbixcli(cmd.Cmd):
                              ['HostID'],
                              ALL)
 
-    # ############################################
-    # Method update_host_inventory
-    # ############################################
-
     def do_update_host_inventory(self, args):
         '''
         DESCRIPTION:
@@ -1021,10 +983,6 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems updating host inventory information - %s', e)
             self.generate_feedback('Error', 'Problems updating host inventory information')
             return False
-
-    # ############################################
-    # Method show_host_inventory
-    # ############################################
 
     def do_show_host_inventory(self, args):
         '''
@@ -1155,10 +1113,6 @@ class zabbixcli(cmd.Cmd):
                              [],
                              FRAME)
 
-    # ############################################
-    # Method show_usergroups
-    # ############################################
-
     def do_show_usergroups(self, args):
         '''
         DESCRIPTION:
@@ -1169,10 +1123,6 @@ class zabbixcli(cmd.Cmd):
         '''
 
         cmd.Cmd.onecmd(self, 'show_usergroup "*"')
-
-    # ############################################
-    # Method show_usergroup
-    # ############################################
 
     def do_show_usergroup(self, args):
         '''
@@ -1288,10 +1238,6 @@ class zabbixcli(cmd.Cmd):
                              ['GroupID'],
                              FRAME)
 
-    # ############################################
-    # Method show_users
-    # ############################################
-
     def do_show_users(self, args):
         '''
         DESCRIPTION:
@@ -1359,10 +1305,6 @@ class zabbixcli(cmd.Cmd):
                              ['Name', 'Type', 'Usrgrps'],
                              ['UserID'],
                              FRAME)
-
-    # ############################################
-    # Method show_alarms
-    # ############################################
 
     def do_show_alarms(self, args):
         '''
@@ -1600,10 +1542,6 @@ class zabbixcli(cmd.Cmd):
                              ['TriggerID'],
                              FRAME)
 
-    # ############################################
-    # Method do_add_host_to_hostgroup
-    # ############################################
-
     def do_add_host_to_hostgroup(self, args):
         '''
         DESCRIPTION:
@@ -1730,10 +1668,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems adding hosts ' + hostnames + ' (' + host_ids + ') to groups ' + hostgroups + ' (' + hostgroup_ids + ')')
             return False
 
-    # ############################################
-    # Method do_remove_host_from_hostgroup
-    # ############################################
-
     def do_remove_host_from_hostgroup(self, args):
         '''
         DESCRIPTION:
@@ -1855,11 +1789,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems removing hosts ' + hostnames + ' (' + host_ids + ') from groups (' + hostgroups + ' (' + hostgroup_ids + ')')
             return False
 
-
-    # ############################################
-    # Method do_add_user_to_usergroup
-    # ############################################
-
     def do_add_user_to_usergroup(self, args):
         '''
         DESCRIPTION:
@@ -1971,10 +1900,6 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems adding users %s to usergroups %s - %s', usernames, usergroups, e)
             self.generate_feedback('Error', 'Problems adding users ' + usernames + ' to usergroups ' + usergroups)
             return False
-
-    # ############################################
-    # Method do_add_user_to_usergroup
-    # ############################################
 
     def do_remove_user_from_usergroup(self, args):
         '''
@@ -2097,10 +2022,6 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems removing user %s from usergroups %s - %s', username, usergroups, e)
             self.generate_feedback('Error', 'Problems removing user ' + username + ' from usergroups ' + usergroups)
             return False
-
-    # ############################################
-    # Method do_link_template_to_host
-    # ############################################
 
     def do_link_template_to_host(self, args):
         '''
@@ -2226,11 +2147,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems linking templates ' + templates + ' (' + template_ids + ') to hosts ' + hostnames + ' (' + host_ids + ')')
             return False
 
-
-    # ############################################
-    # Method do_unlink_template_from_host
-    # ############################################
-
     def do_unlink_template_from_host(self, args):
         '''
         DESCRIPTION:
@@ -2354,10 +2270,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems unlinking and clearing templates ' + templates + ' (' + template_ids + ') from hosts ' + hostnames + ' (' + host_ids + ')')
             return False
 
-    # ############################################
-    # Method do_create_usergroup
-    # ############################################
-
     def do_create_usergroup(self, args):
         '''
         DESCRIPTION:
@@ -2478,10 +2390,6 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems creating Usergroup (%s) - %s', groupname, e)
             self.generate_feedback('Error', 'Problems creating usergroup (' + groupname + ')')
             return False
-
-    # ############################################
-    # Method do_create_host
-    # ############################################
 
     def do_create_host(self, args):
         '''
@@ -2724,10 +2632,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems creating host (' + host + ')')
             return False
 
-    # ############################################
-    # Method do_remove_host
-    # ############################################
-
     def do_remove_host(self, args):
         '''
         DESCRIPTION:
@@ -2823,10 +2727,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems removing hosts (' + hostname + ')')
             return False
 
-    # ############################################
-    # Method do_remove_maintenance_definition
-    # ############################################
-
     def do_remove_maintenance_definition(self, args):
         '''
         DESCRIPTION:
@@ -2911,10 +2811,6 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems removing maintenance IDs: [%s] - %s', maintenanceid.replace(' ', ''), e)
             self.generate_feedback('Error', 'Problems removing maintenance IDs (' + maintenanceid.replace(' ', '') + ')')
             return False
-
-    # ############################################
-    # Method do_create_maintenance_definition
-    # ############################################
 
     def do_create_maintenance_definition(self, args):
         '''
@@ -3140,10 +3036,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems creating maintenance definition (' + maintenance_name + ')')
             return False
 
-    # ############################################
-    # Method do_create_host_interface
-    # ############################################
-
     def do_create_host_interface(self, args):
         '''
         DESCRIPTION:
@@ -3352,10 +3244,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems creating host interface on ' + hostname + '')
             return False
 
-    # ############################################
-    # Method do_create_user
-    # ############################################
-
     def do_create_user(self, args):
         '''DESCRIPTION:
         This command creates an user.
@@ -3560,10 +3448,6 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems creating user (%s) - %s', alias, e)
             self.generate_feedback('Error', 'Problems creating user (' + alias + ')')
             return False
-
-    # ############################################
-    # Method do_create_notification_user
-    # ############################################
 
     def do_create_notification_user(self, args):
         '''DESCRIPTION:
@@ -3772,10 +3656,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems creating user (' + alias + ')')
             return False
 
-    # ############################################
-    # Method do_remove_user
-    # ############################################
-
     def do_remove_user(self, args):
         '''
         DESCRIPTION:
@@ -3853,10 +3733,6 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems removing username (%s) - %s', username, e)
             self.generate_feedback('Error', 'Problems removing username (' + username + ')')
             return False
-
-    # ############################################
-    # Method do_create_hostgroup
-    # ############################################
 
     def do_create_hostgroup(self, args):
         '''
@@ -3966,10 +3842,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems creating hostgroup (' + hostgroup + ')')
             return False
 
-    # ############################################
-    # Method do_add_usergroup_permissions
-    # ############################################
-
     def do_add_usergroup_permissions(self, args):
         '''
         DESCRIPTION:
@@ -4068,10 +3940,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems giving the usergroup [' + usergroup + '] [' + permission + '] access to the hostgroup [' + hostgroups + ']')
             return False
 
-    # ############################################
-    # Method do_update_usergroup_permissions
-    # ############################################
-
     def do_update_usergroup_permissions(self, args):
         '''
         DESCRIPTION:
@@ -4166,10 +4034,6 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems giving the usergroup [%s] [%s] access to the hostgroup [%s] - %s', usergroup, permission, hostgroups, e)
             self.generate_feedback('Error', 'Problems giving the usergroup [' + usergroup + '] [' + permission + '] access to the hostgroup [' + hostgroups + ']')
             return False
-
-    # ############################################
-    # Method do_define_global_macro
-    # ############################################
 
     def do_define_global_macro(self, args):
         '''
@@ -4278,10 +4142,6 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems defining global macro (%s) - %s', global_macro_name, e)
             self.generate_feedback('Error', 'Problems defining global macro (' + global_macro_name + ')')
             return False
-
-    # ############################################
-    # Method do_define_host_usermacro
-    # ############################################
 
     def do_define_host_usermacro(self, args):
         '''
@@ -4418,10 +4278,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems defining host macro (' + hostname + ':' + host_macro_name + ')')
             return False
 
-    # ############################################
-    # Method do_define_host_monitoring_status
-    # ############################################
-
     def do_define_host_monitoring_status(self, args):
         '''
         DESCRIPTION:
@@ -4519,10 +4375,6 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems updating monitoring status for hostname (%s) - %s', hostname, e)
             self.generate_feedback('Error', 'Problems updating monitoring status for hostname (' + hostname + ')')
             return False
-
-    # ############################################
-    # Method do_update_host_proxy
-    # ############################################
 
     def do_update_host_proxy(self, args):
         '''
@@ -4633,10 +4485,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems updating proxy for hostname (' + hostname + ')')
             return False
 
-    # ############################################
-    # Method do_acknowledge_event
-    # ############################################
-
     def do_acknowledge_event(self, args):
         '''
         DESCRIPTION:
@@ -4705,10 +4553,6 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems registering the acknowledge message [%s] for eventID [%s] - %s', ack_message, event_ids, e)
             self.generate_feedback('Error', 'Problems registering the acknowledge message [' + ack_message + '] for eventID [' + ','.join(event_ids) + ']')
             return False
-
-    # ############################################
-    # Method do_acknowledge_trigger_last_event
-    # ############################################
 
     def do_acknowledge_trigger_last_event(self, args):
         '''
@@ -4790,10 +4634,6 @@ class zabbixcli(cmd.Cmd):
                          e)
             self.generate_feedback('Error', 'Problems registering acknowledge message [' + ack_message + '] for last eventIDs [' + ','.join(event_ids) + '] on triggerIDs [' + ','.join(trigger_ids) + ']')
             return False
-
-    # ############################################
-    # Method do_show_trigger_events
-    # ############################################
 
     def do_show_trigger_events(self, args):
         '''
@@ -4903,10 +4743,6 @@ class zabbixcli(cmd.Cmd):
                              ['Last change', 'Age'],
                              ['EventID', 'TriggerID'],
                              FRAME)
-
-    # ############################################
-    # Method show_templates
-    # ############################################
 
     def do_show_templates(self, args):
         '''
@@ -5822,10 +5658,6 @@ class zabbixcli(cmd.Cmd):
                              ['TriggerID'],
                              FRAME)
 
-    # ############################################
-    # Method export_configuration
-    # ############################################
-
     def do_export_configuration(self, args):
         '''
         DESCRIPTION:
@@ -6093,10 +5925,6 @@ class zabbixcli(cmd.Cmd):
 
         self.generate_feedback('Done', 'Export file/s for object type [' + object_type + '] and object name [' + object_name + '] generated')
 
-    # ############################################
-    # Method import_configuration
-    # ############################################
-
     def do_import_configuration(self, args):
         '''DESCRIPTION:
         This command imports the configuration of a
@@ -6304,9 +6132,6 @@ class zabbixcli(cmd.Cmd):
 
         self.generate_feedback('done', 'Total files Imported [' + str(total_files_imported) + '] / Not imported [' + str(total_files_not_imported) + ']')
 
-    # ############################################
-    # Method move_proxy_hosts
-    # ############################################
     def do_move_proxy_hosts(self, args):
         '''
         DESCRIPTION:
@@ -6404,9 +6229,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems moving host from SRC Proxy ' + proxy_src + ' to DST proxy ' + proxy_dst)
             return False
 
-    # ############################################
-    # Method load_balance_proxy_hosts
-    # ############################################
     def do_load_balance_proxy_hosts(self, args):
         '''
         DESCRIPTION:
@@ -6525,9 +6347,6 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems assigning new proxy values for the affected hosts')
             return False
 
-    # ############################################
-    # Method generate_export_filename
-    # ############################################
     def generate_export_filename(self, directory_exports, obj_type, obj_id, obj_name):
         '''
         Generate filename to export the configuration
@@ -6554,10 +6373,6 @@ class zabbixcli(cmd.Cmd):
         filename = directory_exports + '/' + obj_type + '/zabbix_export_' + obj_type + '_' + obj_name.replace(' ', '_').replace('/', '_') + '_' + obj_id + timestamp + '.' + file_ext
         return filename
 
-    # ############################################
-    # Method get_ack_status
-    # ############################################
-
     def get_ack_status(self, code):
         '''
         Get ack status from code
@@ -6570,10 +6385,6 @@ class zabbixcli(cmd.Cmd):
 
         else:
             return 'Unknown' + " (" + str(code) + ")"
-
-    # ############################################
-    # Method get_event_status
-    # ############################################
 
     def get_event_status(self, code):
         '''
@@ -6588,10 +6399,6 @@ class zabbixcli(cmd.Cmd):
         else:
             return 'Unknown' + " (" + str(code) + ")"
 
-    # ############################################
-    # Method get_trigger_severity
-    # ############################################
-
     def get_trigger_severity(self, code):
         '''
         Get trigger severity from code
@@ -6604,10 +6411,6 @@ class zabbixcli(cmd.Cmd):
 
         else:
             return 'Unknown'
-
-    # ############################################
-    # Method get_trigger_status
-    # ############################################
 
     def get_trigger_status(self, code):
         '''
@@ -6622,10 +6425,6 @@ class zabbixcli(cmd.Cmd):
         else:
             return 'Unknown' + " (" + str(code) + ")"
 
-    # ############################################
-    # Method get_maintenance_status
-    # ############################################
-
     def get_maintenance_status(self, code):
         '''
         Get maintenance status from code
@@ -6638,10 +6437,6 @@ class zabbixcli(cmd.Cmd):
 
         else:
             return 'Unknown' + " (" + str(code) + ")"
-
-    # ############################################
-    # Method get_monitoring_status
-    # ############################################
 
     def get_monitoring_status(self, code):
         '''
@@ -6656,10 +6451,6 @@ class zabbixcli(cmd.Cmd):
         else:
             return 'Unknown' + " (" + str(code) + ")"
 
-    # ############################################
-    # Method get_monitoring_status
-    # ############################################
-
     def get_zabbix_agent_status(self, code):
         '''
         Get zabbix agent status from code
@@ -6672,10 +6463,6 @@ class zabbixcli(cmd.Cmd):
 
         else:
             return 'Unknown' + " (" + str(code) + ")"
-
-    # ############################################
-    # Method get_gui_access
-    # ############################################
 
     def get_gui_access(self, code):
         '''
@@ -6690,10 +6477,6 @@ class zabbixcli(cmd.Cmd):
         else:
             return 'Unknown' + " (" + str(code) + ")"
 
-    # ############################################
-    # Method get_usergroup_status
-    # ############################################
-
     def get_usergroup_status(self, code):
         '''
         Get usergroup status from code
@@ -6706,10 +6489,6 @@ class zabbixcli(cmd.Cmd):
 
         else:
             return 'Unknown' + " (" + str(code) + ")"
-
-    # ############################################
-    # Method get_hostgroup_flag
-    # ############################################
 
     def get_hostgroup_flag(self, code):
         '''
@@ -6724,10 +6503,6 @@ class zabbixcli(cmd.Cmd):
         else:
             return 'Unknown' + " (" + str(code) + ")"
 
-    # ############################################
-    # Method get_hostgroup_type
-    # ############################################
-
     def get_hostgroup_type(self, code):
         '''
         Get hostgroup type from code
@@ -6740,10 +6515,6 @@ class zabbixcli(cmd.Cmd):
 
         else:
             return 'Unknown' + " (" + str(code) + ")"
-
-    # ############################################
-    # Method get_user_type
-    # ############################################
 
     def get_user_type(self, code):
         '''
@@ -6758,10 +6529,6 @@ class zabbixcli(cmd.Cmd):
         else:
             return 'Unknown' + " (" + str(code) + ")"
 
-    # ############################################
-    # Method get_maintenance_type
-    # ############################################
-
     def get_maintenance_type(self, code):
         '''
         Get maintenance type from code
@@ -6774,10 +6541,6 @@ class zabbixcli(cmd.Cmd):
 
         else:
             return 'Unknown' + " (" + str(code) + ")"
-
-    # ############################################
-    # Method get_maintenance_period_type
-    # ############################################
 
     def get_maintenance_period_type(self, code):
         '''
@@ -6792,10 +6555,6 @@ class zabbixcli(cmd.Cmd):
         else:
             return 'Unknown' + " (" + str(code) + ")"
 
-    # ############################################
-    # Method get_autologin_type
-    # ############################################
-
     def get_autologin_type(self, code):
         '''
         Get autologin type from code
@@ -6809,10 +6568,6 @@ class zabbixcli(cmd.Cmd):
         else:
             return 'Unknown' + " (" + str(code) + ")"
 
-    # ############################################
-    # Method get_autologin_type
-    # ############################################
-
     def get_permission_code(self, permission):
         '''
         Get permission code
@@ -6825,10 +6580,6 @@ class zabbixcli(cmd.Cmd):
 
         else:
             return 0
-
-    # ############################################
-    # Method get_item_type
-    # ############################################
 
     def get_item_type(self, code):
         '''
@@ -6858,10 +6609,6 @@ class zabbixcli(cmd.Cmd):
 
         else:
             return 'Unknown' + " (" + str(code) + ")"
-
-    # ############################################
-    # Method generate_output
-    # ############################################
 
     def generate_output(self, result, colnames, left_col, right_col, hrules):
         '''
@@ -6915,10 +6662,6 @@ class zabbixcli(cmd.Cmd):
             print('\n[Error] Problems generating the output ' + e)
             logger.error('Problems generating the output', exc_info=True)
 
-    # ############################################
-    # Method generate_feedback
-    # ############################################
-
     def generate_feedback(self, return_code, message):
         '''
         Generate feedback messages
@@ -6949,10 +6692,6 @@ class zabbixcli(cmd.Cmd):
                 if return_code.lower() == 'error':
                     sys.exit(1)
 
-    # ############################################
-    # Method do_clear
-    # ############################################
-
     def do_clear(self, args):
         '''
         DESCRIPTION:
@@ -6966,23 +6705,11 @@ class zabbixcli(cmd.Cmd):
         os.system('clear')
         print(self.intro)
 
-    # ############################################
-    # Method default
-    # ############################################
-
     def default(self, line):
         self.generate_feedback('Error', ' Unknown command: %s.\n          Type help or \\? to list commands' % line)
 
-    # ############################################
-    # Method emptyline
-    # ############################################
-
     def emptyline(self):
         pass
-
-    # ############################################
-    # Method precmd
-    # ############################################
 
     def precmd(self, line_in):
 
@@ -7013,10 +6740,6 @@ class zabbixcli(cmd.Cmd):
 
         return cmd.Cmd.precmd(self, line_out)
 
-    # ############################################
-    # Method do_shell
-    # ############################################
-
     def do_shell(self, line):
         '''
         DESCRIPTION:
@@ -7039,10 +6762,6 @@ class zabbixcli(cmd.Cmd):
         except Exception:
             self.generate_feedback('Error', 'Problems running %s' % line)
 
-    # ############################################
-    # Method do_quit
-    # ############################################
-
     def do_quit(self, args):
         '''
         DESCRIPTION:
@@ -7056,10 +6775,6 @@ class zabbixcli(cmd.Cmd):
         print('\nDone, thank you for using Zabbix-CLI')
         return True
 
-    # ############################################
-    # Method do_EOF
-    # ############################################
-
     def do_EOF(self, line):
         '''
         DESCRIPTION:
@@ -7072,10 +6787,6 @@ class zabbixcli(cmd.Cmd):
 
         print('\n\nDone, thank you for using Zabbix-CLI')
         return True
-
-    # ############################################
-    # Method do_hist
-    # ############################################
 
     def do_show_history(self, args):
         '''
@@ -7097,10 +6808,6 @@ class zabbixcli(cmd.Cmd):
 
         print()
 
-    # ########################################################
-    # Method hostgroup_exists
-    # ########################################################
-
     def hostgroup_exists(self, hostgroup):
         '''
         DESCRIPTION:
@@ -7118,10 +6825,6 @@ class zabbixcli(cmd.Cmd):
 
         except Exception as e:
             raise e
-
-    # ########################################################
-    # Method get_hostgroup_id
-    # ########################################################
 
     def get_hostgroup_id(self, hostgroup):
         '''
@@ -7153,10 +6856,6 @@ class zabbixcli(cmd.Cmd):
 
         return str(hostgroupid)
 
-    # #################################################
-    # Method host_exists
-    # #################################################
-
     def host_exists(self, host):
         '''
         DESCRIPTION:
@@ -7184,10 +6883,6 @@ class zabbixcli(cmd.Cmd):
         except Exception as e:
             raise e
 
-    # #################################################
-    # Method get_host_id
-    # #################################################
-
     def get_host_id(self, host):
         '''
         DESCRIPTION:
@@ -7207,10 +6902,6 @@ class zabbixcli(cmd.Cmd):
             raise e
 
         return str(hostid)
-
-    # #################################################
-    # Method get_host_name
-    # #################################################
 
     def get_host_name(self, hostid):
         '''
@@ -7245,10 +6936,6 @@ class zabbixcli(cmd.Cmd):
 
         return str(host_name)
 
-    # #################################################
-    # Method get_template_name
-    # #################################################
-
     def get_template_name(self, templateid):
         '''
         DESCRIPTION:
@@ -7269,10 +6956,6 @@ class zabbixcli(cmd.Cmd):
             raise e
 
         return str(template_name)
-
-    # #################################################
-    # Method get_image_id
-    # #################################################
 
     def get_image_id(self, image):
         '''
@@ -7297,10 +6980,6 @@ class zabbixcli(cmd.Cmd):
 
         return str(imageid)
 
-    # #################################################
-    # Method get_map_id
-    # #################################################
-
     def get_map_id(self, map):
         '''
         DESCRIPTION:
@@ -7319,10 +6998,6 @@ class zabbixcli(cmd.Cmd):
             raise e
 
         return str(mapid)
-
-    # #################################################
-    # Method get_screen_id
-    # #################################################
 
     def get_screen_id(self, screen):
         '''
@@ -7343,10 +7018,6 @@ class zabbixcli(cmd.Cmd):
 
         return str(screenid)
 
-    # ###############################################
-    # Method get_template_id
-    # ###############################################
-
     def get_template_id(self, template):
         '''
         DESCRIPTION:
@@ -7366,10 +7037,6 @@ class zabbixcli(cmd.Cmd):
 
         return str(templateid)
 
-    # ##########################################
-    # Method usergroup_exists
-    # ##########################################
-
     def usergroup_exists(self, usergroup):
         '''
         DESCRIPTION:
@@ -7387,10 +7054,6 @@ class zabbixcli(cmd.Cmd):
 
         except Exception as e:
             raise e
-
-    # ##########################################
-    # Method get_usergroup_id
-    # ##########################################
 
     def get_usergroup_id(self, usergroup):
         '''
@@ -7412,10 +7075,6 @@ class zabbixcli(cmd.Cmd):
 
         return str(usergroupid)
 
-    # ##########################################
-    # Method get_user_id
-    # ##########################################
-
     def get_user_id(self, user):
         '''
         DESCRIPTION:
@@ -7434,10 +7093,6 @@ class zabbixcli(cmd.Cmd):
             raise e
 
         return str(userid)
-
-    # ##########################################
-    # Method get_proxy_id
-    # ##########################################
 
     def get_proxy_id(self, proxy):
         '''
@@ -7462,10 +7117,6 @@ class zabbixcli(cmd.Cmd):
             raise e
 
         return str(proxyid)
-
-    # ##########################################
-    # Method get_random_proxy
-    # ##########################################
 
     def get_random_proxyid(self, proxy_pattern):
         '''
@@ -7505,10 +7156,6 @@ class zabbixcli(cmd.Cmd):
         else:
             raise Exception('The proxy list is empty. Using the zabbix server to monitor this host.')
 
-    # #################################################
-    # Method populate_hostid_cache
-    # #################################################
-
     def populate_hostid_cache(self):
         '''
         DESCRIPTION:
@@ -7544,10 +7191,6 @@ class zabbixcli(cmd.Cmd):
         except Exception as e:
             raise e
 
-    # #################################################
-    # Method populate_hostgroupname_cache
-    # #################################################
-
     def populate_hostgroupname_cache(self):
         '''
         DESCRIPTION:
@@ -7573,10 +7216,6 @@ class zabbixcli(cmd.Cmd):
 
         except Exception as e:
             raise e
-
-    # #################################################
-    # Method populate_proxyid_cache
-    # #################################################
 
     def populate_proxyid_cache(self):
         '''
@@ -7604,10 +7243,6 @@ class zabbixcli(cmd.Cmd):
         except Exception as e:
             raise e
 
-    # ############################################
-    # Method preloop
-    # ############################################
-
     def preloop(self):
         '''
         Initialization before prompting user for commands.
@@ -7616,10 +7251,6 @@ class zabbixcli(cmd.Cmd):
         self._hist    = []      ## No history yet
         self._locals  = {}      ## Initialize execution namespace for user
         self._globals = {}
-
-    # ############################################
-    # Method help_shortcuts
-    # ############################################
 
     def help_shortcuts(self):
         '''
@@ -7637,10 +7268,6 @@ class zabbixcli(cmd.Cmd):
 
         ''')
 
-    # ############################################
-    # Method help_shortcuts
-    # ############################################
-
     def help_support(self):
         '''
         Help information about Zabbix-CLI support
@@ -7657,17 +7284,9 @@ class zabbixcli(cmd.Cmd):
         http://www.zabbix.com/documentation.php
         ''')
 
-    # ############################################
-    # Method handler
-    # ############################################
-
     def signal_handler_sigint(self, signum, frame):
         cmd.Cmd.onecmd(self, 'quit')
         sys.exit(0)
-
-    # ############################################
-    # Method get_version
-    # ############################################
 
     def get_version(self):
         '''
