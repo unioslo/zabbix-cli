@@ -58,7 +58,7 @@ logger = logging.getLogger(__name__)
 
 def get_priority(filename=None):
     """ Get and ordered list of config file locations. """
-    priority = CONFIG_PRIORITY[:]
+    priority = list(CONFIG_PRIORITY)
     if filename:
         if CONFIG_CUSTOM_GOES_AFTER in priority:
             priority.insert(priority.index(CONFIG_CUSTOM_GOES_AFTER) + 1,
