@@ -2546,13 +2546,7 @@ class zabbixcli(cmd.Cmd):
                          useip + \
                          interface_ip + \
                          interface_dns + \
-                         '"port":"10050"},' + \
-                         '{"type":2,' + \
-                         '"main":1,' + \
-                         useip + \
-                         interface_ip + \
-                         interface_dns + \
-                         '"port":"161"}]'
+                         '"port":"10050"}]'
 
         #
         # Generate hostgroups and proxy IDs
