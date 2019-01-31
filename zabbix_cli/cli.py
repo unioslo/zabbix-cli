@@ -25,6 +25,7 @@ from __future__ import print_function
 import ast
 import cmd
 import datetime
+import distutils.version
 import glob
 import hashlib
 import json
@@ -4521,10 +4522,16 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 2:
             event_ids = arg_list[0].strip()
             ack_message = arg_list[1].strip()
-
         else:
             self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
+
+        # Hotfix for Zabbix 4.0 compability
+        api_version = distutils.version.StrictVersion(self.zapi.api_version())
+        if api_version >= distutils.version.StrictVersion("4.0"):
+            action = 6  # "Add message" and "Acknowledge"
+        else:
+            action = None  # Zabbix pre 4.0 does not have action
 
         #
         # Sanity check
@@ -4537,7 +4544,8 @@ class zabbixcli(cmd.Cmd):
 
         try:
             self.zapi.event.acknowledge(eventids=event_ids,
-                                        message=ack_message)
+                                        message=ack_message,
+                                        action=action)
 
             logger.info('Acknowledge message [%s] for eventID [%s] registered', ack_message, event_ids)
             self.generate_feedback('Done', 'Acknowledge message [' + ack_message + '] for eventID [' + ','.join(event_ids) + '] registered')
