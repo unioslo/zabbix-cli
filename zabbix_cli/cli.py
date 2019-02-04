@@ -40,7 +40,8 @@ import sys
 import textwrap
 import time
 
-import ipaddr
+# ipaddress is a dependency in python2 and stdlib in python3
+import ipaddress  # noqa: I100, I202
 
 import zabbix_cli
 from zabbix_cli.prettytable import ALL, FRAME, PrettyTable
@@ -2530,7 +2531,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
             # Check if we are using a hostname or an IP
-            ipaddr.IPAddress(host)
+            ipaddress.ip_address(u"{}".format(host))  # Unicodify for python2 compability
 
             useip = '"useip":1,'
             interface_ip = '"ip":"' + host + '",'

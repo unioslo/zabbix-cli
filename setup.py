@@ -42,7 +42,7 @@ try:
     if sys.version_info < (2, 6):
         raise SystemExit('ERROR: zabbix-cli needs at least python 2.6 to work')
     else:
-        install_requires = ['argparse', 'requests', 'ipaddr']
+        install_requires = ['argparse', 'requests', 'ipaddress; python_version<="2.7"']
 
     #
     # Setup
