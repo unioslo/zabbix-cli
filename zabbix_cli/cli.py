@@ -4625,8 +4625,16 @@ class zabbixcli(cmd.Cmd):
                 data = self.zapi.event.get(objectids=trigger_id, sortfield=['clock'], sortorder='DESC', limit=1)
                 event_ids.append(data[0]['eventid'])
 
+            # Hotfix for Zabbix 4.0 compability
+            api_version = distutils.version.StrictVersion(self.zapi.api_version())
+            if api_version >= distutils.version.StrictVersion("4.0"):
+                action = 6  # "Add message" and "Acknowledge"
+            else:
+                action = None  # Zabbix pre 4.0 does not have action
+
             self.zapi.event.acknowledge(eventids=event_ids,
-                                        message=ack_message)
+                                        message=ack_message,
+                                        action=action)
 
             logger.info('Acknowledge message [%s] for last eventIDs [%s] on triggerIDs [%s] registered', ack_message, ','.join(event_ids), ','.join(trigger_ids))
             self.generate_feedback('Done', 'Acknowledge message [' + ack_message + '] for last eventIDs [' + ','.join(event_ids) + '] on triggerIDs [' + ','.join(trigger_ids) + '] registered')
