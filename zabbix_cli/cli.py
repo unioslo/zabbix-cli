@@ -44,6 +44,7 @@ import time
 import ipaddress  # noqa: I100, I202
 
 import zabbix_cli
+import zabbix_cli.apiutils
 from zabbix_cli.prettytable import ALL, FRAME, PrettyTable
 from zabbix_cli.pyzabbix import ZabbixAPI
 
@@ -1872,28 +1873,29 @@ class zabbixcli(cmd.Cmd):
             # Generate users and usergroups IDs
             #
 
-            usergroups_list = []
-            usernames_list = []
+            usergroupids = []
+            userids = []
 
             for usergroup in usergroups.split(','):
 
                 if usergroup.isdigit():
-                    usergroups_list.append(str(usergroup).strip())
+                    usergroupids.append(str(usergroup).strip())
                 else:
-                    usergroups_list.append(str(self.get_usergroup_id(usergroup.strip())))
+                    usergroupids.append(str(self.get_usergroup_id(usergroup.strip())))
 
             for username in usernames.split(','):
 
                 if username.isdigit():
-                    usernames_list.append(str(username).strip())
+                    userids.append(str(username).strip())
                 else:
-                    usernames_list.append(str(self.get_user_id(username.strip())))
+                    userids.append(str(self.get_user_id(username.strip())))
 
             #
             # Add users to usergroups
             #
 
-            self.zapi.usergroup.massadd(usrgrpids=usergroups_list, userids=usernames_list)
+            for usergroupid in usergroupids:
+                zabbix_cli.apiutils.update_usergroup(self.zapi, usergroupid, userids=userids)
             self.generate_feedback('Done', 'Users ' + usernames + ' added to these usergroups: ' + usergroups)
             logger.info('Users: %s added to these usergroups: %s', usernames, usergroups)
 
@@ -3812,12 +3814,12 @@ class zabbixcli(cmd.Cmd):
 
                     for group in admin_usergroup_default.strip().split(','):
                         usrgrpid = self.get_usergroup_id(group)
-                        result = self.zapi.usergroup.massadd(usrgrpids=[usrgrpid], rights={'id': hostgroupid, 'permission': 3})
+                        result = zabbix_cli.apiutils.update_usergroup(self.zapi, usrgrpid, rights=[{'id': hostgroupid, 'permission': 3}])
                         logger.info('Admin usergroup (%s) has got RW permissions on hostgroup (%s) ', group, hostgroup)
 
                     for group in all_usergroup_default.strip().split(','):
                         usrgrpid = self.get_usergroup_id(group)
-                        result = self.zapi.usergroup.massadd(usrgrpids=[usrgrpid], rights={'id': hostgroupid, 'permission': 2})
+                        result = zabbix_cli.apiutils.update_usergroup(self.zapi, usrgrpid, rights=[{'id': hostgroupid, 'permission': 2}])
                         logger.info('All users usergroup (%s) has got RO permissions on hostgroup (%s) ', group, hostgroup)
 
                 except Exception as e:
@@ -3926,7 +3928,7 @@ class zabbixcli(cmd.Cmd):
 
             for group in hostgroups.split(','):
                 hostgroupid = self.get_hostgroup_id(group)
-                self.zapi.usergroup.massadd(usrgrpids=[usrgrpid], rights={'id': hostgroupid, 'permission': permission_code})
+                zabbix_cli.apiutils.update_usergroup(self.zapi, usrgrpid, rights=[{'id': hostgroupid, 'permission': permission_code}])
                 logger.info('Usergroup [%s] has got [%s] permission on hostgroup [%s] ', usergroup, permission, group)
                 self.generate_feedback('Done', 'Usergroup [' + usergroup + '] has got [' + permission + '] permission on hostgroup [' + group + ']')
 
@@ -4021,7 +4023,7 @@ class zabbixcli(cmd.Cmd):
 
             for group in hostgroups.split(','):
                 hostgroupid = self.get_hostgroup_id(group)
-                self.zapi.usergroup.massupdate(usrgrpids=[usrgrpid], rights={'id': hostgroupid, 'permission': permission_code})
+                zabbix_cli.apiutils.update_usergroup(self.zapi, usrgrpid, rights=[{'id': hostgroupid, 'permission': permission_code}])
                 logger.info('Usergroup [%s] has got [%s] permission on hostgroup [%s] ', usergroup, permission, group)
                 self.generate_feedback('Done', 'Usergroup [' + usergroup + '] has got [' + permission + '] permission on hostgroup [' + group + ']')
 
