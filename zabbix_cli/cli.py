@@ -45,6 +45,7 @@ import ipaddress  # noqa: I100, I202
 
 import zabbix_cli
 import zabbix_cli.apiutils
+import zabbix_cli.utils
 from zabbix_cli.prettytable import ALL, FRAME, PrettyTable
 from zabbix_cli.pyzabbix import ZabbixAPI
 
@@ -341,7 +342,7 @@ class zabbixcli(cmd.Cmd):
 
                 result_columns[result_columns_key] = {'maintenanceid': maintenance['maintenanceid'],
                                                       'name': maintenance['name'],
-                                                      'maintenance_type': self.get_maintenance_type(int(maintenance['maintenance_type'])),
+                                                      'maintenance_type': zabbix_cli.utils.get_maintenance_type(int(maintenance['maintenance_type'])),
                                                       'state': state,
                                                       'active_till': maintenance['active_till'],
                                                       'hosts': maintenance['hosts'],
@@ -364,7 +365,7 @@ class zabbixcli(cmd.Cmd):
 
                 result_columns[result_columns_key] = {'1': maintenance['maintenanceid'],
                                                       '2': '\n'.join(textwrap.wrap(maintenance['name'], 30)),
-                                                      '3': self.get_maintenance_type(int(maintenance['maintenance_type'])),
+                                                      '3': zabbix_cli.utils.get_maintenance_type(int(maintenance['maintenance_type'])),
                                                       '4': state,
                                                       '5': datetime.datetime.utcfromtimestamp(float(maintenance['active_till'])).strftime('%Y-%m-%dT%H:%M:%SZ'),
                                                       '6': '\n'.join(host_list),
@@ -514,7 +515,7 @@ class zabbixcli(cmd.Cmd):
                                                           8: datetime.datetime.utcfromtimestamp(float(period['start_date'])).strftime('%Y-%m-%dT%H:%M:%SZ'),
                                                           9: str(datetime.timedelta(seconds=int(period['start_time']))),
                                                           10: str(datetime.timedelta(seconds=int(period['period']))),
-                                                          11: self.get_maintenance_period_type(int(period['timeperiod_type'])),
+                                                          11: zabbix_cli.utils.get_maintenance_period_type(int(period['timeperiod_type'])),
                                                           12: '\n'.join(host_list),
                                                           13: '\n'.join(group_list)}
 
@@ -670,8 +671,8 @@ class zabbixcli(cmd.Cmd):
             if self.output_format == 'json':
                 result_columns[result_columns_key] = {'groupid': group['groupid'],
                                                       'name': group['name'],
-                                                      'flags': self.get_hostgroup_flag(int(group['flags'])),
-                                                      'type': self.get_hostgroup_type(int(group['internal'])),
+                                                      'flags': zabbix_cli.utils.get_hostgroup_flag(int(group['flags'])),
+                                                      'type': zabbix_cli.utils.get_hostgroup_type(int(group['internal'])),
                                                       'hosts': group['hosts']}
             else:
                 host_list = []
@@ -682,8 +683,8 @@ class zabbixcli(cmd.Cmd):
 
                 result_columns[result_columns_key] = {'1': group['groupid'],
                                                       '2': group['name'],
-                                                      '3': self.get_hostgroup_flag(int(group['flags'])),
-                                                      '4': self.get_hostgroup_type(int(group['internal'])),
+                                                      '3': zabbix_cli.utils.get_hostgroup_flag(int(group['flags'])),
+                                                      '4': zabbix_cli.utils.get_hostgroup_type(int(group['internal'])),
                                                       '5': '\n'.join(textwrap.wrap(', '.join(host_list), 60))}
             result_columns_key = result_columns_key + 1
 
@@ -835,9 +836,9 @@ class zabbixcli(cmd.Cmd):
                                                       'host': host['host'],
                                                       'groups': host['groups'],
                                                       'templates': host['parentTemplates'],
-                                                      'zabbix_agent': self.get_zabbix_agent_status(int(host['available'])),
-                                                      'maintenance_status': self.get_maintenance_status(int(host['maintenance_status'])),
-                                                      'status': self.get_monitoring_status(int(host['status'])),
+                                                      'zabbix_agent': zabbix_cli.utils.get_zabbix_agent_status(int(host['available'])),
+                                                      'maintenance_status': zabbix_cli.utils.get_maintenance_status(int(host['maintenance_status'])),
+                                                      'status': zabbix_cli.utils.get_monitoring_status(int(host['status'])),
                                                       'proxy': proxy_name}
 
             else:
@@ -858,9 +859,9 @@ class zabbixcli(cmd.Cmd):
                                                       '2': host['host'],
                                                       '3': '\n'.join(hostgroup_list),
                                                       '4': '\n'.join(template_list),
-                                                      '5': self.get_zabbix_agent_status(int(host['available'])),
-                                                      '6': self.get_maintenance_status(int(host['maintenance_status'])),
-                                                      '7': self.get_monitoring_status(int(host['status'])),
+                                                      '5': zabbix_cli.utils.get_zabbix_agent_status(int(host['available'])),
+                                                      '6': zabbix_cli.utils.get_maintenance_status(int(host['maintenance_status'])),
+                                                      '7': zabbix_cli.utils.get_monitoring_status(int(host['status'])),
                                                       '8': proxy_name}
 
             result_columns_key = result_columns_key + 1
@@ -1213,8 +1214,8 @@ class zabbixcli(cmd.Cmd):
 
                 result_columns[result_columns_key] = {'usrgrpid': group['usrgrpid'],
                                                       'name': group['name'],
-                                                      'gui_access': self.get_gui_access(int(group['gui_access'])),
-                                                      'user_status': self.get_usergroup_status(int(group['users_status'])),
+                                                      'gui_access': zabbix_cli.utils.get_gui_access(int(group['gui_access'])),
+                                                      'user_status': zabbix_cli.utils.get_usergroup_status(int(group['users_status'])),
                                                       'users': group['users']}
             else:
                 users = []
@@ -1225,8 +1226,8 @@ class zabbixcli(cmd.Cmd):
 
                 result_columns[result_columns_key] = {'1': group['usrgrpid'],
                                                       '2': group['name'],
-                                                      '3': self.get_gui_access(int(group['gui_access'])),
-                                                      '4': self.get_usergroup_status(int(group['users_status'])),
+                                                      '3': zabbix_cli.utils.get_gui_access(int(group['gui_access'])),
+                                                      '4': zabbix_cli.utils.get_usergroup_status(int(group['users_status'])),
                                                       '5': '\n'.join(textwrap.wrap(', '.join(users), 60))}
 
             result_columns_key = result_columns_key + 1
@@ -1277,9 +1278,9 @@ class zabbixcli(cmd.Cmd):
                 result_columns[result_columns_key] = {'userid': user['userid'],
                                                       'alias': user['alias'],
                                                       'name': user['name'] + ' ' + user['surname'],
-                                                      'autologin': self.get_autologin_type(int(user['autologin'])),
+                                                      'autologin': zabbix_cli.utils.get_autologin_type(int(user['autologin'])),
                                                       'autologout': user['autologout'],
-                                                      'type': self.get_user_type(int(user['type'])),
+                                                      'type': zabbix_cli.utils.get_user_type(int(user['type'])),
                                                       'usrgrps': user['usrgrps']}
 
             else:
@@ -1292,9 +1293,9 @@ class zabbixcli(cmd.Cmd):
                 result_columns[result_columns_key] = {'1': user['userid'],
                                                       '2': user['alias'],
                                                       '3': user['name'] + ' ' + user['surname'],
-                                                      '4': self.get_autologin_type(int(user['autologin'])),
+                                                      '4': zabbix_cli.utils.get_autologin_type(int(user['autologin'])),
                                                       '5': user['autologout'],
-                                                      '6': self.get_user_type(int(user['type'])),
+                                                      '6': zabbix_cli.utils.get_user_type(int(user['type'])),
                                                       '7': '\n'.join(textwrap.wrap(', '.join(usrgrps), 60))}
 
             result_columns_key = result_columns_key + 1
@@ -1491,7 +1492,7 @@ class zabbixcli(cmd.Cmd):
                 result_columns[result_columns_key] = {'triggerid': trigger['triggerid'],
                                                       'hostname': self.get_host_name(trigger['hosts'][0]['hostid']),
                                                       'description': trigger['description'],
-                                                      'severity': self.get_trigger_severity(int(trigger['priority'])),
+                                                      'severity': zabbix_cli.utils.get_trigger_severity(int(trigger['priority'])),
                                                       'lastchange': str(lastchange),
                                                       'age': str(age)}
             else:
@@ -1529,7 +1530,7 @@ class zabbixcli(cmd.Cmd):
                 result_columns[result_columns_key] = {'1': trigger['triggerid'],
                                                       '2': self.get_host_name(trigger['hosts'][0]['hostid']),
                                                       '3': '\n  '.join(textwrap.wrap("* " + trigger['description'], 62)),
-                                                      '4': ansi_code + self.get_trigger_severity(int(trigger['priority'])).upper() + ansi_end,
+                                                      '4': ansi_code + zabbix_cli.utils.get_trigger_severity(int(trigger['priority'])).upper() + ansi_end,
                                                       '5': str(lastchange),
                                                       '6': str(age)}
 
@@ -3924,7 +3925,7 @@ class zabbixcli(cmd.Cmd):
         try:
 
             usrgrpid = self.get_usergroup_id(usergroup)
-            permission_code = self.get_permission_code(permission)
+            permission_code = zabbix_cli.utils.get_permission_code(permission)
 
             for group in hostgroups.split(','):
                 hostgroupid = self.get_hostgroup_id(group)
@@ -4019,7 +4020,7 @@ class zabbixcli(cmd.Cmd):
         try:
 
             usrgrpid = self.get_usergroup_id(usergroup)
-            permission_code = self.get_permission_code(permission)
+            permission_code = zabbix_cli.utils.get_permission_code(permission)
 
             for group in hostgroups.split(','):
                 hostgroupid = self.get_hostgroup_id(group)
@@ -4725,8 +4726,8 @@ class zabbixcli(cmd.Cmd):
                                                       'triggerid': event['objectid'],
                                                       'clock': str(clock),
                                                       'age': str(age),
-                                                      'acknowledged': self.get_ack_status(int(event['acknowledged'])),
-                                                      'value': self.get_event_status(int(event['value']))}
+                                                      'acknowledged': zabbix_cli.utils.get_ack_status(int(event['acknowledged'])),
+                                                      'value': zabbix_cli.utils.get_event_status(int(event['value']))}
 
             else:
 
@@ -4734,8 +4735,8 @@ class zabbixcli(cmd.Cmd):
                                                       '2': event['objectid'],
                                                       '3': str(clock),
                                                       '4': str(age),
-                                                      '5': self.get_ack_status(int(event['acknowledged'])),
-                                                      '6': self.get_event_status(int(event['value']))}
+                                                      '5': zabbix_cli.utils.get_ack_status(int(event['acknowledged'])),
+                                                      '6': zabbix_cli.utils.get_event_status(int(event['value']))}
 
             result_columns_key = result_columns_key + 1
 
@@ -5482,7 +5483,7 @@ class zabbixcli(cmd.Cmd):
                 result_columns[result_columns_key] = {'itemid': item['itemid'],
                                                       'name': item['name'],
                                                       'key': item['key_'],
-                                                      'type': self.get_item_type(int(item['type'])),
+                                                      'type': zabbix_cli.utils.get_item_type(int(item['type'])),
                                                       'interval': item['delay'],
                                                       'history': item['history'],
                                                       'description': '\n'.join(textwrap.wrap(item['description'], 60))}
@@ -5490,7 +5491,7 @@ class zabbixcli(cmd.Cmd):
                 result_columns[result_columns_key] = {'1': item['itemid'],
                                                       '2': item['name'],
                                                       '3': item['key_'],
-                                                      '4': self.get_item_type(int(item['type'])),
+                                                      '4': zabbix_cli.utils.get_item_type(int(item['type'])),
                                                       '5': item['delay'],
                                                       '6': item['history'],
                                                       '7': '\n'.join(textwrap.wrap(item['description'], 60))}
@@ -5615,15 +5616,15 @@ class zabbixcli(cmd.Cmd):
                     result_columns[result_columns_key] = {'triggerid': data['triggerid'],
                                                           'expression': data['expression'],
                                                           'description': data['description'],
-                                                          'priority': self.get_trigger_severity(int(data['priority'])),
-                                                          'status': self.get_trigger_status(int(data['status']))}
+                                                          'priority': zabbix_cli.utils.get_trigger_severity(int(data['priority'])),
+                                                          'status': zabbix_cli.utils.get_trigger_status(int(data['status']))}
 
                 else:
                     result_columns[result_columns_key] = {'1': data['triggerid'],
                                                           '2': data['expression'],
                                                           '3': data['description'],
-                                                          '4': self.get_trigger_severity(int(data['priority'])),
-                                                          '5': self.get_trigger_status(int(data['status']))}
+                                                          '4': zabbix_cli.utils.get_trigger_severity(int(data['priority'])),
+                                                          '5': zabbix_cli.utils.get_trigger_status(int(data['status']))}
 
                 result_columns_key = result_columns_key + 1
 
@@ -6350,243 +6351,6 @@ class zabbixcli(cmd.Cmd):
 
         filename = directory_exports + '/' + obj_type + '/zabbix_export_' + obj_type + '_' + obj_name.replace(' ', '_').replace('/', '_') + '_' + obj_id + timestamp + '.' + file_ext
         return filename
-
-    def get_ack_status(self, code):
-        '''
-        Get ack status from code
-        '''
-
-        ack_status = {0: 'No', 1: 'Yes'}
-
-        if code in ack_status:
-            return ack_status[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_event_status(self, code):
-        '''
-        Get event status from code
-        '''
-
-        event_status = {0: 'OK', 1: 'Problem'}
-
-        if code in event_status:
-            return event_status[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_trigger_severity(self, code):
-        '''
-        Get trigger severity from code
-        '''
-
-        trigger_severity = {0: 'Not classified', 1: 'Information', 2: 'Warning', 3: 'Average', 4: 'High', 5: 'Disaster'}
-
-        if code in trigger_severity:
-            return trigger_severity[code]
-
-        else:
-            return 'Unknown'
-
-    def get_trigger_status(self, code):
-        '''
-        Get trigger status from code
-        '''
-
-        trigger_status = {0: 'Enable', 1: 'Disable'}
-
-        if code in trigger_status:
-            return trigger_status[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_maintenance_status(self, code):
-        '''
-        Get maintenance status from code
-        '''
-
-        maintenance_status = {0: 'No maintenance', 1: 'In progress'}
-
-        if code in maintenance_status:
-            return maintenance_status[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_monitoring_status(self, code):
-        '''
-        Get monitoring status from code
-        '''
-
-        monitoring_status = {0: 'Monitored', 1: 'Not monitored'}
-
-        if code in monitoring_status:
-            return monitoring_status[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_zabbix_agent_status(self, code):
-        '''
-        Get zabbix agent status from code
-        '''
-
-        zabbix_agent_status = {1: 'Available', 2: 'Unavailable'}
-
-        if code in zabbix_agent_status:
-            return zabbix_agent_status[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_gui_access(self, code):
-        '''
-        Get GUI access from code
-        '''
-
-        gui_access = {0: 'System default', 1: 'Internal', 2: 'Disable'}
-
-        if code in gui_access:
-            return gui_access[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_usergroup_status(self, code):
-        '''
-        Get usergroup status from code
-        '''
-
-        usergroup_status = {0: 'Enable', 1: 'Disable'}
-
-        if code in usergroup_status:
-            return usergroup_status[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_hostgroup_flag(self, code):
-        '''
-        Get hostgroup flag from code
-        '''
-
-        hostgroup_flag = {0: 'Plain', 4: 'Discover'}
-
-        if code in hostgroup_flag:
-            return hostgroup_flag[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_hostgroup_type(self, code):
-        '''
-        Get hostgroup type from code
-        '''
-
-        hostgroup_type = {0: 'Not internal', 1: 'Internal'}
-
-        if code in hostgroup_type:
-            return hostgroup_type[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_user_type(self, code):
-        '''
-        Get user type from code
-        '''
-
-        user_type = {1: 'User', 2: 'Admin', 3: 'Super admin'}
-
-        if code in user_type:
-            return user_type[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_maintenance_type(self, code):
-        '''
-        Get maintenance type from code
-        '''
-
-        maintenance_type = {0: 'With DC', 1: 'Without DC'}
-
-        if code in maintenance_type:
-            return maintenance_type[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_maintenance_period_type(self, code):
-        '''
-        Get maintenance period type from code
-        '''
-
-        maintenance_period_type = {0: 'One time', 2: 'Daily', 3: 'Weekly', 4: 'Monthly'}
-
-        if code in maintenance_period_type:
-            return maintenance_period_type[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_autologin_type(self, code):
-        '''
-        Get autologin type from code
-        '''
-
-        autologin_type = {0: 'Disable', 1: 'Enable'}
-
-        if code in autologin_type:
-            return autologin_type[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
-
-    def get_permission_code(self, permission):
-        '''
-        Get permission code
-        '''
-
-        permission_code = {'deny': 0, 'ro': 2, 'rw': 3}
-
-        if permission in permission_code:
-            return permission_code[permission]
-
-        else:
-            return 0
-
-    def get_item_type(self, code):
-        '''
-        Get item type from code
-        '''
-        item_type = {0: 'Zabbix agent',
-                     1: 'SNMPv1 agent',
-                     2: 'Zabbix trapper',
-                     3: 'simple check',
-                     4: 'SNMPv2 agent',
-                     5: 'Zabbix internal',
-                     6: 'SNMPv3 agent',
-                     7: 'Zabbix agent (active)',
-                     8: 'Zabbix aggregate',
-                     9: 'web item',
-                     10: 'external check',
-                     11: 'database monitor',
-                     12: 'IPMI agent',
-                     13: 'SSH agent',
-                     14: 'TELNET agent',
-                     15: 'calculated',
-                     16: 'JMX agent',
-                     17: 'SNMP trap'}
-
-        if code in item_type:
-            return item_type[code] + " (" + str(code) + ")"
-
-        else:
-            return 'Unknown' + " (" + str(code) + ")"
 
     def generate_output(self, result, colnames, left_col, right_col, hrules):
         '''
