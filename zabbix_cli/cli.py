@@ -3629,12 +3629,15 @@ class zabbixcli(cmd.Cmd):
                 return False
 
             else:
+                usergroup_objects = []
+                for usergroup in usergroup_list:
+                    usergroup_objects.append({"usrgrpid": usergroup})
                 result = self.zapi.user.create(alias=alias,
                                                passwd=passwd,
                                                type=type,
                                                autologin=autologin,
                                                autologout=autologout,
-                                               usrgrps=usergroup_list,
+                                               usrgrps=usergroup_objects,
                                                user_medias=[
                                                    {
                                                        'mediatypeid': result2[0]['mediatypeid'],
