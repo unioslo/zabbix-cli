@@ -4843,6 +4843,7 @@ class zabbixcli(cmd.Cmd):
                                             searchWildcardsEnabled=True,
                                             sortfield='host',
                                             selectHosts=['host'],
+                                            selectTemplates=['host'],
                                             sortorder='ASC')
 
         except Exception as e:
@@ -4859,7 +4860,8 @@ class zabbixcli(cmd.Cmd):
             if self.output_format == 'json':
                 result_columns[result_columns_key] = {'templateid': template['templateid'],
                                                       'name': template['host'],
-                                                      'hosts': template['hosts']}
+                                                      'hosts': template['hosts'],
+                                                      'templates': template['templates']}
 
             else:
 
@@ -4869,9 +4871,16 @@ class zabbixcli(cmd.Cmd):
 
                 host_list.sort()
 
+                template_list = []
+                for tpl in template['templates']:
+                    template_list.append(tpl['host'])
+
+                template_list.sort()
+
                 result_columns[result_columns_key] = {'1': template['templateid'],
                                                       '2': template['host'],
-                                                      '3': '\n'.join(host_list)}
+                                                      '3': '\n'.join(host_list),
+                                                      '4': '\n'.join(template_list)}
 
             result_columns_key = result_columns_key + 1
 
@@ -4879,8 +4888,8 @@ class zabbixcli(cmd.Cmd):
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['TemplateID', 'Name', 'Hosts'],
-                             ['Name', 'Hosts'],
+                             ['TemplateID', 'Name', 'Hosts','Templates'],
+                             ['Name', 'Hosts','Templates'],
                              ['TemplateID'],
                              ALL)
 
