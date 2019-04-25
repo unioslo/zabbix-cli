@@ -6946,12 +6946,7 @@ class zabbixcli(cmd.Cmd):
         Get Zabbix-CLI version
         '''
 
-        try:
-            return zabbix_cli.__version__
-
-        except Exception:
-            return 'Unknown'
-
+        return zabbix_cli.__version__
 
 if __name__ == '__main__':
     cli = zabbix_cli()
