@@ -76,12 +76,6 @@ class zabbixcli(cmd.Cmd):
             # Zabbix-cli version
             self.version = self.get_version()
 
-            # Zabbix-cli welcome intro
-            self.intro = '\n#############################################################\n' + \
-                         'Welcome to the Zabbix command-line interface (v.' + self.version + ')\n' + \
-                         '#############################################################\n' + \
-                         'Type help or \\? to list commands.\n'
-
             # Pointer to Configuration class
             self.conf = conf
 
@@ -132,6 +126,8 @@ class zabbixcli(cmd.Cmd):
 
             logger.debug('Connected to Zabbix JSON-API')
 
+            self.api_version = self.zapi.apiinfo.version()
+
             #
             # The file $HOME/.zabbix-cli_auth_token is created if it does not exists.
             #
@@ -146,6 +142,12 @@ class zabbixcli(cmd.Cmd):
                     auth_token_file.flush()
 
                 logger.info('API-auth-token file created.')
+
+            self.intro = '\n#############################################################\n' + \
+                         'Welcome to the Zabbix command-line interface (v' + self.version + ')\n' + \
+                         'Connected to server ' + self.conf.zabbix_api_url + ' (v' + self.api_version + ')\n' + \
+                         '#############################################################\n' + \
+                         'Type help or \\? to list commands.\n'
 
             #
             # Populate the dictionary used as a cache with hostid and
