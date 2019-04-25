@@ -72,56 +72,25 @@ class zabbixcli(cmd.Cmd):
         cmd.Cmd.__init__(self)
 
         try:
-
-            # Zabbix-cli version
             self.version = self.get_version()
-
-            # Pointer to Configuration class
             self.conf = conf
-
-            # zabbix-API Username
             self.api_username = username
-
-            # zabbix-API password
             self.api_password = password
-
-            # zabbix-API auth-token
             self.api_auth_token = auth_token
-
-            # Default output format (table|json|csv)
             self.output_format = 'table'
-
-            # Use of colors (on|off)
             self.use_colors = self.conf.use_colors
-
-            # Use of auth-token file (on|off)
             self.use_auth_token_file = self.conf.use_auth_token_file
-
-            # Use paging (on|off)
             self.use_paging = self.conf.use_paging
-
-            # Bulk execution of commands (True|False)
             self.bulk_execution = False
-
-            # Non-interactive execution (True|False)
             self.non_interactive = False
-
-            # SystemID show in prompt text
             self.system_id = self.conf.system_id
 
-            # Prompt text
             self.prompt = '[zabbix-cli ' + self.api_username + '@' + self.system_id + ']$ '
             logger.debug('Zabbix API url: %s', self.conf.zabbix_api_url)
 
-            #
-            # Connecting to the Zabbix JSON-API
-            #
-
-            zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
-
             self.zapi = ZabbixAPI(self.conf.zabbix_api_url)
             self.zapi.session.verify = True
-
+            zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
             self.api_auth_token = self.zapi.login(self.api_username, self.api_password, self.api_auth_token)
 
             logger.debug('Connected to Zabbix JSON-API')
