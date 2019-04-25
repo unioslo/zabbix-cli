@@ -71,74 +71,27 @@ class zabbixcli(cmd.Cmd):
     def __init__(self, conf, username='', password='', auth_token=''):
         cmd.Cmd.__init__(self)
 
+        self.version = self.get_version()
+        self.conf = conf
+        self.api_username = username
+        self.api_password = password
+        self.api_auth_token = auth_token
+        self.output_format = 'table'
+        self.use_colors = self.conf.use_colors
+        self.use_auth_token_file = self.conf.use_auth_token_file
+        self.use_paging = self.conf.use_paging
+        self.bulk_execution = False
+        self.non_interactive = False
+        self.system_id = self.conf.system_id
+
+        self.prompt = '[zabbix-cli ' + self.api_username + '@' + self.system_id + ']$ '
+        logger.debug('Zabbix API url: %s', self.conf.zabbix_api_url)
+
         try:
-            self.version = self.get_version()
-            self.conf = conf
-            self.api_username = username
-            self.api_password = password
-            self.api_auth_token = auth_token
-            self.output_format = 'table'
-            self.use_colors = self.conf.use_colors
-            self.use_auth_token_file = self.conf.use_auth_token_file
-            self.use_paging = self.conf.use_paging
-            self.bulk_execution = False
-            self.non_interactive = False
-            self.system_id = self.conf.system_id
-
-            self.prompt = '[zabbix-cli ' + self.api_username + '@' + self.system_id + ']$ '
-            logger.debug('Zabbix API url: %s', self.conf.zabbix_api_url)
-
             self.zapi = ZabbixAPI(self.conf.zabbix_api_url)
             self.zapi.session.verify = True
             zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
             self.api_auth_token = self.zapi.login(self.api_username, self.api_password, self.api_auth_token)
-
-            logger.debug('Connected to Zabbix JSON-API')
-
-            self.api_version = self.zapi.apiinfo.version()
-
-            #
-            # The file $HOME/.zabbix-cli_auth_token is created if it does not exists.
-            #
-            # Format:
-            # USERNAME::API-auth-token returned after the las login.
-            #
-
-            if self.use_auth_token_file == 'ON' and not os.path.isfile(zabbix_auth_token_file):
-
-                with open(zabbix_auth_token_file, 'w') as auth_token_file:
-                    auth_token_file.write(self.api_username + '::' + self.api_auth_token)
-                    auth_token_file.flush()
-
-                logger.info('API-auth-token file created.')
-
-            self.intro = '\n#############################################################\n' + \
-                         'Welcome to the Zabbix command-line interface (v' + self.version + ')\n' + \
-                         'Connected to server ' + self.conf.zabbix_api_url + ' (v' + self.api_version + ')\n' + \
-                         '#############################################################\n' + \
-                         'Type help or \\? to list commands.\n'
-
-            #
-            # Populate the dictionary used as a cache with hostid and
-            # hostname data
-            #
-
-            self.hostid_cache = self.populate_hostid_cache()
-
-            #
-            # Populate the dictionary used as a cache with proxyid and
-            # proxy name data
-            #
-
-            self.proxyid_cache = self.populate_proxyid_cache()
-
-            #
-            # Populate the dictionary used as a cache with hostgroupname and
-            # hostgroupid
-            #
-
-            self.hostgroupname_cache = self.populate_hostgroupname_cache()
-
         except Exception as e:
             print('\n[ERROR]: ' + str(e) + '\n')
 
@@ -158,6 +111,52 @@ class zabbixcli(cmd.Cmd):
                     sys.exit(1)
 
             sys.exit(1)
+
+        logger.debug('Connected to Zabbix JSON-API')
+
+        self.api_version = self.zapi.apiinfo.version()
+
+        #
+        # The file $HOME/.zabbix-cli_auth_token is created if it does not exists.
+        #
+        # Format:
+        # USERNAME::API-auth-token returned after the las login.
+        #
+
+        if self.use_auth_token_file == 'ON' and not os.path.isfile(zabbix_auth_token_file):
+
+            with open(zabbix_auth_token_file, 'w') as auth_token_file:
+                auth_token_file.write(self.api_username + '::' + self.api_auth_token)
+                auth_token_file.flush()
+
+            logger.info('API-auth-token file created.')
+
+        self.intro = '\n#############################################################\n' + \
+                     'Welcome to the Zabbix command-line interface (v' + self.version + ')\n' + \
+                     'Connected to server ' + self.conf.zabbix_api_url + ' (v' + self.api_version + ')\n' + \
+                     '#############################################################\n' + \
+                     'Type help or \\? to list commands.\n'
+
+        #
+        # Populate the dictionary used as a cache with hostid and
+        # hostname data
+        #
+
+        self.hostid_cache = self.populate_hostid_cache()
+
+        #
+        # Populate the dictionary used as a cache with proxyid and
+        # proxy name data
+        #
+
+        self.proxyid_cache = self.populate_proxyid_cache()
+
+        #
+        # Populate the dictionary used as a cache with hostgroupname and
+        # hostgroupid
+        #
+
+        self.hostgroupname_cache = self.populate_hostgroupname_cache()
 
     def do_show_maintenance_definitions(self, args):
         '''
