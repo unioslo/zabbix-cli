@@ -4888,8 +4888,8 @@ class zabbixcli(cmd.Cmd):
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['TemplateID', 'Name', 'Hosts','Templates'],
-                             ['Name', 'Hosts','Templates'],
+                             ['TemplateID', 'Name', 'Hosts', 'Templates'],
+                             ['Name', 'Hosts', 'Templates'],
                              ['TemplateID'],
                              ALL)
 
