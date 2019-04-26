@@ -924,7 +924,7 @@ class zabbixcli(cmd.Cmd):
             host_id = str(self.get_host_id(host))
 
         except Exception as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -979,7 +979,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -1119,7 +1119,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -1347,7 +1347,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -1543,7 +1543,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -1668,7 +1668,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -1790,7 +1790,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -1902,7 +1902,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -2025,7 +2025,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -2148,7 +2148,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -2282,7 +2282,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -2445,7 +2445,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -2619,7 +2619,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -2715,7 +2715,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -2851,7 +2851,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -3080,7 +3080,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -3290,7 +3290,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -3479,7 +3479,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -3646,7 +3646,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -3724,7 +3724,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -3850,7 +3850,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -3945,7 +3945,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -4032,7 +4032,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -4146,7 +4146,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -4269,7 +4269,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -4371,7 +4371,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -4482,7 +4482,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -4561,7 +4561,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -4651,7 +4651,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -4763,7 +4763,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -4935,7 +4935,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -5040,7 +5040,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -5143,7 +5143,7 @@ class zabbixcli(cmd.Cmd):
         try:
             arg_list = [arg.strip() for arg in shlex.split(args)]
         except ValueError as e:
-            print('\n[ERROR]: ', e, '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 1:
@@ -5291,7 +5291,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -5392,7 +5392,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -5519,7 +5519,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -5678,7 +5678,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -5944,7 +5944,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         #
@@ -6126,7 +6126,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
@@ -6225,7 +6225,7 @@ class zabbixcli(cmd.Cmd):
             arg_list = shlex.split(args)
 
         except ValueError as e:
-            print('\n[ERROR]: ' + e + '\n')
+            print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
         if len(arg_list) == 0:
