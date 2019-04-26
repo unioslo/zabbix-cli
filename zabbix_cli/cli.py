@@ -6949,6 +6949,7 @@ class zabbixcli(cmd.Cmd):
 
         return zabbix_cli.__version__
 
+
 if __name__ == '__main__':
     cli = zabbix_cli()
     signal.signal(signal.SIGINT, cli.signal_handler_sigint)
