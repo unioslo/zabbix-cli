@@ -92,6 +92,7 @@ class zabbixcli(cmd.Cmd):
             self.zapi.session.verify = True
             zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
             self.api_auth_token = self.zapi.login(self.api_username, self.api_password, self.api_auth_token)
+            self.zapi.user.get(userids=-1)  # Dummy call to verify authentication
         except Exception as e:
             print('\n[ERROR]: ' + str(e) + '\n')
 
