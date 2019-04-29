@@ -2,6 +2,7 @@
 Utility functions.
 """
 
+
 def get_ack_status(code):
     """
     Get ack status from code
@@ -13,6 +14,7 @@ def get_ack_status(code):
         return ack_status[code] + " (" + str(code) + ")"
 
     return "Unknown ({})".format(str(code))
+
 
 def get_event_status(code):
     """
@@ -26,6 +28,7 @@ def get_event_status(code):
 
     return "Unknown ({})".format(str(code))
 
+
 def get_trigger_severity(code):
     """
     Get trigger severity from code
@@ -37,6 +40,7 @@ def get_trigger_severity(code):
         return trigger_severity[code]
 
     return "Unknown ({})".format(str(code))
+
 
 def get_trigger_status(code):
     """
@@ -50,6 +54,7 @@ def get_trigger_status(code):
 
     return "Unknown ({})".format(str(code))
 
+
 def get_maintenance_status(code):
     """
     Get maintenance status from code
@@ -61,6 +66,7 @@ def get_maintenance_status(code):
         return maintenance_status[code] + " (" + str(code) + ")"
 
     return "Unknown ({})".format(str(code))
+
 
 def get_monitoring_status(code):
     """
@@ -74,6 +80,7 @@ def get_monitoring_status(code):
 
     return "Unknown ({})".format(str(code))
 
+
 def get_zabbix_agent_status(code):
     """
     Get zabbix agent status from code
@@ -85,6 +92,7 @@ def get_zabbix_agent_status(code):
         return zabbix_agent_status[code] + " (" + str(code) + ")"
 
     return "Unknown ({})".format(str(code))
+
 
 def get_gui_access(code):
     """
@@ -98,6 +106,7 @@ def get_gui_access(code):
 
     return "Unknown ({})".format(str(code))
 
+
 def get_usergroup_status(code):
     """
     Get usergroup status from code
@@ -109,6 +118,7 @@ def get_usergroup_status(code):
         return usergroup_status[code] + " (" + str(code) + ")"
 
     return "Unknown ({})".format(str(code))
+
 
 def get_hostgroup_flag(code):
     """
@@ -122,6 +132,7 @@ def get_hostgroup_flag(code):
 
     return "Unknown ({})".format(str(code))
 
+
 def get_hostgroup_type(code):
     """
     Get hostgroup type from code
@@ -133,6 +144,7 @@ def get_hostgroup_type(code):
         return hostgroup_type[code] + " (" + str(code) + ")"
 
     return "Unknown ({})".format(str(code))
+
 
 def get_user_type(code):
     """
@@ -146,6 +158,7 @@ def get_user_type(code):
 
     return "Unknown ({})".format(str(code))
 
+
 def get_maintenance_type(code):
     """
     Get maintenance type from code
@@ -157,6 +170,7 @@ def get_maintenance_type(code):
         return maintenance_type[code] + " (" + str(code) + ")"
 
     return "Unknown ({})".format(str(code))
+
 
 def get_maintenance_period_type(code):
     """
@@ -170,6 +184,7 @@ def get_maintenance_period_type(code):
 
     return "Unknown ({})".format(str(code))
 
+
 def get_autologin_type(code):
     """
     Get autologin type from code
@@ -182,6 +197,7 @@ def get_autologin_type(code):
 
     return "Unknown ({})".format(str(code))
 
+
 def get_permission_code(permission):
     """
     Get permission code
@@ -193,6 +209,7 @@ def get_permission_code(permission):
         return permission_code[permission]
 
     return 0
+
 
 def get_item_type(code):
     """
