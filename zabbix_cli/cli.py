@@ -5155,8 +5155,8 @@ class zabbixcli(cmd.Cmd):
             result_columns = {}
             result_columns_key = 0
 
-            for key, values in key_values.iteritems():
-                for value, short_items in values.iteritems():
+            for key, values in key_values.items():
+                for value, short_items in values.items():
                     if self.output_format == 'json':
                         result_columns[result_columns_key] = {'name': short_items[0]['name'],
                                                               'key': key,
@@ -6203,7 +6203,7 @@ class zabbixcli(cmd.Cmd):
             for proxyid in proxyid_list:
                 hostid_list = []
 
-                for hostid, proxyid2 in host_proxy_relation.iteritems():
+                for hostid, proxyid2 in host_proxy_relation.items():
                     if proxyid2 == proxyid:
                         hostid_list.append({"hostid": str(hostid)})
 
@@ -6706,7 +6706,7 @@ class zabbixcli(cmd.Cmd):
 
         if self.bulk_execution:
 
-            for proxyid, proxy_name in self.proxyid_cache.iteritems():
+            for proxyid, proxy_name in self.proxyid_cache.items():
                 if match_pattern.match(proxy_name):
                     proxy_list.append(proxyid)
 
