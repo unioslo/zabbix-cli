@@ -22,7 +22,6 @@
 
 from __future__ import print_function
 
-import ast
 import cmd
 import datetime
 import distutils.version
@@ -237,10 +236,6 @@ class zabbixcli(cmd.Cmd):
             maintenance_list = []
             hostnames_list = []
             hostgroups_list = []
-            maintenance_ids = ''
-            hostgroup_ids = ''
-            host_ids = ''
-            search_data = ','
 
             if maintenances == '*':
                 maintenances = ''
@@ -255,43 +250,45 @@ class zabbixcli(cmd.Cmd):
                 for maintenance in maintenances.split(','):
                     maintenance_list.append(str(maintenance).strip())
 
-                maintenance_ids = "','".join(maintenance_list)
-                search_data += '\'maintenanceids\':[\'' + maintenance_ids + '\'],'
-
             if hostgroups != '':
-
                 for hostgroup in hostgroups.split(','):
-
                     if hostgroup.isdigit():
                         hostgroups_list.append(str(hostgroup).strip())
                     else:
                         hostgroups_list.append(str(self.get_hostgroup_id(hostgroup.strip())))
 
-                hostgroup_ids = "','".join(hostgroups_list)
-                search_data += '\'groupids\':[\'' + hostgroup_ids + '\'],'
-
             if hostnames != '':
-
                 for hostname in hostnames.split(','):
-
                     if hostname.isdigit():
                         hostnames_list.append(str(hostname).strip())
                     else:
                         hostnames_list.append(str(self.get_host_id(hostname.strip())))
-
-                host_ids = "','".join(hostnames_list)
-                search_data += '\'hostids\':[\'' + host_ids + '\'],'
 
         except Exception as e:
             logger.error('Problems getting maintenance definitions information - %s', e)
             self.generate_feedback('Error', 'Problems getting maintenance definitions information')
             return False
 
+        query = {
+            "output": "extend",
+            "selectGroups": ["name"],
+            "selectHosts": ["name"],
+            "sortfield": "maintenanceid",
+            "sortorder": "ASC",
+            "searchByAny": True
+        }
+
+        if maintenance_list:
+            query["maintenanceids"] = maintenance_list
+        if hostgroups_list:
+            query["groupids"] = hostgroups_list
+        if hostnames_list:
+            query["hostids"] = hostnames_list
+
         #
         # Get result from Zabbix API
         #
         try:
-            query = ast.literal_eval("{'output':'extend'" + search_data + "'selectGroups':['name'],'selectHosts':['name'],'sortfield':'maintenanceid','sortorder':'ASC','searchByAny':'True'}")
             result = self.zapi.maintenance.get(**query)
             logger.info('Command show_maintenance_definitions executed')
         except Exception as e:
@@ -411,35 +408,44 @@ class zabbixcli(cmd.Cmd):
         # Generate maintenances, hosts and hostgroups IDs
         #
 
-        try:
-            search_data = ','
-            maintenance_list = []
-            maintenance_ids = ''
+        maintenance_list = []
 
-            if maintenances == '*':
-                maintenances = ''
+        if maintenances == '*':
+            maintenances = ''
 
-            if maintenances != '':
-                for maintenance in maintenances.split(','):
-                    maintenance_list.append(str(maintenance).strip())
+        if maintenances != '':
+            for maintenance in maintenances.split(','):
+                maintenance_list.append(str(maintenance).strip())
 
-                maintenance_ids = "','".join(maintenance_list)
-                search_data += '\'maintenanceids\':[\'' + maintenance_ids + '\'],'
+        query = {
+            "output": "extend",
+            "searchByAny": True,
+            "selectGroups": ["name"],
+            "selectHosts": ["name"],
+            "selectTimeperiods": [
+                "timeperiodid",
+                "day",
+                "dayofweek",
+                "every",
+                "month",
+                "period",
+                "start_date",
+                "start_time",
+                "timeperiod_type",
+            ],
+            "sortfield": "maintenanceid",
+            "sortorder": "ASC"
+        }
 
-        except Exception as e:
-            logger.error('Problems getting maintenance periods information - %s', e)
-            self.generate_feedback('Error', 'Problems getting maintenance periods information')
-            return False
+        if maintenance_list:
+            query["maintenanceids"] = maintenance_list
 
         #
         # Get result from Zabbix API
         #
         try:
-            query = ast.literal_eval("{'output':'extend'" + search_data + "'selectGroups':['name'],'selectHosts':['name'],'selectTimeperiods':['timeperiodid','day','dayofweek','every','month','period','start_date','start_time','timeperiod_type'],'sortfield':'maintenanceid','sortorder':'ASC','searchByAny':'True'}")
             result = self.zapi.maintenance.get(**query)
-
             logger.info('Command show_maintenance_periods executed')
-
         except Exception as e:
             logger.error('Problems getting maintenance periods information - %s', e)
             self.generate_feedback('Error', 'Problems getting maintenance periods information')
@@ -729,7 +735,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 print('--------------------------------------------------------')
                 host = input('# Host: ').strip()
-                filter = input('# Filter: ').strip()
+                _filter = input('# Filter: ').strip()
                 print('--------------------------------------------------------')
 
             except EOFError:
@@ -742,18 +748,16 @@ class zabbixcli(cmd.Cmd):
         #
 
         elif len(arg_list) == 1:
-
             host = arg_list[0].strip()
-            filter = ''
+            _filter = ''
 
         #
         # Command with filters attributes
         #
 
         elif len(arg_list) == 2:
-
             host = arg_list[0].strip()
-            filter = arg_list[1].strip()
+            _filter = arg_list[1].strip()
 
         #
         # Command with the wrong number of parameters
@@ -763,25 +767,40 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
-        #
-        # Check if we are searching by hostname or hostID
-        #
+        query = {
+            "output": "extend",
+            "selectParentTemplates": [
+                "templateid",
+                "name"
+            ],
+            "selectGroups": [
+                "groupid",
+                "name"
+            ],
+            "selectApplications": [
+                "name"
+            ],
+            "sortfield": "host",
+            "sortorder": "ASC",
+            "searchWildcardsEnabled": True,
+            "filter": {
+            }
+        }
 
         if host.isdigit():
-            search_host = '\'hostids\':\'' + host + '\''
+            query["hostids"] = host
         else:
-            search_host = '\'search\':{\'host\':\'' + host + '\'}'
+            query["search"] = {"host": host}
 
-        #
-        # Generate query
-        #
-
-        try:
-            query = ast.literal_eval("{'output':'extend'," + search_host + ",'selectParentTemplates':['templateid','name'],'selectGroups':['groupid','name'],'selectApplications':['name'],'sortfield':'host','sortorder':'ASC','searchWildcardsEnabled':'True','filter':{" + filter + "}}")
-        except Exception as e:
-            logger.error('Problems generating show_host query - %s', e)
-            self.generate_feedback('Error', 'Problems generating show_host query')
-            return False
+        if _filter:
+            try:
+                filter_items = _filter.split(",")
+                for filter_item in filter_items:
+                    key, value = [s.strip("'\"") for s in filter_item.split(":")]
+                    query["filter"][key] = value
+            except ValueError:
+                self.generate_feedback("Error", "Unable to parse filter")
+                return False
 
         #
         # Get result from Zabbix API
@@ -935,16 +954,12 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Host id for "' + host + '" not found')
             return False
 
-        update_id = "'hostid': '" + host_id + "'"
-        update_value = "'inventory':  {'" + inventory_key + "':'" + inventory_value + "'}"
-
-        try:
-            query = ast.literal_eval("{" + update_id + "," + update_value + "}")
-
-        except Exception as e:
-            logger.error('Problems generating query - %s', e)
-            self.generate_feedback('Error', 'Problems generating query')
-            return False
+        query = {
+            "hostid": host_id,
+            "inventory": {
+                inventory_key: inventory_value
+            }
+        }
 
         #
         # Get result from Zabbix API
@@ -991,7 +1006,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 print('--------------------------------------------------------')
                 host = input('# Host: ').strip()
-                filter = input('# Filter: ').strip()
+                _filter = input('# Filter: ').strip()
                 print('--------------------------------------------------------')
 
             except EOFError:
@@ -1007,7 +1022,7 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 1:
 
             host = arg_list[0].strip()
-            filter = ''
+            _filter = ''
 
         #
         # Command with filters attributes
@@ -1016,7 +1031,7 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 2:
 
             host = arg_list[0].strip()
-            filter = arg_list[1].strip()
+            _filter = arg_list[1].strip()
 
         #
         # Command with the wrong number of parameters
@@ -1026,25 +1041,30 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
-        #
-        # Check if we are searching by hostname or hostID
-        #
+        query = {
+            "output": "extend",
+            "selectInventory": "extend",
+            "sortfield": "host",
+            "sortorder": "ASC",
+            "searchWildcardsEnabled": True,
+            "filter": {
+            }
+        }
 
         if host.isdigit():
-            search_host = '\'hostids\':\'' + host + '\''
+            query["hostids"] = host
         else:
-            search_host = '\'search\':{\'host\':\'' + host + '\'}'
+            query["search"] = {"host": host}
 
-        #
-        # Generate query
-        #
-
-        try:
-            query = ast.literal_eval("{'output':'extend'," + search_host + ",'selectInventory':'extend','sortfield':'host','sortorder':'ASC','searchWildcardsEnabled':'True','filter':{" + filter + "}}")
-        except Exception as e:
-            logger.error('Problems generating query - %s', e)
-            self.generate_feedback('Error', 'Problems generating query')
-            return False
+        if _filter:
+            try:
+                filter_items = _filter.split(",")
+                for filter_item in filter_items:
+                    key, value = [s.strip("'\"") for s in filter_item.split(":")]
+                    query["filter"][key] = value
+            except ValueError:
+                self.generate_feedback("Error", "Unable to parse filter")
+                return False
 
         #
         # Get result from Zabbix API
@@ -1392,57 +1412,60 @@ class zabbixcli(cmd.Cmd):
         # Sanity check
         #
 
-        if ack_filter in ['', 'true']:
-            ack_filter = ",'withLastEventUnacknowledged':'True'"
-        elif ack_filter in ['*', 'false']:
-            ack_filter = ""
+        if ack_filter in ['*', 'false']:
+            ack_filter = False
         else:
-            ack_filter = ",'withLastEventUnacknowledged':'True'"
+            ack_filter = True
 
         if filters == '*':
             filters = ''
 
-        if filters != '':
-            filters = ',' + filters
-
-        if hostgroups == '' or hostgroups == '*':
-            groupids = ''
-
-        else:
-
-            #
-            # Generate a list with all hostgroupsIDs from the defined
-            # hostgroups
-            #
-
+        if hostgroups not in ('', '*'):
             for hostgroup in hostgroups.split(','):
                 if hostgroup.isdigit():
                     hostgroup_list.append(hostgroup)
                 else:
                     try:
                         hostgroup_list.append(self.get_hostgroup_id(hostgroup.strip()))
-
                     except Exception as e:
                         logger.error('Problems getting the hostgroupID for %s - %s', hostgroup, e)
                         self.generate_feedback('Error', 'Problems getting the hostgroupID for [' + hostgroup + ']')
                         return False
 
-            groupids = "'groupids':['" + "','".join(hostgroup_list) + "']"
+        query = {
+            "selectHosts": "host",
+            "search": {
+                "description": description
+            },
+            "skipDependent": 1,
+            "monitored": 1,
+            "active": 1,
+            "output": "extend",
+            "expandDescription": 1,
+            "sortfield": "lastchange",
+            "sortorder": "DESC",
+            "searchWildcardsEnabled": True,
+            "filter": {
+                "value": 1
+            }
+        }
 
-        #
-        # Generate query
-        #
+        if ack_filter:
+            query["withLastEventUnacknowledged"] = True
 
-        try:
-            query = ast.literal_eval("{'selectHosts':'host'" + ack_filter + ",'search':{'description':'" + description + "'},'skipDependent':1,'monitored':1,'active':1,'output':'extend','expandDescription':1,'sortfield':'lastchange','sortorder':'DESC','searchWildcardsEnabled':'True','filter':{'value':'1'" + filters + "}," + groupids + "}")
-        except Exception as e:
-            logger.error('Problems generating show_alarms query - %s', e)
-            self.generate_feedback('Error', 'Problems generating show_alarms query')
-            return False
+        if filters:
+            try:
+                filter_items = filters.split(",")
+                for filter_item in filter_items:
+                    key, value = [s.strip("'\"") for s in filter_item.split(":")]
+                    query["filter"][key] = value
+            except ValueError:
+                self.generate_feedback("Error", "Unable to parse filter")
+                return False
 
-        #
-        # Get result from Zabbix API
-        #
+        if hostgroup_list:
+            query["groupids"] = hostgroup_list
+
         try:
             result = self.zapi.trigger.get(**query)
             logger.info('Command show_alarms executed')
@@ -1467,33 +1490,25 @@ class zabbixcli(cmd.Cmd):
                                                       'lastchange': str(lastchange),
                                                       'age': str(age)}
             else:
-
                 if self.use_colors == 'ON':
-
                     if int(trigger['priority']) == 1:
                         ansi_code = "\033[38;5;158m"
                         ansi_end = "\033[0m"
-
                     elif int(trigger['priority']) == 2:
                         ansi_code = "\033[38;5;190m"
                         ansi_end = "\033[0m"
-
                     elif int(trigger['priority']) == 3:
                         ansi_code = "\033[38;5;208m"
                         ansi_end = "\033[0m"
-
                     elif int(trigger['priority']) == 4:
                         ansi_code = "\033[38;5;160m"
                         ansi_end = "\033[0m"
-
                     elif int(trigger['priority']) == 5:
                         ansi_code = "\033[38;5;196m"
                         ansi_end = "\033[0m"
-
                     else:
                         ansi_code = ''
                         ansi_end = ''
-
                 else:
                     ansi_code = ''
                     ansi_end = ''
@@ -1592,54 +1607,33 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Hostnames information is empty')
             return False
 
+        hostgroups_list = []
+        hostnames_list = []
+
         try:
-
-            #
-            # Generate hosts and hostgroups IDs
-            #
-
-            hostgroups_list = []
-            hostnames_list = []
-            hostgroup_ids = ''
-            host_ids = ''
-
             for hostgroup in hostgroups.split(','):
-
                 if hostgroup.isdigit():
-                    hostgroups_list.append('{"groupid":"' + str(hostgroup).strip() + '"}')
+                    hostgroups_list.append({"groupid": str(hostgroup).strip()})
                 else:
-                    hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup.strip())) + '"}')
-
-            hostgroup_ids = ','.join(hostgroups_list)
+                    hostgroups_list.append({"groupid": str(self.get_hostgroup_id(hostgroup.strip()))})
 
             for hostname in hostnames.split(','):
-
                 if hostname.isdigit():
-                    hostnames_list.append('{"hostid":"' + str(hostname).strip() + '"}')
+                    hostnames_list.append({"hostid": str(hostname).strip()})
                 else:
-                    hostnames_list.append('{"hostid":"' + str(self.get_host_id(hostname.strip())) + '"}')
+                    hostnames_list.append({"hostid": str(self.get_host_id(hostname.strip()))})
 
-            host_ids = ','.join(hostnames_list)
-
-            #
-            # Generate zabbix query
-            #
-
-            query = ast.literal_eval("{\"groups\":[" + hostgroup_ids + "],\"hosts\":[" + host_ids + "]}")
-
-            #
-            # Add hosts to hostgroups
-            #
+            query = {
+                "groups": hostgroups_list,
+                "hosts": hostnames_list
+            }
 
             self.zapi.hostgroup.massadd(**query)
-
-            self.generate_feedback('Done', 'Hosts ' + hostnames + ' (' + host_ids + ') added to these groups: ' + hostgroups + ' (' + hostgroup_ids + ')')
-
-            logger.info('Hosts: %s (%s) added to these groups: %s (%s)', hostnames, host_ids, hostgroups, hostgroup_ids)
-
+            self.generate_feedback('Done', 'Hosts ' + hostnames + ' added to these groups: ' + hostgroups)
+            logger.info('Hosts: %s added to these groups: %s', hostnames, hostgroups)
         except Exception as e:
-            logger.error('Problems adding hosts %s (%s) to groups %s (%s) - %s', hostnames, host_ids, hostgroups, hostgroup_ids, e)
-            self.generate_feedback('Error', 'Problems adding hosts ' + hostnames + ' (' + host_ids + ') to groups ' + hostgroups + ' (' + hostgroup_ids + ')')
+            logger.error('Problems adding hosts %s to groups %s - %s', hostnames, hostgroups, e)
+            self.generate_feedback('Error', 'Problems adding hosts ' + hostnames + ' to groups ' + hostgroups)
             return False
 
     def do_remove_host_from_hostgroup(self, args):
@@ -1717,50 +1711,33 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Hostnames information is empty')
             return False
 
+        hostgroups_list = []
+        hostnames_list = []
+
         try:
-
-            #
-            # Generate hosts and hostgroups IDs
-            #
-
-            hostgroups_list = []
-            hostnames_list = []
-            hostgroup_ids = ''
-            host_ids = ''
-
             for hostgroup in hostgroups.split(','):
-
                 if hostgroup.isdigit():
-                    hostgroups_list.append(str(hostgroup).strip())
+                    hostgroups_list.append(int(hostgroup))
                 else:
-                    hostgroups_list.append(str(self.get_hostgroup_id(hostgroup.strip())))
-
-            hostgroup_ids = ','.join(hostgroups_list)
+                    hostgroups_list.append(int(self.get_hostgroup_id(hostgroup.strip())))
 
             for hostname in hostnames.split(','):
-
                 if hostname.isdigit():
-                    hostnames_list.append(str(hostname).strip())
+                    hostnames_list.append(int(hostname))
                 else:
-                    hostnames_list.append(str(self.get_host_id(hostname.strip())))
+                    hostnames_list.append(int(self.get_host_id(hostname.strip())))
 
-            host_ids = ','.join(hostnames_list)
-
-            #
-            # Generate zabbix query
-            #
-            query = ast.literal_eval("{\"groupids\":[" + hostgroup_ids + "],\"hostids\":[" + host_ids + "]}")
-
-            #
-            # Remove hosts from hostgroups
-            #
+            query = {
+                "groupids": hostgroups_list,
+                "hostids": hostnames_list
+            }
 
             self.zapi.hostgroup.massremove(**query)
-            logger.info('Hosts: %s (%s) removed from these groups: %s (%s)', hostnames, host_ids, hostgroups, hostgroup_ids)
-            self.generate_feedback('Done', 'Hosts ' + hostnames + ' (' + host_ids + ') removed from these groups: ' + hostgroups + ' (' + hostgroup_ids + ')')
+            logger.info('Hosts: %s removed from these groups: %s', hostnames, hostgroups)
+            self.generate_feedback('Done', 'Hosts ' + hostnames + ' removed from these groups: ' + hostgroups)
         except Exception as e:
-            logger.error('Problems removing hosts %s (%s) from groups %s (%s) - %s', hostnames, host_ids, hostgroups, hostgroup_ids, e)
-            self.generate_feedback('Error', 'Problems removing hosts ' + hostnames + ' (' + host_ids + ') from groups (' + hostgroups + ' (' + hostgroup_ids + ')')
+            logger.error('Problems removing hosts %s from groups %s - %s', hostnames, hostgroups, e)
+            self.generate_feedback('Error', 'Problems removing hosts ' + hostnames + ' from groups: ' + hostgroups)
             return False
 
     def do_add_user_to_usergroup(self, args):
@@ -2074,52 +2051,34 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Hostnames information is empty')
             return False
 
+        templates_list = []
+        hostnames_list = []
+
         try:
-
-            #
-            # Generate templates and hosts IDs
-            #
-
-            templates_list = []
-            hostnames_list = []
-            template_ids = ''
-            host_ids = ''
-
             for template in templates.split(','):
-
                 if template.isdigit():
-                    templates_list.append('{"templateid":"' + str(template).strip() + '"}')
+                    templates_list.append({"templateid": str(template).strip()})
                 else:
-                    templates_list.append('{"templateid":"' + str(self.get_template_id(template.strip())) + '"}')
-
-            template_ids = ','.join(templates_list)
+                    templates_list.append({"templateid": str(self.get_template_id(template.strip()))})
 
             for hostname in hostnames.split(','):
-
                 if hostname.isdigit():
-                    hostnames_list.append('{"hostid":"' + str(hostname).strip() + '"}')
+                    hostnames_list.append({"hostid": str(hostname).strip()})
                 else:
-                    hostnames_list.append('{"hostid":"' + str(self.get_host_id(hostname.strip())) + '"}')
+                    hostnames_list.append({"hostid": str(self.get_host_id(hostname.strip()))})
 
-            host_ids = ','.join(hostnames_list)
-
-            #
-            # Generate zabbix query
-            #
-
-            query = ast.literal_eval("{\"templates\":[" + template_ids + "],\"hosts\":[" + host_ids + "]}")
-
-            #
-            # Link templates to hosts
-            #
+            query = {
+                "templates": templates_list,
+                "hosts": hostnames_list
+            }
 
             self.zapi.template.massadd(**query)
-            logger.info('Templates: %s (%s) linked to these hosts: %s (%s)', templates, template_ids, hostnames, host_ids)
-            self.generate_feedback('Done', 'Templates ' + templates + ' (' + template_ids + ') linked to these hosts: ' + hostnames + ' (' + host_ids + ')')
+            logger.info('Templates: %s linked to these hosts: %s', templates, hostnames)
+            self.generate_feedback('Done', 'Templates ' + templates + ' linked to these hosts: ' + hostnames)
 
         except Exception as e:
-            logger.error('Problems linking templates %s (%s) to hosts %s (%s) - %s', templates, template_ids, hostnames, host_ids, e)
-            self.generate_feedback('Error', 'Problems linking templates ' + templates + ' (' + template_ids + ') to hosts ' + hostnames + ' (' + host_ids + ')')
+            logger.error('Problems linking templates %s to hosts %s - %s', templates, hostnames, e)
+            self.generate_feedback('Error', 'Problems linking templates ' + templates + ' to hosts ' + hostnames)
             return False
 
     def do_unlink_template_from_host(self, args):
@@ -2197,52 +2156,34 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Hostnames information is empty')
             return False
 
+        templates_list = []
+        hostnames_list = []
+
         try:
-
-            #
-            # Generate templates and hosts IDs
-            #
-
-            templates_list = []
-            hostnames_list = []
-            template_ids = ''
-            host_ids = ''
-
             for template in templates.split(','):
-
                 if template.isdigit():
-                    templates_list.append(str(template).strip())
+                    templates_list.append(int(template))
                 else:
-                    templates_list.append(str(self.get_template_id(template.strip())))
-
-            template_ids = ','.join(templates_list)
+                    templates_list.append(int(self.get_template_id(template.strip())))
 
             for hostname in hostnames.split(','):
-
                 if hostname.isdigit():
-                    hostnames_list.append(str(hostname).strip())
+                    hostnames_list.append(int(hostname))
                 else:
-                    hostnames_list.append(str(self.get_host_id(hostname.strip())))
+                    hostnames_list.append(int(self.get_host_id(hostname.strip())))
 
-            host_ids = ','.join(hostnames_list)
-
-            #
-            # Generate zabbix query
-            #
-
-            query = ast.literal_eval("{\"hostids\":[" + host_ids + "],\"templateids_clear\":[" + template_ids + "]}")
-
-            #
-            # Unlink templates from hosts
-            #
+            query = {
+                "hostids": hostnames_list,
+                "templateids_clear": templates_list
+            }
 
             self.zapi.host.massremove(**query)
-            logger.info('Templates: %s (%s) unlinked and cleared from these hosts: %s (%s)', templates, template_ids, hostnames, host_ids)
-            self.generate_feedback('Done', 'Templates ' + templates + ' (' + template_ids + ') unlinked and cleared from these hosts: ' + hostnames + ' (' + host_ids + ')')
+            logger.info('Templates: %s unlinked and cleared from these hosts: %s', templates, hostnames)
+            self.generate_feedback('Done', 'Templates ' + templates + ' unlinked and cleared from these hosts: ' + hostnames)
 
         except Exception as e:
-            logger.error('Problems unlinking and clearing templates %s (%s) from hosts %s (%s) - %s', templates, template_ids, hostnames, host_ids, e)
-            self.generate_feedback('Error', 'Problems unlinking and clearing templates ' + templates + ' (' + template_ids + ') from hosts ' + hostnames + ' (' + host_ids + ')')
+            logger.error('Problems unlinking and clearing templates %s from hosts %s - %s', templates, hostnames, e)
+            self.generate_feedback('Error', 'Problems unlinking and clearing templates ' + templates + ' from hosts ' + hostnames)
             return False
 
     def do_create_usergroup(self, args):
@@ -2506,46 +2447,36 @@ class zabbixcli(cmd.Cmd):
         try:
             # Check if we are using a hostname or an IP
             ipaddress.ip_address(u"{}".format(host))  # Unicodify for python2 compability
-
-            useip = '"useip":1,'
-            interface_ip = '"ip":"' + host + '",'
-            interface_dns = '"dns":"",'
-
+            useip = 1
+            interface_ip = host
+            interface_dns = ""
         except ValueError:
-            useip = '"useip":0,'
-            interface_ip = '"ip":"",'
-            interface_dns = '"dns":"' + host + '",'
+            useip = 0
+            interface_ip = ""
+            interface_dns = host
 
-        interfaces_def = '"interfaces":[' + \
-                         '{"type":1,' + \
-                         '"main":1,' + \
-                         useip + \
-                         interface_ip + \
-                         interface_dns + \
-                         '"port":"10050"}]'
+        interface_list = [{
+            "type": 1,
+            "main": 1,
+            "useip": useip,
+            "ip": interface_ip,
+            "dns": interface_dns,
+            "port": "10050"
+        }]
 
-        #
-        # Generate hostgroups and proxy IDs
-        #
+        hostgroups_list = []
 
         try:
-            hostgroups_list = []
-            hostgroup_ids = ''
-
             for hostgroup in hostgroup_default.split(','):
-
                 if hostgroup != '':
-                    hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup.strip())) + '"}')
+                    hostgroups_list.append({"groupid": str(self.get_hostgroup_id(hostgroup.strip()))})
 
             for hostgroup in hostgroups.split(','):
-
                 if hostgroup != '':
                     if hostgroup.isdigit():
-                        hostgroups_list.append('{"groupid":"' + str(hostgroup).strip() + '"}')
+                        hostgroups_list.append({"groupid": str(hostgroup).strip()})
                     else:
-                        hostgroups_list.append('{"groupid":"' + str(self.get_hostgroup_id(hostgroup.strip())) + '"}')
-
-            hostgroup_ids = ','.join(set(hostgroups_list))
+                        hostgroups_list.append({"groupid": str(self.get_hostgroup_id(hostgroup.strip()))})
 
         except Exception as e:
             logger.error('%s', e)
@@ -2554,20 +2485,15 @@ class zabbixcli(cmd.Cmd):
 
         try:
             proxy_id = str(self.get_random_proxyid(proxy.strip()))
-            proxy_hostid = "\"proxy_hostid\":\"" + proxy_id + "\","
+            proxy_hostid = proxy_id
 
         except Exception as e:
             logger.debug('Host [%s] - %s', host, e)
-            proxy_hostid = ""
-
-        #
-        # Checking if host exists
-        #
+            proxy_hostid = None
 
         try:
             result = self.host_exists(host.strip())
             logger.debug('Cheking if host (%s) exists', host)
-
         except Exception as e:
             logger.error('Problems checking if host (%s) exists - %s', host, e)
             self.generate_feedback('Error', 'Problems checking if host (' + host + ') exists')
@@ -2579,22 +2505,24 @@ class zabbixcli(cmd.Cmd):
                 self.generate_feedback('Warning', 'This host (' + host + ') already exists.')
                 return False
 
-            else:
+            query = {
+                'host': host,
+                'groups': hostgroups_list,
+                'proxy_hostid': proxy_hostid,
+                'status': int(host_status),
+                'interfaces': interface_list,
+                'inventory_mode': 1,
+                'inventory': {
+                    'name': host
+                }
+            }
 
-                #
-                # Create host via Zabbix-API
-                #
+            result = self.zapi.host.create(**query)
+            logger.info('Host (%s) with ID: %s created', host, str(result['hostids'][0]))
 
-                query = ast.literal_eval("{\"host\":\"" + host + "\"," + "\"groups\":[" + hostgroup_ids + "]," + proxy_hostid + "\"status\":" + host_status + "," + interfaces_def + ",\"inventory_mode\":1,\"inventory\":{\"name\":\"" + host + "\"}}")
-                result = self.zapi.host.create(**query)
-                logger.info('Host (%s) with ID: %s created', host, str(result['hostids'][0]))
+            self.generate_feedback('Done', 'Host (' + host + ') with ID: ' + str(result['hostids'][0]) + ' created')
 
-                self.generate_feedback('Done', 'Host (' + host + ') with ID: ' + str(result['hostids'][0]) + ' created')
-
-                #
-                # Update the hostid cache with the created host.
-                #
-                self.hostid_cache[result['hostids'][0]] = host
+            self.hostid_cache[result['hostids'][0]] = host
 
         except Exception as e:
             logger.error('Problems creating host (%s) - %s', host, e)
@@ -3156,30 +3084,6 @@ class zabbixcli(cmd.Cmd):
         if interface_main == '' or interface_main not in ('0', '1'):
             interface_main = interface_main_default
 
-        # Generate interface definition
-
-        if interface_useip == '0':
-
-            interfaces_def = '"type":' + interface_type + \
-                ',"main":' + interface_main + \
-                ',"useip":' + interface_useip + \
-                ',"ip":"' + \
-                '","dns":"' + interface_dns + \
-                '","port":"' + interface_port + '"'
-
-        elif interface_useip == '1':
-
-            interfaces_def = '"type":' + interface_type + \
-                ',"main":' + interface_main + \
-                ',"useip":' + interface_useip + \
-                ',"ip":"' + interface_ip + \
-                '","dns":"' + \
-                '","port":"' + interface_port + '"'
-
-        #
-        # Checking if hostname exists
-        #
-
         try:
             host_exists = self.host_exists(hostname)
             logger.debug('Cheking if host (%s) exists', hostname)
@@ -3188,22 +3092,29 @@ class zabbixcli(cmd.Cmd):
                 logger.error('Host (%s) does not exists. Host Interface can not be created', hostname)
                 self.generate_feedback('Error', 'Host (' + hostname + ') does not exists. Host Interface can not be created')
                 return False
-
             else:
                 hostid = str(self.get_host_id(hostname))
-
         except Exception as e:
             logger.error('Problems checking if host (%s) exists - %s', hostname, e)
             self.generate_feedback('Error', 'Problems checking if host (' + hostname + ') exists')
             return False
 
-        #
-        # Create host interface if it does not exist
-        #
+        query = {
+            "hostid": hostid,
+            "type": int(interface_type),
+            "main": int(interface_main),
+            "useip": int(interface_useip),
+            "port": str(interface_port)
+        }
+
+        if interface_useip == "0":
+            query["ip"] = ""
+            query["dns"] = interface_dns
+        elif interface_useip == "1":
+            query["ip"] = interface_dns
+            query["dns"] = ""
 
         try:
-
-            query = ast.literal_eval("{\"hostid\":\"" + hostid + "\"," + interfaces_def + "}")
             result = self.zapi.hostinterface.create(**query)
             logger.info('Host interface with ID: %s created on %s', str(result['interfaceids'][0]), hostname)
             self.generate_feedback('Done', 'Host interface with ID: ' + str(result['interfaceids'][0]) + ' created on ' + hostname)
@@ -6155,7 +6066,6 @@ class zabbixcli(cmd.Cmd):
 
         try:
             proxy_src_id = self.get_proxy_id(proxy_src)
-
         except Exception:
             logger.error('SRC Proxy %s does not exist', proxy_src)
             self.generate_feedback('Error', 'SRC Proxy ' + proxy_src + ' does not exist')
@@ -6163,7 +6073,6 @@ class zabbixcli(cmd.Cmd):
 
         try:
             proxy_dst_id = self.get_proxy_id(proxy_dst)
-
         except Exception:
             logger.error('DST Proxy %s does not exist', proxy_dst)
             self.generate_feedback('Error', 'DST Proxy ' + proxy_dst + ' does not exist')
@@ -6173,27 +6082,25 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.proxy.get(output='extend',
                                          proxyids=proxy_src_id,
                                          selectHosts=['hostid', 'name'])
-
         except Exception as e:
             logger.error('Problems getting host list from SRC proxy %s - %s', proxy_src, e)
             self.generate_feedback('Error', 'Problems getting host list from SRC proxy %s' + proxy_src)
             return False
 
         try:
-
-            hostid_list_tmp = []
             hostid_list = []
 
             for host in result[0]['hosts']:
-                hostid_list_tmp.append('{"hostid":"' + str(host['hostid']) + '"}')
+                hostid_list.append({"hostid": str(host['hostid'])})
 
-            hostid_list = ','.join(hostid_list_tmp)
-            query = ast.literal_eval("{\"hosts\":[" + hostid_list + "],\"proxy_hostid\":\"" + proxy_dst_id + "\"}")
+            query = {
+                "hosts": hostid_list,
+                "proxy_hostid": proxy_dst_id
+            }
 
             result = self.zapi.host.massupdate(**query)
             logger.info('Hosts from SRC Proxy %s have been moved to DST proxy %s', proxy_src, proxy_dst)
             self.generate_feedback('Done', 'Hosts from SRC Proxy ' + proxy_src + ' have been moved to DST proxy ' + proxy_dst)
-
         except Exception as e:
             logger.error('Problems moving hosts from SRC Proxy %s to DST proxy %s - %s', proxy_src, proxy_dst, e)
             self.generate_feedback('Error', 'Problems moving host from SRC Proxy ' + proxy_src + ' to DST proxy ' + proxy_dst)
@@ -6293,19 +6200,17 @@ class zabbixcli(cmd.Cmd):
             host_proxy_relation[hostid] = proxyid_list[random.randint(0, len(proxyid_list) - 1)]
 
         try:
-
             for proxyid in proxyid_list:
-
-                hostid_list_tmp = []
                 hostid_list = []
 
                 for hostid, proxyid2 in host_proxy_relation.iteritems():
-
                     if proxyid2 == proxyid:
-                        hostid_list_tmp.append('{"hostid":"' + str(hostid) + '"}')
+                        hostid_list.append({"hostid": str(hostid)})
 
-                hostid_list = ','.join(hostid_list_tmp)
-                query = ast.literal_eval("{\"hosts\":[" + hostid_list + "],\"proxy_hostid\":\"" + proxyid + "\"}")
+                query = {
+                    "hosts": hostid_list,
+                    "proxy_hostid": proxyid
+                }
 
                 result = self.zapi.host.massupdate(**query)
 
