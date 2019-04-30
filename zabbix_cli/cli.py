@@ -203,7 +203,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 maintenances = input('# MaintenanceID [*]: ').strip()
@@ -383,7 +383,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 maintenances = input('# MaintenanceID [*]: ').strip()
@@ -594,7 +594,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 hostgroup = input('# Hostgroup: ').strip()
@@ -735,7 +735,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -896,7 +896,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -1006,7 +1006,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -1151,7 +1151,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 usergroup = input('# Usergroup: ').strip()
@@ -1379,7 +1379,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -1570,7 +1570,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -1674,7 +1674,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -1779,7 +1779,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -1891,7 +1891,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -2014,7 +2014,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -2119,7 +2119,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -2235,7 +2235,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -2398,7 +2398,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -2559,7 +2559,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -2655,7 +2655,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -2791,7 +2791,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -3020,7 +3020,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -3213,7 +3213,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -3402,7 +3402,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -3569,7 +3569,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
 
             try:
                 print('--------------------------------------------------------')
@@ -3643,7 +3643,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 hostgroup = input('# Name: ').strip()
@@ -3769,7 +3769,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 usergroup = input('# Usergroup: ').strip()
@@ -3864,7 +3864,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 usergroup = input('# Usergroup: ').strip()
@@ -3951,7 +3951,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 global_macro_name = input('# Global macro name: ').strip()
@@ -4065,7 +4065,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 hostname = input('# Hostname: ').strip()
@@ -4188,7 +4188,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 hostname = input('# Hostname: ').strip()
@@ -4290,7 +4290,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 hostname = input('# Hostname: ').strip()
@@ -4401,7 +4401,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 event_ids = input('# EventIDs: ').strip()
@@ -4480,7 +4480,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 trigger_ids = input('# TriggerIDs: ').strip()
@@ -4570,7 +4570,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 trigger_id = input('# TriggerIDs: ').strip()
@@ -4686,7 +4686,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 template = input('# Template: ').strip()
@@ -4854,7 +4854,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 hostname = input('# Hostname: ').strip()
@@ -4959,7 +4959,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 host_macro_name = input('# Host macro name: ').strip()
@@ -5009,17 +5009,13 @@ class zabbixcli(cmd.Cmd):
         #
 
         for macro in result:
-
-            if len(macro['hosts']) > 0:
-
+            if macro['hosts']:
                 if self.output_format == 'json':
                     result_columns[result_columns_key] = {'macro': macro['macro'],
                                                           'value': macro['value'],
                                                           'hostid': macro['hosts'][0]['hostid'],
                                                           'host': macro['hosts'][0]['host']}
-
                 else:
-
                     result_columns[result_columns_key] = {'1': macro['macro'],
                                                           '2': macro['value'],
                                                           '3': macro['hosts'][0]['hostid'],
@@ -5210,7 +5206,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 template_macro_name = input('# Host macro name: ').strip()
@@ -5260,17 +5256,13 @@ class zabbixcli(cmd.Cmd):
         #
 
         for macro in result:
-
-            if len(macro['templates']) > 0:
-
+            if macro['templates']:
                 if self.output_format == 'json':
                     result_columns[result_columns_key] = {'macro': macro['macro'],
                                                           'value': macro['value'],
                                                           'templateid': macro['templates'][0]['templateid'],
                                                           'template': macro['templates'][0]['host']}
-
                 else:
-
                     result_columns[result_columns_key] = {'1': macro['macro'],
                                                           '2': macro['value'],
                                                           '3': macro['templates'][0]['templateid'],
@@ -5315,7 +5307,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 template = input('# Template: ').strip()
@@ -5442,7 +5434,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 template = input('# Template: ').strip()
@@ -5601,7 +5593,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 directory_exports = input('# Directory [' + self.conf.default_directory_exports + ']: ').strip()
@@ -5867,7 +5859,7 @@ class zabbixcli(cmd.Cmd):
         # Command without parameters
         #
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 files = input('# Import file []: ').strip()
@@ -6045,7 +6037,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 proxy_src = input('# SRC Proxy: ').strip()
@@ -6140,7 +6132,7 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 0:
+        if not arg_list:
             try:
                 print('--------------------------------------------------------')
                 proxies = input('# Proxies: ').strip()
