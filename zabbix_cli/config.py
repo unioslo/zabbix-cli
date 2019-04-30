@@ -159,6 +159,10 @@ class Configuration(configparser.RawConfigParser, object):
         'zabbix_api', 'zabbix_api_url',
         required=True)
 
+    cert_verify = _registry.add(
+        'zabbix_api', 'cert_verify',
+        default='ON')
+
     system_id = _registry.add(
         'zabbix_config', 'system_id',
         default='zabbix-ID')
