@@ -680,6 +680,91 @@ class zabbixcli(cmd.Cmd):
                              ['GroupID'],
                              ALL)
 
+    def do_show_hostgroup_permissions(self, args):
+        '''
+        DESCRIPTION:
+        This command shows which usergroups has access to a hostgroup
+
+        COMMAND:
+        show_hostgroup_permissions [hostgroup]
+
+        [hostgroup]:
+        ----------------
+        Hostgroup name. One can use wildcards.
+
+        '''
+
+        result_columns = {}
+        result_columns_key = 0
+
+        try:
+            arg_list = shlex.split(args)
+        except ValueError as e:
+            print('\n[ERROR]: ' + str(e) + '\n')
+            return False
+
+        if not arg_list:
+            try:
+                print('--------------------------------------------------------')
+                hostgroup = input('# Hostgroup: ').strip()
+                print('--------------------------------------------------------')
+            except EOFError:
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
+                return False
+        elif len(arg_list) == 1:
+            hostgroup = arg_list[0].strip()
+        else:
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
+            return False
+
+        if hostgroup == '':
+            self.generate_feedback('Error', 'Hostgroup value is empty')
+            return False
+
+        try:
+            usergroups = self.zapi.usergroup.get(selectRights=["id", "permission"])
+            result = self.zapi.hostgroup.get(output='extend',
+                                             search={'name': hostgroup},
+                                             searchWildcardsEnabled=True,
+                                             sortfield='name',
+                                             sortorder='ASC')
+        except Exception as e:
+            logger.error('Problems getting information from API - %s', e)
+            self.generate_feedback('Error', 'Problems getting information from API')
+            return False
+
+        for hostgroup in result:
+            permissions = []
+
+            for usergroup in usergroups:
+                for right in usergroup["rights"]:
+                    if right["id"] == hostgroup["groupid"]:
+                        permission_name = "{} ({})".format(usergroup["name"], zabbix_cli.utils.get_permission(int(right["permission"])))
+                        permissions.append(permission_name)
+
+            permissions.sort()
+
+            if self.output_format == 'json':
+                result_columns[result_columns_key] = {
+                    'groupid': hostgroup['groupid'],
+                    'name': hostgroup['name'],
+                    'permissions': permissions
+                }
+            else:
+                result_columns[result_columns_key] = {
+                    '1': hostgroup['groupid'],
+                    '2': hostgroup['name'],
+                    '3': '\n'.join(permissions),
+                }
+            result_columns_key = result_columns_key + 1
+
+        self.generate_output(result_columns,
+                             ['GroupID', 'Name', 'Permissions'],
+                             ['Name', 'Permissions'],
+                             ['GroupID'],
+                             ALL)
+
     def do_show_hosts(self, args):
         '''
         DESCRIPTION:
