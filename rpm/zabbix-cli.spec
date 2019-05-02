@@ -6,7 +6,7 @@
 %{!?pybasever: %global pybasever %(%{__python2} -c "import sys;print(sys.version[0:3])")}
 
 Name: zabbix-cli
-Version: 2.0.1
+Version: 2.1.0
 Release: 1%{?dist}
 Summary: Command-line interface for Zabbix
 
@@ -55,6 +55,9 @@ mkdir -p %{buildroot}%{_defaultdocdir}/zabbix-cli-%{version}
 %doc LICENSE docs/manual.rst
 
 %changelog
+* Thu May 02 2019 Paal Braathen <paal.braathen@usit.uio.no> - 2.1.0-1
+- New version 2.1.0
+
 * Thu Feb 14 2019 Paal Braathen <paal.braathen@usit.uio.no> - 2.0.1-1
 - New version 2.0.1
 
