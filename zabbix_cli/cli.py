@@ -162,6 +162,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         self.hostgroupname_cache = self.populate_hostgroupname_cache()
+        self.hostgroupid_cache = self.populate_hostgroupid_cache()
 
     def do_show_maintenance_definitions(self, args):
         '''
@@ -6752,6 +6753,21 @@ class zabbixcli(cmd.Cmd):
 
         for host in data:
             temp_dict[host['hostid']] = host['host']
+
+        return temp_dict
+
+    def populate_hostgroupid_cache(self):
+        '''
+        DESCRIPTION:
+        Populate hostgroupid cache
+        '''
+
+        temp_dict = {}
+
+        data = self.zapi.hostgroup.get(output=['groupid', 'name'])
+
+        for hostgroup in data:
+            temp_dict[hostgroup['groupid']] = hostgroup['name']
 
         return temp_dict
 
