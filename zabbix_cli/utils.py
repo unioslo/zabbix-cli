@@ -198,6 +198,20 @@ def get_autologin_type(code):
     return "Unknown ({})".format(str(code))
 
 
+def get_permission(code):
+    """
+    Get permission
+    """
+
+    permission = {
+        0: "deny",
+        2: "ro",
+        3: "rw"
+    }
+
+    return permission.get(code, None)
+
+
 def get_permission_code(permission):
     """
     Get permission code

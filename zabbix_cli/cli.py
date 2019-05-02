@@ -4934,6 +4934,86 @@ class zabbixcli(cmd.Cmd):
                              ['MacroID'],
                              FRAME)
 
+    def do_show_usergroup_permissions(self, args):
+        '''
+        DESCRIPTION
+        This command show usergroup permissions information
+
+        COMMAND:
+        show_usergroup_permissions [usergroup]
+
+        [usergroup]:
+        ----------------
+        Usergroup that will be displayed.
+
+        '''
+
+        result_columns = {}
+        result_columns_key = 0
+
+        try:
+            arg_list = shlex.split(args)
+        except ValueError as e:
+            print('\n[ERROR]: ' + str(e) + '\n')
+            return False
+
+        if not arg_list:
+            try:
+                print('--------------------------------------------------------')
+                usergroup = input('# Usergroup: ').strip()
+                print('--------------------------------------------------------')
+
+            except EOFError:
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
+                return False
+        elif len(arg_list) == 1:
+            usergroup = arg_list[0].strip()
+        else:
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
+            return False
+
+        if usergroup == '':
+            self.generate_feedback('Error', 'Usergroup value is empty')
+            return False
+
+        try:
+            result = self.zapi.usergroup.get(output='extend',
+                                             search={'name': usergroup},
+                                             searchWildcardsEnabled=True,
+                                             sortfield='name',
+                                             selectRights=['permission', 'id'],
+                                             sortorder='ASC')
+        except Exception as e:
+            logger.error('Problems getting the usergroup list - %s', e)
+            self.generate_feedback('Error', 'Problems getting the usergroup list')
+            return False
+
+        for usergroup in result:
+            permission_list = []
+            for right in usergroup['rights']:
+                hostgroup_name = self.hostgroupid_cache[right["id"]]
+                permission_list.append("{} ({})".format(hostgroup_name, zabbix_cli.utils.get_permission(int(right['permission']))))
+
+            permission_list.sort()
+
+            if self.output_format == 'json':
+                result_columns[result_columns_key] = {'usergroupid': usergroup['usrgrpid'],
+                                                      'name': usergroup['name'],
+                                                      'permissions': permission_list}
+            else:
+                result_columns[result_columns_key] = {'1': usergroup['usrgrpid'],
+                                                      '2': usergroup['name'],
+                                                      '3': '\n'.join(permission_list)}
+
+            result_columns_key = result_columns_key + 1
+
+        self.generate_output(result_columns,
+                             ['UsergroupID', 'Name', 'Permissions'],
+                             ['Name', 'Permissions'],
+                             ['UsergroupID'],
+                             ALL)
+
     def do_show_usermacro_host_list(self, args):
         '''
         DESCRITION:
