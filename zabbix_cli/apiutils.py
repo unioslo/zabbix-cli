@@ -1,18 +1,17 @@
-"""
-All functions in this module extend or simplifies common API tasks.
-"""
+"""All functions in this module extend or simplifies common API tasks."""
 
 from __future__ import print_function
 
 
 def update_usergroup(zapi, usrgrpid, rights=None, userids=None):
     """
+    Merge update a usergroup.
+
     Updating usergroups without replacing current state (i.e. merge update) is hard.
     This function simplifies the process.
 
     The rights and userids provided are merged into the usergroup.
     """
-
     usrgrpid = str(usrgrpid)  # Make sure this number is a string
     usergroup = zapi.usergroup.get(filter={"usrgrpid": usrgrpid}, selectRights=["permission", "id"], selectUsers=["userid"])[0]
 
