@@ -59,9 +59,7 @@ logger = logging.getLogger(__name__)
 
 
 class zabbixcli(cmd.Cmd):
-    """
-    This class implements the Zabbix shell. It is based on the python module cmd
-    """
+    """This class implements the Zabbix shell. It is based on the python module cmd."""
 
     # ###############################
     # Constructor
@@ -6386,10 +6384,7 @@ class zabbixcli(cmd.Cmd):
             return False
 
     def generate_export_filename(self, directory_exports, obj_type, obj_id, obj_name):
-        """
-        Generate filename to export the configuration
-        """
-
+        """Generate filename to export the configuration."""
         if self.conf.default_export_format.upper() == 'JSON':
             file_ext = 'json'
 
@@ -6412,10 +6407,7 @@ class zabbixcli(cmd.Cmd):
         return filename
 
     def generate_output(self, result, colnames, left_col, right_col, hrules):
-        """
-        Generate the result output
-        """
-
+        """Generate the result output."""
         try:
 
             if self.output_format == 'table':
@@ -6464,10 +6456,7 @@ class zabbixcli(cmd.Cmd):
             logger.error('Problems generating the output', exc_info=True)
 
     def generate_feedback(self, return_code, message):
-        """
-        Generate feedback messages
-        """
-
+        """Generate feedback messages."""
         if self.output_format == 'table':
             print('\n[' + return_code.title() + ']: ' + str(message) + '\n\n')
 
@@ -6981,19 +6970,14 @@ class zabbixcli(cmd.Cmd):
         return temp_dict
 
     def preloop(self):
-        """
-        Initialization before prompting user for commands.
-        """
+        """Initialization before prompting user for commands."""
         cmd.Cmd.preloop(self)  # sets up command completion
         self._hist = []        # No history yet
         self._locals = {}      # Initialize execution namespace for user
         self._globals = {}
 
     def help_shortcuts(self):
-        """
-        Help information about shortcuts in Zabbix-CLI
-        """
-
+        """Help information about shortcuts in Zabbix-CLI."""
         print('''
         Shortcuts in Zabbix-CLI:
 
@@ -7006,10 +6990,7 @@ class zabbixcli(cmd.Cmd):
         ''')
 
     def help_support(self):
-        """
-        Help information about Zabbix-CLI support
-        """
-
+        """Help information about Zabbix-CLI support."""
         print('''
         The latest information and versions of Zabbix-CLI can be obtained
         from: https://github.com/usit-gd/zabbix-cli
@@ -7026,10 +7007,7 @@ class zabbixcli(cmd.Cmd):
         sys.exit(0)
 
     def get_version(self):
-        """
-        Get Zabbix-CLI version
-        """
-
+        """Get Zabbix-CLI version."""
         return zabbix_cli.__version__
 
 
