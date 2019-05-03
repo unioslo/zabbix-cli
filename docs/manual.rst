@@ -3,7 +3,7 @@ Zabbix-CLI
 =====================================
 
 |
-| Version-1.7.0
+| Version-2.1.0
 |
 | Rafael Martinez Guerrero (University of Oslo)
 | E-mail: rafael@postgresql.org.es
@@ -1323,6 +1323,20 @@ Parameters:
 * **hostgroup:** Hostgroup name. One can use wildcards.
 
 
+show_hostgroup_permissions
+--------------------------
+
+This command shows which usergroups has access to a hostgroup
+
+::
+
+   show_hostgroup_permissions [hostgroup]
+
+Parameters:
+
+* **hostgroup:** Hostgroup name. One can use wildcards.
+
+
 show_hostgroups
 ---------------
 
@@ -1356,6 +1370,25 @@ Parameters:
 
 * **[templates]:** Template or zabbix-templateID.
  
+
+show_last_values
+----------------
+
+Shows the last values of given item.
+
+::
+   show_last_values [item_name]
+                    [group]
+
+Parameters:
+
+* **[item_name]:** Name of the items to get. Supports wildcard.
+
+* **[group]:** Whether the output should group items with the same values.
+
+  - 0 - (default) Do not group items.
+  - 1 - Group items.
+
 
 show_maintenance_definitions
 ----------------------------
@@ -1463,6 +1496,20 @@ This command shows user group information.
 Parameters:
 
 * **usergroup:** User group name. One can use wildcards.
+
+
+show_usergroup_permissions
+--------------------------
+
+This command show usergroup permissions information
+
+::
+
+   show_usergroup_permissions [usergroup]
+
+Parameters:
+
+* **usergroup:** Usergroup that will be displayed.
 
 
 show_usergroups
