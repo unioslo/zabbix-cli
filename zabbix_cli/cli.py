@@ -4704,7 +4704,7 @@ class zabbixcli(cmd.Cmd):
 
     def do_show_template(self, args):
         """
-        DESCRITION
+        DESCRIPTION
         This command show templates information
 
         COMMAND:
@@ -4825,7 +4825,7 @@ class zabbixcli(cmd.Cmd):
 
     def do_show_global_macros(self, args):
         """
-        DESCRITION:
+        DESCRIPTION:
         This command shows all global macros
 
         COMMAND:
@@ -4874,7 +4874,7 @@ class zabbixcli(cmd.Cmd):
 
     def do_show_host_usermacros(self, args):
         """
-        DESCRITION:
+        DESCRIPTION:
         This command shows all usermacros for a host
 
         COMMAND:
@@ -5055,7 +5055,7 @@ class zabbixcli(cmd.Cmd):
 
     def do_show_usermacro_host_list(self, args):
         """
-        DESCRITION:
+        DESCRIPTION:
         This command shows all host with a defined usermacro
 
         COMMAND:
@@ -5300,7 +5300,7 @@ class zabbixcli(cmd.Cmd):
 
     def do_show_usermacro_template_list(self, args):
         """
-        DESCRITION:
+        DESCRIPTION:
         This command shows all templates with a defined macro
 
         COMMAND:
