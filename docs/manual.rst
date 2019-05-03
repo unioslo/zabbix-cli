@@ -1575,7 +1575,7 @@ zabbix-cli instance.
    show_zabbixcli_config
 
 
-ulink_template_from_host
+unlink_template_from_host
 ------------------------
 
 This command unlinks and clear one/several templates from one/several hosts
