@@ -1,13 +1,8 @@
-"""
-Utility functions.
-"""
+"""Utility functions."""
 
 
 def get_ack_status(code):
-    """
-    Get ack status from code
-    """
-
+    """Get ack status from code."""
     ack_status = {0: "No", 1: "Yes"}
 
     if code in ack_status:
@@ -17,10 +12,7 @@ def get_ack_status(code):
 
 
 def get_event_status(code):
-    """
-    Get event status from code
-    """
-
+    """Get event status from code."""
     event_status = {0: "OK", 1: "Problem"}
 
     if code in event_status:
@@ -30,10 +22,7 @@ def get_event_status(code):
 
 
 def get_trigger_severity(code):
-    """
-    Get trigger severity from code
-    """
-
+    """Get trigger severity from code."""
     trigger_severity = {0: "Not classified", 1: "Information", 2: "Warning", 3: "Average", 4: "High", 5: "Disaster"}
 
     if code in trigger_severity:
@@ -43,10 +32,7 @@ def get_trigger_severity(code):
 
 
 def get_trigger_status(code):
-    """
-    Get trigger status from code
-    """
-
+    """Get trigger status from code."""
     trigger_status = {0: "Enable", 1: "Disable"}
 
     if code in trigger_status:
@@ -56,10 +42,7 @@ def get_trigger_status(code):
 
 
 def get_maintenance_status(code):
-    """
-    Get maintenance status from code
-    """
-
+    """Get maintenance status from code."""
     maintenance_status = {0: "No maintenance", 1: "In progress"}
 
     if code in maintenance_status:
@@ -69,10 +52,7 @@ def get_maintenance_status(code):
 
 
 def get_monitoring_status(code):
-    """
-    Get monitoring status from code
-    """
-
+    """Get monitoring status from code."""
     monitoring_status = {0: "Monitored", 1: "Not monitored"}
 
     if code in monitoring_status:
@@ -82,10 +62,7 @@ def get_monitoring_status(code):
 
 
 def get_zabbix_agent_status(code):
-    """
-    Get zabbix agent status from code
-    """
-
+    """Get zabbix agent status from code."""
     zabbix_agent_status = {1: "Available", 2: "Unavailable"}
 
     if code in zabbix_agent_status:
@@ -95,10 +72,7 @@ def get_zabbix_agent_status(code):
 
 
 def get_gui_access(code):
-    """
-    Get GUI access from code
-    """
-
+    """Get GUI access from code."""
     gui_access = {0: "System default", 1: "Internal", 2: "Disable"}
 
     if code in gui_access:
@@ -108,10 +82,7 @@ def get_gui_access(code):
 
 
 def get_usergroup_status(code):
-    """
-    Get usergroup status from code
-    """
-
+    """Get usergroup status from code."""
     usergroup_status = {0: "Enable", 1: "Disable"}
 
     if code in usergroup_status:
@@ -121,10 +92,7 @@ def get_usergroup_status(code):
 
 
 def get_hostgroup_flag(code):
-    """
-    Get hostgroup flag from code
-    """
-
+    """Get hostgroup flag from code."""
     hostgroup_flag = {0: "Plain", 4: "Discover"}
 
     if code in hostgroup_flag:
@@ -134,10 +102,7 @@ def get_hostgroup_flag(code):
 
 
 def get_hostgroup_type(code):
-    """
-    Get hostgroup type from code
-    """
-
+    """Get hostgroup type from code."""
     hostgroup_type = {0: "Not internal", 1: "Internal"}
 
     if code in hostgroup_type:
@@ -147,10 +112,7 @@ def get_hostgroup_type(code):
 
 
 def get_user_type(code):
-    """
-    Get user type from code
-    """
-
+    """Get user type from code."""
     user_type = {1: "User", 2: "Admin", 3: "Super admin"}
 
     if code in user_type:
@@ -160,10 +122,7 @@ def get_user_type(code):
 
 
 def get_maintenance_type(code):
-    """
-    Get maintenance type from code
-    """
-
+    """Get maintenance type from code."""
     maintenance_type = {0: "With DC", 1: "Without DC"}
 
     if code in maintenance_type:
@@ -173,10 +132,7 @@ def get_maintenance_type(code):
 
 
 def get_maintenance_period_type(code):
-    """
-    Get maintenance period type from code
-    """
-
+    """Get maintenance period type from code."""
     maintenance_period_type = {0: "One time", 2: "Daily", 3: "Weekly", 4: "Monthly"}
 
     if code in maintenance_period_type:
@@ -186,10 +142,7 @@ def get_maintenance_period_type(code):
 
 
 def get_autologin_type(code):
-    """
-    Get autologin type from code
-    """
-
+    """Get autologin type from code."""
     autologin_type = {0: "Disable", 1: "Enable"}
 
     if code in autologin_type:
@@ -199,10 +152,7 @@ def get_autologin_type(code):
 
 
 def get_permission(code):
-    """
-    Get permission
-    """
-
+    """Get permission."""
     permission = {
         0: "deny",
         2: "ro",
@@ -213,10 +163,7 @@ def get_permission(code):
 
 
 def get_permission_code(permission):
-    """
-    Get permission code
-    """
-
+    """Get permission code."""
     permission_code = {"deny": 0, "ro": 2, "rw": 3}
 
     if permission in permission_code:
@@ -226,9 +173,7 @@ def get_permission_code(permission):
 
 
 def get_item_type(code):
-    """
-    Get item type from code
-    """
+    """Get item type from code."""
     item_type = {0: "Zabbix agent",
                  1: "SNMPv1 agent",
                  2: "Zabbix trapper",
