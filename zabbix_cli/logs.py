@@ -34,7 +34,7 @@ DEFAULT_FORMAT = " ".join((
 
 
 class ContextFilter(logging.Filter):
-    """ Log filter that adds a static field to a record. """
+    """Log filter that adds a static field to a record."""
 
     def __init__(self, field, value):
         self.field = field
@@ -46,7 +46,7 @@ class ContextFilter(logging.Filter):
 
 
 class LogContext(object):
-    """ A context that adds ContextFilters to a logger. """
+    """A context that adds ContextFilters to a logger."""
 
     def __init__(self, logger, **context):
         self.logger = logger
@@ -63,14 +63,14 @@ class LogContext(object):
 
 
 class SafeRecord(logging.LogRecord, object):
-    """ A LogRecord wrapper that returns None for unset fields. """
+    """A LogRecord wrapper that returns None for unset fields."""
 
     def __init__(self, record):
         self.__dict__ = collections.defaultdict(lambda: None, record.__dict__)
 
 
 class SafeFormatter(logging.Formatter):
-    """ A Formatter that use SafeRecord to avoid failure. """
+    """A Formatter that use SafeRecord to avoid failure."""
 
     def format(self, record):
         record = SafeRecord(record)
@@ -88,7 +88,7 @@ def get_log_level(level):
 
 
 def configure_logging(config):
-    """ Configures the root logger. """
+    """Configure the root logger."""
     enable = config.logging == 'ON'
     level = get_log_level(config.log_level)
     filename = config.log_file
