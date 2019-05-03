@@ -227,7 +227,8 @@ configuration parameters that zabbix-cli is using::
   +--------------------------------------+---------------------------------------+
   |              Configuration parameter | Value                                 |
   +--------------------------------------+---------------------------------------+
-  |                       zabbix_api_url | https://zabbix.example.org         |
+  |                       zabbix_api_url | https://zabbix.example.org            |
+  |                          cert_verify | ON                                    |
   |                            system_id | zabbix-ID                             |
   |                    default_hostgroup | All-hosts                             |
   |              default_admin_usergroup | Zabbix-admin                          |
@@ -237,6 +238,7 @@ configuration parameters that zabbix-cli is using::
   |                default_export_format | XML                                   |
   |    include_timestamp_export_filename | ON                                    |
   |                           use_colors | ON                                    |
+  |                           use_paging | OFF                                   |
   |                  use_auth_token_file | ON                                    |
   |                              logging | ON                                    |
   |                            log_level | INFO                                  |
@@ -309,51 +311,50 @@ The Zabbix-CLI interactive shell can be started by running the program
    [user@host]# zabbix-cli
 
    #############################################################
-   Welcome to the Zabbix command-line interface (v.1.7.0)
+   Welcome to the Zabbix command-line interface (v2.1.0)
+   Connected to server https://zabbix.example.org (v4.0.6)
    #############################################################
    Type help or \? to list commands.
-   
-   [zabbix-cli rafael@zabbix-ID]$ help
-   
+
+   [zabbix-cli user@zabbix-ID]$ help
+
    Documented commands (type help <topic>):
    ========================================
-   EOF                             shell                       
-   acknowledge_event               show_alarms                 
-   acknowledge_trigger_last_event  show_global_macros          
-   add_host_to_hostgroup           show_history                
-   add_user_to_usergroup           show_host                   
-   add_usergroup_permissions       show_host_inventory         
-   clear                           show_host_usermacros        
-   create_host                     show_hostgroup              
-   create_host_interface           show_hostgroups             
-   create_hostgroup                show_hosts                  
-   create_maintenance_definition   show_items                  
-   create_notification_user        show_maintenance_definitions
-   create_user                     show_maintenance_periods    
-   create_usergroup                show_template               
-   define_global_macro             show_templates              
-   define_host_monitoring_status   show_trigger_events         
-   define_host_usermacro           show_triggers               
-   export_configuration            show_usergroup              
-   import_configuration            show_usergroups             
-   link_template_to_host           show_usermacro_host_list    
-   load_balance_proxy_hosts        show_usermacro_template_list
-   move_proxy_hosts                show_users                  
-   quit                            show_zabbixcli_config       
-   remove_host                     unlink_template_from_host   
-   remove_host_from_hostgroup      update_host_inventory       
-   remove_maintenance_definition   update_host_proxy           
-   remove_user                     update_usergroup_permissions
-   remove_user_from_usergroup    
-   
+   EOF                             show_alarms
+   acknowledge_event               show_global_macros
+   acknowledge_trigger_last_event  show_history
+   add_host_to_hostgroup           show_host
+   add_user_to_usergroup           show_host_inventory
+   add_usergroup_permissions       show_host_usermacros
+   clear                           show_hostgroup
+   create_host                     show_hostgroup_permissions
+   create_host_interface           show_hostgroups
+   create_hostgroup                show_hosts
+   create_maintenance_definition   show_items
+   create_notification_user        show_last_values
+   create_user                     show_maintenance_definitions
+   create_usergroup                show_maintenance_periods
+   define_global_macro             show_template
+   define_host_monitoring_status   show_templates
+   define_host_usermacro           show_trigger_events
+   export_configuration            show_triggers
+   help                            show_usergroup
+   import_configuration            show_usergroup_permissions
+   link_template_to_host           show_usergroups
+   load_balance_proxy_hosts        show_usermacro_host_list
+   move_proxy_hosts                show_usermacro_template_list
+   quit                            show_users
+   remove_host                     show_zabbixcli_config
+   remove_host_from_hostgroup      unlink_template_from_host
+   remove_maintenance_definition   update_host_inventory
+   remove_user                     update_host_proxy
+   remove_user_from_usergroup      update_usergroup_permissions
+   shell
+
    Miscellaneous help topics:
    ==========================
    shortcuts  support
-   
-   Undocumented commands:
-   ======================
-   help
-   
+
 **NOTE:** It is possible to use Zabbix-CLI in a non-interactive modus
 by running ``/usr/bin/zabbix-cli`` with the parameter ``--command
 <zabbix_command>`` or ``-C <zabbix_command>`` in the OS shell. This
