@@ -187,7 +187,6 @@ class zabbixcli(cmd.Cmd):
         Hostname. One can define more than one value.
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -367,7 +366,6 @@ class zabbixcli(cmd.Cmd):
         Definition ID. One can define more than one value.
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -521,7 +519,6 @@ class zabbixcli(cmd.Cmd):
         show_zabbixcli_config
 
         """
-
         result_columns = {}
         for i, filename in enumerate(self.conf.loaded_files):
             result_columns[i] = {1: '* ' + filename}
@@ -562,7 +559,6 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_hostgroups
         """
-
         cmd.Cmd.onecmd(self, 'show_hostgroup "*"')
 
     def do_show_hostgroup(self, args):
@@ -578,7 +574,6 @@ class zabbixcli(cmd.Cmd):
         Hostgroup name. One can use wildcards.
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -691,7 +686,6 @@ class zabbixcli(cmd.Cmd):
         Hostgroup name. One can use wildcards.
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -771,7 +765,6 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_hosts
         """
-
         cmd.Cmd.onecmd(self, 'show_host "*"')
 
     def do_show_host(self, args):
@@ -804,7 +797,6 @@ class zabbixcli(cmd.Cmd):
               show_host * "'available':'1','status':'0'"
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -968,7 +960,6 @@ class zabbixcli(cmd.Cmd):
         look at possible keys and their current values, use
         "zabbix-cli --use-json-format show_host_inventory <hostname>"
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -1075,7 +1066,6 @@ class zabbixcli(cmd.Cmd):
         Hostname.
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -1204,7 +1194,6 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_usergroups
         """
-
         cmd.Cmd.onecmd(self, 'show_usergroup "*"')
 
     def do_show_usergroup(self, args):
@@ -1220,7 +1209,6 @@ class zabbixcli(cmd.Cmd):
         User group name. One can use wildcards.
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -1329,7 +1317,6 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_users
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -1446,7 +1433,6 @@ class zabbixcli(cmd.Cmd):
         show_alarms *disk* "'host':'host.example.org','priority':'4'" * true
 
         """
-
         result_columns = {}
         result_columns_key = 0
         filters = ''
@@ -1642,7 +1628,6 @@ class zabbixcli(cmd.Cmd):
         One can define several values in a comma separated list.
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -1746,7 +1731,6 @@ class zabbixcli(cmd.Cmd):
         One can define several values in a comma separated list.
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -1851,7 +1835,6 @@ class zabbixcli(cmd.Cmd):
         One can define several values in a comma separated list.
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -1963,7 +1946,6 @@ class zabbixcli(cmd.Cmd):
         can define several values in a comma separated list.
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -2086,7 +2068,6 @@ class zabbixcli(cmd.Cmd):
         One can define several values in a comma separated list.
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -2191,7 +2172,6 @@ class zabbixcli(cmd.Cmd):
         One can define several values in a comma separated list.
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -2301,7 +2281,6 @@ class zabbixcli(cmd.Cmd):
         1:'Disable'
 
         """
-
         # Default 0: System default
         gui_access_default = '0'
 
@@ -2453,7 +2432,6 @@ class zabbixcli(cmd.Cmd):
         default interface of type 'Agent' using the port 10050.
 
         """
-
         # Default hostgroups.
         # Use these values only if they exist.
 
@@ -2631,7 +2609,6 @@ class zabbixcli(cmd.Cmd):
         Hostname
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -2727,7 +2704,6 @@ class zabbixcli(cmd.Cmd):
         separated list.
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -2851,7 +2827,6 @@ class zabbixcli(cmd.Cmd):
         1 - Without data collection
 
         """
-
         host_ids = []
         hostgroup_ids = []
 
@@ -3070,7 +3045,6 @@ class zabbixcli(cmd.Cmd):
         1: Default interface [*]
 
         """
-
         #
         # Default host interface information
         #
@@ -3268,7 +3242,6 @@ class zabbixcli(cmd.Cmd):
         One can define several values in a comma separated list.
 
         """
-
         # Default: md5 value of a random int >1 and <1000000
         x = hashlib.md5()
         x.update(str(random.randint(1, 1000000)))
@@ -3456,7 +3429,6 @@ class zabbixcli(cmd.Cmd):
         Max lenght is 20 characters.
 
         """
-
         # Default: md5 value of a random int >1 and <1000000
         x = hashlib.md5()
         x.update(str(random.randint(1, 1000000)))
@@ -3641,7 +3613,6 @@ class zabbixcli(cmd.Cmd):
         Username to remove
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -3715,7 +3686,6 @@ class zabbixcli(cmd.Cmd):
         create_hostgroup [hostgroup]
 
         """
-
         # Default values
         admin_usergroup_default = self.conf.default_admin_usergroup
         all_usergroup_default = self.conf.default_create_user_usergroup.strip()
@@ -3845,7 +3815,6 @@ class zabbixcli(cmd.Cmd):
         * rw: Give [usergroup] read and write access to [hostgroups]
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -3940,7 +3909,6 @@ class zabbixcli(cmd.Cmd):
         * rw: Give [usergroup] read and write access to [hostgroups]
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -4027,7 +3995,6 @@ class zabbixcli(cmd.Cmd):
         Default value of the macro
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -4141,7 +4108,6 @@ class zabbixcli(cmd.Cmd):
         Default value of the macro
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -4264,7 +4230,6 @@ class zabbixcli(cmd.Cmd):
         Hostname that will get the monitoring status updated.
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -4366,7 +4331,6 @@ class zabbixcli(cmd.Cmd):
         Zabbix proxy server that will monitor [hostname]
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -4475,7 +4439,6 @@ class zabbixcli(cmd.Cmd):
         ---------
         Text of the acknowledgement message.
         """
-
         ack_message_default = '[Zabbix-CLI] Acknowledged via acknowledge_events'
 
         try:
@@ -4553,7 +4516,6 @@ class zabbixcli(cmd.Cmd):
         Text of the acknowledgement message.
 
         """
-
         event_ids = []
         ack_message_default = '[Zabbix-CLI] Acknowledged via acknowledge_trigger_last_event'
 
@@ -4641,7 +4603,6 @@ class zabbixcli(cmd.Cmd):
         Number of events to show (Default: 1)
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -4739,7 +4700,6 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_templates
         """
-
         cmd.Cmd.onecmd(self, 'show_template "*"')
 
     def do_show_template(self, args):
@@ -4755,7 +4715,6 @@ class zabbixcli(cmd.Cmd):
         One can search by template name. We can use wildcards.
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -4872,7 +4831,6 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show global_macros
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -4927,7 +4885,6 @@ class zabbixcli(cmd.Cmd):
         Hostname
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -5030,7 +4987,6 @@ class zabbixcli(cmd.Cmd):
         Usergroup that will be displayed.
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -5112,7 +5068,6 @@ class zabbixcli(cmd.Cmd):
         converted to ${SITE_URL}
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -5215,7 +5170,6 @@ class zabbixcli(cmd.Cmd):
         0 - (default) Do not group items.
         1 - Group items.
         """
-
         try:
             arg_list = [arg.strip() for arg in shlex.split(args)]
         except ValueError as e:
@@ -5359,7 +5313,6 @@ class zabbixcli(cmd.Cmd):
         converted to ${SITE_URL}
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -5456,7 +5409,6 @@ class zabbixcli(cmd.Cmd):
         Template name or zabbix-templateID
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -5583,7 +5535,6 @@ class zabbixcli(cmd.Cmd):
         Template name or zabbix-templateID
 
         """
-
         result_columns = {}
         result_columns_key = 0
 
@@ -5731,7 +5682,6 @@ class zabbixcli(cmd.Cmd):
         type group. This parameter will be defined automatically as #all# if [object type] == #all#
 
         """
-
         #
         # Default values
         #
@@ -6003,7 +5953,6 @@ class zabbixcli(cmd.Cmd):
         1: Dry run activated [*]
 
         """
-
         #
         # Default values
         #
@@ -6193,7 +6142,6 @@ class zabbixcli(cmd.Cmd):
         Destination proxy server.
 
         """
-
         try:
             arg_list = shlex.split(args)
 
@@ -6491,7 +6439,6 @@ class zabbixcli(cmd.Cmd):
         clear
 
         """
-
         os.system('clear')
         print(self.intro)
 
@@ -6543,7 +6490,6 @@ class zabbixcli(cmd.Cmd):
         Any command that can be run in the operative system.
 
         """
-
         try:
             proc = subprocess.Popen([line], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
             output, errors = proc.communicate()
@@ -6561,7 +6507,6 @@ class zabbixcli(cmd.Cmd):
         quit
 
         """
-
         print('\nDone, thank you for using Zabbix-CLI')
         return True
 
@@ -6574,7 +6519,6 @@ class zabbixcli(cmd.Cmd):
         EOF
 
         """
-
         print('\n\nDone, thank you for using Zabbix-CLI')
         return True
 
@@ -6588,7 +6532,6 @@ class zabbixcli(cmd.Cmd):
         show_history
 
         """
-
         cnt = 0
         print()
 
@@ -6603,7 +6546,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Find out if hostgroup exists
         """
-
         data = self.zapi.hostgroup.get(filter={'name': hostgroup})
 
         if data != []:
@@ -6616,7 +6558,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the hostgroup_id for a hostgroup
         """
-
         if self.bulk_execution:
 
             if hostgroup in self.hostgroupname_cache:
@@ -6641,7 +6582,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Find out if a hostname exists in zabbix
         """
-
         if self.bulk_execution:
 
             if host in self.hostid_cache.values():
@@ -6663,7 +6603,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the hostid for a host
         """
-
         data = self.zapi.host.get(filter={"host": host})
 
         if data != []:
@@ -6678,7 +6617,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the host name for a hostID
         """
-
         #
         # Return the value if it exists from the dictionary
         # hostid_cache.
@@ -6706,7 +6644,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the template name for a templateID
         """
-
         data = self.zapi.template.get(output='extend',
                                       templateids=templateid)
 
@@ -6722,7 +6659,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the imageid for a image
         """
-
         print(image)
 
         data = self.zapi.image.get(filter={"name": image})
@@ -6741,7 +6677,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the mapid for a map
         """
-
         data = self.zapi.map.getobjects(name=map)
 
         if data != []:
@@ -6756,7 +6691,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the screenid for a screen
         """
-
         data = self.zapi.screen.get(filter={"name": screen})
 
         if data != []:
@@ -6771,7 +6705,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the templateid for a template
         """
-
         data = self.zapi.template.get(filter={"host": template})
 
         if data != []:
@@ -6786,7 +6719,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Find out if usergroups exists
         """
-
         data = self.zapi.usergroup.get(output=['usrgrpid'],
                                        filter={"name": usergroup})
 
@@ -6800,7 +6732,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the usergroupid for a usergroup
         """
-
         data = self.zapi.usergroup.get(output=['usrgrpid'],
                                        filter={"name": usergroup})
 
@@ -6816,7 +6747,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the userid for a user
         """
-
         data = self.zapi.user.get(filter={'alias': user})
 
         if data != []:
@@ -6831,7 +6761,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the proxyid for a proxy server
         """
-
         if proxy != '':
 
             data = self.zapi.proxy.get(filter={"host": proxy})
@@ -6852,7 +6781,6 @@ class zabbixcli(cmd.Cmd):
         regular expression sent as a parameter to this funtion
 
         """
-
         proxy_list = []
         match_pattern = re.compile(proxy_pattern)
 
@@ -6884,7 +6812,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Populate hostid cache
         """
-
         # This method initializes a dictionary when we start
         # zabbix-cli with all hostid:hostname from hosts that are
         # defined in zabbix. We use this as a cache to get hostname
@@ -6915,7 +6842,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Populate hostgroupid cache
         """
-
         temp_dict = {}
 
         data = self.zapi.hostgroup.get(output=['groupid', 'name'])
@@ -6930,7 +6856,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Populate hostgroupname cache
         """
-
         # This method initializes a dictionary with all hostgroups in
         # the system.
         #
@@ -6952,7 +6877,6 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Populate proxyid cache
         """
-
         # This method initializes a dictionary with all active proxies
         # in the system.
         #
