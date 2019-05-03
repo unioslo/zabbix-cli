@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_priority(filename=None):
-    """ Get and ordered list of config file locations. """
+    """Get and ordered list of config file locations."""
     priority = list(CONFIG_PRIORITY)
     if filename:
         if CONFIG_CUSTOM_GOES_AFTER in priority:
@@ -69,7 +69,7 @@ def get_priority(filename=None):
 
 
 def find_config(filename=None):
-    """ Find all available configuration files.
+    """Find all available configuration files.
 
     :param filename: An optional user supplied file to throw into the mix
     """
@@ -80,7 +80,7 @@ def find_config(filename=None):
 
 
 class OptionDescriptor(object):
-    """ Descriptor to access ConfigParser settings as attributes. """
+    """Descriptor to access ConfigParser settings as attributes."""
 
     # TODO: Add serialization, so that 'ON', 'OFF' -> boolean, etc...
 
@@ -112,7 +112,7 @@ class OptionDescriptor(object):
 
 
 class OptionRegister(collections.Mapping):
-    """ A registry of ConfigParser sections, options and default values. """
+    """A registry of ConfigParser sections, options and default values."""
 
     def __init__(self):
         self._settings = collections.OrderedDict()
@@ -151,7 +151,7 @@ class OptionRegister(collections.Mapping):
 
 
 class Configuration(configparser.RawConfigParser, object):
-    """ A custom ConfigParser object with zabbix-cli settings. """
+    """A custom ConfigParser object with zabbix-cli settings."""
 
     _registry = OptionRegister()
 
@@ -292,7 +292,8 @@ def main(inargs=None):
     import argparse
 
     class Actions(object):
-        """ subparser to function map. """
+        """Subparser to function map."""
+
         def __init__(self):
             self.funcmap = dict()
 
