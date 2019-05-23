@@ -2911,8 +2911,8 @@ class zabbixcli(cmd.Cmd):
             # Generate lists with hostID anf hostgroupID information.
             #
 
-            for value in host_hostgroup.replace(' ', '').split(','):
-
+            for value in host_hostgroup.split(','):
+                value = value.strip()
                 if self.host_exists(value):
                     host_ids.append(self.get_host_id(value))
 
