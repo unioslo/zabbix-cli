@@ -6092,19 +6092,20 @@ class zabbixcli(cmd.Cmd):
                                 data = self.zapi.confimport(format=format,
                                                             source=import_data,
                                                             rules={
-                                                                'applications': {'createMissing': True},
-                                                                'discoveryRules': {'createMissing': True, 'updateExisting': True},
-                                                                'graphs': {'createMissing': True, 'updateExisting': True},
+                                                                'applications': {'createMissing': True, 'deleteMissing': True},
+                                                                'discoveryRules': {'createMissing': True, 'updateExisting': True, 'deleteMissing': True},
+                                                                'graphs': {'createMissing': True, 'updateExisting': True, 'deleteMissing': True},
                                                                 'groups': {'createMissing': True},
                                                                 'hosts': {'createMissing': True, 'updateExisting': True},
+																'httptests': {'createMissing': True, 'updateExisting': True, 'deleteMissing': True},
                                                                 'images': {'createMissing': True, 'updateExisting': True},
-                                                                'items': {'createMissing': True, 'updateExisting': True},
+                                                                'items': {'createMissing': True, 'updateExisting': True, 'deleteMissing': True},
                                                                 'maps': {'createMissing': True, 'updateExisting': True},
                                                                 'screens': {'createMissing': True, 'updateExisting': True},
                                                                 'templateLinkage': {'createMissing': True},
                                                                 'templates': {'createMissing': True, 'updateExisting': True},
-                                                                'templateScreens': {'createMissing': True, 'updateExisting': True},
-                                                                'triggers': {'createMissing': True, 'updateExisting': True}
+                                                                'templateScreens': {'createMissing': True, 'updateExisting': True, 'deleteMissing': True},
+                                                                'triggers': {'createMissing': True, 'updateExisting': True, 'deleteMissing': True}
                                                             })
 
                                 if data:
