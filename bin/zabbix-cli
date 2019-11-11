@@ -6,7 +6,7 @@
 # Copyright (c) 2014-2017 USIT-University of Oslo
 #
 # This file is part of Zabbix-cli
-# https://github.com/usit-gd/zabbix-cli
+# https://github.com/unioslo/zabbix-cli
 #
 # Zabbix-CLI is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -100,7 +100,7 @@ if __name__ == '__main__':
                                          from: https://e-mc2.net/zabbix-cli
 
                                          The latest Zabbix-CLI documentation is available from:
-                                         https://github.com/usit-gd/zabbix-cli/blob/master/docs/manual.rst
+                                         https://github.com/unioslo/zabbix-cli/blob/master/docs/manual.rst
 
                                          '''))
 

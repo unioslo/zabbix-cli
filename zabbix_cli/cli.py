@@ -4,7 +4,7 @@
 # Copyright (c) 2014-2017 USIT-University of Oslo
 #
 # This file is part of Zabbix-CLI
-# https://github.com/usit-gd/zabbix-cli
+# https://github.com/unioslo/zabbix-cli
 #
 # Zabbix-CLI is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -6917,10 +6917,10 @@ class zabbixcli(cmd.Cmd):
         """Help information about Zabbix-CLI support."""
         print('''
         The latest information and versions of Zabbix-CLI can be obtained
-        from: https://github.com/usit-gd/zabbix-cli
+        from: https://github.com/unioslo/zabbix-cli
 
         The Zabbix-CLI documentation is available from:
-        https://github.com/usit-gd/zabbix-cli/blob/master/docs/manual.rst
+        https://github.com/unioslo/zabbix-cli/blob/master/docs/manual.rst
 
         Zabbix documentation:
         http://www.zabbix.com/documentation.php

@@ -12,5 +12,5 @@ tested by members of the Department for IT Infrastructure at [the
 Center for Information Technology](https://www.usit.uio.no) at
 [the University of Oslo, Norway](https://www.uio.no/).
 
-The project home page is on [GitHub](https://github.com/usit-gd/zabbix-cli).
+The project home page is on [GitHub](https://github.com/unioslo/zabbix-cli).
 Please report any issues or improvements there.

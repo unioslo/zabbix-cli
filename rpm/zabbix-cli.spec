@@ -12,8 +12,8 @@ Summary: Command-line interface for Zabbix
 
 Group: System Environment/Base
 License: GPLv3+
-URL: https://github.com/usit-gd/zabbix-cli
-Source0: https://github.com/usit-gd/zabbix-cli/archive/%{version}.tar.gz
+URL: https://github.com/unioslo/zabbix-cli
+Source0: https://github.com/unioslo/zabbix-cli/archive/%{version}.tar.gz
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 

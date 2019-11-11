@@ -63,7 +63,7 @@ try:
           description='ZABBIX-CLI - Zabbix terminal client',
           author='Rafael Martinez Guerrero',
           author_email='rafael@postgresql.org.es',
-          url='https://github.com/usit-gd/zabbix-cli',
+          url='https://github.com/unioslo/zabbix-cli',
           packages=['zabbix_cli', ],
           scripts=['bin/zabbix-cli', 'bin/zabbix-cli-bulk-execution', 'bin/zabbix-cli-init'],
           data_files=data_files,

@@ -7,9 +7,9 @@ Build-Depends: debhelper (>= 9~)
  , python | python-all | python-dev | python-all-dev
  , python-setuptools
 Standards-Version: 4.0.0
-Homepage: https://github.com/usit-gd/zabbix-cli
-Vcs-Browser: https://github.com/usit-gd/zabbix-cli
-Vcs-Git: https://github.com/usit-gd/zabbix-cli
+Homepage: https://github.com/unioslo/zabbix-cli
+Vcs-Browser: https://github.com/unioslo/zabbix-cli
+Vcs-Git: https://github.com/unioslo/zabbix-cli
 X-Python-Version: >= 2.6
 
 Package: zabbix-cli

@@ -8,7 +8,7 @@ Zabbix-CLI
 | Rafael Martinez Guerrero (University of Oslo)
 | E-mail: rafael@postgresql.org.es
 | 
-| Source: https://github.com/usit-gd/zabbix-cli
+| Source: https://github.com/unioslo/zabbix-cli
 |
 
 .. contents::
@@ -80,7 +80,7 @@ Installing from source
 
 The easiest way to install zabbix-cli from source is to download the
 latest stable release from GitHub
-https://github.com/usit-gd/zabbix-cli/releases in tar.gz or zip
+https://github.com/unioslo/zabbix-cli/releases in tar.gz or zip
 format.
 
 You can also clone the official GitHub GIT repository and get the
@@ -89,7 +89,7 @@ latest code from the master branch.
 ::
 
  [root@server]# cd
- [root@server]# git clone https://github.com/usit-gd/zabbix-cli.git
+ [root@server]# git clone https://github.com/unioslo/zabbix-cli.git
 
  [root@server]# cd zabbix-cli
  [root@server]# ./setup.py install
@@ -106,7 +106,7 @@ If using a python virtual enviroment, instead of ./setup.py install one can use 
 
 For stable code to be used in production use the source code
 distributed via the release section:
-https://github.com/usit-gd/zabbix-cli/releases
+https://github.com/unioslo/zabbix-cli/releases
 
 
 Installing via RPM packages
@@ -116,7 +116,7 @@ The University of Oslo will make available in the near future an
 official repository that can be used to install RPM packages via yum .
 
 In the meantime download the latest RPM package for your distribution
-from https://github.com/usit-gd/zabbix-cli/releases and run this
+from https://github.com/unioslo/zabbix-cli/releases and run this
 command:
 
 ::
@@ -133,7 +133,7 @@ systems. Check https://packages.qa.debian.org/z/zabbix-cli.html for
 details.
 
 You can also download the latest DEB package from
-https://github.com/usit-gd/zabbix-cli/releases and install it with:
+https://github.com/unioslo/zabbix-cli/releases and install it with:
 
 ::
 
