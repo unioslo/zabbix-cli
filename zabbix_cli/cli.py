@@ -6104,7 +6104,8 @@ class zabbixcli(cmd.Cmd):
                                                                 'templateLinkage': {'createMissing': True},
                                                                 'templates': {'createMissing': True, 'updateExisting': True},
                                                                 'templateScreens': {'createMissing': True, 'updateExisting': True},
-                                                                'triggers': {'createMissing': True, 'updateExisting': True}
+                                                                'triggers': {'createMissing': True, 'updateExisting': True},
+                                                                'valueMaps': {'createMissing': True, 'updateExisting': True},
                                                             })
 
                                 if data:
