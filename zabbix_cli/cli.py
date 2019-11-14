@@ -5923,6 +5923,7 @@ class zabbixcli(cmd.Cmd):
         Zabbix component.
 
         We use the options createMissing=True and updateExisting=True
+        and deleteMissing=False by default
         when importing data. This means that new objects will be
         created if they do not exists and that existing objects will
         be updated if they exist.
@@ -5930,6 +5931,7 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         import_configuration [import file]
                              [dry run]
+                             [deleteMissing]
 
         [import file]
         -------------
@@ -5951,6 +5953,16 @@ class zabbixcli(cmd.Cmd):
 
         0: Dry run deactivated
         1: Dry run activated [*]
+		
+        [deleteMissing]
+        ---------
+        If this parameter is used, the command will delete missing stuff 
+        in template(s) to import
+
+        False: Do not delete missing stuff (*)
+        True:  delete applications, discoveryRules, graphs, 
+               items, templateScreens, triggers
+               that are not in the template(s) to import
 
         """
         #
@@ -5960,6 +5972,7 @@ class zabbixcli(cmd.Cmd):
         total_files_not_imported = 0
 
         dry_run_default = '1'
+	deleteMissing_default = False
 
         try:
             arg_list = shlex.split(args)
@@ -5977,6 +5990,7 @@ class zabbixcli(cmd.Cmd):
                 print('--------------------------------------------------------')
                 files = input('# Import file []: ').strip()
                 dry_run = input('# Dry run [' + dry_run_default + ']: ').strip()
+                deleteMissing_value = input('# deleteMissing [' + str(deleteMissing_default) + ']: ').strip()
                 print('--------------------------------------------------------')
 
             except EOFError:
@@ -5991,10 +6005,17 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 1:
             files = arg_list[0].strip()
             dry_run = dry_run_default
+            deleteMissing_value = deleteMissing_default
 
         elif len(arg_list) == 2:
             files = arg_list[0].strip()
             dry_run = arg_list[1].strip()
+            deleteMissing_value = deleteMissing_default
+			
+        elif len(arg_list) == 3:
+            files = arg_list[0].strip()
+            dry_run = arg_list[1].strip()
+            deleteMissing_value = arg_list[2].strip()
 
         #
         # Command with the wrong number of parameters
@@ -6014,6 +6035,9 @@ class zabbixcli(cmd.Cmd):
 
         if dry_run == '' or dry_run not in ('0', '1'):
             dry_run = dry_run_default
+
+        if deleteMissing_value == '' or deleteMissing_value not in (False, True):
+            deleteMissing_value = deleteMissing_default
 
         #
         # Expand users HOME when using ~ or ~user
@@ -6092,19 +6116,20 @@ class zabbixcli(cmd.Cmd):
                                 data = self.zapi.confimport(format=format,
                                                             source=import_data,
                                                             rules={
-                                                                'applications': {'createMissing': True},
-                                                                'discoveryRules': {'createMissing': True, 'updateExisting': True},
-                                                                'graphs': {'createMissing': True, 'updateExisting': True},
+                                                                'applications': {'createMissing': True, 'deleteMissing': deleteMissing_value},
+                                                                'discoveryRules': {'createMissing': True, 'updateExisting': True, 'deleteMissing': deleteMissing_value},
+                                                                'graphs': {'createMissing': True, 'updateExisting': True, 'deleteMissing': deleteMissing_value},
                                                                 'groups': {'createMissing': True},
                                                                 'hosts': {'createMissing': True, 'updateExisting': True},
+                                                                'httptests': {'createMissing': True, 'updateExisting': True, 'deleteMissing': deleteMissing_value},
                                                                 'images': {'createMissing': True, 'updateExisting': True},
-                                                                'items': {'createMissing': True, 'updateExisting': True},
+                                                                'items': {'createMissing': True, 'updateExisting': True, 'deleteMissing': deleteMissing_value},
                                                                 'maps': {'createMissing': True, 'updateExisting': True},
                                                                 'screens': {'createMissing': True, 'updateExisting': True},
                                                                 'templateLinkage': {'createMissing': True},
                                                                 'templates': {'createMissing': True, 'updateExisting': True},
-                                                                'templateScreens': {'createMissing': True, 'updateExisting': True},
-                                                                'triggers': {'createMissing': True, 'updateExisting': True},
+                                                                'templateScreens': {'createMissing': True, 'updateExisting': True, 'deleteMissing': deleteMissing_value},
+                                                                'triggers': {'createMissing': True, 'updateExisting': True, 'deleteMissing': deleteMissing_value},
                                                                 'valueMaps': {'createMissing': True, 'updateExisting': True},
                                                             })
 
@@ -6941,3 +6966,4 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, cli.signal_handler_sigint)
     signal.signal(signal.SIGTERM, cli.signal_handler_sigint)
     cli.cmdloop()
+
