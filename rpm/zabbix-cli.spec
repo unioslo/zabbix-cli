@@ -1,13 +1,8 @@
-%if 0%{?rhel} && 0%{?rhel} == 6
-%{!?__python2: %global __python2 /usr/bin/python2}
-%{!?python2_sitelib: %global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python2_sitearch: %global python2_sitearch %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%endif
 %{!?pybasever: %global pybasever %(%{__python2} -c "import sys;print(sys.version[0:3])")}
 
 Name: zabbix-cli
 Version: 2.1.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 Summary: Command-line interface for Zabbix
 
 Group: System Environment/Base
@@ -17,13 +12,20 @@ Source0: https://github.com/unioslo/zabbix-cli/archive/%{version}.tar.gz
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
-%if 0%{?rhel} && 0%{?rhel} <= 6
-Requires: python-argparse
-%endif
+Requires: python2 >= 2.7
+%if 0%{?rhel} && 0%{?rhel} == 7
 Requires: python-ipaddress
 Requires: python-requests
+%else
+Requires: python2-ipaddress
+Requires: python2-requests
+%endif
 
+%if 0%{?rhel} && 0%{?rhel} == 7
 BuildRequires: python-setuptools
+%else
+Requires: python2-setuptools
+%endif
 BuildRequires: python2-devel
 
 BuildArch: noarch
@@ -55,6 +57,9 @@ mkdir -p %{buildroot}%{_defaultdocdir}/zabbix-cli-%{version}
 %doc LICENSE docs/manual.rst
 
 %changelog
+* Mon Nov 11 2019 Paal Braathen <paal.braathen@usit.uio.no> - 2.1.1-2
+- New release 2.1.1-2. Require python >= 2.7. Abandon RHEL6 and support RHEL8.
+
 * Thu May 09 2019 Paal Braathen <paal.braathen@usit.uio.no> - 2.1.1-1
 - New version 2.1.1
 
