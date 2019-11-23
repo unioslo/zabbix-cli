@@ -3,6 +3,7 @@ zabbix-cli (1.7.0-2) UNRELEASED; urgency=medium
   * Use secure copyright file specification URI.
   * Remove unnecessary X-Python{,3}-Version field in debian/control.
   * Explicitly specify source format.
+  * Set upstream metadata fields: Repository.
 
  -- Jelmer Vernooĳ <jelmer@debian.org>  Sat, 23 Nov 2019 04:38:04 +0000
 
