@@ -1,37 +1,26 @@
-%{!?pybasever: %global pybasever %(%{__python2} -c "import sys;print(sys.version[0:3])")}
-
 Name: zabbix-cli
 Version: 2.1.1
-Release: 2%{?dist}
+Release: 3%{?dist}
 Summary: Command-line interface for Zabbix
 
 Group: System Environment/Base
 License: GPLv3+
 URL: https://github.com/unioslo/zabbix-cli
 Source0: https://github.com/unioslo/zabbix-cli/archive/%{version}.tar.gz
-
+BuildArch: noarch
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
-Requires: python2 >= 2.7
-%if 0%{?rhel} && 0%{?rhel} == 7
-Requires: python-ipaddress
-Requires: python-requests
-%else
-Requires: python2-ipaddress
-Requires: python2-requests
-%endif
-
-%if 0%{?rhel} && 0%{?rhel} == 7
-BuildRequires: python-setuptools
-%else
-Requires: python2-setuptools
-%endif
-BuildRequires: python2-devel
-
-BuildArch: noarch
+BuildRequires: python3-devel
+BuildRequires: python3-setuptools
 
 Provides: uio-zabbix-zabbixcli = %{version}-%{release}
 Obsoletes: uio-zabbix-zabbixcli < 1.5.4-2
+
+%if 0%{?rhel} == 7
+Requires: python36-requests
+%else
+%{?python_enable_dependency_generator}
+%endif
 
 %description
 Command-line interface for Zabbix monitoring system.
@@ -40,23 +29,25 @@ Command-line interface for Zabbix monitoring system.
 %setup -q
 
 %build
-%{__python2} setup.py build
+%py3_build
 
 %install
-%{__python2} setup.py install -O1 --skip-build --root %{buildroot}
-mkdir -p %{buildroot}%{_defaultdocdir}/zabbix-cli-%{version}
+%py3_install
 
 %files
-%defattr(-, root, root, 0755)
-%{python2_sitelib}/zabbix_cli-%{version}-py%{pybasever}.egg-info/
-%{python2_sitelib}/zabbix_cli/
-%{_bindir}/zabbix-cli*
+%{python3_sitelib}/zabbix_cli-*.egg-info/
+%{python3_sitelib}/zabbix_cli/
+%{_bindir}/zabbix-cli
+%{_bindir}/zabbix-cli-bulk-execution
+%{_bindir}/zabbix-cli-init
 %dir %{_datadir}/zabbix-cli/
-%dir %{_defaultdocdir}/zabbix-cli-%{version}
 %{_datadir}/zabbix-cli/zabbix-cli.conf
 %doc LICENSE docs/manual.rst
 
 %changelog
+* Wed Nov 20 2019 Paal Braathen <paal.braathen@usit.uio.no> - 2.1.1-3
+- New release 2.1.1-3. Convert to python3 package.
+
 * Mon Nov 11 2019 Paal Braathen <paal.braathen@usit.uio.no> - 2.1.1-2
 - New release 2.1.1-2. Require python >= 2.7. Abandon RHEL6 and support RHEL8.
 
