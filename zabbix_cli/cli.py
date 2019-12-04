@@ -3244,7 +3244,7 @@ class zabbixcli(cmd.Cmd):
         """
         # Default: md5 value of a random int >1 and <1000000
         x = hashlib.md5()
-        x.update(str(random.randint(1, 1000000)))
+        x.update(str(random.randint(1, 1000000)).encode('ascii'))
         passwd_default = x.hexdigest()
 
         # Default: 1: Zabbix user
@@ -3431,7 +3431,7 @@ class zabbixcli(cmd.Cmd):
         """
         # Default: md5 value of a random int >1 and <1000000
         x = hashlib.md5()
-        x.update(str(random.randint(1, 1000000)))
+        x.update(str(random.randint(1, 1000000)).encode('ascii'))
         passwd_default = x.hexdigest()
 
         # Default: 1: Zabbix user
