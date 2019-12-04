@@ -1,6 +1,6 @@
 Name: zabbix-cli
-Version: 2.1.1
-Release: 3%{?dist}
+Version: 2.2.0
+Release: 1%{?dist}
 Summary: Command-line interface for Zabbix
 
 Group: System Environment/Base
@@ -45,6 +45,9 @@ Command-line interface for Zabbix monitoring system.
 %doc LICENSE docs/manual.rst
 
 %changelog
+* Wed Dec 04 2019 Paal Braathen <paal.braathen@usit.uio.no> - 2.2.0-1
+- New version 2.2.0-1
+
 * Wed Nov 20 2019 Paal Braathen <paal.braathen@usit.uio.no> - 2.1.1-3
 - New release 2.1.1-3. Convert to python3 package.
 
