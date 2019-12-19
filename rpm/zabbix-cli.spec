@@ -1,5 +1,5 @@
 Name: zabbix-cli
-Version: 2.2.0
+Version: 2.2.1
 Release: 1%{?dist}
 Summary: Command-line interface for Zabbix
 
@@ -45,6 +45,9 @@ Command-line interface for Zabbix monitoring system.
 %doc LICENSE docs/manual.rst
 
 %changelog
+* Thu Dec 19 2019 Paal Braathen <paal.braathen@usit.uio.no> - 2.2.1-1
+- New version 2.2.1-1
+
 * Wed Dec 04 2019 Paal Braathen <paal.braathen@usit.uio.no> - 2.2.0-1
 - New version 2.2.0-1
 
