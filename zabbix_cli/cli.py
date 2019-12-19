@@ -3174,7 +3174,7 @@ class zabbixcli(cmd.Cmd):
             query["ip"] = ""
             query["dns"] = interface_dns
         elif interface_useip == "1":
-            query["ip"] = interface_dns
+            query["ip"] = interface_ip
             query["dns"] = ""
 
         try:
