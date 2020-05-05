@@ -16,7 +16,6 @@ Architecture: all
 Depends: ${misc:Depends}
  , ${python3:Depends}
  , python3-requests
- , python3-ipaddr
 Description: Command-line interface for Zabbix monitoring system
  Zabbix-cli is a terminal client for managing some Zabbix
  administration tasks via the zabbix-API.
