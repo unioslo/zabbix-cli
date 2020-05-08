@@ -3187,6 +3187,331 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems creating host interface on ' + hostname + '')
             return False
 
+    def do_update_host_interface(self, args):
+        """
+        DESCRIPTION:
+        This command updates a specific host interface
+
+        COMMAND:
+        update_host_interface [interface id]
+                              [interface connection]
+                              [interface port]
+                              [interface IP]
+                              [interface DNS]
+                              [default interface]
+
+        [interface id]
+        ----------
+        InterfaceID
+
+        [interface connection]
+        ----------------------
+        0: Connect using host DNS name or interface DNS if provided [*]
+        1: Connect using host IP address
+
+        [interface port]
+        ----------------
+        Interface port [161]
+
+        [interface IP]
+        --------------
+        IP address if interface connection is 1:
+
+        [interface DNS]
+        --------------
+        DNS if interface connection is 0: (hostname by default)
+
+        [default interface]
+        -------------------
+        0: Not default interface
+        1: Default interface [*]
+
+        """
+        #
+        # Default host interface information
+        #
+
+        # This interface is the 1:default one
+        interface_main_default = '1'
+
+        # Interface connection. 0:DNS
+        interface_useip_default = '0'
+
+        # The default DNS will be set to hostname when parsed
+        interface_dns_default = ''
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print('\n[ERROR]: ' + str(e) + '\n')
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if not arg_list:
+
+            try:
+                print('--------------------------------------------------------')
+                interface_id = input('# InterfaceID: ').strip()
+                interface_useip = input('# Interface connection[' + interface_useip_default + ']: ').strip()
+                interface_port = input('# Interface port: ').strip()
+                interface_ip = input('# Interface IP: ').strip()
+                interface_dns = input('# Interface DNS[' + interface_dns_default + ']: ').strip()
+                interface_main = input('# Default interface[' + interface_main_default + ']: ').strip()
+                print('--------------------------------------------------------')
+
+            except EOFError:
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
+                return False
+
+            #
+            # Command without filters attributes
+            #
+
+        elif len(arg_list) == 6:
+
+            interface_id = arg_list[0].strip()
+            interface_useip = arg_list[1].strip()
+            interface_port = arg_list[2].strip()
+            interface_ip = arg_list[3].strip()
+            interface_dns = arg_list[4].strip()
+            interface_main = arg_list[5].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if interface_id == '':
+            self.generate_feedback('Error', 'InterfaceID is empty')
+            return False
+
+        try:
+            #
+            # Update proxy used to monitor the host
+            #
+            self.zapi.hostinterface.update(interfaceid=interface_id,
+                                           dns=interface_dns,
+                                           ip=interface_ip,
+                                           main=interface_main,
+                                           port=interface_port,
+                                           useip=interface_useip)
+
+            logger.info('Interface for InterfaceID (%s) changed', interface_id)
+            self.generate_feedback('Done', 'Interface for InterfaceID (' + interface_id + ') updated')
+
+        except Exception as e:
+            print(e)
+            logger.error('Problems updating interface for InterfaceID (%s) - %s', interface_id, e)
+            self.generate_feedback('Error', 'Problems updating interface for InterfaceID (' + interface_id + ')')
+            return False
+
+    def do_remove_host_interface(self, args):
+        """
+        DESCRIPTION:
+        This command removes a hostinterfaces.
+
+        COMMAND:
+        remove_host_interface [InterfaceID]
+
+
+        [InterfaceID]
+        ----------
+        InterfaceID
+
+        """
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print('\n[ERROR]: ' + str(e) + '\n')
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if not arg_list:
+
+            try:
+                print('--------------------------------------------------------')
+                interface_id = input('# InterfaceID: ').strip()
+                print('--------------------------------------------------------')
+
+            except EOFError:
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
+                return False
+
+            #
+            # Command without filters attributes
+            #
+
+        elif len(arg_list) == 1:
+
+            interface_id = arg_list[0].strip()
+
+        if interface_id == '':
+            self.generate_feedback('Error', 'InterfaceID is empty')
+            return False
+
+        try:
+            #
+            # Update proxy used to monitor the host
+            #
+            self.zapi.hostinterface.delete(interface_id)
+
+            logger.info('Interface with InterfaceID (%s) deleted', interface_id)
+            self.generate_feedback('Done', 'Interface with InterfaceID (' + interface_id + ') deleted')
+
+        except Exception as e:
+            print(e)
+            logger.error('Problems deleting interface with InterfaceID (%s) - %s', interface_id, e)
+            self.generate_feedback('Error', 'Problems deleting interface with InterfaceID (' + interface_id + ')')
+            return False
+
+    def do_show_host_interfaces(self, args):
+        """
+        DESCRIPTION:
+        This command returns a list of hostinterfaces.
+
+        COMMAND:
+        show_host_interfaces [hostname]
+
+
+        [hostname]
+        ----------
+        Hostname
+
+        """
+        #
+        # Default host interface information
+        #
+
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print('\n[ERROR]: ' + str(e) + '\n')
+            return False
+
+        result_columns = {}
+        result_columns_key = 0
+
+        #
+        # Command without parameters
+        #
+
+        if not arg_list:
+
+            try:
+                print('--------------------------------------------------------')
+                hostname = input('# Hostname: ').strip()
+                print('--------------------------------------------------------')
+
+            except EOFError:
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
+                return False
+
+            #
+            # Command without filters attributes
+            #
+
+        elif len(arg_list) == 1:
+
+            hostname = arg_list[0].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if hostname == '':
+            self.generate_feedback('Error', 'Hostname value is empty')
+            return False
+
+        try:
+            host_exists = self.host_exists(hostname)
+            logger.debug('Cheking if host (%s) exists', hostname)
+
+            if not host_exists:
+                logger.error('Host (%s) does not exists. Host Interface can not be created', hostname)
+                self.generate_feedback('Error', 'Host (' + hostname + ') does not exists. Host Interface can not be created')
+                return False
+            else:
+                hostid = str(self.get_host_id(hostname))
+        except Exception as e:
+            logger.error('Problems checking if host (%s) exists - %s', hostname, e)
+            self.generate_feedback('Error', 'Problems checking if host (' + hostname + ') exists')
+            return False
+
+        try:
+            result = self.zapi.hostinterface.get(hostids=hostid,
+                                                 sortfield=['interfaceid'],
+                                                 sortorder='DESC',
+                                                 output='extend')
+
+        except Exception as e:
+            logger.error('Problems listing host interfaces on %s- %s', hostname, e)
+            self.generate_feedback('Error', 'Problems listing host interface on ' + hostname + '')
+            return False
+
+        #
+        # Get the columns we want to show from result
+        #
+        for interface in result:
+
+            if self.output_format == 'json':
+
+                result_columns[result_columns_key] = {  'interfaceid': interface['interfaceid'],
+                                                        'main': interface['main'],
+                                                        'type': interface['type'],
+                                                        'useip': interface['useip'],
+                                                        'ip': interface['ip'],
+                                                        'dns': interface['dns'],
+                                                        'port': interface['port'],
+                                                        'bulk': interface['bulk'] }
+
+            else:
+
+                result_columns[result_columns_key] = {  '1': interface['interfaceid'],
+                                                        '2': interface['main'],
+                                                        '3': interface['type'],
+                                                        '4': interface['useip'],
+                                                        '5': interface['ip'],
+                                                        '6': interface['dns'],
+                                                        '7': interface['port'],
+                                                        '8': interface['bulk'] }
+            result_columns_key = result_columns_key + 1
+
+        #
+        # Generate output
+        #
+        self.generate_output(result_columns,
+                            ['InterfaceID', 'Main', 'Type', 'Use IP', 'IP', 'DNS', 'Port', 'Bulk' ],
+                            ['InterfaceID', 'Name', 'Main', 'Type', 'Use IP', 'IP', 'DNS', 'Port', 'Bulk' ],
+                            ['InterfaceID'],
+                            FRAME)
+
     def do_create_user(self, args):
         """DESCRIPTION:
         This command creates an user.
