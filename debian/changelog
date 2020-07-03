@@ -1,9 +1,15 @@
-zabbix-cli (2.2.1-1) stable; urgency=low
+zabbix-cli (2.2.1) unstable; urgency=medium
 
+  [Andreas Dobloug]
   * New release 2.2.1
   * Updated the build system to use pybuild and require python3
 
-  -- Andreas Dobloug <andreas.dobloug@usit.uio.no>  Mon, 04 May 2020 16:42:00 +0200
+  [ Petter Reinholdtsen]
+  * Changed source format to native as it build from upstream git
+    repository.
+  * Added Andreas as package uploader.
+
+ -- Andreas Dobloug <andreas.dobloug@usit.uio.no>  Mon, 04 May 2020 16:42:00 +0200
 
 zabbix-cli (1.7.0-2) UNRELEASED; urgency=medium
 

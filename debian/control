@@ -2,7 +2,9 @@ Source: zabbix-cli
 Section: misc
 Priority: optional
 Maintainer: Rafael Martinez Guerrero <rafael@e-mc2.net>
-Uploaders: Petter Reinholdtsen <pere@debian.org>
+Uploaders:
+ Andreas Dobloug <andreas.dobloug@usit.uio.no>
+ , Petter Reinholdtsen <pere@debian.org>
 Build-Depends: debhelper (>= 10)
   , dh-python, python3-all
 Standards-Version: 4.0.0
