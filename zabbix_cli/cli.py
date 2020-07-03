@@ -3177,6 +3177,11 @@ class zabbixcli(cmd.Cmd):
             query["ip"] = interface_ip
             query["dns"] = ""
 
+        # Hotfix for Zabbix 5.0 compability
+        api_version = distutils.version.StrictVersion(self.zapi.api_version())
+        if api_version >= distutils.version.StrictVersion("5.0"):
+            query["details"] = []
+
         try:
             result = self.zapi.hostinterface.create(**query)
             logger.info('Host interface with ID: %s created on %s', str(result['interfaceids'][0]), hostname)
