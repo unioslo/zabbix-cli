@@ -10,7 +10,7 @@ Build-Depends: debhelper (>= 12)
   , dh-python
   , python3-all
   , python3-setuptools
-Standards-Version: 4.0.0
+Standards-Version: 4.5.0
 Homepage: https://github.com/unioslo/zabbix-cli
 Vcs-Browser: https://github.com/unioslo/zabbix-cli
 Vcs-Git: https://github.com/unioslo/zabbix-cli
