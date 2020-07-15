@@ -5,7 +5,8 @@ Maintainer: Rafael Martinez Guerrero <rafael@e-mc2.net>
 Uploaders:
  Andreas Dobloug <andreas.dobloug@usit.uio.no>
  , Petter Reinholdtsen <pere@debian.org>
-Build-Depends: debhelper (>= 10)
+Build-Depends: debhelper (>= 12)
+  , debhelper-compat (= 12)
   , dh-python, python3-all
 Standards-Version: 4.0.0
 Homepage: https://github.com/unioslo/zabbix-cli
