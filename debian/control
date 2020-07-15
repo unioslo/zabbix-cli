@@ -7,7 +7,9 @@ Uploaders:
  , Petter Reinholdtsen <pere@debian.org>
 Build-Depends: debhelper (>= 12)
   , debhelper-compat (= 12)
-  , dh-python, python3-all
+  , dh-python
+  , python3-all
+  , python3-setuptools
 Standards-Version: 4.0.0
 Homepage: https://github.com/unioslo/zabbix-cli
 Vcs-Browser: https://github.com/unioslo/zabbix-cli
