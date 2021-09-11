@@ -111,7 +111,7 @@ class OptionDescriptor(object):
                 '>').format(cls=type(self), obj=self)
 
 
-class OptionRegister(collections.Mapping):
+class OptionRegister(collections.abc.Mapping):
     """A registry of ConfigParser sections, options and default values."""
 
     def __init__(self):
