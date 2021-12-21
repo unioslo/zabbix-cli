@@ -21,6 +21,12 @@
 from __future__ import print_function
 
 import collections
+
+try:
+    from collections.abc import Mapping #python3.10+
+except ImportError:
+    from collections import Mapping
+
 import logging
 import os
 import sys
@@ -111,7 +117,7 @@ class OptionDescriptor(object):
                 '>').format(cls=type(self), obj=self)
 
 
-class OptionRegister(collections.abc.Mapping):
+class OptionRegister(Mapping):
     """A registry of ConfigParser sections, options and default values."""
 
     def __init__(self):
