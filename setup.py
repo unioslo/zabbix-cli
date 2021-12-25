@@ -20,9 +20,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-Cli.  If not, see <http://www.gnu.org/licenses/>.
-
-from __future__ import print_function
-
 import os.path
 import platform
 import sys
@@ -39,14 +36,10 @@ try:
     with open(os.path.join(here, 'zabbix_cli', '__init__.py'), 'r') as version_file:
         exec(version_file.read(), zabbix_cli)
 
-    if sys.version_info < (2, 6):
-        raise SystemExit('ERROR: zabbix-cli needs at least python 2.6 to work')
-    elif sys.version_info < (2, 7):
-        install_requires = ['argparse', 'requests', 'ipaddress']
-    elif sys.version_info < (3, 0):
-        install_requires = ['requests', 'ipaddress']
-    else:
-        install_requires = ['requests']
+    if sys.version_info < (3, 6):
+        raise SystemExit('ERROR: zabbix-cli needs at least python 3.6 to work')
+
+    install_requires = ['requests']
 
     #
     # Setup
@@ -76,8 +69,7 @@ try:
               'Intended Audience :: System Administrators',
               'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
               'Programming Language :: Python',
-              'Programming Language :: Python :: 2.6',
-              'Programming Language :: Python :: 2.7',
+              'Programming Language :: Python :: 3',
           ],
           )
 

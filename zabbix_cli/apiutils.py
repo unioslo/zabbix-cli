@@ -1,7 +1,5 @@
 """All functions in this module extend or simplifies common API tasks."""
 
-from __future__ import print_function
-
 
 def update_usergroup(zapi, usrgrpid, rights=None, userids=None):
     """

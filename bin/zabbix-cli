@@ -20,9 +20,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
-
-from __future__ import print_function
-
 import sys
 import os
 import getpass
@@ -33,12 +30,6 @@ import textwrap
 from zabbix_cli.config import get_config, validate_config
 from zabbix_cli.logs import configure_logging, LogContext
 from zabbix_cli.cli import zabbixcli
-
-# Python 2, 3 support
-try:
-    input = raw_input
-except NameError:
-    pass
 
 
 logger = logging.getLogger('zabbix-cli')

@@ -19,14 +19,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
 #
-
-from __future__ import print_function
-
 import cmd
 import datetime
 import distutils.version
 import glob
 import hashlib
+import ipaddress
 import json
 import logging
 import os
@@ -39,21 +37,11 @@ import sys
 import textwrap
 import time
 
-# ipaddress is a dependency in python2 and stdlib in python3
-import ipaddress  # noqa: I100, I202
-
 import zabbix_cli
 import zabbix_cli.apiutils
 import zabbix_cli.utils
 from zabbix_cli.prettytable import ALL, FRAME, PrettyTable
 from zabbix_cli.pyzabbix import ZabbixAPI
-
-
-# Python 2, 3 support
-try:
-    input = raw_input
-except NameError:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -2513,7 +2501,7 @@ class zabbixcli(cmd.Cmd):
 
         try:
             # Check if we are using a hostname or an IP
-            ipaddress.ip_address(u"{}".format(host))  # Unicodify for python2 compability
+            ipaddress.ip_address(host)
             useip = 1
             interface_ip = host
             interface_dns = ""

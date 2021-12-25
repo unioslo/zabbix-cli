@@ -18,18 +18,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
-from __future__ import print_function
-
 import collections
+import configparser
 import logging
 import os
 import sys
-
-try:
-    # PY3
-    import configparser
-except ImportError:
-    import ConfigParser as configparser
 
 # Config file basename
 CONFIG_FILENAME = 'zabbix-cli.conf'

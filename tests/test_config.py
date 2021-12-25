@@ -1,12 +1,7 @@
+import configparser
 import unittest
 
 import zabbix_cli.config
-
-try:
-    # PY3
-    import configparser
-except ImportError:
-    import ConfigParser as configparser
 
 
 class MockConfig(configparser.ConfigParser, object):
