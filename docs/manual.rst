@@ -42,127 +42,13 @@ Main features
 * Written in Python.
 
 
-Installation
-============
-
-System requirements
--------------------
-
-* Linux/Unix
-* Python 2.6 or 2.7
-* Python modules: request ipaddr
-     
-Before you install Zabbix-CLI you have to install the software needed
-by this tool
-
-In systems using ``yum``, e.g. Centos, RHEL, Fedora::
-
-  yum install python-requests python-ipaddr
-
-In system using ``apt-get``, e.g. Debian, Ubuntu::
-
-  apt-get install python-requests python-ipaddr
-
-If you are going to install from source, you need to install also
-these packages: ``python-dev(el), python-setuptools, git, make, python-docutils``
-
-In systems using ``yum``::
-
-  yum install python-devel python-setuptools git make python-docutils
-
-In system using ``apt-get``::
-
-  apt-get install python-dev python-setuptools git make python-docutils
-
-
-Installing from source
-----------------------
-
-The easiest way to install zabbix-cli from source is to download the
-latest stable release from GitHub
-https://github.com/unioslo/zabbix-cli/releases in tar.gz or zip
-format.
-
-You can also clone the official GitHub GIT repository and get the
-latest code from the master branch. 
-
-::
-
- [root@server]# cd
- [root@server]# git clone https://github.com/unioslo/zabbix-cli.git
-
- [root@server]# cd zabbix-cli
- [root@server]# ./setup.py install
- .....
-
-If using a python virtual enviroment, instead of ./setup.py install one can use pip install ( -e / -- editable for setuptools "develop mode" ) 
-
-::
-
- [user@host zabbix-cli]$ pip install -e .
-
-
-**NOTE**: The code in the master branch can be unstable and with bugs between releases. Use it at your own risk.
-
-For stable code to be used in production use the source code
-distributed via the release section:
-https://github.com/unioslo/zabbix-cli/releases
-
-
-Installing via RPM packages
----------------------------
-
-The University of Oslo will make available in the near future an
-official repository that can be used to install RPM packages via yum .
-
-In the meantime download the latest RPM package for your distribution
-from https://github.com/unioslo/zabbix-cli/releases and run this
-command:
-
-::
-
-   # yum install <rpm_file>
-
-
-Installing via Deb packages
-----------------------------
-
-Zabbix-CLI has been accepted into the official Debian package
-repository (unstable). It is available for Debian and Ubuntu
-systems. Check https://packages.qa.debian.org/z/zabbix-cli.html for
-details.
-
-You can also download the latest DEB package from
-https://github.com/unioslo/zabbix-cli/releases and install it with:
-
-::
-
-   # dpkg -i <debian_package>
-
-
 Configuration
 =============
 
 Configuration file
 ------------------
 
-Zabbix-CLI needs a configuration file to work. Until version 1.5.4 we
-supported a **singlelevel configuration system** with three possible
-locations for our configuration file:
-
-#. Config file defined with ``--config`` or ``-c`` parameter when
-   starting ``zabbix-cli``
-#. ``$HOME/.zabbix-cli/zabbix-cli.conf``
-#. ``/etc/zabbix-cli/zabbix-cli.conf``
-
-
-With the **singlelevel configuration system**, Zabbix-cli checked for
-a configuration file in these locations and in this order and used the
-first one that existed. This means that you could always override: 3)
-with 2) or 1), and 2) with 1).
-
-From version 1.6.0, Zabbix-cli has started to use a **multilevel
-configuration system.**
+Zabbix-cli has a **multilevel configuration system.**
 
 This means thet we do not override entire configuration files but we
 merge all the defined configuration files in our system and use the
@@ -178,16 +64,7 @@ The ordered list with the files with higher on top:
 #. ``/etc/zabbix-cli/zabbix-cli.conf``
 #. ``/usr/share/zabbix-cli/zabbix-cli.conf``
 
-With this implementation:
-
-* Local configuration will be kept during upgrades.
-* The local configuration is separate from the package defaults.
-* Several actors will be allow to have their own files.
-* It is possible to provide package, host and user defaults, as well
-  as locking down features on a host, package level.
-* Always well known where the admin made his changes
-
-A default configuration file can be found in
+The default configuration file can be found in
 ``/usr/share/zabbix-cli/zabbix-cli.conf`` or ``etc/zabbix-cli.conf``
 in the source code.
 
@@ -208,9 +85,9 @@ access to the log file defined with ``log_file``. This parameter will
 be defined automatically with an OFF value if you have run the command
 ``zabbix-cli-init``.
 
-From version 1.6.0 we have a new zabbix-cli command that can be used
-to see all the active configuration files in your system and the
-configuration parameters that zabbix-cli is using::
+To see all the active configuration files in your system and the
+configuration parameters that zabbix-cli is using, use
+``show_zabbixcli_config``::
 
   [zabbix-cli rafael@zabbix-ID]$ show_zabbixcli_config
 
@@ -380,9 +257,9 @@ programs .e.g.
    |      14 | Zabbix core               | System default (0) |  Enable (0) |
    +---------+---------------------------+--------------------+-------------+
 
-From version 1.5.4 it is possible to use the parameter ``--file
-<zabbix_command_file>`` or ``-f <zabbix_command_file>`` to define a
-file with multiple ``zabbix-cli`` commands. 
+It is possible to use the parameter ``--file <zabbix_command_file>`` or
+``-f <zabbix_command_file>`` to define a file with multiple ``zabbix-cli``
+commands for scripting.
 
 Some performance improvements get activated when executing
 ``zabbix-cli`` in this way. The perfomance gain when running multiple
