@@ -2034,15 +2034,15 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems removing user ' + username + ' from usergroups ' + usergroups)
             return False
 
-    def do_link_template_to_host(self, args):
+    def do_link_template_to_hostgroup(self, args):
         """
         DESCRIPTION:
         This command links one/several templates to
-        one/several hosts
+        one/several hostgroups
 
         COMMAND:
-        link_template_to_host [templates]
-                              [hostnames]
+        link_template_to_hostgroup [templates]
+                                   [hostgroups]
 
 
         [templates]
@@ -2050,9 +2050,9 @@ class zabbixcli(cmd.Cmd):
         Template names or IDs.
         One can define several values in a comma separated list.
 
-        [hostnames]
+        [hostgroups]
         -----------
-        Hostnames or IDs.
+        Hostgroups or IDs.
         One can define several values in a comma separated list.
 
         """
@@ -2072,7 +2072,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 print('--------------------------------------------------------')
                 templates = input('# Templates: ').strip()
-                hostnames = input('# Hostnames: ').strip()
+                hostgroups = input('# Hostgroups: ').strip()
                 print('--------------------------------------------------------')
 
             except EOFError:
@@ -2087,7 +2087,7 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 2:
 
             templates = arg_list[0].strip()
-            hostnames = arg_list[1].strip()
+            hostgroups = arg_list[1].strip()
 
         #
         # Command with the wrong number of parameters
@@ -2105,12 +2105,12 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Templates information is empty')
             return False
 
-        if hostnames == '':
-            self.generate_feedback('Error', 'Hostnames information is empty')
+        if hostgroups == '':
+            self.generate_feedback('Error', 'Hostgroups information is empty')
             return False
 
         templates_list = []
-        hostnames_list = []
+        hostgroups_list = []
 
         try:
             for template in templates.split(','):
@@ -2119,44 +2119,44 @@ class zabbixcli(cmd.Cmd):
                 else:
                     templates_list.append({"templateid": str(self.get_template_id(template.strip()))})
 
-            for hostname in hostnames.split(','):
-                if hostname.isdigit():
-                    hostnames_list.append({"hostid": str(hostname).strip()})
+            for hostgroup in hostgroups.split(','):
+                if hostgroup.isdigit():
+                    hostgroups_list.append({"groupid": str(hostgroup).strip()})
                 else:
-                    hostnames_list.append({"hostid": str(self.get_host_id(hostname.strip()))})
+                    hostgroups_list.append({"groupid": str(self.get_hostgroup_id(hostgroup.strip()))})
 
             query = {
                 "templates": templates_list,
-                "hosts": hostnames_list
+                "groups": hostgroups_list
             }
 
             self.zapi.template.massadd(**query)
-            logger.info('Templates: %s linked to these hosts: %s', templates, hostnames)
-            self.generate_feedback('Done', 'Templates ' + templates + ' linked to these hosts: ' + hostnames)
+            logger.info('Templates: %s linked to these hostgroups: %s', templates, hostgroups)
+            self.generate_feedback('Done', 'Templates ' + templates + ' linked to these hostgroups: ' + hostgroups)
 
         except Exception as e:
-            logger.error('Problems linking templates %s to hosts %s - %s', templates, hostnames, e)
-            self.generate_feedback('Error', 'Problems linking templates ' + templates + ' to hosts ' + hostnames)
+            logger.error('Problems linking templates %s to hostgroups %s - %s', templates, hostgroups, e)
+            self.generate_feedback('Error', 'Problems linking templates ' + templates + ' to hostgroups ' + hostgroups)
             return False
 
-    def do_unlink_template_from_host(self, args):
+    def do_unlink_template_from_hostgroup(self, args):
         """
         DESCRIPTION:
         This command unlink one/several templates from
-        one/several hosts
+        one/several hostgroups
 
         COMMAND:
-        unlink_template_from_host [templates]
-                                  [hostnames]
+        unlink_template_from_hostgroup [templates]
+                                       [hostgroups]
 
         [templates]
         ------------
         Templates names or IDs.
         One can define several values in a comma separated list.
 
-        [hostnames]
+        [hostgroups]
         -----------
-        Hostnames or IDs.
+        Hostgroups or IDs.
         One can define several values in a comma separated list.
 
         """
@@ -2176,7 +2176,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 print('--------------------------------------------------------')
                 templates = input('# Templates: ').strip()
-                hostnames = input('# Hostnames: ').strip()
+                hostgroups = input('# Hostgroups: ').strip()
                 print('--------------------------------------------------------')
 
             except EOFError:
@@ -2191,7 +2191,7 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 2:
 
             templates = arg_list[0].strip()
-            hostnames = arg_list[1].strip()
+            hostgroups = arg_list[1].strip()
 
         #
         # Command with the wrong number of parameters
@@ -2209,12 +2209,12 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Templates information is empty')
             return False
 
-        if hostnames == '':
-            self.generate_feedback('Error', 'Hostnames information is empty')
+        if hostgroups == '':
+            self.generate_feedback('Error', 'Hostgroups information is empty')
             return False
 
         templates_list = []
-        hostnames_list = []
+        hostgroups_list = []
 
         try:
             for template in templates.split(','):
@@ -2223,24 +2223,25 @@ class zabbixcli(cmd.Cmd):
                 else:
                     templates_list.append(int(self.get_template_id(template.strip())))
 
-            for hostname in hostnames.split(','):
-                if hostname.isdigit():
-                    hostnames_list.append(int(hostname))
+            for hostgroup in hostgroups.split(','):
+                if hostgroup.isdigit():
+                    hostgroups_list.append(int(hostgroup))
                 else:
-                    hostnames_list.append(int(self.get_host_id(hostname.strip())))
+                    hostgroups_list.append(int(self.get_hostgroup_id(hostgroup.strip())))
 
             query = {
-                "hostids": hostnames_list,
+                "groupids": hostgroups_list,
+                "templateids": templates_list,
                 "templateids_clear": templates_list
             }
 
-            self.zapi.host.massremove(**query)
-            logger.info('Templates: %s unlinked and cleared from these hosts: %s', templates, hostnames)
-            self.generate_feedback('Done', 'Templates ' + templates + ' unlinked and cleared from these hosts: ' + hostnames)
+            self.zapi.template.massremove(**query)
+            logger.info('Templates: %s unlinked and cleared from these hostgroups: %s', templates, hostgroups)
+            self.generate_feedback('Done', 'Templates ' + templates + ' unlinked and cleared from these hostgroups: ' + hostgroups)
 
         except Exception as e:
-            logger.error('Problems unlinking and clearing templates %s from hosts %s - %s', templates, hostnames, e)
-            self.generate_feedback('Error', 'Problems unlinking and clearing templates ' + templates + ' from hosts ' + hostnames)
+            logger.error('Problems unlinking and clearing templates %s from hostgroups %s - %s', templates, hostgroups, e)
+            self.generate_feedback('Error', 'Problems unlinking and clearing templates ' + templates + ' from hostgroups ' + hostgroups)
             return False
 
     def do_create_usergroup(self, args):
