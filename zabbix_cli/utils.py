@@ -113,7 +113,7 @@ def get_hostgroup_type(code):
 
 def get_user_type(code):
     """Get user type from code."""
-    user_type = {1: "User", 2: "Admin", 3: "Super admin"}
+    user_type = {1: "User", 2: "Admin", 3: "Super admin", 4: "Guest"}
 
     if code in user_type:
         return user_type[code] + " (" + str(code) + ")"

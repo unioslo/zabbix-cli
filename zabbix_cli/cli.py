@@ -3245,6 +3245,7 @@ class zabbixcli(cmd.Cmd):
         1. 'User' [*]
         2. 'Admin'
         3. 'Super admin'
+        4. 'Guest'
 
         [autologin]
         -----------
