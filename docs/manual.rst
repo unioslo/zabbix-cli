@@ -761,7 +761,7 @@ This is the reason we use *notification users*. They are users nobody
 owns, but that can be used by other users to send notifications to the
 media defined in the notification user profile.
 
-All notification users will have an 'Alias' value that starts with
+All notification users will have an 'Username' value that starts with
 *notification-user-*
 
 Check the parameter **default_notification_users_usergroup** in your
@@ -790,7 +790,7 @@ This command creates a user.
 
 ::
 
-   create_user [alias]
+   create_user [username]
                [name]
                [surname]
                [passwd]
@@ -801,7 +801,7 @@ This command creates a user.
 
 Parameters:
 
-* **[alias]:** User alias (account name)
+* **[username]:** User username (account name)
 * **[name]:** Name of the user
 * **[surname]:** Surname of the user
 * **[passwd]:** Password

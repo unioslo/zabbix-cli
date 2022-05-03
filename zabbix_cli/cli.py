@@ -1254,7 +1254,7 @@ class zabbixcli(cmd.Cmd):
                                              searchWildcardsEnabled=True,
                                              sortfield='name',
                                              sortorder='ASC',
-                                             selectUsers=['alias'])
+                                             selectUsers=['username'])
             logger.info('Command show_usergroup executed')
         except Exception as e:
             logger.error('Problems getting usergroup information - %s', e)
@@ -1276,7 +1276,7 @@ class zabbixcli(cmd.Cmd):
             else:
                 users = []
                 for user in group['users']:
-                    users.append(user['alias'])
+                    users.append(user['username'])
 
                 users.sort()
 
@@ -1315,7 +1315,7 @@ class zabbixcli(cmd.Cmd):
             result = self.zapi.user.get(output='extend',
                                         getAccess=True,
                                         selectUsrgrps=['name'],
-                                        sortfield='alias',
+                                        sortfield='username',
                                         sortorder='ASC')
             logger.info('Command show_users executed')
         except Exception as e:
@@ -1331,7 +1331,7 @@ class zabbixcli(cmd.Cmd):
 
             if self.output_format == 'json':
                 result_columns[result_columns_key] = {'userid': user['userid'],
-                                                      'alias': user['alias'],
+                                                      'username': user['username'],
                                                       'name': user['name'] + ' ' + user['surname'],
                                                       'autologin': zabbix_cli.utils.get_autologin_type(int(user['autologin'])),
                                                       'autologout': user['autologout'],
@@ -1346,7 +1346,7 @@ class zabbixcli(cmd.Cmd):
                     usrgrps.append(group['name'])
 
                 result_columns[result_columns_key] = {'1': user['userid'],
-                                                      '2': user['alias'],
+                                                      '2': user['username'],
                                                       '3': user['name'] + ' ' + user['surname'],
                                                       '4': zabbix_cli.utils.get_autologin_type(int(user['autologin'])),
                                                       '5': user['autologout'],
@@ -1359,7 +1359,7 @@ class zabbixcli(cmd.Cmd):
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['UserID', 'Alias', 'Name', 'Autologin', 'Autologout', 'Type', 'Usrgrps'],
+                             ['UserID', 'Username', 'Name', 'Autologin', 'Autologout', 'Type', 'Usrgrps'],
                              ['Name', 'Type', 'Usrgrps'],
                              ['UserID'],
                              FRAME)
@@ -2008,11 +2008,11 @@ class zabbixcli(cmd.Cmd):
                                                  searchWildcardsEnabled=True,
                                                  sortfield='name',
                                                  sortorder='ASC',
-                                                 selectUsers=['alias'])
+                                                 selectUsers=['username'])
 
                 for users in result:
-                    for alias in users['users']:
-                        usernames_list_orig.append(alias['alias'])
+                    for username in users['users']:
+                        usernames_list_orig.append(username['username'])
 
                 usernames_list_final = list(set(usernames_list_orig) - set(user_to_remove))
 
@@ -3180,7 +3180,7 @@ class zabbixcli(cmd.Cmd):
         This command creates an user.
 
         COMMAND:
-        create_user [alias]
+        create_user [username]
                     [name]
                     [surname]
                     [passwd]
@@ -3189,9 +3189,9 @@ class zabbixcli(cmd.Cmd):
                     [autologout]
                     [groups]
 
-        [alias]
+        [username]
         -------
-        User alias (account name)
+        User username (account name)
 
         [name]
         ------
@@ -3262,7 +3262,7 @@ class zabbixcli(cmd.Cmd):
 
             try:
                 print('--------------------------------------------------------')
-                alias = input('# Alias []: ').strip()
+                username = input('# Username []: ').strip()
                 name = input('# Name []: ').strip()
                 surname = input('# Surname []: ').strip()
                 passwd = input('# Password []: ').strip()
@@ -3283,7 +3283,7 @@ class zabbixcli(cmd.Cmd):
 
         elif len(arg_list) == 8:
 
-            alias = arg_list[0].strip()
+            username = arg_list[0].strip()
             name = arg_list[1].strip()
             surname = arg_list[2].strip()
             passwd = arg_list[3].strip()
@@ -3304,8 +3304,8 @@ class zabbixcli(cmd.Cmd):
         # Sanity check
         #
 
-        if alias == '':
-            self.generate_feedback('Error', 'User Alias is empty')
+        if username == '':
+            self.generate_feedback('Error', 'Username is empty')
             return False
 
         if passwd == '':
@@ -3344,12 +3344,12 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            result = self.zapi.user.get(search={'alias': alias}, output='extend', searchWildcardsEnabled=True)
-            logger.debug('Checking if user (%s) exists', alias)
+            result = self.zapi.user.get(search={'username': username}, output='extend', searchWildcardsEnabled=True)
+            logger.debug('Checking if user (%s) exists', username)
 
         except Exception as e:
-            logger.error('Problems checking if user (%s) exists - %s', alias, e)
-            self.generate_feedback('Error', 'Problems checking if user (' + alias + ') exists')
+            logger.error('Problems checking if user (%s) exists - %s', username, e)
+            self.generate_feedback('Error', 'Problems checking if user (' + username + ') exists')
             return False
 
         #
@@ -3359,11 +3359,11 @@ class zabbixcli(cmd.Cmd):
         try:
 
             if result != []:
-                logger.debug('This user (%s) already exists', alias)
-                self.generate_feedback('Warning', 'This user (' + alias + ') already exists.')
+                logger.debug('This user (%s) already exists', username)
+                self.generate_feedback('Warning', 'This user (' + username + ') already exists.')
                 return False
             else:
-                result = self.zapi.user.create(alias=alias,
+                result = self.zapi.user.create(username=username,
                                                name=name,
                                                surname=surname,
                                                passwd=passwd,
@@ -3371,12 +3371,12 @@ class zabbixcli(cmd.Cmd):
                                                autologin=autologin,
                                                autologout=autologout,
                                                usrgrps=usergroup_list)
-                logger.info('User (%s) with ID: %s created', alias, str(result['userids'][0]))
-                self.generate_feedback('Done', 'User (' + alias + ') with ID: ' + str(result['userids'][0]) + ' created.')
+                logger.info('User (%s) with ID: %s created', username, str(result['userids'][0]))
+                self.generate_feedback('Done', 'User (' + username + ') with ID: ' + str(result['userids'][0]) + ' created.')
 
         except Exception as e:
-            logger.error('Problems creating user (%s) - %s', alias, e)
-            self.generate_feedback('Error', 'Problems creating user (' + alias + ')')
+            logger.error('Problems creating user (%s) - %s', username, e)
+            self.generate_feedback('Error', 'Problems creating user (' + username + ')')
             return False
 
     def do_create_notification_user(self, args):
@@ -3491,9 +3491,9 @@ class zabbixcli(cmd.Cmd):
             return False
 
         if remarks.strip() == '':
-            alias = 'notification-user-' + sendto.replace('.', '-')
+            username = 'notification-user-' + sendto.replace('.', '-')
         else:
-            alias = 'notification-user-' + remarks.strip()[:20].replace(' ', '_') + '-' + sendto.replace('.', '-')
+            username = 'notification-user-' + remarks.strip()[:20].replace(' ', '_') + '-' + sendto.replace('.', '-')
 
         passwd = passwd_default
         type = type_default
@@ -3522,12 +3522,12 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            result1 = self.zapi.user.get(search={'alias': alias}, output='extend', searchWildcardsEnabled=True)
-            logger.debug('Checking if user (%s) exists', alias)
+            result1 = self.zapi.user.get(search={'username': username}, output='extend', searchWildcardsEnabled=True)
+            logger.debug('Checking if user (%s) exists', username)
 
         except Exception as e:
-            logger.error('Problems checking if user (%s) exists - %s', alias, e)
-            self.generate_feedback('Error', 'Problems checking if user (' + alias + ') exists')
+            logger.error('Problems checking if user (%s) exists - %s', username, e)
+            self.generate_feedback('Error', 'Problems checking if user (' + username + ') exists')
             return False
 
         #
@@ -3550,8 +3550,8 @@ class zabbixcli(cmd.Cmd):
         try:
 
             if result1 != []:
-                logger.debug('This user (%s) already exists', alias)
-                self.generate_feedback('Warning', 'This user (' + alias + ') already exists.')
+                logger.debug('This user (%s) already exists', username)
+                self.generate_feedback('Warning', 'This user (' + username + ') already exists.')
                 return False
 
             elif result2 == []:
@@ -3563,7 +3563,7 @@ class zabbixcli(cmd.Cmd):
                 usergroup_objects = []
                 for usergroup in usergroup_list:
                     usergroup_objects.append({"usrgrpid": usergroup})
-                result = self.zapi.user.create(alias=alias,
+                result = self.zapi.user.create(username=username,
                                                passwd=passwd,
                                                type=type,
                                                autologin=autologin,
@@ -3580,12 +3580,12 @@ class zabbixcli(cmd.Cmd):
                                                ]
                                                )
 
-                logger.info('User (%s) with ID: %s created', alias, str(result['userids'][0]))
-                self.generate_feedback('Done', 'User (' + alias + ') with ID: ' + str(result['userids'][0]) + ' created.')
+                logger.info('User (%s) with ID: %s created', username, str(result['userids'][0]))
+                self.generate_feedback('Done', 'User (' + username + ') with ID: ' + str(result['userids'][0]) + ' created.')
 
         except Exception as e:
-            logger.error('Problems creating user (%s) - %s', alias, e)
-            self.generate_feedback('Error', 'Problems creating user (' + alias + ')')
+            logger.error('Problems creating user (%s) - %s', username, e)
+            self.generate_feedback('Error', 'Problems creating user (' + username + ')')
             return False
 
     def do_remove_user(self, args):
@@ -6736,7 +6736,7 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the userid for a user
         """
-        data = self.zapi.user.get(filter={'alias': user})
+        data = self.zapi.user.get(filter={'username': user})
 
         if data != []:
             userid = data[0]['userid']
