@@ -1335,7 +1335,7 @@ class zabbixcli(cmd.Cmd):
                                                       'name': user['name'] + ' ' + user['surname'],
                                                       'autologin': zabbix_cli.utils.get_autologin_type(int(user['autologin'])),
                                                       'autologout': user['autologout'],
-                                                      'type': zabbix_cli.utils.get_user_type(int(user['type'])),
+                                                      'role': zabbix_cli.utils.get_user_role(int(user['roleid'])),
                                                       'usrgrps': user['usrgrps']}
 
             else:
@@ -1350,7 +1350,7 @@ class zabbixcli(cmd.Cmd):
                                                       '3': user['name'] + ' ' + user['surname'],
                                                       '4': zabbix_cli.utils.get_autologin_type(int(user['autologin'])),
                                                       '5': user['autologout'],
-                                                      '6': zabbix_cli.utils.get_user_type(int(user['type'])),
+                                                      '6': zabbix_cli.utils.get_user_role(int(user['roleid'])),
                                                       '7': '\n'.join(textwrap.wrap(', '.join(usrgrps), 60))}
 
             result_columns_key = result_columns_key + 1
@@ -1359,8 +1359,8 @@ class zabbixcli(cmd.Cmd):
         # Generate output
         #
         self.generate_output(result_columns,
-                             ['UserID', 'Username', 'Name', 'Autologin', 'Autologout', 'Type', 'Usrgrps'],
-                             ['Name', 'Type', 'Usrgrps'],
+                             ['UserID', 'Username', 'Name', 'Autologin', 'Autologout', 'Role', 'Usrgrps'],
+                             ['Name', 'Role', 'Usrgrps'],
                              ['UserID'],
                              FRAME)
 
@@ -3184,7 +3184,7 @@ class zabbixcli(cmd.Cmd):
                     [name]
                     [surname]
                     [passwd]
-                    [type]
+                    [role]
                     [autologin]
                     [autologout]
                     [groups]
@@ -3208,7 +3208,7 @@ class zabbixcli(cmd.Cmd):
         The system will generate an automatic password if this value
         is not defined.
 
-        [type]
+        [role]
         ------
         1:'User' [*]
         2:'Admin'
@@ -3236,7 +3236,7 @@ class zabbixcli(cmd.Cmd):
         passwd_default = x.hexdigest()
 
         # Default: 1: Zabbix user
-        type_default = '1'
+        role_default = '1'
 
         # Default: 0: Disable
         autologin_default = '0'
@@ -3266,7 +3266,7 @@ class zabbixcli(cmd.Cmd):
                 name = input('# Name []: ').strip()
                 surname = input('# Surname []: ').strip()
                 passwd = input('# Password []: ').strip()
-                type = input('# User type [' + type_default + ']: ').strip()
+                role = input('# User role [' + role_default + ']: ').strip()
                 autologin = input('# Autologin [' + autologin_default + ']: ').strip()
                 autologout = input('# Autologout [' + autologout_default + ']: ').strip()
                 usrgrps = input('# Usergroups []: ').strip()
@@ -3287,7 +3287,7 @@ class zabbixcli(cmd.Cmd):
             name = arg_list[1].strip()
             surname = arg_list[2].strip()
             passwd = arg_list[3].strip()
-            type = arg_list[4].strip()
+            role = arg_list[4].strip()
             autologin = arg_list[5].strip()
             autologout = arg_list[6].strip()
             usrgrps = arg_list[7].strip()
@@ -3311,8 +3311,8 @@ class zabbixcli(cmd.Cmd):
         if passwd == '':
             passwd = passwd_default
 
-        if type == '' or type not in ('1', '2', '3'):
-            type = type_default
+        if role == '' or role not in ('1', '2', '3'):
+            role = role_default
 
         if autologin == '':
             autologin = autologin_default
@@ -3367,7 +3367,7 @@ class zabbixcli(cmd.Cmd):
                                                name=name,
                                                surname=surname,
                                                passwd=passwd,
-                                               type=type,
+                                               roleid=role,
                                                autologin=autologin,
                                                autologout=autologout,
                                                usrgrps=usergroup_list)
@@ -3423,7 +3423,7 @@ class zabbixcli(cmd.Cmd):
         passwd_default = x.hexdigest()
 
         # Default: 1: Zabbix user
-        type_default = '1'
+        role_default = '1'
 
         # Default: 0: Disable
         autologin_default = '0'
@@ -3496,7 +3496,7 @@ class zabbixcli(cmd.Cmd):
             username = 'notification-user-' + remarks.strip()[:20].replace(' ', '_') + '-' + sendto.replace('.', '-')
 
         passwd = passwd_default
-        type = type_default
+        role = role_default
         autologin = autologin_default
         autologout = autologout_default
 
@@ -3565,7 +3565,7 @@ class zabbixcli(cmd.Cmd):
                     usergroup_objects.append({"usrgrpid": usergroup})
                 result = self.zapi.user.create(username=username,
                                                passwd=passwd,
-                                               type=type,
+                                               roleid=role,
                                                autologin=autologin,
                                                autologout=autologout,
                                                usrgrps=usergroup_objects,

@@ -110,13 +110,12 @@ def get_hostgroup_type(code):
 
     return "Unknown ({})".format(str(code))
 
+def get_user_role(code):
+    """Get user role from code."""
+    user_role = {1: "User", 2: "Admin", 3: "Super admin"}
 
-def get_user_type(code):
-    """Get user type from code."""
-    user_type = {1: "User", 2: "Admin", 3: "Super admin"}
-
-    if code in user_type:
-        return user_type[code] + " (" + str(code) + ")"
+    if code in user_role:
+        return user_role[code] + " (" + str(code) + ")"
 
     return "Unknown ({})".format(str(code))
 
