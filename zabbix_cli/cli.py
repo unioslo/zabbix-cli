@@ -5658,7 +5658,7 @@ class zabbixcli(cmd.Cmd):
 
         [object type]
         ------------------
-        Possible values: groups, hosts, images, maps, screens, templates
+        Possible values: groups, hosts, images, maps, templates
         One can use the special value #all# to export all object type groups.
 
         [object name]
@@ -5675,7 +5675,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         # Object type
-        object_type_list = ['groups', 'hosts', 'images', 'maps', 'screens', 'templates']
+        object_type_list = ['groups', 'hosts', 'images', 'maps', 'templates']
         object_type_to_export = []
 
         # Default object type
@@ -5804,13 +5804,6 @@ class zabbixcli(cmd.Cmd):
                         for object in data:
                             object_name_list[object['sysmapid']] = object['name']
 
-                    elif obj_type == 'screens':
-
-                        data = self.zapi.screen.get(output="extend")
-
-                        for object in data:
-                            object_name_list[object['screenid']] = object['name']
-
                     elif obj_type == 'templates':
 
                         data = self.zapi.template.get(output="extend")
@@ -5847,9 +5840,6 @@ class zabbixcli(cmd.Cmd):
 
                             elif obj_type == 'maps':
                                 id = str(self.get_map_id(name.strip()))
-
-                            elif obj_type == 'screens':
-                                id = str(self.get_screen_id(name.strip()))
 
                             elif obj_type == 'templates':
                                 id = str(self.get_template_id(name.strip()))
@@ -6088,7 +6078,6 @@ class zabbixcli(cmd.Cmd):
                                                                 'images': {'createMissing': True, 'updateExisting': True},
                                                                 'items': {'createMissing': True, 'updateExisting': True},
                                                                 'maps': {'createMissing': True, 'updateExisting': True},
-                                                                'screens': {'createMissing': True, 'updateExisting': True},
                                                                 'templateLinkage': {'createMissing': True},
                                                                 'templates': {'createMissing': True, 'updateExisting': True},
                                                                 'templateScreens': {'createMissing': True, 'updateExisting': True},
@@ -6674,20 +6663,6 @@ class zabbixcli(cmd.Cmd):
             raise Exception('Could not find mapID for:' + map)
 
         return str(mapid)
-
-    def get_screen_id(self, screen):
-        """
-        DESCRIPTION:
-        Get the screenid for a screen
-        """
-        data = self.zapi.screen.get(filter={"name": screen})
-
-        if data != []:
-            screenid = data[0]['screenid']
-        else:
-            raise Exception('Could not find screenID for:' + screen)
-
-        return str(screenid)
 
     def get_template_id(self, template):
         """
