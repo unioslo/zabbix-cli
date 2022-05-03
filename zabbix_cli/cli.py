@@ -2034,6 +2034,216 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems removing user ' + username + ' from usergroups ' + usergroups)
             return False
 
+    def do_link_template_to_host(self, args):
+        """
+        DESCRIPTION:
+        This command links one/several templates to
+        one/several hosts
+
+        COMMAND:
+        link_template_to_host [templates]
+                              [hostnames]
+
+
+        [templates]
+        ------------
+        Template names or IDs.
+        One can define several values in a comma separated list.
+
+        [hostnames]
+        -----------
+        Hosts or IDs.
+        One can define several values in a comma separated list.
+
+        """
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print('\n[ERROR]: ' + str(e) + '\n')
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if not arg_list:
+
+            try:
+                print('--------------------------------------------------------')
+                templates = input('# Templates: ').strip()
+                hostnames = input('# Hosts: ').strip()
+                print('--------------------------------------------------------')
+
+            except EOFError:
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
+                return False
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 2:
+
+            templates = arg_list[0].strip()
+            hostnames = arg_list[1].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('ERROR', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if templates == '':
+            self.generate_feedback('Error', 'Templates information is empty')
+            return False
+
+        if hostnames == '':
+            self.generate_feedback('Error', 'Hostnames information is empty')
+            return False
+
+        templates_list = []
+        hostnames_list = []
+
+        try:
+            for template in templates.split(','):
+                if template.isdigit():
+                    templates_list.append({"templateid": str(template).strip()})
+                else:
+                    templates_list.append({"templateid": str(self.get_template_id(template.strip()))})
+
+            for hostname in hostnames.split(','):
+                if hostname.isdigit():
+                    hostnames_list.append({"hostid": str(hostname).strip()})
+                else:
+                    hostnames_list.append({"hostid": str(self.get_host_id(hostname.strip()))})
+
+            query = {
+                "hosts": hostnames_list,
+                "templates": templates_list
+            }
+
+            self.zapi.host.massadd(**query)
+            logger.info('Templates: %s linked to these hosts: %s', templates, hostnames)
+            self.generate_feedback('Done', 'Templates ' + templates + ' linked to these hosts: ' + hostnames)
+
+        except Exception as e:
+            logger.error('Problems linking templates %s to hosts %s - %s', templates, hostnames, e)
+            self.generate_feedback('Error', 'Problems linking templates ' + templates + ' to hosts ' + hostnames)
+            return False
+
+    def do_unlink_template_from_host(self, args):
+        """
+        DESCRIPTION:
+        This command unlink one/several templates from
+        one/several hosts
+
+        COMMAND:
+        unlink_template_from_host [templates]
+                                  [hostnames]
+
+        [templates]
+        ------------
+        Templates names or IDs.
+        One can define several values in a comma separated list.
+
+        [hostnames]
+        -----------
+        Hostnames or IDs.
+        One can define several values in a comma separated list.
+
+        """
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print('\n[ERROR]: ' + str(e) + '\n')
+            return False
+
+        #
+        # Command without parameters
+        #
+
+        if not arg_list:
+
+            try:
+                print('--------------------------------------------------------')
+                templates = input('# Templates: ').strip()
+                hostnames = input('# Hostnames: ').strip()
+                print('--------------------------------------------------------')
+
+            except EOFError:
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
+                return False
+
+        #
+        # Command without filters attributes
+        #
+
+        elif len(arg_list) == 2:
+
+            templates = arg_list[0].strip()
+            hostnames = arg_list[1].strip()
+
+        #
+        # Command with the wrong number of parameters
+        #
+
+        else:
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if templates == '':
+            self.generate_feedback('Error', 'Templates information is empty')
+            return False
+
+        if hostnames == '':
+            self.generate_feedback('Error', 'Hostnames information is empty')
+            return False
+
+        templates_list = []
+        hostnames_list = []
+
+        try:
+            for template in templates.split(','):
+                if template.isdigit():
+                    templates_list.append(int(template))
+                else:
+                    templates_list.append(int(self.get_template_id(template.strip())))
+
+            for hostname in hostnames.split(','):
+                if hostname.isdigit():
+                    hostnames_list.append(int(hostname))
+                else:
+                    hostnames_list.append(int(self.get_host_id(hostname.strip())))
+
+            query = {
+                "hostids": hostnames_list,
+                "templateids": templates_list,
+                "templateids_clear": templates_list
+            }
+
+            self.zapi.host.massremove(**query)
+            logger.info('Templates: %s unlinked and cleared from these hosts: %s', templates, hostnames)
+            self.generate_feedback('Done', 'Templates ' + templates + ' unlinked and cleared from these hosts: ' + hostnames)
+
+        except Exception as e:
+            logger.error('Problems unlinking and clearing templates %s from hosts %s - %s', templates, hostnames, e)
+            self.generate_feedback('Error', 'Problems unlinking and clearing templates ' + templates + ' from hosts ' + hostnames)
+            return False
+
     def do_link_template_to_hostgroup(self, args):
         """
         DESCRIPTION:
