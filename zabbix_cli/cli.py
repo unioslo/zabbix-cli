@@ -3535,7 +3535,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            result2 = self.zapi.mediatype.get(search={'description': mediatype}, output='extend', searchWildcardsEnabled=True)
+            result2 = self.zapi.mediatype.get(search={'name': mediatype}, output='extend', searchWildcardsEnabled=True)
             logger.debug('Checking if media type (%s) exists', mediatype)
 
         except Exception as e:
