@@ -112,7 +112,7 @@ def get_hostgroup_type(code):
 
 def get_user_role(code):
     """Get user role from code."""
-    user_role = {1: "User", 2: "Admin", 3: "Super admin"}
+    user_role = {1: "User", 2: "Admin", 3: "Super admin", 4: "Guest"}
 
     if code in user_role:
         return user_role[code] + " (" + str(code) + ")"
