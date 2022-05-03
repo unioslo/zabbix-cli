@@ -2956,8 +2956,8 @@ class zabbixcli(cmd.Cmd):
 
                 # Convert to timestamp
 
-                since = time.mktime(since_tmp.timetuple())
-                till = time.mktime(till_tmp.timetuple())
+                since = int(time.mktime(since_tmp.timetuple()))
+                till = int(time.mktime(till_tmp.timetuple()))
 
             #
             # Create maintenance period
