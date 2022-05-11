@@ -4147,6 +4147,157 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems defining global macro (' + global_macro_name + ')')
             return False
 
+
+    def do_update_template_groups(self, args):
+        """
+        DESCRIPTION:
+        This command changes the group memberships of a template.
+
+        COMMAND:
+        update_template_groups [template]
+                               [groups_to_remove]
+                               [groups_to_add]
+
+        [template]
+        ----------
+        The template to change.
+
+        [groups_to_remove]
+        ------------------
+        The groups to remove.  Can be empty.
+
+        One can define several values in a comma separated list.
+
+        [groups_to_add]
+        --------------
+        The groups to add.  Can be empty.
+
+        One can define several values in a comma separated list.
+
+        """
+        try:
+            arg_list = shlex.split(args)
+
+        except ValueError as e:
+            print('\n[ERROR]: ' + str(e) + '\n')
+            return False
+
+        if not arg_list:
+            try:
+                print('--------------------------------------------------------')
+                template = input('# Template: ').strip()
+                remove_groups = input('# Remove groups: ').strip()
+                add_groups = input('# Add groups: ').strip()
+                print('--------------------------------------------------------')
+
+            except EOFError:
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
+                return False
+
+        elif len(arg_list) == 3:
+
+            template = arg_list[0].strip()
+            remove_groups = arg_list[1].strip()
+            add_groups = arg_list[2].strip()
+
+        else:
+            self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
+            return False
+
+        #
+        # Sanity check
+        #
+
+        if template == '':
+            self.generate_feedback('Error', 'Template value is empty')
+            return False
+        if len(remove_groups) == 0:
+            remove_groups = False
+        if len(add_groups) == 0:
+            add_groups = False
+        if not remove_groups and not add_groups:
+            self.generate_feedback('Error', 'Group information is empty')
+            return False
+
+        #
+        # Get current groups for template, and merge with our changes.
+        #
+
+        templateid = int()
+        template_groups = []
+        current_groups = set()
+
+        try:
+            templateid = self.get_template_id(template)
+            template_info = self.zapi.template.get(templateids=templateid,
+                                                   selectGroups='extend')
+
+            template_groups = template_info[0]['groups']
+            current_groups = set([i['groupid'] for i in template_groups])
+        except Exception as e:
+            logger.error('Failed to get template group information for [%s (%s)]: %s',
+                         template, templateid, e)
+            self.generate_feedback('Error', 'Could not change template groups')
+            return False
+
+        # Resolve the given groups to ids
+        groups_to_remove = []
+        groups_to_add = []
+        try:
+            if remove_groups:
+                for group in remove_groups.split(','):
+                    groupid = self.get_hostgroup_id(group)
+                    groups_to_remove.append({'groupid': groupid, 'name': group})
+            if add_groups:
+                for group in add_groups.split(','):
+                    groupid = self.get_hostgroup_id(group)
+                    groups_to_add.append({'groupid': groupid, 'name': group})
+
+        except Exception as e:
+            logger.error('Problems resolving group IDs: %s', e)
+            self.generate_feedback('Error', 'Could not change template groups')
+            return False
+
+        #
+        # Update Zabbix with the new group memberships.
+        #
+        def lookup_group_name(groupid):
+            for i in template_groups + groups_to_add:
+                if i['groupid'] == groupid:
+                    return i['name']
+
+        final_groups = (current_groups - set([i['groupid'] for i in groups_to_remove])
+                        | set([i['groupid'] for i in groups_to_add]))
+
+        # Resolve the names of the final groups for user-friendly presentation.
+        final_group_tuples = list(map(lambda i:
+                                      {'groupid': i,
+                                       'name': lookup_group_name(i)},
+                                      final_groups))
+
+        try:
+            res = self.zapi.template.update(templateid=templateid,
+                                            groups=[{'groupid': i} for i in final_groups])
+
+            logger.info('Set new groups for template %s (%s): %s',
+                        template, templateid, final_group_tuples)
+            self.generate_feedback('Done', 'Template ' + template
+                                   + ' (' + templateid + ') '
+                                   + 'group memberships changed from "'
+                                   + ', '.join([f"{i['name']} ({i['groupid']})"
+                                                for i in template_groups])
+                                   + '" to "'
+                                   + ', '.join([f"{i['name']} ({i['groupid']})"
+                                                for i in final_group_tuples])
+                                   + '".')
+        except Exception as e:
+            logger.error('Problems changing group membership for template [%s (%s)]: %s',
+                         template, templateid, e)
+            self.generate_feedback('Error', 'Could not change template groups')
+            return False
+
+
     def do_define_host_usermacro(self, args):
         """
         DESCRIPTION:
