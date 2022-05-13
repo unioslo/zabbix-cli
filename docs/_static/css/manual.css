@@ -1,0 +1,9 @@
+/* Hide the class header. */
+#zabbix_cli\.cli\.zabbixcli {
+    visibility: hidden;
+}
+
+/* And the parens after the method names. */
+.sig-paren {
+    visibility: hidden;
+}
