@@ -857,6 +857,9 @@ class zabbixcli(cmd.Cmd):
             }
         }
 
+        if self.zabbix_version >= 6:
+            query["selectInterfaces"]= ["available"]
+
         if host.isdigit():
             query["hostids"] = host
         else:
@@ -889,6 +892,10 @@ class zabbixcli(cmd.Cmd):
         #
 
         for host in result:
+            if self.zabbix_version >= 6:
+                available = host['interfaces'][0]['available']
+            else:
+                available = host['available']
             proxy = self.zapi.proxy.get(proxyids=host['proxy_hostid'])
             proxy_name = proxy[0]['host'] if proxy else ""
             if self.output_format == 'json':
@@ -896,7 +903,7 @@ class zabbixcli(cmd.Cmd):
                                                       'host': host['host'],
                                                       'groups': host['groups'],
                                                       'templates': host['parentTemplates'],
-                                                      'zabbix_agent': zabbix_cli.utils.get_zabbix_agent_status(int(host['available'])),
+                                                      'zabbix_agent': zabbix_cli.utils.get_zabbix_agent_status(int(available)),
                                                       'maintenance_status': zabbix_cli.utils.get_maintenance_status(int(host['maintenance_status'])),
                                                       'status': zabbix_cli.utils.get_monitoring_status(int(host['status'])),
                                                       'proxy': proxy_name}
@@ -919,7 +926,7 @@ class zabbixcli(cmd.Cmd):
                                                       '2': host['host'],
                                                       '3': '\n'.join(hostgroup_list),
                                                       '4': '\n'.join(template_list),
-                                                      '5': zabbix_cli.utils.get_zabbix_agent_status(int(host['available'])),
+                                                      '5': zabbix_cli.utils.get_zabbix_agent_status(int(available)),
                                                       '6': zabbix_cli.utils.get_maintenance_status(int(host['maintenance_status'])),
                                                       '7': zabbix_cli.utils.get_monitoring_status(int(host['status'])),
                                                       '8': proxy_name}
