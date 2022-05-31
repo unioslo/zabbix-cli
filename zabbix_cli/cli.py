@@ -106,6 +106,7 @@ class zabbixcli(cmd.Cmd):
         logger.debug('Connected to Zabbix JSON-API')
 
         self.api_version = self.zapi.apiinfo.version()
+        self.zabbix_version = int(self.api_version.split(".")[0])
 
         #
         # The file $HOME/.zabbix-cli_auth_token is created if it does not exists.
