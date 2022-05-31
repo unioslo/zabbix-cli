@@ -3338,12 +3338,14 @@ class zabbixcli(cmd.Cmd):
             for usrgrp in usergroup_default.split(','):
                 if usrgrp != '':
                     usrgrp_id = str(self.get_usergroup_id(usrgrp.strip()))
-                    usergroup_list.append({"usrgrpid": usrgrp_id})
+                    if {"usrgrpid": usrgrp_id} not in usergroup_list:
+                        usergroup_list.append({"usrgrpid": usrgrp_id})
 
             for usrgrp in usrgrps.split(','):
                 if usrgrp != '':
                     usrgrp_id = str(self.get_usergroup_id(usrgrp.strip()))
-                    usergroup_list.append({"usrgrpid": usrgrp_id})
+                    if {"usrgrpid": usrgrp_id} not in usergroup_list:
+                        usergroup_list.append({"usrgrpid": usrgrp_id})
 
         except Exception as e:
             logger.error('Problems getting usergroupID - %s', e)
@@ -3355,7 +3357,11 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            result = self.zapi.user.get(search={'alias': alias}, output='extend', searchWildcardsEnabled=True)
+            if self.zabbix_version >=6:
+                search = {'username': alias}
+            else:
+                search = {'alias': alias}
+            result = self.zapi.user.get(search=search, output='extend', searchWildcardsEnabled=True)
             logger.debug('Checking if user (%s) exists', alias)
 
         except Exception as e:
@@ -3374,7 +3380,17 @@ class zabbixcli(cmd.Cmd):
                 self.generate_feedback('Warning', 'This user (' + alias + ') already exists.')
                 return False
             else:
-                result = self.zapi.user.create(alias=alias,
+                if self.zabbix_version >=6:
+                    result = self.zapi.user.create(username=alias,
+                                               name=name,
+                                               surname=surname,
+                                               passwd=passwd,
+                                               roleid=type,
+                                               autologin=autologin,
+                                               autologout=autologout,
+                                               usrgrps=usergroup_list)
+                else:
+                    result = self.zapi.user.create(alias=alias,
                                                name=name,
                                                surname=surname,
                                                passwd=passwd,
