@@ -5713,7 +5713,9 @@ class zabbixcli(cmd.Cmd):
 
         [object type]
         ------------------
-        Possible values: groups, hosts, images, maps, screens, templates
+        Possible values: groups, hosts, images, maps, screens, templates, mediaTypes
+        screens if your version is less than to 6
+        mediaTypes if your version is more than or equal to 6
         One can use the special value #all# to export all object type groups.
 
         [object name]
@@ -5731,6 +5733,9 @@ class zabbixcli(cmd.Cmd):
 
         # Object type
         object_type_list = ['groups', 'hosts', 'images', 'maps', 'screens', 'templates']
+        if self.zabbix_version >=6:
+            object_type_list.remove('screens')
+            object_type_list.append('mediatypes')
         object_type_to_export = []
 
         # Default object type
@@ -5787,6 +5792,8 @@ class zabbixcli(cmd.Cmd):
             directory_exports = self.conf.default_directory_exports
 
         for obj_type in object_type_list:
+            if obj_type == "mediatypes":
+                obj_type="mediaTypes"
 
             if not os.path.exists(directory_exports + '/' + obj_type):
 
@@ -5804,6 +5811,13 @@ class zabbixcli(cmd.Cmd):
 
         if object_type not in object_type_list + ['#all#']:
             self.generate_feedback('Error', 'Object type is not a valid value')
+            return False
+        
+        if self.zabbix_version <6 and "mediatypes" == object_type:
+            self.generate_feedback('Error', 'You cannot export media types with a version\'s Zabbix less than 6')
+            return False
+        if self.zabbix_version >=6 and "screens" == object_type:
+            self.generate_feedback('Error', 'You cannot export screen with a version\'s Zabbix more than or equal to 6')
             return False
 
         if object_type.lower() == '#all#':
@@ -5873,6 +5887,13 @@ class zabbixcli(cmd.Cmd):
                         for object in data:
                             object_name_list[object['templateid']] = object['host']
 
+                    elif obj_type == 'mediatypes':
+
+                        data = self.zapi.mediatype.get(output="extend")
+
+                        for object in data:
+                            object_name_list[object['mediatypeid']] = object['name']
+
                 except Exception as e:
                     logger.error('Problems getting all [%s] objects - %s', obj_type, e)
                     self.generate_feedback('Error', 'Problems getting all [' + obj_type + '] objects')
@@ -5908,6 +5929,9 @@ class zabbixcli(cmd.Cmd):
 
                             elif obj_type == 'templates':
                                 id = str(self.get_template_id(name.strip()))
+                            
+                            elif obj_type == 'mediatypes':
+                                id = str(self.get_mediatype_id(name.strip()))
 
                             object_name_list[id] = name.strip()
 
@@ -5923,6 +5947,8 @@ class zabbixcli(cmd.Cmd):
             for obj_name_key in object_name_list.keys():
 
                 try:
+                    if obj_type == "mediatypes":
+                        obj_type="mediaTypes"
                     data = self.zapi.configuration.export(format=self.conf.default_export_format.lower(),
                                                           options={obj_type: [obj_name_key]})
 
@@ -6743,6 +6769,20 @@ class zabbixcli(cmd.Cmd):
             raise Exception('Could not find screenID for:' + screen)
 
         return str(screenid)
+
+    def get_mediatype_id(self, mediatype):
+        """
+        DESCRIPTION:
+        Get the mediatypeid for a mediatype
+        """
+        data = self.zapi.mediatype.get(filter={"name": mediatype})
+
+        if data != []:
+            mediatypeid = data[0]['mediatypeid']
+        else:
+            raise Exception('Could not find mediatypeID for:' + mediatype)
+
+        return str(mediatypeid)
 
     def get_template_id(self, template):
         """
