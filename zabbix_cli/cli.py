@@ -2970,6 +2970,9 @@ class zabbixcli(cmd.Cmd):
             #
             # Create maintenance period
             #
+            if self.zabbix_version >=6:
+                since = int(since)
+                till = int(till)
             self.zapi.maintenance.create(name=maintenance_name,
                                          maintenance_type=maintenance_type_,
                                          active_since=since,
