@@ -1256,13 +1256,17 @@ class zabbixcli(cmd.Cmd):
         #
         # Get result from Zabbix API
         #
+        if self.zabbix_version>=6:
+            name_element = "username"
+        else:
+            name_element = "alias"
         try:
             result = self.zapi.usergroup.get(output='extend',
                                              search={'name': usergroup},
                                              searchWildcardsEnabled=True,
                                              sortfield='name',
                                              sortorder='ASC',
-                                             selectUsers=['alias'])
+                                             selectUsers=[name_element])
             logger.info('Command show_usergroup executed')
         except Exception as e:
             logger.error('Problems getting usergroup information - %s', e)
@@ -1284,7 +1288,7 @@ class zabbixcli(cmd.Cmd):
             else:
                 users = []
                 for user in group['users']:
-                    users.append(user['alias'])
+                    users.append(user[name_element])
 
                 users.sort()
 
