@@ -2138,7 +2138,7 @@ class zabbixcli(cmd.Cmd):
                 "hosts": hostnames_list
             }
 
-            self.zapi.template.massadd(**query)
+            self.zapi.host.massadd(**query)
             logger.info('Templates: %s linked to these hosts: %s', templates, hostnames)
             self.generate_feedback('Done', 'Templates ' + templates + ' linked to these hosts: ' + hostnames)
 
