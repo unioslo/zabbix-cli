@@ -6155,27 +6155,31 @@ class zabbixcli(cmd.Cmd):
                         #
 
                         try:
+                            rules = {
+                                'discoveryRules': {'createMissing': True, 'updateExisting': True},
+                                'graphs': {'createMissing': True, 'updateExisting': True},
+                                'groups': {'createMissing': True},
+                                'hosts': {'createMissing': True, 'updateExisting': True},
+                                'images': {'createMissing': True, 'updateExisting': True},
+                                'items': {'createMissing': True, 'updateExisting': True},
+                                'maps': {'createMissing': True, 'updateExisting': True},
+                                'templateLinkage': {'createMissing': True},
+                                'templates': {'createMissing': True, 'updateExisting': True},
+                                'triggers': {'createMissing': True, 'updateExisting': True},
+                                'valueMaps': {'createMissing': True, 'updateExisting': True},
+                                'mediaTypes': {'createMissing': True, 'updateExisting': True},
+                            }
+                            if self.zabbix_version < 6:
+                                rules['applications'] = {'createMissing': True}
+                                rules['screens'] ={'createMissing': True, 'updateExisting': True}
+                                rules['templateScreens'] ={'createMissing': True, 'updateExisting': True}
+
                             with open(file, 'r') as import_filename:
                                 import_data = import_filename.read()
 
                                 data = self.zapi.confimport(format=format,
                                                             source=import_data,
-                                                            rules={
-                                                                'applications': {'createMissing': True},
-                                                                'discoveryRules': {'createMissing': True, 'updateExisting': True},
-                                                                'graphs': {'createMissing': True, 'updateExisting': True},
-                                                                'groups': {'createMissing': True},
-                                                                'hosts': {'createMissing': True, 'updateExisting': True},
-                                                                'images': {'createMissing': True, 'updateExisting': True},
-                                                                'items': {'createMissing': True, 'updateExisting': True},
-                                                                'maps': {'createMissing': True, 'updateExisting': True},
-                                                                'screens': {'createMissing': True, 'updateExisting': True},
-                                                                'templateLinkage': {'createMissing': True},
-                                                                'templates': {'createMissing': True, 'updateExisting': True},
-                                                                'templateScreens': {'createMissing': True, 'updateExisting': True},
-                                                                'triggers': {'createMissing': True, 'updateExisting': True},
-                                                                'valueMaps': {'createMissing': True, 'updateExisting': True},
-                                                            })
+                                                            rules=rules)
 
                                 if data:
                                     total_files_imported = total_files_imported + 1
