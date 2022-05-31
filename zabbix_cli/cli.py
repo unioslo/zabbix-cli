@@ -1042,8 +1042,9 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            self.zapi.host.update(**query)
+            result = self.zapi.host.update(**query)
             logger.info('Command update_host_inventory executed [%s] [%s] [%s].', host, inventory_key, inventory_value)
+            self.generate_feedback('Done', 'Inventory of host (' + host + ') with ID: ' + str(result['hostids'][0]) + ' updated')
         except Exception as e:
             logger.error('Problems updating host inventory information - %s', e)
             self.generate_feedback('Error', 'Problems updating host inventory information')
