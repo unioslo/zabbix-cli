@@ -2330,7 +2330,7 @@ class zabbixcli(cmd.Cmd):
         # Sanity check
         #
 
-        if gui_access == '' or gui_access not in ('0', '1', '2'):
+        if gui_access == '' or gui_access not in ('0', '1', '2', '3'):
             gui_access = gui_access_default
 
         if users_status == '' or users_status not in ('0', '1'):
