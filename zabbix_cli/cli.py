@@ -5222,7 +5222,19 @@ class zabbixcli(cmd.Cmd):
             print('\n[ERROR]: ' + str(e) + '\n')
             return False
 
-        if len(arg_list) == 1:
+        if not arg_list:
+            try:
+                print('--------------------------------------------------------')
+                item_name = input('# Item name: ').strip()
+                group = input('# Group: ').strip()
+                print('--------------------------------------------------------')
+
+            except EOFError:
+                print('\n--------------------------------------------------------')
+                print('\n[Aborted] Command interrupted by the user.\n')
+                return False
+
+        elif len(arg_list) == 1:
             item_name = arg_list[0]
             group = '0'
         elif len(arg_list) == 2:
@@ -5234,6 +5246,12 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
 
+        if item_name == '':
+            self.generate_feedback('Error', 'Item name is empty')
+            return False 
+
+        if group =='':
+            group = '0'
         #
         # Sanity check
         #
