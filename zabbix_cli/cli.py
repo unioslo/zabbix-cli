@@ -2010,17 +2010,20 @@ class zabbixcli(cmd.Cmd):
                 #
                 # Get list with users to keep in this  usergroup
                 #
-
+                if self.zabbix_version>=6:
+                    name_element = "username"
+                else:
+                    name_element = "alias"
                 result = self.zapi.usergroup.get(output='extend',
                                                  search={'name': usergroup},
                                                  searchWildcardsEnabled=True,
                                                  sortfield='name',
                                                  sortorder='ASC',
-                                                 selectUsers=['alias'])
+                                                 selectUsers=[name_element])
 
                 for users in result:
                     for alias in users['users']:
-                        usernames_list_orig.append(alias['alias'])
+                        usernames_list_orig.append(alias[name_element])
 
                 usernames_list_final = list(set(usernames_list_orig) - set(user_to_remove))
 
