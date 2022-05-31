@@ -1323,11 +1323,17 @@ class zabbixcli(cmd.Cmd):
         #
         # Get result from Zabbix API
         #
+        if self.zabbix_version>=6:
+            name_element = "username"
+            type_element = "roleid"
+        else:
+            name_element = "alias"
+            type_element = "type"
         try:
             result = self.zapi.user.get(output='extend',
                                         getAccess=True,
                                         selectUsrgrps=['name'],
-                                        sortfield='alias',
+                                        sortfield=name_element,
                                         sortorder='ASC')
             logger.info('Command show_users executed')
         except Exception as e:
@@ -1343,11 +1349,11 @@ class zabbixcli(cmd.Cmd):
 
             if self.output_format == 'json':
                 result_columns[result_columns_key] = {'userid': user['userid'],
-                                                      'alias': user['alias'],
+                                                      'alias': user[name_element],
                                                       'name': user['name'] + ' ' + user['surname'],
                                                       'autologin': zabbix_cli.utils.get_autologin_type(int(user['autologin'])),
                                                       'autologout': user['autologout'],
-                                                      'type': zabbix_cli.utils.get_user_type(int(user['type'])),
+                                                      'type': zabbix_cli.utils.get_user_type(int(user[type_element])),
                                                       'usrgrps': user['usrgrps']}
 
             else:
@@ -1358,11 +1364,11 @@ class zabbixcli(cmd.Cmd):
                     usrgrps.append(group['name'])
 
                 result_columns[result_columns_key] = {'1': user['userid'],
-                                                      '2': user['alias'],
+                                                      '2': user[name_element],
                                                       '3': user['name'] + ' ' + user['surname'],
                                                       '4': zabbix_cli.utils.get_autologin_type(int(user['autologin'])),
                                                       '5': user['autologout'],
-                                                      '6': zabbix_cli.utils.get_user_type(int(user['type'])),
+                                                      '6': zabbix_cli.utils.get_user_type(int(user[type_element])),
                                                       '7': '\n'.join(textwrap.wrap(', '.join(usrgrps), 60))}
 
             result_columns_key = result_columns_key + 1
