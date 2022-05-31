@@ -3533,11 +3533,13 @@ class zabbixcli(cmd.Cmd):
 
             for usrgrp in usergroup_default.split(','):
                 if usrgrp != '':
-                    usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
+                    if str(self.get_usergroup_id(usrgrp.strip())) not in usergroup_list:
+                        usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
 
             for usrgrp in notifications_usergroup_default.split(','):
                 if usrgrp != '':
-                    usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
+                    if str(self.get_usergroup_id(usrgrp.strip())) not in usergroup_list:
+                        usergroup_list.append(str(self.get_usergroup_id(usrgrp.strip())))
 
         except Exception as e:
             logger.error('Problems getting usergroupID - %s', e)
@@ -3549,7 +3551,11 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            result1 = self.zapi.user.get(search={'alias': alias}, output='extend', searchWildcardsEnabled=True)
+            if self.zabbix_version >=6:
+                search = {'username': alias}
+            else:
+                search = {'alias': alias}
+            result1 = self.zapi.user.get(search=search, output='extend', searchWildcardsEnabled=True)
             logger.debug('Checking if user (%s) exists', alias)
 
         except Exception as e:
@@ -3562,7 +3568,11 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            result2 = self.zapi.mediatype.get(search={'description': mediatype}, output='extend', searchWildcardsEnabled=True)
+            if self.zabbix_version >= 6:
+                search = {'name': mediatype}
+            else:
+                search = {'description': mediatype}
+            result2 = self.zapi.mediatype.get(search=search, output='extend', searchWildcardsEnabled=True)
             logger.debug('Checking if media type (%s) exists', mediatype)
 
         except Exception as e:
@@ -3590,7 +3600,25 @@ class zabbixcli(cmd.Cmd):
                 usergroup_objects = []
                 for usergroup in usergroup_list:
                     usergroup_objects.append({"usrgrpid": usergroup})
-                result = self.zapi.user.create(alias=alias,
+                if self.zabbix_version >=6 :
+                    result = self.zapi.user.create(username=alias,
+                                               passwd=passwd,
+                                               roleid=type,
+                                               autologin=autologin,
+                                               autologout=autologout,
+                                               usrgrps=usergroup_objects,
+                                               user_medias=[
+                                                   {
+                                                       'mediatypeid': result2[0]['mediatypeid'],
+                                                       'sendto':sendto,
+                                                       'active':0,
+                                                       'severity':63,
+                                                       'period':'1-7,00:00-24:00'
+                                                   }
+                                               ]
+                                               )
+                else:
+                    result = self.zapi.user.create(alias=alias,
                                                passwd=passwd,
                                                type=type,
                                                autologin=autologin,
