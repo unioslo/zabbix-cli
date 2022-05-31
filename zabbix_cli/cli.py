@@ -6835,7 +6835,11 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the userid for a user
         """
-        data = self.zapi.user.get(filter={'alias': user})
+        if self.zabbix_version >=6:
+            filter = {'username': user}
+        else:
+            filter = {'alias': user}
+        data = self.zapi.user.get(filter=filter)
 
         if data != []:
             userid = data[0]['userid']
