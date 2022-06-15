@@ -6154,7 +6154,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 print('--------------------------------------------------------')
                 proxy_src = input('# SRC Proxy: ').strip()
-                proxy_dst = input('# DST Proxy: ').strip().lower()
+                proxy_dst = input('# DST Proxy: ').strip()
                 print('--------------------------------------------------------')
 
             except EOFError:
