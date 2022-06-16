@@ -18,3 +18,6 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+manual: man
+	sed -i "$(BUILDDIR)/man/zabbix-cli.1" -e 's/do_\(.*\)()/\1/g'
