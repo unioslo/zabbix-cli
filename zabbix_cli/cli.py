@@ -1939,8 +1939,8 @@ class zabbixcli(cmd.Cmd):
         one/several usergroups
 
         COMMAND:
-        remove_user_to_usergroup [username]
-                                 [usergroups]
+        remove_user_from_usergroup [username]
+                                   [usergroups]
 
 
         [username]
@@ -3443,6 +3443,7 @@ class zabbixcli(cmd.Cmd):
         create_notification_user [sendto]
                                  [mediatype]
                                  [remarks]
+
         [sendto]
         --------
         E-mail address, SMS number, jabber address, ...
@@ -3851,9 +3852,9 @@ class zabbixcli(cmd.Cmd):
         nothing will be changed.
 
         COMMAND:
-        define_usergroup_permissions [usergroup]
-                                     [hostgroups]
-                                     [permission code]
+        add_usergroup_permissions [usergroup]
+                                  [hostgroups]
+                                  [permission code]
 
         [usergroup]
         -----------
@@ -3945,7 +3946,7 @@ class zabbixcli(cmd.Cmd):
         on a hostgroup.
 
         COMMAND:
-        define_usergroup_permissions [usergroup]
+        update_usergroup_permissions [usergroup]
                                      [hostgroups]
                                      [permission code]
 
@@ -5222,6 +5223,7 @@ class zabbixcli(cmd.Cmd):
         Name of the items to get. Supports wildcard.
 
         [group]
+        -------
         Whether the output should group items with the same values.
 
         0 - (default) Do not group items.
