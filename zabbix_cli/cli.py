@@ -2428,7 +2428,7 @@ class zabbixcli(cmd.Cmd):
 
         * proxy-(prod|test)+d\\.example\\.org
           e.g. proxy-prod1.example.org and proxy-test8.example.org
-               will match this expression.
+          will match this expression.
 
         * .+
           All proxies will match this expression.
@@ -6041,7 +6041,7 @@ class zabbixcli(cmd.Cmd):
 
         This command finds all the pathnames matching a specified
         pattern according to the rules used by the Unix shell.  Tilde
-        expansion, *, ?, and character ranges expressed with [] will
+        expansion, \*, ?, and character ranges expressed with [] will
         be correctly matched. For a literal match, wrap the
         meta-characters in brackets. For example, '[?]' matches the
         character '?'.

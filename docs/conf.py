@@ -115,11 +115,12 @@ def autodoc_process_docstring_handler(app, what, name, obj, options, lines):
             continue
         section = re.match("^-+$", line)
         if section:
-            # For sections, remove the --- markers and instead add .. rubric::
-            # to the previous line.
+            # For sections, remove the --- markers and instead add
+            # .. rubric:: to the previous line, plus a blank line.
             old = new_lines[-1]
             new = ".. rubric:: " + old
             new_lines[-1] = new
+            new_lines.append("")
             continue
         new_lines.append(line)
 
