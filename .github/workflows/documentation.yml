@@ -26,6 +26,9 @@ jobs:
         run: pip install Sphinx
       - name: Generate HTML documentation
         run: make -C docs singlehtml
+        env:
+          # Fail if there are warnings from Sphinx.
+          SPHINXOPTS: -W
       - name: Publish to GitHub pages
         uses: JamesIves/github-pages-deploy-action@v4.3.3
         with:
