@@ -772,17 +772,24 @@ class zabbixcli(cmd.Cmd):
 
         [Filter]:
         --------
-        * Zabbix agent: 'available': 0=Unknown
-                                     1=Available
-                                     2=Unavailable
+        * Zabbix agent: *available*:
 
-        * Maintenance: 'maintenance_status': 0:No maintenance
-                                             1:In progress
+          0. Unknown
+          1. Available
+          2. Unavailable
 
-        * Status: 'status': 0:Monitored
-                            1: Not monitored
+        * Maintenance: *maintenance_status*:
 
-        e.g.: Show all hosts with Zabbix agent: Available AND Status: Monitored:
+          0. No maintenance
+          1. In progress
+
+        * Status: *status*:
+
+          0. Monitored
+          1. Not monitored
+
+        e.g.: Show all hosts with ``Zabbix agent: Available AND Status: Monitored``::
+
               show_host * "'available':'1','status':'0'"
 
         """
@@ -1409,12 +1416,12 @@ class zabbixcli(cmd.Cmd):
 
         Priority values:
 
-        0 - (default) not classified;
-        1 - information;
-        2 - warning;
-        3 - average;
-        4 - high;
-        5 - disaster.
+        0. (default) not classified;
+        1. information;
+        2. warning;
+        3. average;
+        4. high;
+        5. disaster.
 
         [hostgroups]
         -----------
@@ -1429,15 +1436,15 @@ class zabbixcli(cmd.Cmd):
 
         Values:
 
-        true - (default) Show only active alarms with last event unacknowledged.
-        false - Show all active alarms, also those with the last event acknowledged.
+        * true - (default) Show only active alarms with last event unacknowledged.
+        * false - Show all active alarms, also those with the last event acknowledged.
 
 
-        e.g.: Get all alarms with priority 'High' that contain the word
-              'disk' in the description for the host 'host.example.org' and
-              the last event unacknowledged
+        e.g.: Get all alarms with priority ``High`` that contain the word
+        ``disk`` in the description for the host ``host.example.org`` and
+        the last event unacknowledged::
 
-        show_alarms *disk* "'host':'host.example.org','priority':'4'" * true
+          show_alarms *disk* "'host':'host.example.org','priority':'4'" * true
 
         """
         result_columns = {}
@@ -2281,14 +2288,14 @@ class zabbixcli(cmd.Cmd):
 
         [GUI access]
         ------------
-        0:'System default' [*]
-        1:'Internal'
-        2:'Disable'
+        0. 'System default' [*]
+        1. 'Internal'
+        2. 'Disable'
 
         [Status]
         --------
-        0:'Enable' [*]
-        1:'Disable'
+        0. 'Enable' [*]
+        1. 'Disable'
 
         """
         # Default 0: System default
@@ -2435,8 +2442,8 @@ class zabbixcli(cmd.Cmd):
 
         [Status]
         --------
-        0:'Monitored' [*]
-        1:'Unmonitored'
+        0. 'Monitored' [*]
+        1. 'Unmonitored'
 
         All host created with this command will get assigned a
         default interface of type 'Agent' using the port 10050.
@@ -2833,8 +2840,8 @@ class zabbixcli(cmd.Cmd):
 
         Type values:
 
-        0 - (default) With data collection
-        1 - Without data collection
+        0. (default) With data collection
+        1. Without data collection
 
         """
         host_ids = []
@@ -3030,15 +3037,15 @@ class zabbixcli(cmd.Cmd):
 
         [interface connection]
         ----------------------
-        0: Connect using host DNS name or interface DNS if provided [*]
-        1: Connect using host IP address
+        0. Connect using host DNS name or interface DNS if provided [*]
+        1. Connect using host IP address
 
         [interface type]
         ----------------
-        1: Zabbix agent
-        2: SNMP [*]
-        3: IPMI
-        4: JMX
+        1. Zabbix agent
+        2. SNMP [*]
+        3. IPMI
+        4. JMX
 
         [interface port]
         ----------------
@@ -3054,8 +3061,8 @@ class zabbixcli(cmd.Cmd):
 
         [default interface]
         -------------------
-        0: Not default interface
-        1: Default interface [*]
+        0. Not default interface
+        1. Default interface [*]
 
         """
         #
@@ -3235,14 +3242,14 @@ class zabbixcli(cmd.Cmd):
 
         [type]
         ------
-        1:'User' [*]
-        2:'Admin'
-        3:'Super admin'
+        1. 'User' [*]
+        2. 'Admin'
+        3. 'Super admin'
 
         [autologin]
         -----------
-        0:'Disable' [*]
-        1:'Enable'
+        0. 'Disable' [*]
+        1. 'Enable'
 
         [autologout]
         ------------
@@ -5226,8 +5233,8 @@ class zabbixcli(cmd.Cmd):
         -------
         Whether the output should group items with the same values.
 
-        0 - (default) Do not group items.
-        1 - Group items.
+        0. (default) Do not group items.
+        1. Group items.
         """
         try:
             arg_list = [arg.strip() for arg in shlex.split(args)]
@@ -6052,8 +6059,8 @@ class zabbixcli(cmd.Cmd):
         files that would be imported without running the import
         process.
 
-        0: Dry run deactivated
-        1: Dry run activated [*]
+        0. Dry run deactivated
+        1. Dry run activated [*]
 
         """
         #
