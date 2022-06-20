@@ -1,0 +1,36 @@
+on:
+  push:
+    branches: [master]
+
+name: Documentation
+jobs:
+  build:
+    name: Build and publish documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: v1-pip-${{ runner.os }}-${{ hashFiles('setup.py') }}
+          restore-keys: |
+            v1-pip-${{ runner.os }}
+            v1-pip-
+      - name: Install Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.x
+      - name: Install Sphinx
+        run: pip install Sphinx
+      - name: Generate HTML documentation
+        run: make -C docs singlehtml
+        env:
+          # Fail if there are warnings from Sphinx.
+          SPHINXOPTS: -W
+      - name: Publish to GitHub pages
+        uses: JamesIves/github-pages-deploy-action@v4.3.3
+        with:
+          branch: gh-pages
+          folder: docs/_build/singlehtml
