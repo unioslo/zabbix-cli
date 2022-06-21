@@ -1,3 +1,12 @@
+zabbix-cli (2.3.0) unstable; urgency=medium
+
+  [Marius Bakke]
+  * New release 2.3.0
+  * Zabbix 6 compatibility.
+  * Documentation updates.
+
+ -- Marius Bakke <marius.bakke@usit.uio.no>  Tue, 21 Jun 2022 21:44:50 +0200
+
 zabbix-cli (2.2.1) unstable; urgency=medium
 
   [Andreas Dobloug]
