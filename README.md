@@ -35,7 +35,7 @@ Zabbix-cli will look for config files in the following order. Any later files wi
 1. /usr/share/zabbix-cli/zabbix-cli.conf
 2. /etc/zabbix-cli/zabbix-cli.conf
 3. ~/.zabbix-cli/zabbix-cli.conf
-4. File spesified with `-c`/`--config` parameter
+4. File specified with `-c`/`--config` parameter
 5. /etc/zabbix-cli/zabbix-cli.fixed.conf
 6. /usr/share/zabbix-cli/zabbix-cli.fixed.conf
 
@@ -46,7 +46,7 @@ python -m zabbix_cli.config show
 python -m zabbix_cli.config defaults
 ```
 
-If you run into problems it is usefull to enable logging and set the `DEBUG` level for logging:
+If you run into problems it is useful to enable logging and set the `DEBUG` level for logging:
 
 ```
 [logging]

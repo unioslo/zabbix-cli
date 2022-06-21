@@ -17,8 +17,8 @@ Zabbix-CLI
 Introduction
 ============
 
-Zabbix-cli is a terminal client for managing some Zabbix
-administration tasks via the zabbix-API.
+Zabbix-cli is a terminal client for managing Zabbix
+administration tasks via the Zabbix API.
 
 The zabbix-cli code is distributed under the GNU General Public
 License 3 and it is written in Python. It has been developed and
@@ -50,7 +50,7 @@ Configuration file
 
 Zabbix-cli has a **multilevel configuration system.**
 
-This means thet we do not override entire configuration files but we
+This means that we do not override entire configuration files but we
 merge all the defined configuration files in our system and use the
 parameter values defined in the configuration file with higher
 priority if a parameter is defined in more than one file.
@@ -152,7 +152,7 @@ The format of this file is a line with this information::
 
   USERNAME::PASSWORD
 
-**NOTE:** The password will be saved in clear text so be carefull with the information saved here and restrict access to this file only to your user. ``chmod 400 ~/.zabbix-cli_auth`` will be defined by ``zabbix-cli`` on this file the first time it uses it.
+**NOTE:** The password will be saved in clear text so be careful with the information saved here and restrict access to this file only to your user. ``chmod 400 ~/.zabbix-cli_auth`` will be defined by ``zabbix-cli`` on this file the first time it uses it.
 
 
 Authentication token file
@@ -232,7 +232,7 @@ The Zabbix-CLI interactive shell can be started by running the program
    ==========================
    shortcuts  support
 
-**NOTE:** It is possible to use Zabbix-CLI in a non-interactive modus
+**NOTE:** It is possible to use Zabbix-CLI in a non-interactive mode
 by running ``/usr/bin/zabbix-cli`` with the parameter ``--command
 <zabbix_command>`` or ``-C <zabbix_command>`` in the OS shell. This
 can be used to run ``zabbix-cli`` commands from shell scripts or other
@@ -270,13 +270,13 @@ hosts in Zabbix.
 
    [user@host]# cat zabbix_input_file.txt
 
-   # This a comment. 
+   # This a comment.
    # Creating hosts.
 
    create_host test000001.example.net All-manual-hosts .+ 1
    create_host test000002.example.net All-manual-hosts .+ 1
    create_host test000003.example.net All-manual-hosts .+ 1
-   
+
    # Deleting hosts
 
    remove_host test000001.example.net
@@ -316,8 +316,8 @@ modus to generate an output in CSV or JSON format.
 
 
 Remember that you have to use ``""`` and escape some characters if
-running commands in non-interactive modus with parameters that have spaces
-or special characters for the shell.e.g.
+running commands in non-interactive mode with parameters that have spaces
+or special characters for the shell, .e.g.
 
 ::
 
