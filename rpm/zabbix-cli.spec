@@ -1,5 +1,5 @@
 Name: zabbix-cli
-Version: 2.2.1
+Version: 2.3.0
 Release: 1%{?dist}
 Summary: Command-line interface for Zabbix
 
@@ -42,9 +42,14 @@ Command-line interface for Zabbix monitoring system.
 %{_bindir}/zabbix-cli-init
 %dir %{_datadir}/zabbix-cli/
 %{_datadir}/zabbix-cli/zabbix-cli.conf
-%doc LICENSE docs/manual.rst
+%doc LICENSE
 
 %changelog
+* Tue Jun 21 2022 Marius Bakke <marius.bakke@usit.uio.no> - 2.3.0-1
+- New version 2.3.0-1
+- Zabbix 6 compatibility
+- Documentation updates
+
 * Thu Dec 19 2019 Paal Braathen <paal.braathen@usit.uio.no> - 2.2.1-1
 - New version 2.2.1-1
 
