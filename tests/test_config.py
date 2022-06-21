@@ -4,7 +4,8 @@ import unittest
 import zabbix_cli.config
 
 
-class MockConfig(configparser.ConfigParser, object):
+# TODO: Switch from RawConfigParser to ConfigParser here and config.py
+class MockConfig(configparser.RawConfigParser, object):
 
     def __init__(self):
         super(MockConfig, self).__init__({'option_a': 'a', 'option_b': 'b'})
@@ -103,7 +104,7 @@ class TestOptionRegister(unittest.TestCase):
         for section, option in items:
             register.add(section, option)
 
-        config = configparser.ConfigParser()
+        config = configparser.RawConfigParser()
         register.initialize(config)
 
         for section in sections:
