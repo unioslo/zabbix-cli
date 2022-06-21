@@ -1,0 +1,38 @@
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - 'debian/**'
+      - 'rpm/**'
+      - 'README.md'
+
+  pull_request:
+
+name: CI
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - '3.6'
+          - '3.7'
+          - '3.8'
+          - '3.9'
+          - '3.10'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          # Default cache key is requirements.txt.
+          cache-dependency-path: setup.py
+      - name: Install dependencies
+        run: |
+          pip install requests pytest
+      - name: Test
+        run: python -m pytest -vv
