@@ -3,11 +3,9 @@ Zabbix-CLI
 =====================================
 
 |
-| Version-2.1.0
-|
 | Rafael Martinez Guerrero (University of Oslo)
 | E-mail: rafael@postgresql.org.es
-| 
+|
 | Source: https://github.com/unioslo/zabbix-cli
 |
 
