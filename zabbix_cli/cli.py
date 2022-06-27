@@ -7412,10 +7412,10 @@ class zabbixcli(cmd.Cmd):
         from: https://github.com/unioslo/zabbix-cli
 
         The Zabbix-CLI documentation is available from:
-        https://github.com/unioslo/zabbix-cli/blob/master/docs/manual.rst
+        https://unioslo.github.io/zabbix-cli/manual.html
 
         Zabbix documentation:
-        http://www.zabbix.com/documentation.php
+        https://www.zabbix.com/documentation/
         ''')
 
     def signal_handler_sigint(self, signum, frame):
