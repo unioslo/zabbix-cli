@@ -2620,11 +2620,11 @@ class zabbixcli(cmd.Cmd):
         comma separated list.
 
         Remember that the host will get added to all hostgroups
-        defined with the parameter 'default_hostgroup' in the
-        zabbix-cli configuration file 'zabbix-cli.conf'
+        defined with the parameter ``default_hostgroup`` in the
+        zabbix-cli configuration file ``zabbix-cli.conf``.
 
-        This command will fail if both 'default_hostgroup' and
-        [hostgroups] are empty.
+        This command will fail if both ``default_hostgroup`` and
+        ``[hostgroups]`` are empty.
 
         [proxy]
         -------
@@ -2638,13 +2638,15 @@ class zabbixcli(cmd.Cmd):
         If the system does not have proxy servers defined, the new
         host will be monitor by the Zabbix-server.
 
-        e.g. Some regular expressions that can be used:
+        Some regular expressions that can be used:
 
-        * proxy-(prod|test)+d\\.example\\.org
-          e.g. proxy-prod1.example.org and proxy-test8.example.org
+        * ``proxy-(prod|test)+d\\.example\\.org``
+
+          ``proxy-prod1.example.org`` and ``proxy-test8.example.org``
           will match this expression.
 
-        * .+
+        * ``.+``
+
           All proxies will match this expression.
 
         [Status]
@@ -2653,7 +2655,7 @@ class zabbixcli(cmd.Cmd):
         1. 'Unmonitored'
 
         All host created with this command will get assigned a
-        default interface of type 'Agent' using the port 10050.
+        default interface of type ``Agent`` using the port ``10050``.
 
         """
         # Default hostgroups.
@@ -4083,9 +4085,9 @@ class zabbixcli(cmd.Cmd):
 
         [permission]
         ------------
-        * deny: Deny [usergroup] all access to [hostgroups]
-        * ro: Give [usergroup] read access to [hostgroups]
-        * rw: Give [usergroup] read and write access to [hostgroups]
+        * **deny**: Deny ``[usergroup]`` all access to ``[hostgroups]``
+        * **ro**: Give ``[usergroup]`` read access to ``[hostgroups]``
+        * **rw**: Give ``[usergroup]`` read and write access to ``[hostgroups]``
 
         """
         try:
@@ -4177,9 +4179,9 @@ class zabbixcli(cmd.Cmd):
 
         [permission]
         ------------
-        * deny: Deny [usergroup] all access to [hostgroups]
-        * ro: Give [usergroup] read access to [hostgroups]
-        * rw: Give [usergroup] read and write access to [hostgroups]
+        * **deny**: Deny ``[usergroup]`` all access to ``[hostgroups]``
+        * **ro**: Give ``[usergroup]`` read access to ``[hostgroups]``
+        * **rw**: Give ``[usergroup]`` read and write access to ``[hostgroups]``
 
         """
         try:
@@ -4261,7 +4263,7 @@ class zabbixcli(cmd.Cmd):
         ------------
         Name of the zabbix macro. The system will format this value to
         use the macro format definition needed by Zabbix.
-        e.g. site_url will be converted to ${SITE_URL}
+        e.g. ``site_url`` will be converted to ``${SITE_URL}``.
 
         [macro value]
         -------------
@@ -4525,7 +4527,7 @@ class zabbixcli(cmd.Cmd):
         ------------
         Name of the zabbix macro. The system will format this value to
         use the macro format definition needed by Zabbix.
-        e.g. site_url will be converted to ${SITE_URL}
+        e.g. ``site_url`` will be converted to ``${SITE_URL}``.
 
         [macro value]
         -------------
@@ -4752,7 +4754,7 @@ class zabbixcli(cmd.Cmd):
 
         [proxy]
         -------
-        Zabbix proxy server that will monitor [hostname]
+        Zabbix proxy server that will monitor ``[hostname]``.
 
         """
         try:
@@ -5488,8 +5490,8 @@ class zabbixcli(cmd.Cmd):
         [usermacro]
         -----------
         Usermacro name. The system will format this value to use the
-        macro format definition needed by Zabbix.  e.g. site_url will be
-        converted to ${SITE_URL}
+        macro format definition needed by Zabbix.  e.g. ``site_url`` will
+        be converted to ``${SITE_URL}``.
 
         """
         result_columns = {}
@@ -5752,8 +5754,8 @@ class zabbixcli(cmd.Cmd):
         [usermacro]
         -----------
         Usermacro name. The system will format this value to use the
-        macro format definition needed by Zabbix.  e.g. site_url will be
-        converted to ${SITE_URL}
+        macro format definition needed by Zabbix.  e.g. ``site_url`` will
+        be converted to ``${SITE_URL}``.
 
         """
         result_columns = {}
@@ -6113,18 +6115,26 @@ class zabbixcli(cmd.Cmd):
 
         [object type]
         ------------------
-        Possible values: groups, hosts, images, maps, screens, templates, mediaTypes
-        screens if your version is less than to 6
-        mediaTypes if your version is more than or equal to 6
-        One can use the special value #all# to export all object type groups.
+        Possible values:
+
+        * groups
+        * hosts
+        * images
+        * maps
+        * templates
+        * screens (before Zabbix 6.0)
+        * mediaTypes (after Zabbix 6.0)
+
+        One can use the special value ``#all#`` to export all object type groups.
 
         [object name]
         -------------
         Object name or Zabbix-ID. One can define several values in a comma
         separated list.
 
-        One can use the special value #ALL# to export all objects in a object
-        type group. This parameter will be defined automatically as #all# if [object type] == #all#
+        One can use the special value ``#ALL#`` to export all objects in a object
+        type group. This parameter will be defined automatically as ``#all#`` if
+        ``[object type] == #all#``.
 
         """
         #
@@ -6212,7 +6222,7 @@ class zabbixcli(cmd.Cmd):
         if object_type not in object_type_list + ['#all#']:
             self.generate_feedback('Error', 'Object type is not a valid value')
             return False
-        
+
         if self.zabbix_version <6 and "mediatypes" == object_type:
             self.generate_feedback('Error', 'You cannot export media types with a version\'s Zabbix less than 6')
             return False
@@ -6329,7 +6339,7 @@ class zabbixcli(cmd.Cmd):
 
                             elif obj_type == 'templates':
                                 id = str(self.get_template_id(name.strip()))
-                            
+
                             elif obj_type == 'mediatypes':
                                 id = str(self.get_mediatype_id(name.strip()))
 
@@ -6391,7 +6401,7 @@ class zabbixcli(cmd.Cmd):
         This command imports the configuration of a
         Zabbix component.
 
-        We use the options createMissing=True and updateExisting=True
+        We use the options ``createMissing=True`` and ``updateExisting=True``
         when importing data. This means that new objects will be
         created if they do not exists and that existing objects will
         be updated if they exist.
@@ -6407,10 +6417,10 @@ class zabbixcli(cmd.Cmd):
 
         This command finds all the pathnames matching a specified
         pattern according to the rules used by the Unix shell.  Tilde
-        expansion, \*, ?, and character ranges expressed with [] will
-        be correctly matched. For a literal match, wrap the
-        meta-characters in brackets. For example, '[?]' matches the
-        character '?'.
+        expansion, ``*``, ``?``, and character ranges expressed with ``[]``
+        will be correctly matched. For a literal match, wrap the
+        meta-characters in brackets. For example, ``[?]`` matches the
+        character ``?``.
 
         [dry run]
         ---------
@@ -6697,12 +6707,13 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         load_balance_proxy_hosts [proxy list]
 
-        [proxy list]:
+        [proxy list]
+        ------------
         Comma delimited list with the proxies that will share the
         monitoring task for a group of hosts.
 
         The group of hosts is obtained from the hosts assigned to the
-        proxies in [proxy list]
+        proxies in ``[proxy list]``.
 
         """
         proxy_list = []
