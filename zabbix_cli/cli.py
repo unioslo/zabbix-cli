@@ -6611,11 +6611,13 @@ class zabbixcli(cmd.Cmd):
         """
         DESCRIPTION:
         This command moves all hosts monitored by a proxy (src) to
-        another proxy (dst).
+        another proxy (dst).  Optionally only move hosts matching
+        ``host_filter``.
 
         COMMAND:
         move_proxy_hosts [proxy_src]
                          [proxy_dst]
+                         [host_filter]
 
         [proxy_src]
         -----------
@@ -6624,6 +6626,17 @@ class zabbixcli(cmd.Cmd):
         [proxy_dst]
         -----------
         Destination proxy server.
+
+        [host_filter]
+        -------------
+        Optional pattern for which hosts to move.  For example::
+
+          move_proxy_hosts p1 p2 p01-*.example.org
+
+        Moves all hosts belonging to proxy **p1** whose hostname start with
+        ``p01-`` and ends with ``.example.org`` to the proxy **p2**.
+
+        If left empty, all hosts residing on ``proxy_src`` will be moved.
 
         """
         try:
@@ -6638,6 +6651,7 @@ class zabbixcli(cmd.Cmd):
                 print('--------------------------------------------------------')
                 proxy_src = input('# SRC Proxy: ').strip()
                 proxy_dst = input('# DST Proxy: ').strip()
+                host_filter = input('# Host filter (optional) ').strip()
                 print('--------------------------------------------------------')
 
             except EOFError:
@@ -6648,6 +6662,12 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 2:
             proxy_src = arg_list[0].strip()
             proxy_dst = arg_list[1].strip()
+            host_filter = False
+
+        elif len(arg_list) == 3:
+            proxy_src = arg_list[0].strip()
+            proxy_dst = arg_list[1].strip()
+            host_filter = arg_list[2].strip()
 
         else:
             self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
@@ -6671,29 +6691,39 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'DST Proxy ' + proxy_dst + ' does not exist')
             return False
 
+        # Note: we might as well do the filtering ourselves and enjoy
+        # proper regular expressions.  Keep it simple for now.
+        if host_filter:
+            search_spec = {'host': host_filter}
+        else:
+            search_spec = {}
+
         try:
-            result = self.zapi.proxy.get(output='extend',
-                                         proxyids=proxy_src_id,
-                                         selectHosts=['hostid', 'name'])
+            result = self.zapi.host.get(output='hostid',
+                                        filter={'proxy_hostid': proxy_src_id},
+                                        search=search_spec,
+                                        # Somewhat unintuitively, False here
+                                        # would implicitly add wildcards around
+                                        # the given host_filter.  Force explicit
+                                        # wildcards to avoid surprises.
+                                        searchWildcardsEnabled=True)
         except Exception as e:
             logger.error('Problems getting host list from SRC proxy %s - %s', proxy_src, e)
             self.generate_feedback('Error', 'Problems getting host list from SRC proxy %s' + proxy_src)
             return False
 
         try:
-            hostid_list = []
+            host_count = len(result)
 
-            for host in result[0]['hosts']:
-                hostid_list.append({"hostid": str(host['hostid'])})
+            if host_count > 0:
+                query = {
+                    "hosts": result,
+                    "proxy_hostid": proxy_dst_id
+                }
+                self.zapi.host.massupdate(**query)
 
-            query = {
-                "hosts": hostid_list,
-                "proxy_hostid": proxy_dst_id
-            }
-
-            result = self.zapi.host.massupdate(**query)
-            logger.info('Hosts from SRC Proxy %s have been moved to DST proxy %s', proxy_src, proxy_dst)
-            self.generate_feedback('Done', 'Hosts from SRC Proxy ' + proxy_src + ' have been moved to DST proxy ' + proxy_dst)
+            logger.info('Moved %d hosts from SRC Proxy %s to DST proxy %s', host_count, proxy_src, proxy_dst)
+            self.generate_feedback('Done', 'Moved ' + str(host_count) + ' hosts from SRC Proxy ' + proxy_src + ' to DST proxy ' + proxy_dst)
         except Exception as e:
             logger.error('Problems moving hosts from SRC Proxy %s to DST proxy %s - %s', proxy_src, proxy_dst, e)
             self.generate_feedback('Error', 'Problems moving host from SRC Proxy ' + proxy_src + ' to DST proxy ' + proxy_dst)
