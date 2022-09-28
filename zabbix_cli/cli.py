@@ -6702,10 +6702,11 @@ class zabbixcli(cmd.Cmd):
     def do_load_balance_proxy_hosts(self, args):
         """
         DESCRIPTION:
-        This command will spread hosts evenly along a serie of proxies.
+        This command will spread hosts among the given proxies.
 
         COMMAND:
         load_balance_proxy_hosts [proxy list]
+                                 [weight]
 
         [proxy list]
         ------------
@@ -6715,9 +6716,24 @@ class zabbixcli(cmd.Cmd):
         The group of hosts is obtained from the hosts assigned to the
         proxies in ``[proxy list]``.
 
+        [weight]
+        --------
+        Optional weight distribution for the proxy list.  I.e.::
+
+          load_balance_proxy_hosts p1,p2 1,2
+
+        That would place twice as many hosts on proxy **p2**. ::
+
+          load_balance_proxy_hosts p1,p2,p3 20,40,40
+
+        In this example, **p1** would get 20% of hosts, whereas **p2**
+        and **p3** get 40% each.
+
+        If not provided, the load is spread evenly among all provided proxies.
+
         """
         proxy_list = []
-        proxyid_list = []
+        proxy_specs = {}
 
         all_hosts = []
         host_proxy_relation = {}
@@ -6733,6 +6749,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 print('--------------------------------------------------------')
                 proxies = input('# Proxies: ').strip()
+                weights = input('# Weight distribution (optional): ').strip()
                 print('--------------------------------------------------------')
 
             except EOFError:
@@ -6742,6 +6759,10 @@ class zabbixcli(cmd.Cmd):
 
         elif len(arg_list) == 1:
             proxies = arg_list[0].strip()
+            weights = False
+        elif len(arg_list) == 2:
+            proxies = arg_list[0].strip()
+            weights = arg_list[1].strip()
         else:
             self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
@@ -6751,12 +6772,25 @@ class zabbixcli(cmd.Cmd):
         #
 
         proxy_list = proxies.split(',')
+        if weights:
+            weight_list = list(map(int, weights.split(',')))
+        else:
+            weight_list = [1] * len(proxy_list)
 
-        for proxy in proxy_list:
+        if not len(proxy_list) == len(weight_list):
+            logger.error('Number of proxies (%d) and weights (%d) differ',
+                         len(proxy_list), len(weight_list))
+            self.generate_feedback('Error', 'The number of proxies and weights must be the same.')
+            return False
+
+        for n in range(0, len(proxy_list)):
+            proxy = proxy_list[n]
 
             try:
                 proxyid = self.get_proxy_id(proxy.strip())
-                proxyid_list.append(proxyid)
+                proxy_specs[proxy] = {'id': proxyid,
+                                      'weight': weight_list[n],
+                                      'count': 0}
 
             except Exception as e:
                 logger.error('Proxy [%s] does not exist - %s', proxy.strip(), e)
@@ -6765,15 +6799,15 @@ class zabbixcli(cmd.Cmd):
 
         #
         # Getting all host monitored by the proxies defined in
-        # proxyid_list. These are the host that will get spreaded
-        # evenly along the defined proxies.
+        # proxy_list.  These are the host that will get spread
+        # along the defined proxies.
         #
 
         try:
 
-            for proxyid in proxyid_list:
+            for proxy in proxy_list:
                 result = self.zapi.proxy.get(output='extend',
-                                             proxyids=proxyid,
+                                             proxyids=proxy_specs[proxy]['id'],
                                              selectHosts=['hostid'])
 
                 for host in result[0]['hosts']:
@@ -6784,32 +6818,32 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Problems getting affected hosts')
             return False
 
-        #
-        # Create a dicctionary with hostid:proxyid entries. The
-        # proxyid value will be chosen randomly from the list of
-        # defined proxies.
-        #
+        # Select a proxy using the given weights.
 
         for hostid in all_hosts:
-            host_proxy_relation[hostid] = proxyid_list[random.randint(0, len(proxyid_list) - 1)]
+            host_proxy_relation[hostid] = random.choices(proxy_list, weight_list, k=1)[0]
 
         try:
-            for proxyid in proxyid_list:
+            for proxy in proxy_list:
                 hostid_list = []
 
-                for hostid, proxyid2 in host_proxy_relation.items():
-                    if proxyid2 == proxyid:
+                for hostid, chosen_proxy in host_proxy_relation.items():
+                    if chosen_proxy == proxy:
                         hostid_list.append({"hostid": str(hostid)})
+                        proxy_specs[proxy]['count'] += 1
 
                 query = {
                     "hosts": hostid_list,
-                    "proxy_hostid": proxyid
+                    "proxy_hostid": proxy_specs[proxy]['id']
                 }
 
                 result = self.zapi.host.massupdate(**query)
 
-            logger.info('Balanced configuration of hosts along defined proxies done')
-            self.generate_feedback('Done', 'Balanced configuration of hosts along defined proxies done')
+            proxy_distribution_str = ", ".join([f"{p}: {proxy_specs[p]['count']}"
+                                                for p in proxy_list])
+            logger.info('Balanced configuration of hosts along given proxies done: %s',
+                        proxy_distribution_str)
+            self.generate_feedback('Done', 'Balanced configuration of hosts along given proxies: ' + proxy_distribution_str)
 
         except Exception as e:
             logger.error('Problems assigning new proxy values for the affected hosts - %s', e)
