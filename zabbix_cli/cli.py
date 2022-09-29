@@ -6651,7 +6651,7 @@ class zabbixcli(cmd.Cmd):
                 print('--------------------------------------------------------')
                 proxy_src = input('# SRC Proxy: ').strip()
                 proxy_dst = input('# DST Proxy: ').strip()
-                host_filter = input('# Host filter (optional) ').strip()
+                host_filter = input('# Host filter (optional): ').strip()
                 print('--------------------------------------------------------')
 
             except EOFError:
@@ -6830,7 +6830,7 @@ class zabbixcli(cmd.Cmd):
         #
         # Getting all host monitored by the proxies defined in
         # proxy_list.  These are the host that will get spread
-        # along the defined proxies.
+        # among the defined proxies.
         #
 
         try:
@@ -6871,9 +6871,9 @@ class zabbixcli(cmd.Cmd):
 
             proxy_distribution_str = ", ".join([f"{p}: {proxy_specs[p]['count']}"
                                                 for p in proxy_list])
-            logger.info('Balanced configuration of hosts along given proxies done: %s',
+            logger.info('Balanced configuration of hosts among given proxies done: %s',
                         proxy_distribution_str)
-            self.generate_feedback('Done', 'Balanced configuration of hosts along given proxies: ' + proxy_distribution_str)
+            self.generate_feedback('Done', 'Balanced configuration of hosts among given proxies: ' + proxy_distribution_str)
 
         except Exception as e:
             logger.error('Problems assigning new proxy values for the affected hosts - %s', e)
