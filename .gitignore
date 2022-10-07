@@ -9,3 +9,5 @@ build/
 
 .venv/
 venv/
+.dccache
+.vscode/launch.json
