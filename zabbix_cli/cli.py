@@ -4572,7 +4572,10 @@ class zabbixcli(cmd.Cmd):
             return False
 
         else:
-            host_macro_name = '{$' + host_macro_name.upper() + '}'
+            # Change to upper case only the name part (before colon),
+            # as the context part (after colon) has to match exactly
+            parts = host_macro_name.partition(':') 
+            host_macro_name = '{$' + parts[0].upper() + parts[1] + parts[2] + '}'
 
         if host_macro_value == '':
             self.generate_feedback('Error', 'Host macro value is empty')
