@@ -4863,6 +4863,7 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         acknowledge_events [eventIDs]
                            [message]
+                           [close]
 
         [eventIDs]
         ----------
@@ -4872,8 +4873,18 @@ class zabbixcli(cmd.Cmd):
         [message]
         ---------
         Text of the acknowledgement message.
+
+        [close]
+        -------
+        Whether to also close the event.
+
+        Values:
+
+        false - (default) Let the event opened.
+        true - Manualy close the event.
         """
         ack_message_default = '[Zabbix-CLI] Acknowledged via acknowledge_events'
+        ack_close_default = 'false'
 
         try:
             arg_list = shlex.split(args)
@@ -4887,6 +4898,7 @@ class zabbixcli(cmd.Cmd):
                 print('--------------------------------------------------------')
                 event_ids = input('# EventIDs: ').strip()
                 ack_message = input('# Message[' + ack_message_default + ']:').strip()
+                close = input('# Close[' + ack_close_default + ']:').strip().lower()
                 print('--------------------------------------------------------')
 
             except EOFError:
@@ -4897,14 +4909,28 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 2:
             event_ids = arg_list[0].strip()
             ack_message = arg_list[1].strip()
+	    close = ack_close_default
+
+        elif len(arg_list) == 3:
+            event_ids = arg_list[0].strip()
+            ack_message = arg_list[1].strip()
+	    close = arg_list[2].strip().lower()
+
         else:
             self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
+            return False
+
+        if close not in ['false', 'true']:
+            self.generate_feedback('Error', ' Invalid value for [close] argument')
             return False
 
         # Hotfix for Zabbix 4.0 compability
         api_version = distutils.version.StrictVersion(self.zapi.api_version())
         if api_version >= distutils.version.StrictVersion("4.0"):
-            action = 6  # "Add message" and "Acknowledge"
+            if close == 'false':
+                action = 6  # "Add message" and "Acknowledge"
+            elif close == 'true':
+                action = 7 # "Add message" and "Acknowledge" and "Close"
         else:
             action = None  # Zabbix pre 4.0 does not have action
 
@@ -4922,12 +4948,12 @@ class zabbixcli(cmd.Cmd):
                                         message=ack_message,
                                         action=action)
 
-            logger.info('Acknowledge message [%s] for eventID [%s] registered', ack_message, event_ids)
-            self.generate_feedback('Done', 'Acknowledge message [' + ack_message + '] for eventID [' + ','.join(event_ids) + '] registered')
+            logger.info('Acknowledge message [%s] for eventID [%s] registered. Closed: [%s]', ack_message, event_ids, close)
+            self.generate_feedback('Done', 'Acknowledge message [' + ack_message + '] for eventID [' + ','.join(event_ids) + '] registered. Closed: [' + close + ']')
 
         except Exception as e:
-            logger.error('Problems registering the acknowledge message [%s] for eventID [%s] - %s', ack_message, event_ids, e)
-            self.generate_feedback('Error', 'Problems registering the acknowledge message [' + ack_message + '] for eventID [' + ','.join(event_ids) + ']')
+            logger.error('Problems registering the acknowledge message [%s] for eventID [%s] - %s. Closed: [%s]', ack_message, event_ids, e, close)
+            self.generate_feedback('Error', 'Problems registering the acknowledge message [' + ack_message + '] for eventID [' + ','.join(event_ids) + '] with closed flag [' + close + ']')
             return False
 
     def do_acknowledge_trigger_last_event(self, args):
@@ -4939,6 +4965,7 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         acknowledge_trigger_last_event [triggerIDs]
                                        [message]
+                                       [close]
 
         [triggerIDs]
         ------------
@@ -4949,9 +4976,18 @@ class zabbixcli(cmd.Cmd):
         ---------
         Text of the acknowledgement message.
 
+        [close]
+        -------
+        Whether to also close the event.
+
+        Values:
+
+        false - (default) Let the event opened.
+        true - Manualy close the event.
         """
         event_ids = []
         ack_message_default = '[Zabbix-CLI] Acknowledged via acknowledge_trigger_last_event'
+        ack_close_default = 'false'
 
         try:
             arg_list = shlex.split(args)
@@ -4965,6 +5001,7 @@ class zabbixcli(cmd.Cmd):
                 print('--------------------------------------------------------')
                 trigger_ids = input('# TriggerIDs: ').strip()
                 ack_message = input('# Message[' + ack_message_default + ']:').strip()
+                close = input('# Close[' + ack_close_default + ']:').strip().lower()
                 print('--------------------------------------------------------')
 
             except EOFError:
@@ -4975,9 +5012,19 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 2:
             trigger_ids = arg_list[0].strip()
             ack_message = arg_list[1].strip()
+	    close = ack_close_default
+
+        elif len(arg_list) == 3:
+            trigger_ids = arg_list[0].strip()
+            ack_message = arg_list[1].strip()
+	    close = arg_list[2].strip().lower()
 
         else:
             self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
+            return False
+
+        if close not in ['false', 'true']:
+            self.generate_feedback('Error', ' Invalid value for [close] argument')
             return False
 
         #
@@ -4998,7 +5045,10 @@ class zabbixcli(cmd.Cmd):
             # Hotfix for Zabbix 4.0 compability
             api_version = distutils.version.StrictVersion(self.zapi.api_version())
             if api_version >= distutils.version.StrictVersion("4.0"):
-                action = 6  # "Add message" and "Acknowledge"
+                if close == 'false':
+                    action = 6  # "Add message" and "Acknowledge"
+                elif close == 'true':
+                    action = 7 # "Add message" and "Acknowledge" and "Close"
             else:
                 action = None  # Zabbix pre 4.0 does not have action
 
@@ -5006,16 +5056,17 @@ class zabbixcli(cmd.Cmd):
                                         message=ack_message,
                                         action=action)
 
-            logger.info('Acknowledge message [%s] for last eventIDs [%s] on triggerIDs [%s] registered', ack_message, ','.join(event_ids), ','.join(trigger_ids))
-            self.generate_feedback('Done', 'Acknowledge message [' + ack_message + '] for last eventIDs [' + ','.join(event_ids) + '] on triggerIDs [' + ','.join(trigger_ids) + '] registered')
+            logger.info('Acknowledge message [%s] for last eventIDs [%s] on triggerIDs [%s] registered. Closed: [%s]', ack_message, ','.join(event_ids), ','.join(trigger_ids), close)
+            self.generate_feedback('Done', 'Acknowledge message [' + ack_message + '] for last eventIDs [' + ','.join(event_ids) + '] on triggerIDs [' + ','.join(trigger_ids) + '] registered. Closed: [' + close + ']')
 
         except Exception as e:
-            logger.error('Problems registering acknowledge message [%s] for last eventIDs [%s] on triggerIDs [%s] - %s',
+            logger.error('Problems registering acknowledge message [%s] for last eventIDs [%s] on triggerIDs [%s] - %s. Closed: [%s]',
                          ack_message,
                          ','.join(event_ids),
                          ','.join(trigger_ids),
-                         e)
-            self.generate_feedback('Error', 'Problems registering acknowledge message [' + ack_message + '] for last eventIDs [' + ','.join(event_ids) + '] on triggerIDs [' + ','.join(trigger_ids) + ']')
+                         e,
+                         close)
+            self.generate_feedback('Error', 'Problems registering acknowledge message [' + ack_message + '] for last eventIDs [' + ','.join(event_ids) + '] on triggerIDs [' + ','.join(trigger_ids) + '] with closed flag [' + close + ']')
             return False
 
     def do_show_trigger_events(self, args):
