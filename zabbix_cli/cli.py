@@ -6991,10 +6991,6 @@ class zabbixcli(cmd.Cmd):
         """
         DESCRIPTION:
         Clears the screen and shows the welcome banner.
-
-        COMMAND:
-        clear
-
         """
         os.system('clear')
         print(self.intro)
@@ -7059,10 +7055,6 @@ class zabbixcli(cmd.Cmd):
         """
         DESCRIPTION:
         Quits/terminate the Zabbix-CLI shell.
-
-        COMMAND:
-        quit
-
         """
         print('\nDone, thank you for using Zabbix-CLI')
         return True
@@ -7071,10 +7063,6 @@ class zabbixcli(cmd.Cmd):
         """
         DESCRIPTION:
         Quit/terminate the Zabbix-CLI shell.
-
-        COMMAND:
-        EOF
-
         """
         print('\n\nDone, thank you for using Zabbix-CLI')
         return True
