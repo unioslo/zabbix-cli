@@ -960,8 +960,9 @@ class zabbixcli(cmd.Cmd):
                               [inventory value]
 
         Inventory key is not the same as seen in web-gui. To
-        look at possible keys and their current values, use
-        "zabbix-cli --use-json-format show_host_inventory <hostname>"
+        look at possible keys and their current values, use::
+
+          zabbix-cli --use-json-format show_host_inventory <hostname>"
         """
         try:
             arg_list = shlex.split(args)
@@ -3035,13 +3036,17 @@ class zabbixcli(cmd.Cmd):
         -------------
         Time period when the maintenance must come into effect.
 
-        One can define an interval between to timestamps in ISO format
+        One can define an interval between two timestamps in ISO format
         or a time period in minutes, hours or days from the moment the
-        definition is created.
+        definition is created. ::
 
-        e.g. From 22:00 until 23:00 on 2016-11-21 -> '2016-11-21T22:00 to 2016-11-21T23:00'
-             2 hours from the moment we create the maintenance -> '2 hours'
+          2016-11-21T22:00 to 2016-11-21T23:00
 
+        Means 22:00 until 23:00 on 2016-11-21. ::
+
+          2 hours
+
+        Means 2 hours from the moment we create the maintenance.
 
         [maintenance type]
         ------------------
