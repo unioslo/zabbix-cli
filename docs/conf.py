@@ -25,7 +25,7 @@ copyright = '2022, University of Oslo'
 author = 'University of Oslo'
 
 # The full version, including alpha/beta/rc tags
-release = '2.3.0'
+release = '2.3.1'
 
 
 # -- General configuration ---------------------------------------------------
