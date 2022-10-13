@@ -167,12 +167,12 @@ class zabbixcli(cmd.Cmd):
         --------------
         Definition ID. One can define more than one value.
 
-        [hostgroup]:
-        ------------
+        [hostgroup]
+        -----------
         Hostgroup name. One can define more than one value.
 
-        [host]:
-        -------
+        [host]
+        ------
         Hostname. One can define more than one value.
 
         """
@@ -558,8 +558,8 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_hostgroup [hostgroup]
 
-        [hostgroup]:
-        ----------------
+        [hostgroup]
+        -----------
         Hostgroup name. One can use wildcards.
 
         """
@@ -670,8 +670,8 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_hostgroup_permissions [hostgroup]
 
-        [hostgroup]:
-        ----------------
+        [hostgroup]
+        -----------
         Hostgroup name. One can use wildcards.
 
         """
@@ -765,12 +765,12 @@ class zabbixcli(cmd.Cmd):
         show_host [HostID / Hostname]
                   [Filter]
 
-        [HostID / Hostname]:
+        [HostID / Hostname]
         -------------------
         One can search by HostID or by Hostname. One can use wildcards
         if we search by Hostname
 
-        [Filter]:
+        [Filter]
         --------
         * Zabbix agent: *available*:
 
@@ -1065,7 +1065,7 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_host_inventory [Hostname]
 
-        [Hostname]:
+        [Hostname]
         ----------
         Hostname.
 
@@ -5139,8 +5139,8 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_template [Template name]
 
-        [Template name]:
-        ----------------
+        [Template name]
+        ---------------
         One can search by template name. We can use wildcards.
 
         """
@@ -5411,8 +5411,8 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         show_usergroup_permissions [usergroup]
 
-        [usergroup]:
-        ----------------
+        [usergroup]
+        -----------
         Usergroup that will be displayed.
 
         """
@@ -7037,8 +7037,8 @@ class zabbixcli(cmd.Cmd):
         COMMAND:
         shell [command]
 
-        [command]:
-        ----------
+        [command]
+        ---------
         Any command that can be run in the operative system.
 
         """
