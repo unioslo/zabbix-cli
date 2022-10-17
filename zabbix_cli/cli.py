@@ -4880,8 +4880,8 @@ class zabbixcli(cmd.Cmd):
 
         Values:
 
-        false - (default) Let the event opened.
-        true - Manualy close the event.
+        false - (default) Leave the event opened.
+        true - Close the event.
         """
         ack_message_default = '[Zabbix-CLI] Acknowledged via acknowledge_events'
         ack_close_default = 'false'
@@ -4909,16 +4909,26 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 2:
             event_ids = arg_list[0].strip()
             ack_message = arg_list[1].strip()
-	    close = ack_close_default
+            close = ack_close_default
 
         elif len(arg_list) == 3:
             event_ids = arg_list[0].strip()
             ack_message = arg_list[1].strip()
-	    close = arg_list[2].strip().lower()
+            close = arg_list[2].strip().lower()
 
         else:
             self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
             return False
+
+        #
+        # Sanity check
+        #
+
+        if ack_message == '':
+            ack_message = ack_message_default
+
+        if close == '':
+            close = ack_close_default
 
         if close not in ['false', 'true']:
             self.generate_feedback('Error', ' Invalid value for [close] argument')
@@ -4934,12 +4944,6 @@ class zabbixcli(cmd.Cmd):
         else:
             action = None  # Zabbix pre 4.0 does not have action
 
-        #
-        # Sanity check
-        #
-
-        if ack_message == '':
-            ack_message = ack_message_default
 
         event_ids = event_ids.replace(' ', '').split(',')
 
@@ -4982,8 +4986,8 @@ class zabbixcli(cmd.Cmd):
 
         Values:
 
-        false - (default) Let the event opened.
-        true - Manualy close the event.
+        false - (default) Leave the event opened.
+        true - Close the event.
         """
         event_ids = []
         ack_message_default = '[Zabbix-CLI] Acknowledged via acknowledge_trigger_last_event'
@@ -5012,19 +5016,15 @@ class zabbixcli(cmd.Cmd):
         elif len(arg_list) == 2:
             trigger_ids = arg_list[0].strip()
             ack_message = arg_list[1].strip()
-	    close = ack_close_default
+            close = ack_close_default
 
         elif len(arg_list) == 3:
             trigger_ids = arg_list[0].strip()
             ack_message = arg_list[1].strip()
-	    close = arg_list[2].strip().lower()
+            close = arg_list[2].strip().lower()
 
         else:
             self.generate_feedback('Error', ' Wrong number of parameters used.\n          Type help or \\? to list commands')
-            return False
-
-        if close not in ['false', 'true']:
-            self.generate_feedback('Error', ' Invalid value for [close] argument')
             return False
 
         #
@@ -5033,6 +5033,13 @@ class zabbixcli(cmd.Cmd):
 
         if ack_message == '':
             ack_message = ack_message_default
+
+        if close == '':
+            close = ack_close_default
+
+        if close not in ['false', 'true']:
+            self.generate_feedback('Error', ' Invalid value for [close] argument')
+            return False
 
         trigger_ids = trigger_ids.replace(' ', '').split(',')
 
