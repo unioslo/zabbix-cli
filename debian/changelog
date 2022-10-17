@@ -1,3 +1,10 @@
+zabbix-cli (2.3.1) unstable; urgency=medium
+
+  [Marius Bakke]
+  * New release 2.3.1.
+
+ -- Marius Bakke <marius.bakke@usit.uio.no>  Mon, 17 Oct 2022 15:45:55 +0200
+
 zabbix-cli (2.3.0) unstable; urgency=medium
 
   [Marius Bakke]
