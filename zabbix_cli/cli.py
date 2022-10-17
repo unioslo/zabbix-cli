@@ -4880,8 +4880,8 @@ class zabbixcli(cmd.Cmd):
 
         Values:
 
-        false - (default) Leave the event opened.
-        true - Close the event.
+        * false - (default) Leave the event open.
+        * true - Close the event.
         """
         ack_message_default = '[Zabbix-CLI] Acknowledged via acknowledge_events'
         ack_close_default = 'false'
@@ -4986,8 +4986,8 @@ class zabbixcli(cmd.Cmd):
 
         Values:
 
-        false - (default) Leave the event opened.
-        true - Close the event.
+        * false - (default) Leave the event open.
+        * true - Close the event.
         """
         event_ids = []
         ack_message_default = '[Zabbix-CLI] Acknowledged via acknowledge_trigger_last_event'
