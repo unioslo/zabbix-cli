@@ -3007,7 +3007,7 @@ class zabbixcli(cmd.Cmd):
 
         This command creates a 'one time only' maintenance definition
         for a defined period of time. Use the zabbix dashboard for
-        more advance definitions.
+        more advanced definitions.
 
         COMMAND:
         create_maintenance_definition [name]
@@ -3022,7 +3022,7 @@ class zabbixcli(cmd.Cmd):
 
         [description]
         -------------
-        Maintenance definition description
+        Maintenance description.
 
         [host/hostgroup]
         ----------------
@@ -3046,7 +3046,7 @@ class zabbixcli(cmd.Cmd):
 
           2 hours
 
-        Means 2 hours from the moment we create the maintenance.
+        Means the maintenance starts now and lasts for two hours.
 
         [maintenance type]
         ------------------
