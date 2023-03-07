@@ -6212,6 +6212,9 @@ class zabbixcli(cmd.Cmd):
         if self.zabbix_version >=6:
             object_type_list.remove('screens')
             object_type_list.append('mediatypes')
+        if self.api_version >= distutils.version.StrictVersion("6.2"):
+            object_type_list.remove('groups')
+            object_type_list.append('host_groups')
         object_type_to_export = []
 
         # Default object type
