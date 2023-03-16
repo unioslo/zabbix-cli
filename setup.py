@@ -49,7 +49,7 @@ try:
     if "Linux" in current_os:
         data_files = [('usr/share/zabbix-cli', ['etc/zabbix-cli.conf'])]
     elif "Darwin" in current_os:
-        data_files = [('usr/local/bin/zabbixcli', ['etc/zabbix-cli.conf'])]
+        data_files = [('/usr/local/bin/zabbixcli', ['etc/zabbix-cli.conf'])]
 
     setup(name='zabbix_cli',
           version=zabbix_cli['__version__'],
