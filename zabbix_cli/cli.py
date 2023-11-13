@@ -36,12 +36,13 @@ import sys
 import textwrap
 import time
 
+from packaging.version import Version
+
 import zabbix_cli
 import zabbix_cli.apiutils
 import zabbix_cli.utils
 from zabbix_cli.prettytable import ALL, FRAME, PrettyTable
 from zabbix_cli.pyzabbix import ZabbixAPI
-from zabbix_cli.version import StrictVersion
 
 logger = logging.getLogger(__name__)
 
@@ -4935,8 +4936,8 @@ class zabbixcli(cmd.Cmd):
             return False
 
         # Hotfix for Zabbix 4.0 compability
-        api_version = StrictVersion(self.zapi.api_version())
-        if api_version >= StrictVersion("4.0"):
+        api_version = Version(self.zapi.api_version())
+        if api_version >= Version("4.0"):
             if close == 'false':
                 action = 6  # "Add message" and "Acknowledge"
             elif close == 'true':
@@ -5050,8 +5051,8 @@ class zabbixcli(cmd.Cmd):
                 event_ids.append(data[0]['eventid'])
 
             # Hotfix for Zabbix 4.0 compability
-            api_version = StrictVersion(self.zapi.api_version())
-            if api_version >= StrictVersion("4.0"):
+            api_version = Version(self.zapi.api_version())
+            if api_version >= Version("4.0"):
                 if close == 'false':
                     action = 6  # "Add message" and "Acknowledge"
                 elif close == 'true':
