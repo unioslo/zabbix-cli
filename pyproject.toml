@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+description = "ZABBIX-CLI - Zabbix terminal client"
+name = "zabbix-cli"
+readme = "README.md"
+requires-python = ">=3.7"
+license = "GPL-3.0-or-later"
+keywords = []
+authors = [
+  { name = "Rafael Martinez Guerrero", email = "rafael@postgresql.org.es" },
+]
+
+classifiers = [
+  "Environment :: Console",
+  "Development Status :: 5 - Production/Stable",
+  "Topic :: System :: Monitoring",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = [
+  "typer>=0.7.0",
+  "rich>=13.3.1",
+  "click-repl>=0.2.0",
+  "requests>=2.28.2",
+]
+dynamic = ["version"]
+
+[project.urls]
+Documentation = "https://github.com/unioslo/zabbix-cli#readme"
+Issues = "https://github.com/unioslo/zabbix-cli/issues"
+Source = "https://github.com/unioslo/zabbix-cli"
+
+[project.scripts]
+zabbix-cli = "zabbix_cli.main:app"
+zabbix-cli-init = "zabbix_cli.scripts.init:main"
+zabbix-cli-bulk-execution = "zabbix_cli.scripts.bulk_execution:main"
+
+[tool.hatch.version]
+path = "zabbix_cli/__about__.py"
+
+[tool.hatch.envs.default]
+dependencies = ["pytest", "pytest-cov", "darker", "mypy"]
+[tool.hatch.envs.default.scripts]
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=zabbix_cli --cov=tests {args}"
+no-cov = "cov --no-cov {args}"
+
+[[tool.hatch.envs.test.matrix]]
+python = ["37", "38", "39", "310", "311"]
+
+[tool.coverage.run]
+branch = true
+parallel = true
+omit = ["zabbix_cli/__about__.py"]
+
+[tool.coverage.report]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
