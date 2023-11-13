@@ -151,7 +151,7 @@ def test_strict_version_le(input: str, other: str):
             "7.0.0", "7.0.0rc1", id="no rc"
         ),  # rc is treated as lesser than non-rc
         pytest.param("7.0.0rc2", "7.0.0rc1", id="rc (greater)"),
-        # FAIL cases (input > other)
+        # FAIL cases (input < other)
         pytest.param("7.0.0rc1", "7.0.0", id="rc (FAIL)", marks=mark_compfail),
         pytest.param("6.9.9", "7.0.0", id="major (FAIL)", marks=mark_compfail),
         pytest.param(
@@ -184,7 +184,7 @@ def test_strict_version_gt(input: str, other: str):
         ),  # rc is treated as lesser than non-rc
         pytest.param("7.0.0rc1", "7.0.0rc1", id="rc (equal)"),
         pytest.param("7.0.0rc2", "7.0.0rc1", id="rc (greater)"),
-        # FAIL cases (input > other)
+        # FAIL cases (input < other)
         pytest.param("7.0.0rc1", "7.0.0", id="rc (FAIL)", marks=mark_compfail),
         pytest.param("6.9.9", "7.0.0", id="major (FAIL)", marks=mark_compfail),
         pytest.param(
