@@ -1,11 +1,10 @@
 # Code copied from distutils.version (on Python 3.9), which is deprecated
 # in 3.10, and removed in 3.12.
 #
-# Implements multiple version numbering conventions for the
-# Python Module Distribution Utilities.
-#
-# $Id$
-#
+# Furthermore, the StrictVersion class has been modified to accept version
+# strings containing `alpha`, `beta` and `rc`, which have been known to be
+# used in Zabbix version strings.
+
 
 """Provides classes to represent module version numbers (one class for
 each style of version numbering).  There are currently two such classes
@@ -129,7 +128,7 @@ class StrictVersion(Version):
     """
 
     version_re = re.compile(
-        r"^(\d+) \. (\d+) (\. (\d+))? ([ab](\d+))?$", re.VERBOSE | re.ASCII
+        r"^(\d+)\.(\d+)(\.(\d+))?(?:(a|alpha|b|beta|rc)(\d+))?$", re.VERBOSE | re.ASCII
     )
 
     def parse(self, vstring):
@@ -145,7 +144,11 @@ class StrictVersion(Version):
             self.version = tuple(map(int, [major, minor])) + (0,)
 
         if prerelease:
-            self.prerelease = (prerelease[0], int(prerelease_num))
+            if prerelease == "rc":
+                pr = "rc"
+            else:
+                pr = prerelease[0]
+            self.prerelease = (pr, int(prerelease_num))
         else:
             self.prerelease = None
 
