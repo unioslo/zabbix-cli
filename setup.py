@@ -39,7 +39,7 @@ try:
     if sys.version_info < (3, 6):
         raise SystemExit('ERROR: zabbix-cli needs at least python 3.6 to work')
 
-    install_requires = ['requests']
+    install_requires = ['requests', 'packaging']
 
     #
     # Setup
