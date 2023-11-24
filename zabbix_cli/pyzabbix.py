@@ -81,7 +81,6 @@ class ZabbixAPI(object):
         # Attributes for properties
         self._version = None
 
-
     def login(self, user='', password='', auth_token=''):
         """
         Convenience method for calling user.authenticate and storing the
