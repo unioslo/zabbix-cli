@@ -106,8 +106,7 @@ class zabbixcli(cmd.Cmd):
 
         logger.debug('Connected to Zabbix JSON-API')
 
-        self.api_version = self.zapi.apiinfo.version()
-        self.zabbix_version = int(self.api_version.split(".")[0])
+        self.zabbix_version = Version(self.zapi.apiinfo.version())
 
         #
         # The file $HOME/.zabbix-cli_auth_token is created if it does not exists.
@@ -126,7 +125,7 @@ class zabbixcli(cmd.Cmd):
 
         self.intro = '\n#############################################################\n' + \
                      'Welcome to the Zabbix command-line interface (v' + self.version + ')\n' + \
-                     'Connected to server ' + self.conf.zabbix_api_url + ' (v' + self.api_version + ')\n' + \
+                     'Connected to server ' + self.conf.zabbix_api_url + ' (v' + str(self.zabbix_version) + ')\n' + \
                      '#############################################################\n' + \
                      'Type help or \\? to list commands.\n'
 
@@ -865,7 +864,7 @@ class zabbixcli(cmd.Cmd):
             }
         }
 
-        if self.zabbix_version >= 6:
+        if self.zabbix_version.major >= 6:
             query["selectInterfaces"]= ["available"]
 
         if host.isdigit():
@@ -900,7 +899,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         for host in result:
-            if self.zabbix_version >= 6:
+            if self.zabbix_version.major >= 6:
                 available = host['interfaces'][0]['available']
             else:
                 available = host['available']
@@ -1266,7 +1265,7 @@ class zabbixcli(cmd.Cmd):
         #
         # Get result from Zabbix API
         #
-        if self.zabbix_version>=6:
+        if self.zabbix_version.major >= 6:
             name_element = "username"
         else:
             name_element = "alias"
@@ -1333,7 +1332,7 @@ class zabbixcli(cmd.Cmd):
         #
         # Get result from Zabbix API
         #
-        if self.zabbix_version>=6:
+        if self.zabbix_version.major >= 6:
             name_element = "username"
             type_element = "roleid"
         else:
@@ -2030,7 +2029,7 @@ class zabbixcli(cmd.Cmd):
                 #
                 # Get list with users to keep in this  usergroup
                 #
-                if self.zabbix_version>=6:
+                if self.zabbix_version.major >= 6:
                     name_element = "username"
                 else:
                     name_element = "alias"
@@ -3206,7 +3205,7 @@ class zabbixcli(cmd.Cmd):
             #
             # Create maintenance period
             #
-            if self.zabbix_version >=6:
+            if self.zabbix_version.major >= 6:
                 since = int(since)
                 till = int(till)
             self.zapi.maintenance.create(name=maintenance_name,
@@ -3594,7 +3593,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            if self.zabbix_version >=6:
+            if self.zabbix_version.major >= 6:
                 search = {'username': alias}
             else:
                 search = {'alias': alias}
@@ -3617,7 +3616,7 @@ class zabbixcli(cmd.Cmd):
                 self.generate_feedback('Warning', 'This user (' + alias + ') already exists.')
                 return False
             else:
-                if self.zabbix_version >=6:
+                if self.zabbix_version.major >= 6:
                     result = self.zapi.user.create(username=alias,
                                                name=name,
                                                surname=surname,
@@ -3789,7 +3788,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            if self.zabbix_version >=6:
+            if self.zabbix_version.major >= 6:
                 search = {'username': alias}
             else:
                 search = {'alias': alias}
@@ -3806,7 +3805,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            if self.zabbix_version >= 6:
+            if self.zabbix_version.major >= 6:
                 search = {'name': mediatype}
             else:
                 search = {'description': mediatype}
@@ -3838,7 +3837,7 @@ class zabbixcli(cmd.Cmd):
                 usergroup_objects = []
                 for usergroup in usergroup_list:
                     usergroup_objects.append({"usrgrpid": usergroup})
-                if self.zabbix_version >=6 :
+                if self.zabbix_version.major >= 6 :
                     result = self.zapi.user.create(username=alias,
                                                passwd=passwd,
                                                roleid=type,
@@ -4936,8 +4935,7 @@ class zabbixcli(cmd.Cmd):
             return False
 
         # Hotfix for Zabbix 4.0 compability
-        api_version = Version(self.zapi.api_version())
-        if api_version >= Version("4.0"):
+        if self.zabbix_version.major >= 4:
             if close == 'false':
                 action = 6  # "Add message" and "Acknowledge"
             elif close == 'true':
@@ -5051,8 +5049,7 @@ class zabbixcli(cmd.Cmd):
                 event_ids.append(data[0]['eventid'])
 
             # Hotfix for Zabbix 4.0 compability
-            api_version = Version(self.zapi.api_version())
-            if api_version >= Version("4.0"):
+            if self.zabbix_version.major >= 4:
                 if close == 'false':
                     action = 6  # "Add message" and "Acknowledge"
                 elif close == 'true':
@@ -6210,7 +6207,7 @@ class zabbixcli(cmd.Cmd):
 
         # Object type
         object_type_list = ['groups', 'hosts', 'images', 'maps', 'screens', 'templates']
-        if self.zabbix_version >=6:
+        if self.zabbix_version.major >= 6:
             object_type_list.remove('screens')
             object_type_list.append('mediatypes')
         object_type_to_export = []
@@ -6290,10 +6287,10 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Object type is not a valid value')
             return False
 
-        if self.zabbix_version <6 and "mediatypes" == object_type:
+        if self.zabbix_version.major < 6 and "mediatypes" == object_type:
             self.generate_feedback('Error', 'You cannot export media types with a version\'s Zabbix less than 6')
             return False
-        if self.zabbix_version >=6 and "screens" == object_type:
+        if self.zabbix_version.major >= 6 and "screens" == object_type:
             self.generate_feedback('Error', 'You cannot export screen with a version\'s Zabbix more than or equal to 6')
             return False
 
@@ -6646,7 +6643,7 @@ class zabbixcli(cmd.Cmd):
                                 'valueMaps': {'createMissing': True, 'updateExisting': True},
                                 'mediaTypes': {'createMissing': True, 'updateExisting': True},
                             }
-                            if self.zabbix_version < 6:
+                            if self.zabbix_version.major < 6:
                                 rules['applications'] = {'createMissing': True}
                                 rules['screens'] ={'createMissing': True, 'updateExisting': True}
                                 rules['templateScreens'] ={'createMissing': True, 'updateExisting': True}
@@ -7365,7 +7362,7 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the userid for a user
         """
-        if self.zabbix_version >=6:
+        if self.zabbix_version.major >= 6:
             filter = {'username': user}
         else:
             filter = {'alias': user}
