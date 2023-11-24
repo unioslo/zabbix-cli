@@ -124,7 +124,7 @@ class ZabbixAPI(object):
             params={"format": format, "source": source, "rules": rules}
         )['result']
 
-
+    # TODO (pederhan): Use functools.cachedproperty when we drop 3.7 support
     @property
     def version(self) -> Version:
         """Alternate version of api_version() that caches version info
