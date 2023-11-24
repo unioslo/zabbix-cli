@@ -82,8 +82,7 @@ class zabbixcli(cmd.Cmd):
             else:
                 self.zapi.session.verify = self.conf.cert_verify
             zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
-            self.zabbix_version = Version(self.zapi.apiinfo.version())
-            self.api_auth_token = self.zapi.login(self.api_username, self.api_password, self.api_auth_token, self.zabbix_version)
+            self.api_auth_token = self.zapi.login(self.api_username, self.api_password, self.api_auth_token)
             self.zapi.user.get(userids=-1)  # Dummy call to verify authentication
         except Exception as e:
             print('\n[ERROR]: ' + str(e) + '\n')
@@ -106,6 +105,7 @@ class zabbixcli(cmd.Cmd):
             sys.exit(1)
 
         logger.debug('Connected to Zabbix JSON-API')
+        self.zabbix_version = self.zapi.version
 
         #
         # The file $HOME/.zabbix-cli_auth_token is created if it does not exists.

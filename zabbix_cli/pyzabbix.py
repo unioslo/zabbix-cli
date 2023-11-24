@@ -13,7 +13,6 @@
 from __future__ import unicode_literals
 import logging
 import json
-from typing import Optional
 
 import requests
 from packaging.version import Version
@@ -37,10 +36,9 @@ class ZabbixAPIException(Exception):
     pass
 
 
-def user_param_from_version(version: Optional[Version]) -> str:
-    """Returns the correct username parameter based on Zabbix version.
-    Falls back on 'username' (newest) if version is not provided."""
-    if version and version.release < (5, 4, 0):
+def user_param_from_version(version: Version) -> str:
+    """Returns the correct username parameter based on Zabbix version."""
+    if version.release < (5, 4, 0):
         return 'user'
     return 'username' # defaults to new parameter name
 
@@ -79,8 +77,12 @@ class ZabbixAPI(object):
 
         self.url = server + '/api_jsonrpc.php'
         logger.info("JSON-RPC Server Endpoint: %s", self.url)
+        
+        # Attributes for properties
+        self._version = None
 
-    def login(self, user='', password='', auth_token='', version: Optional[Version] = None):
+
+    def login(self, user='', password='', auth_token=''):
         """
         Convenience method for calling user.authenticate and storing the
         resulting auth token for further commands.  If
@@ -97,9 +99,8 @@ class ZabbixAPI(object):
         #
 
         # The username kwarg was called "user" in Zabbix 5.2 and earlier.
-        # This sets the correct kwarg for the version of Zabbix we're using,
-        # as long as a Version object is passed into the method.
-        user_kwarg = {user_param_from_version(version): user}
+        # This sets the correct kwarg for the version of Zabbix we're using.
+        user_kwarg = {user_param_from_version(self.version): user}
     
         if auth_token == '':
 
@@ -110,7 +111,7 @@ class ZabbixAPI(object):
                 self.auth = self.user.login(**user_kwarg, password=password)
         else:
             self.auth = auth_token
-            self.api_version()
+            self.api_version() # NOTE: useless? can we remove this?
 
         return self.auth
 
@@ -123,6 +124,15 @@ class ZabbixAPI(object):
             params={"format": format, "source": source, "rules": rules}
         )['result']
 
+
+    @property
+    def version(self) -> Version:
+        """Alternate version of api_version() that caches version info
+        as a Version object."""
+        if self._version is None:
+            self._version = Version(self.apiinfo.version())
+        return self._version
+    
     def api_version(self):
         return self.apiinfo.version()
 
