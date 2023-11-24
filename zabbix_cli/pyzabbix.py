@@ -12,8 +12,11 @@
 
 from __future__ import unicode_literals
 import logging
-import requests
 import json
+from typing import Optional
+
+import requests
+from packaging.version import Version
 
 
 class _NullHandler(logging.Handler):
@@ -32,6 +35,14 @@ class ZabbixAPIException(Exception):
          -32500 - no permissions
     """
     pass
+
+
+def user_param_from_version(version: Optional[Version]) -> str:
+    """Returns the correct username parameter based on Zabbix version.
+    Falls back on 'username' (newest) if version is not provided."""
+    if version and version.release < (5, 4, 0):
+        return 'user'
+    return 'username' # defaults to new parameter name
 
 
 class ZabbixAPI(object):
@@ -69,7 +80,7 @@ class ZabbixAPI(object):
         self.url = server + '/api_jsonrpc.php'
         logger.info("JSON-RPC Server Endpoint: %s", self.url)
 
-    def login(self, user='', password='', auth_token=''):
+    def login(self, user='', password='', auth_token='', version: Optional[Version] = None):
         """
         Convenience method for calling user.authenticate and storing the
         resulting auth token for further commands.  If
@@ -85,13 +96,18 @@ class ZabbixAPI(object):
         # will login with the username and password.
         #
 
+        # The username kwarg was called "user" in Zabbix 5.2 and earlier.
+        # This sets the correct kwarg for the version of Zabbix we're using,
+        # as long as a Version object is passed into the method.
+        user_kwarg = {user_param_from_version(version): user}
+    
         if auth_token == '':
 
             self.auth = ''
             if self.use_authenticate:
                 self.auth = self.user.authenticate(user=user, password=password)
             else:
-                self.auth = self.user.login(user=user, password=password)
+                self.auth = self.user.login(**user_kwarg, password=password)
         else:
             self.auth = auth_token
             self.api_version()
