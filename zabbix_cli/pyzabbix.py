@@ -17,6 +17,8 @@ import json
 import requests
 from packaging.version import Version
 
+from zabbix_cli.apiutils import proxyname_by_version, username_by_version
+
 
 class _NullHandler(logging.Handler):
     def emit(self, record):
@@ -99,7 +101,7 @@ class ZabbixAPI(object):
 
         # The username kwarg was called "user" in Zabbix 5.2 and earlier.
         # This sets the correct kwarg for the version of Zabbix we're using.
-        user_kwarg = {user_param_from_version(self.version): user}
+        user_kwarg = {username_by_version(self.version): user}
     
         if auth_token == '':
 
@@ -217,13 +219,13 @@ class ZabbixAPI(object):
 
         return response_json
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str):
         """Dynamically create an object class (ie: host)"""
         return ZabbixAPIObjectClass(attr, self)
 
 
 class ZabbixAPIObjectClass(object):
-    def __init__(self, name, parent):
+    def __init__(self, name: str, parent: ZabbixAPI):
         self.name = name
         self.parent = parent
 
@@ -240,3 +242,21 @@ class ZabbixAPIObjectClass(object):
             )['result']
 
         return fn
+
+    def get(self, *args, **kwargs):
+        """Provides per-endpoint overrides for the 'get' method"""
+        if self.name == "proxy":
+            # The proxy.get method changed from "host" to "name" in Zabbix 7.0
+            # https://www.zabbix.com/documentation/6.0/en/manual/api/reference/proxy/get
+            # https://www.zabbix.com/documentation/7.0/en/manual/api/reference/proxy/get
+            output_kwargs = kwargs.get("output", None)
+            params = ["name", "host"]
+            if isinstance(output_kwargs, list) and any(p in output_kwargs for p in params):
+                for param in params:
+                    try:
+                        output_kwargs.remove(param)
+                    except ValueError:
+                        pass
+                output_kwargs.append(proxyname_by_version(self.parent.version))
+                kwargs["output"] = output_kwargs
+        return self.__getattr__('get')(*args, **kwargs)

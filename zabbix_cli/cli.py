@@ -36,8 +36,6 @@ import sys
 import textwrap
 import time
 
-from packaging.version import Version
-
 import zabbix_cli
 import zabbix_cli.apiutils
 import zabbix_cli.utils
@@ -7380,7 +7378,6 @@ class zabbixcli(cmd.Cmd):
         Get the proxyid for a proxy server
         """
         if proxy != '':
-
             data = self.zapi.proxy.get(filter={"host": proxy})
 
             if data != []:
