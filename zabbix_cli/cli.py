@@ -41,7 +41,7 @@ import zabbix_cli.apiutils
 import zabbix_cli.utils
 from zabbix_cli.prettytable import ALL, FRAME, PrettyTable
 from zabbix_cli.pyzabbix import ZabbixAPI
-from zabbix_cli.apiutils import proxyhostid_by_version
+from zabbix_cli.apiutils import proxyhostid_by_version, proxyname_by_version
 
 logger = logging.getLogger(__name__)
 
@@ -902,7 +902,7 @@ class zabbixcli(cmd.Cmd):
             else:
                 available = host['available']
             proxy = self.zapi.proxy.get(proxyids=host[proxyhostid_by_version(self.zabbix_version)])
-            proxy_name = proxy[0]['host'] if proxy else ""
+            proxy_name = proxy[0][proxyname_by_version(self.zabbix_version)] if proxy else ""
             if self.output_format == 'json':
                 result_columns[result_columns_key] = {'hostid': host['hostid'],
                                                       'host': host['host'],
@@ -7509,7 +7509,7 @@ class zabbixcli(cmd.Cmd):
         data = self.zapi.proxy.get(output=['proxyid', 'host'])
 
         for proxy in data:
-            temp_dict[proxy['proxyid']] = proxy['host']
+            temp_dict[proxy['proxyid']] = proxy[proxyname_by_version(self.zabbix_version)]
 
         return temp_dict
 
