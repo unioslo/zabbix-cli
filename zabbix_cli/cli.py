@@ -7415,7 +7415,7 @@ class zabbixcli(cmd.Cmd):
             data = self.zapi.proxy.get(output=['proxyid', 'host'])
 
             for proxy in data:
-                if match_pattern.match(proxy['host']):
+                if match_pattern.match(proxy[proxyname_by_version(self.zabbix_version)]):
                     proxy_list.append(proxy['proxyid'])
 
         proxy_list_len = len(proxy_list)
