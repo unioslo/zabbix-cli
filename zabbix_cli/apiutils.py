@@ -35,6 +35,11 @@ def update_usergroup(zapi, usrgrpid, rights=None, userids=None):
 # structure that can be used to determine correct parameters based on version
 # if we end up with a lot of these functions. For now, this is fine.
 
+def proxyhostid_by_version(version: Version) -> str:
+    if version.release < (7, 0, 0):
+        return "proxy_hostid"
+    return "proxyid" # defaults to new parameter name
+
 def proxyname_by_version(version: Version) -> str:
     if version.release < (7, 0, 0):
         return "host"
