@@ -146,7 +146,10 @@ class zabbixcli(cmd.Cmd):
         #
 
         self.hostgroupname_cache = self.populate_hostgroupname_cache()
-        self.templategroupname_cache = self.populate_templategroupname_cache()
+        if self.zabbix_version.release >= (6, 2, 0):
+            self.templategroupname_cache = self.populate_templategroupname_cache()
+        else:
+            self.templategroupname_cache = {}
         self.hostgroupid_cache = self.populate_hostgroupid_cache()
 
     def do_show_maintenance_definitions(self, args):
