@@ -635,7 +635,7 @@ class zabbixcli(cmd.Cmd):
                 result_columns[result_columns_key] = {'groupid': group['groupid'],
                                                       'name': group['name'],
                                                       'flags': zabbix_cli.utils.get_hostgroup_flag(int(group['flags'])),
-                                                      'type': zabbix_cli.utils.get_hostgroup_type(int(group['internal'])),
+                                                      'type': zabbix_cli.utils.get_hostgroup_type(int(group.get('internal', 0))),
                                                       'hosts': group['hosts']}
             else:
                 host_list = []
@@ -647,7 +647,7 @@ class zabbixcli(cmd.Cmd):
                 result_columns[result_columns_key] = {'1': group['groupid'],
                                                       '2': group['name'],
                                                       '3': zabbix_cli.utils.get_hostgroup_flag(int(group['flags'])),
-                                                      '4': zabbix_cli.utils.get_hostgroup_type(int(group['internal'])),
+                                                      '4': zabbix_cli.utils.get_hostgroup_type(int(group.get('internal', 0))),
                                                       '5': '\n'.join(textwrap.wrap(', '.join(host_list), 60))}
             result_columns_key = result_columns_key + 1
 
