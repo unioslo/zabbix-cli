@@ -898,7 +898,10 @@ class zabbixcli(cmd.Cmd):
 
         for host in result:
             if self.zabbix_version.major >= 6:
-                available = host['interfaces'][0]['available']
+                if len(host['interfaces']) > 0:
+                    available = host['interfaces'][0]['available']
+                else:
+                    available = "0"
             else:
                 available = host['available']
             proxy = self.zapi.proxy.get(proxyids=host[compat.host_proxyid(self.zabbix_version)])
