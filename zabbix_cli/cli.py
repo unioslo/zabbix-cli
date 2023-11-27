@@ -7559,6 +7559,9 @@ class zabbixcli(cmd.Cmd):
 
         temp_dict = {}
 
+        if self.zabbix_version.release < (6, 2, 0):
+            return temp_dict
+
         data = self.zapi.templategroup.get(output=['groupid', 'name'])
 
         for templategroup in data:
