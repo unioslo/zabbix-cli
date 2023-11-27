@@ -7103,11 +7103,15 @@ class zabbixcli(cmd.Cmd):
         """
         try:
             proc = subprocess.Popen([line], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-            output, errors = proc.communicate()
-            print(output + errors + '\n')
-
-        except Exception:
-            self.generate_feedback('Error', 'Problems running %s' % line)
+            out, err = proc.communicate()
+            output = out.decode("utf-8").strip()
+            if output:
+                print(output)
+            errors = err.decode("utf-8").strip()
+            if errors:
+                print(errors, file=sys.stderr)
+        except Exception as e:
+            self.generate_feedback('Error', f"Problems running {line}: {e}")
 
     def do_quit(self, args):
         """
