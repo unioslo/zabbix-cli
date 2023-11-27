@@ -21,7 +21,6 @@
 #
 import cmd
 import datetime
-import distutils.version
 import glob
 import hashlib
 import ipaddress
@@ -36,8 +35,10 @@ import subprocess
 import sys
 import textwrap
 import time
+from typing import Dict
 
 import zabbix_cli
+from zabbix_cli import compat
 import zabbix_cli.apiutils
 import zabbix_cli.utils
 from zabbix_cli.prettytable import ALL, FRAME, PrettyTable
@@ -76,10 +77,8 @@ class zabbixcli(cmd.Cmd):
             self.zapi = ZabbixAPI(self.conf.zabbix_api_url)
             if self.conf.cert_verify.upper() == "ON":
                 self.zapi.session.verify = True
-            elif self.conf.cert_verify.upper() == "OFF":
-                self.zapi.session.verify = False
             else:
-                self.zapi.session.verify = self.conf.cert_verify
+                self.zapi.disable_ssl_verification()
             zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
             self.api_auth_token = self.zapi.login(self.api_username, self.api_password, self.api_auth_token)
             self.zapi.user.get(userids=-1)  # Dummy call to verify authentication
@@ -104,9 +103,7 @@ class zabbixcli(cmd.Cmd):
             sys.exit(1)
 
         logger.debug('Connected to Zabbix JSON-API')
-
-        self.api_version = self.zapi.apiinfo.version()
-        self.zabbix_version = int(self.api_version.split(".")[0])
+        self.zabbix_version = self.zapi.version
 
         #
         # The file $HOME/.zabbix-cli_auth_token is created if it does not exists.
@@ -125,7 +122,7 @@ class zabbixcli(cmd.Cmd):
 
         self.intro = '\n#############################################################\n' + \
                      'Welcome to the Zabbix command-line interface (v' + self.version + ')\n' + \
-                     'Connected to server ' + self.conf.zabbix_api_url + ' (v' + self.api_version + ')\n' + \
+                     'Connected to server ' + self.conf.zabbix_api_url + ' (v' + str(self.zabbix_version) + ')\n' + \
                      '#############################################################\n' + \
                      'Type help or \\? to list commands.\n'
 
@@ -149,6 +146,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         self.hostgroupname_cache = self.populate_hostgroupname_cache()
+        self.templategroupname_cache = self.populate_templategroupname_cache()
         self.hostgroupid_cache = self.populate_hostgroupid_cache()
 
     def do_show_maintenance_definitions(self, args):
@@ -864,7 +862,7 @@ class zabbixcli(cmd.Cmd):
             }
         }
 
-        if self.zabbix_version >= 6:
+        if self.zabbix_version.major >= 6:
             query["selectInterfaces"]= ["available"]
 
         if host.isdigit():
@@ -899,15 +897,15 @@ class zabbixcli(cmd.Cmd):
         #
 
         for host in result:
-            if self.zabbix_version >= 6:
+            if self.zabbix_version.major >= 6:
                 if len(host['interfaces']) > 0:
                     available = host['interfaces'][0]['available']
                 else:
                     available = "0"
             else:
                 available = host['available']
-            proxy = self.zapi.proxy.get(proxyids=host['proxy_hostid'])
-            proxy_name = proxy[0]['host'] if proxy else ""
+            proxy = self.zapi.proxy.get(proxyids=host[compat.host_proxyid(self.zabbix_version)])
+            proxy_name = proxy[0][compat.proxy_name(self.zabbix_version)] if proxy else ""
             if self.output_format == 'json':
                 result_columns[result_columns_key] = {'hostid': host['hostid'],
                                                       'host': host['host'],
@@ -1268,7 +1266,7 @@ class zabbixcli(cmd.Cmd):
         #
         # Get result from Zabbix API
         #
-        if self.zabbix_version>=6:
+        if self.zabbix_version.major >= 6:
             name_element = "username"
         else:
             name_element = "alias"
@@ -1335,7 +1333,7 @@ class zabbixcli(cmd.Cmd):
         #
         # Get result from Zabbix API
         #
-        if self.zabbix_version>=6:
+        if self.zabbix_version.major >= 6:
             name_element = "username"
             type_element = "roleid"
         else:
@@ -2032,7 +2030,7 @@ class zabbixcli(cmd.Cmd):
                 #
                 # Get list with users to keep in this  usergroup
                 #
-                if self.zabbix_version>=6:
+                if self.zabbix_version.major >= 6:
                     name_element = "username"
                 else:
                     name_element = "alias"
@@ -2805,7 +2803,7 @@ class zabbixcli(cmd.Cmd):
             query = {
                 'host': host,
                 'groups': hostgroups_list,
-                'proxy_hostid': proxy_hostid,
+                compat.host_proxyid(self.zabbix_version): proxy_hostid,
                 'status': int(host_status),
                 'interfaces': interface_list,
                 'inventory_mode': 1,
@@ -3208,7 +3206,7 @@ class zabbixcli(cmd.Cmd):
             #
             # Create maintenance period
             #
-            if self.zabbix_version >=6:
+            if self.zabbix_version.major >= 6:
                 since = int(since)
                 till = int(till)
             self.zapi.maintenance.create(name=maintenance_name,
@@ -3596,7 +3594,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            if self.zabbix_version >=6:
+            if self.zabbix_version.major >= 6:
                 search = {'username': alias}
             else:
                 search = {'alias': alias}
@@ -3619,7 +3617,7 @@ class zabbixcli(cmd.Cmd):
                 self.generate_feedback('Warning', 'This user (' + alias + ') already exists.')
                 return False
             else:
-                if self.zabbix_version >=6:
+                if self.zabbix_version.major >= 6:
                     result = self.zapi.user.create(username=alias,
                                                name=name,
                                                surname=surname,
@@ -3791,7 +3789,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            if self.zabbix_version >=6:
+            if self.zabbix_version.major >= 6:
                 search = {'username': alias}
             else:
                 search = {'alias': alias}
@@ -3808,7 +3806,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         try:
-            if self.zabbix_version >= 6:
+            if self.zabbix_version.major >= 6:
                 search = {'name': mediatype}
             else:
                 search = {'description': mediatype}
@@ -3840,7 +3838,7 @@ class zabbixcli(cmd.Cmd):
                 usergroup_objects = []
                 for usergroup in usergroup_list:
                     usergroup_objects.append({"usrgrpid": usergroup})
-                if self.zabbix_version >=6 :
+                if self.zabbix_version.major >= 6 :
                     result = self.zapi.user.create(username=alias,
                                                passwd=passwd,
                                                roleid=type,
@@ -4841,10 +4839,11 @@ class zabbixcli(cmd.Cmd):
                 #
                 # Update proxy used to monitor the host
                 #
-
-                self.zapi.host.update(hostid=hostid,
-                                      proxy_hostid=proxy_id)
-
+                query = {
+                    'hostid': hostid,
+                    compat.host_proxyid(self.zabbix_version): proxy_id
+                }
+                self.zapi.host.update(**query)
                 logger.info('Proxy for hostname (%s) changed to (%s)', hostname, proxy)
                 self.generate_feedback('Done', 'Proxy for hostname (' + hostname + ') changed to (' + str(proxy) + ')')
 
@@ -4938,8 +4937,7 @@ class zabbixcli(cmd.Cmd):
             return False
 
         # Hotfix for Zabbix 4.0 compability
-        api_version = distutils.version.StrictVersion(self.zapi.api_version())
-        if api_version >= distutils.version.StrictVersion("4.0"):
+        if self.zabbix_version.major >= 4:
             if close == 'false':
                 action = 6  # "Add message" and "Acknowledge"
             elif close == 'true':
@@ -5053,8 +5051,7 @@ class zabbixcli(cmd.Cmd):
                 event_ids.append(data[0]['eventid'])
 
             # Hotfix for Zabbix 4.0 compability
-            api_version = distutils.version.StrictVersion(self.zapi.api_version())
-            if api_version >= distutils.version.StrictVersion("4.0"):
+            if self.zabbix_version.major >= 4:
                 if close == 'false':
                     action = 6  # "Add message" and "Acknowledge"
                 elif close == 'true':
@@ -6186,7 +6183,9 @@ class zabbixcli(cmd.Cmd):
         ------------------
         Possible values:
 
-        * groups
+        * groups (before Zabbix 6.2)
+        * host_groups (after Zabbix 6.2)
+        * template_groups (after Zabbix 6.2)
         * hosts
         * images
         * maps
@@ -6212,9 +6211,13 @@ class zabbixcli(cmd.Cmd):
 
         # Object type
         object_type_list = ['groups', 'hosts', 'images', 'maps', 'screens', 'templates']
-        if self.zabbix_version >=6:
+        if self.zabbix_version.major >= 6:
             object_type_list.remove('screens')
             object_type_list.append('mediatypes')
+        if self.zabbix_version.major >= 6.2:
+            object_type_list.remove('groups')
+            object_type_list.append('host_groups')
+            object_type_list.append('template_groups')
         object_type_to_export = []
 
         # Default object type
@@ -6292,10 +6295,10 @@ class zabbixcli(cmd.Cmd):
             self.generate_feedback('Error', 'Object type is not a valid value')
             return False
 
-        if self.zabbix_version <6 and "mediatypes" == object_type:
+        if self.zabbix_version.major < 6 and "mediatypes" == object_type:
             self.generate_feedback('Error', 'You cannot export media types with a version\'s Zabbix less than 6')
             return False
-        if self.zabbix_version >=6 and "screens" == object_type:
+        if self.zabbix_version.major >= 6 and "screens" == object_type:
             self.generate_feedback('Error', 'You cannot export screen with a version\'s Zabbix more than or equal to 6')
             return False
 
@@ -6323,13 +6326,30 @@ class zabbixcli(cmd.Cmd):
             if object_name.lower() == '#all#':
 
                 try:
-
+                    # < 6.2
                     if obj_type == 'groups':
 
                         data = self.zapi.hostgroup.get(output="extend")
 
                         for object in data:
                             object_name_list[object['groupid']] = object['name']
+                    
+                    # >= 6.2
+                    elif obj_type == 'host_groups':
+
+                        data = self.zapi.hostgroup.get(output="extend")
+
+                        for object in data:
+                            object_name_list[object['groupid']] = object['name']
+                    
+                    # >= 6.2
+                    elif obj_type == 'template_groups':
+
+                        data = self.zapi.templategroup.get(output="extend")
+
+                        for object in data:
+                            object_name_list[object['groupid']] = object['name']
+
 
                     elif obj_type == 'hosts':
 
@@ -6391,8 +6411,17 @@ class zabbixcli(cmd.Cmd):
 
                     elif not name.strip().isdigit() and name.strip() != '':
                         try:
+                            # < 6.2
                             if obj_type == 'groups':
                                 id = str(self.get_hostgroup_id(name.strip()))
+
+                            # >= 6.2
+                            elif obj_type == 'host_groups':
+                                id = str(self.get_hostgroup_id(name.strip()))
+
+                            # >= 6.2
+                            elif obj_type == 'template_groups':
+                                id = str(self.get_templategroup_id(name.strip()))
 
                             elif obj_type == 'hosts':
                                 id = str(self.get_host_id(name.strip()))
@@ -6648,7 +6677,7 @@ class zabbixcli(cmd.Cmd):
                                 'valueMaps': {'createMissing': True, 'updateExisting': True},
                                 'mediaTypes': {'createMissing': True, 'updateExisting': True},
                             }
-                            if self.zabbix_version < 6:
+                            if self.zabbix_version.major < 6:
                                 rules['applications'] = {'createMissing': True}
                                 rules['screens'] ={'createMissing': True, 'updateExisting': True}
                                 rules['templateScreens'] ={'createMissing': True, 'updateExisting': True}
@@ -6768,14 +6797,17 @@ class zabbixcli(cmd.Cmd):
             search_spec = {}
 
         try:
-            result = self.zapi.host.get(output='hostid',
-                                        filter={'proxy_hostid': proxy_src_id},
-                                        search=search_spec,
-                                        # Somewhat unintuitively, False here
-                                        # would implicitly add wildcards around
-                                        # the given host_filter.  Force explicit
-                                        # wildcards to avoid surprises.
-                                        searchWildcardsEnabled=True)
+            query = {
+                "output": 'hostid',
+                "filter": {compat.host_proxyid(self.zabbix_version): proxy_src_id},
+                "search": search_spec,
+                # Somewhat unintuitively, False here
+                # would implicitly add wildcards around
+                # the given host_filter.  Force explicit
+                # wildcards to avoid surprises.
+                "searchWildcardsEnabled": True
+            }
+            result = self.zapi.host.get(**query)
         except Exception as e:
             logger.error('Problems getting host list from SRC proxy %s - %s', proxy_src, e)
             self.generate_feedback('Error', 'Problems getting host list from SRC proxy %s' + proxy_src)
@@ -6787,7 +6819,7 @@ class zabbixcli(cmd.Cmd):
             if host_count > 0:
                 query = {
                     "hosts": result,
-                    "proxy_hostid": proxy_dst_id
+                    compat.host_proxyid(self.zabbix_version): proxy_dst_id
                 }
                 self.zapi.host.massupdate(**query)
 
@@ -6933,7 +6965,7 @@ class zabbixcli(cmd.Cmd):
 
                 query = {
                     "hosts": hostid_list,
-                    "proxy_hostid": proxy_specs[proxy]['id']
+                    compat.host_proxyid(self.zabbix_version): proxy_specs[proxy]['id']
                 }
 
                 result = self.zapi.host.massupdate(**query)
@@ -7106,11 +7138,15 @@ class zabbixcli(cmd.Cmd):
         """
         try:
             proc = subprocess.Popen([line], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-            output, errors = proc.communicate()
-            print(output + errors + '\n')
-
-        except Exception:
-            self.generate_feedback('Error', 'Problems running %s' % line)
+            out, err = proc.communicate()
+            output = out.decode("utf-8").strip()
+            if output:
+                print(output)
+            errors = err.decode("utf-8").strip()
+            if errors:
+                print(errors, file=sys.stderr)
+        except Exception as e:
+            self.generate_feedback('Error', f"Problems running {line}: {e}")
 
     def do_quit(self, args):
         """
@@ -7182,6 +7218,24 @@ class zabbixcli(cmd.Cmd):
                 raise Exception('Could not find hostgroupID for: ' + hostgroup)
 
         return str(hostgroupid)
+    
+    def get_templategroup_id(self, templategroup: str) -> str:
+        """
+        DESCRIPTION:
+        Get the ID for a given Template Group name.
+        """
+        if self.bulk_execution:
+            if templategroup in self.templategroupname_cache:
+                templategroupid = self.hostgroupname_cache[templategroup]
+            else:
+                raise Exception(f"Could not find Template Group ID for: {templategroup}")
+        else:
+            data = self.zapi.templategroup.get(filter={'name': templategroup})
+            if data != []:
+                templategroupid = data[0]['groupid']
+            else:
+                raise Exception(f"Could not find Template Group ID for: {templategroup}")
+        return str(templategroupid)
 
     def host_exists(self, host):
         """
@@ -7367,7 +7421,7 @@ class zabbixcli(cmd.Cmd):
         DESCRIPTION:
         Get the userid for a user
         """
-        if self.zabbix_version >=6:
+        if self.zabbix_version.major >= 6:
             filter = {'username': user}
         else:
             filter = {'alias': user}
@@ -7386,7 +7440,6 @@ class zabbixcli(cmd.Cmd):
         Get the proxyid for a proxy server
         """
         if proxy != '':
-
             data = self.zapi.proxy.get(filter={"host": proxy})
 
             if data != []:
@@ -7419,7 +7472,7 @@ class zabbixcli(cmd.Cmd):
             data = self.zapi.proxy.get(output=['proxyid', 'host'])
 
             for proxy in data:
-                if match_pattern.match(proxy['host']):
+                if match_pattern.match(proxy[compat.proxy_name(self.zabbix_version)]):
                     proxy_list.append(proxy['proxyid'])
 
         proxy_list_len = len(proxy_list)
@@ -7495,6 +7548,29 @@ class zabbixcli(cmd.Cmd):
             temp_dict[hostgroup['name']] = hostgroup['groupid']
 
         return temp_dict
+    
+    def populate_templategroupname_cache(self) -> Dict[str, str]:
+        """
+        DESCRIPTION:
+        Populate template group name to ID cache
+        """
+        # This method initializes a dictionary with all template groups in
+        # the system.
+        #
+        # This will help the performance of bulk executions, because we avoid
+        # extra calls to the API to verify the existence of each template group.
+
+        temp_dict = {}
+
+        if self.zabbix_version.release < (6, 2, 0):
+            return temp_dict
+
+        data = self.zapi.templategroup.get(output=['groupid', 'name'])
+
+        for templategroup in data:
+            temp_dict[templategroup['name']] = templategroup['groupid']
+
+        return temp_dict
 
     def populate_proxyid_cache(self):
         """
@@ -7513,7 +7589,7 @@ class zabbixcli(cmd.Cmd):
         data = self.zapi.proxy.get(output=['proxyid', 'host'])
 
         for proxy in data:
-            temp_dict[proxy['proxyid']] = proxy['host']
+            temp_dict[proxy['proxyid']] = proxy[compat.proxy_name(self.zabbix_version)]
 
         return temp_dict
 

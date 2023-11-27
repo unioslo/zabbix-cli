@@ -11,9 +11,15 @@
 #
 
 from __future__ import unicode_literals
+
 import logging
-import requests
 import json
+import urllib3
+
+import requests
+from packaging.version import Version
+
+from zabbix_cli import compat
 
 
 class _NullHandler(logging.Handler):
@@ -32,6 +38,13 @@ class ZabbixAPIException(Exception):
          -32500 - no permissions
     """
     pass
+
+
+def user_param_from_version(version: Version) -> str:
+    """Returns the correct username parameter based on Zabbix version."""
+    if version.release < (5, 4, 0):
+        return 'user'
+    return 'username' # defaults to new parameter name
 
 
 class ZabbixAPI(object):
@@ -68,6 +81,14 @@ class ZabbixAPI(object):
 
         self.url = server + '/api_jsonrpc.php'
         logger.info("JSON-RPC Server Endpoint: %s", self.url)
+        
+        # Attributes for properties
+        self._version = None
+
+    def disable_ssl_verification(self):
+        """Disables SSL verification and suppresses urllib3 SSL warning."""
+        self.session.verify = False
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     def login(self, user='', password='', auth_token=''):
         """
@@ -85,16 +106,20 @@ class ZabbixAPI(object):
         # will login with the username and password.
         #
 
+        # The username kwarg was called "user" in Zabbix 5.2 and earlier.
+        # This sets the correct kwarg for the version of Zabbix we're using.
+        user_kwarg = {compat.login_user_name(self.version): user}
+    
         if auth_token == '':
 
             self.auth = ''
             if self.use_authenticate:
                 self.auth = self.user.authenticate(user=user, password=password)
             else:
-                self.auth = self.user.login(user=user, password=password)
+                self.auth = self.user.login(**user_kwarg, password=password)
         else:
             self.auth = auth_token
-            self.api_version()
+            self.api_version() # NOTE: useless? can we remove this?
 
         return self.auth
 
@@ -107,6 +132,15 @@ class ZabbixAPI(object):
             params={"format": format, "source": source, "rules": rules}
         )['result']
 
+    # TODO (pederhan): Use functools.cachedproperty when we drop 3.7 support
+    @property
+    def version(self) -> Version:
+        """Alternate version of api_version() that caches version info
+        as a Version object."""
+        if self._version is None:
+            self._version = Version(self.apiinfo.version())
+        return self._version
+    
     def api_version(self):
         return self.apiinfo.version()
 
@@ -192,13 +226,13 @@ class ZabbixAPI(object):
 
         return response_json
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str):
         """Dynamically create an object class (ie: host)"""
         return ZabbixAPIObjectClass(attr, self)
 
 
 class ZabbixAPIObjectClass(object):
-    def __init__(self, name, parent):
+    def __init__(self, name: str, parent: ZabbixAPI):
         self.name = name
         self.parent = parent
 
@@ -215,3 +249,21 @@ class ZabbixAPIObjectClass(object):
             )['result']
 
         return fn
+
+    def get(self, *args, **kwargs):
+        """Provides per-endpoint overrides for the 'get' method"""
+        if self.name == "proxy":
+            # The proxy.get method changed from "host" to "name" in Zabbix 7.0
+            # https://www.zabbix.com/documentation/6.0/en/manual/api/reference/proxy/get
+            # https://www.zabbix.com/documentation/7.0/en/manual/api/reference/proxy/get
+            output_kwargs = kwargs.get("output", None)
+            params = ["name", "host"]
+            if isinstance(output_kwargs, list) and any(p in output_kwargs for p in params):
+                for param in params:
+                    try:
+                        output_kwargs.remove(param)
+                    except ValueError:
+                        pass
+                output_kwargs.append(compat.proxy_name(self.parent.version))
+                kwargs["output"] = output_kwargs
+        return self.__getattr__('get')(*args, **kwargs)
