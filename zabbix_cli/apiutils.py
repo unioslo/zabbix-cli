@@ -1,5 +1,5 @@
 """All functions in this module extend or simplifies common API tasks."""
-from packaging.version import Version
+
 
 def update_usergroup(zapi, usrgrpid, rights=None, userids=None):
     """
@@ -30,24 +30,3 @@ def update_usergroup(zapi, usrgrpid, rights=None, userids=None):
         return zapi.usergroup.update(usrgrpid=usrgrpid, userids=new_userids)
 
     return None
-
-# TODO (pederhan): rewrite these functions as some sort of declarative data
-# structure that can be used to determine correct parameters based on version
-# if we end up with a lot of these functions. For now, this is fine.
-
-def proxyhostid_by_version(version: Version) -> str:
-    if version.release < (7, 0, 0):
-        return "proxy_hostid"
-    return "proxyid" # defaults to new parameter name
-
-def proxyname_by_version(version: Version) -> str:
-    if version.release < (7, 0, 0):
-        return "host"
-    return "name" # defaults to new parameter name
-
-
-def username_by_version(version: Version) -> str:
-    """Returns the correct username parameter based on Zabbix version."""
-    if version.release < (5, 4, 0):
-        return 'user'
-    return 'username' # defaults to new parameter name
