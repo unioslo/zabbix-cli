@@ -36,9 +36,8 @@ import sys
 import textwrap
 import time
 
-from packaging.version import Version
-
 import zabbix_cli
+from zabbix_cli import compat
 import zabbix_cli.apiutils
 import zabbix_cli.utils
 from zabbix_cli.prettytable import ALL, FRAME, PrettyTable
@@ -902,8 +901,8 @@ class zabbixcli(cmd.Cmd):
                 available = host['interfaces'][0]['available']
             else:
                 available = host['available']
-            proxy = self.zapi.proxy.get(proxyids=host['proxy_hostid'])
-            proxy_name = proxy[0]['host'] if proxy else ""
+            proxy = self.zapi.proxy.get(proxyids=host[compat.host_proxyid(self.zabbix_version)])
+            proxy_name = proxy[0][compat.proxy_name(self.zabbix_version)] if proxy else ""
             if self.output_format == 'json':
                 result_columns[result_columns_key] = {'hostid': host['hostid'],
                                                       'host': host['host'],
@@ -2801,7 +2800,7 @@ class zabbixcli(cmd.Cmd):
             query = {
                 'host': host,
                 'groups': hostgroups_list,
-                'proxy_hostid': proxy_hostid,
+                compat.host_proxyid(self.zabbix_version): proxy_hostid,
                 'status': int(host_status),
                 'interfaces': interface_list,
                 'inventory_mode': 1,
@@ -4837,10 +4836,11 @@ class zabbixcli(cmd.Cmd):
                 #
                 # Update proxy used to monitor the host
                 #
-
-                self.zapi.host.update(hostid=hostid,
-                                      proxy_hostid=proxy_id)
-
+                query = {
+                    'hostid': hostid,
+                    compat.host_proxyid(self.zabbix_version): proxy_id
+                }
+                self.zapi.host.update(**query)
                 logger.info('Proxy for hostname (%s) changed to (%s)', hostname, proxy)
                 self.generate_feedback('Done', 'Proxy for hostname (' + hostname + ') changed to (' + str(proxy) + ')')
 
@@ -6762,14 +6762,17 @@ class zabbixcli(cmd.Cmd):
             search_spec = {}
 
         try:
-            result = self.zapi.host.get(output='hostid',
-                                        filter={'proxy_hostid': proxy_src_id},
-                                        search=search_spec,
-                                        # Somewhat unintuitively, False here
-                                        # would implicitly add wildcards around
-                                        # the given host_filter.  Force explicit
-                                        # wildcards to avoid surprises.
-                                        searchWildcardsEnabled=True)
+            query = {
+                "output": 'hostid',
+                "filter": {compat.host_proxyid(self.zabbix_version): proxy_src_id},
+                "search": search_spec,
+                # Somewhat unintuitively, False here
+                # would implicitly add wildcards around
+                # the given host_filter.  Force explicit
+                # wildcards to avoid surprises.
+                "searchWildcardsEnabled": True
+            }
+            result = self.zapi.host.get(**query)
         except Exception as e:
             logger.error('Problems getting host list from SRC proxy %s - %s', proxy_src, e)
             self.generate_feedback('Error', 'Problems getting host list from SRC proxy %s' + proxy_src)
@@ -6781,7 +6784,7 @@ class zabbixcli(cmd.Cmd):
             if host_count > 0:
                 query = {
                     "hosts": result,
-                    "proxy_hostid": proxy_dst_id
+                    compat.host_proxyid(self.zabbix_version): proxy_dst_id
                 }
                 self.zapi.host.massupdate(**query)
 
@@ -6927,7 +6930,7 @@ class zabbixcli(cmd.Cmd):
 
                 query = {
                     "hosts": hostid_list,
-                    "proxy_hostid": proxy_specs[proxy]['id']
+                    compat.host_proxyid(self.zabbix_version): proxy_specs[proxy]['id']
                 }
 
                 result = self.zapi.host.massupdate(**query)
@@ -7380,7 +7383,6 @@ class zabbixcli(cmd.Cmd):
         Get the proxyid for a proxy server
         """
         if proxy != '':
-
             data = self.zapi.proxy.get(filter={"host": proxy})
 
             if data != []:
@@ -7413,7 +7415,7 @@ class zabbixcli(cmd.Cmd):
             data = self.zapi.proxy.get(output=['proxyid', 'host'])
 
             for proxy in data:
-                if match_pattern.match(proxy['host']):
+                if match_pattern.match(proxy[compat.proxy_name(self.zabbix_version)]):
                     proxy_list.append(proxy['proxyid'])
 
         proxy_list_len = len(proxy_list)
@@ -7507,7 +7509,7 @@ class zabbixcli(cmd.Cmd):
         data = self.zapi.proxy.get(output=['proxyid', 'host'])
 
         for proxy in data:
-            temp_dict[proxy['proxyid']] = proxy['host']
+            temp_dict[proxy['proxyid']] = proxy[compat.proxy_name(self.zabbix_version)]
 
         return temp_dict
 
