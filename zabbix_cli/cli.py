@@ -903,7 +903,7 @@ class zabbixcli(cmd.Cmd):
                 if len(host['interfaces']) > 0:
                     available = host['interfaces'][0]['available']
                 else:
-                    available = 0
+                    available = "0"
             else:
                 available = host['available']
             proxy = self.zapi.proxy.get(proxyids=host['proxy_hostid'])
