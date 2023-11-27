@@ -17,7 +17,7 @@ import json
 import requests
 from packaging.version import Version
 
-from zabbix_cli.compat import proxy_name_by_version, user_name_by_version
+from zabbix_cli import compat
 
 
 class _NullHandler(logging.Handler):
@@ -101,7 +101,7 @@ class ZabbixAPI(object):
 
         # The username kwarg was called "user" in Zabbix 5.2 and earlier.
         # This sets the correct kwarg for the version of Zabbix we're using.
-        user_kwarg = {user_name_by_version(self.version): user}
+        user_kwarg = {compat.login_user_name(self.version): user}
     
         if auth_token == '':
 
@@ -257,6 +257,6 @@ class ZabbixAPIObjectClass(object):
                         output_kwargs.remove(param)
                     except ValueError:
                         pass
-                output_kwargs.append(proxy_name_by_version(self.parent.version))
+                output_kwargs.append(compat.proxy_name(self.parent.version))
                 kwargs["output"] = output_kwargs
         return self.__getattr__('get')(*args, **kwargs)

@@ -1,7 +1,7 @@
 import pytest
 from packaging.version import Version
 
-from zabbix_cli.compat import user_name_by_version, proxy_name_by_version
+from zabbix_cli import compat
 
 
 def test_packaging_version_release_sanity():
@@ -13,6 +13,24 @@ def test_packaging_version_release_sanity():
         assert Version(f"7.0.0{pr}").release == (7, 0, 0)
         assert Version(f"7.0.0{pr}").release >= (7, 0, 0)
         assert Version(f"7.0.0{pr}").release <= (7, 0, 0)
+
+
+@pytest.mark.parametrize(
+        "version, expect",
+        [
+            # TODO (pederhan): decide on a set of versions we test against
+            # instead of coming up with them on the fly, such as here.
+            # Do we test against only major versions or minor versions as well?
+            (Version("7.0.0"), "proxyid"),
+            (Version("6.0.0"), "proxy_hostid"),
+            (Version("5.0.0"), "proxy_hostid"),
+            (Version("3.0.0"), "proxy_hostid"),
+            (Version("2.0.0"), "proxy_hostid"),
+            (Version("1.0.0"), "proxy_hostid"),
+        ],
+)
+def test_host_proxyid(version: Version, expect: str):
+    assert compat.host_proxyid(version) == expect
 
 
 @pytest.mark.parametrize(
@@ -32,16 +50,13 @@ def test_packaging_version_release_sanity():
             (Version("2.0"), "user"),
         ],
 )
-def test_user_name_by_version(version: Version, expect: str):
-    assert user_name_by_version(version) == expect
+def test_login_user_name(version: Version, expect: str):
+    assert compat.login_user_name(version) == expect
 
 
 @pytest.mark.parametrize(
         "version, expect",
         [
-            # TODO (pederhan): decide on a set of versions we test against
-            # instead of coming up with them on the fly, such as here.
-            # Do we test against only major versions or minor versions as well?
             (Version("7.0.0"), "name"),
             (Version("6.0.0"), "host"),
             (Version("5.0.0"), "host"),
@@ -50,6 +65,23 @@ def test_user_name_by_version(version: Version, expect: str):
             (Version("1.0.0"), "host"),
         ],
 )
-def test_proxy_name_by_version(version: Version, expect: str):
-    assert proxy_name_by_version(version) == expect
+def test_proxy_name(version: Version, expect: str):
+    assert compat.proxy_name(version) == expect
 
+@pytest.mark.parametrize(
+        "version, expect",
+        [
+            (Version("7.0.0"), "username"),
+            (Version("6.4.0"), "username"),
+            (Version("6.0.0"), "username"),
+            # NOTE: special case here where we use "alias" instead of "username"
+            # even though it was deprecated in 5.4.0 (matches historical zabbix_cli behavior)
+            (Version("5.4.0"), "alias"),
+            (Version("5.0.0"), "alias"),
+            (Version("3.0.0"), "alias"),
+            (Version("2.0.0"), "alias"),
+            (Version("1.0.0"), "alias"),
+        ],
+)
+def test_user_name(version: Version, expect: str):
+    assert compat.user_name(version) == expect
