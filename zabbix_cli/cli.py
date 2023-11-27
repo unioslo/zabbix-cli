@@ -77,10 +77,8 @@ class zabbixcli(cmd.Cmd):
             self.zapi = ZabbixAPI(self.conf.zabbix_api_url)
             if self.conf.cert_verify.upper() == "ON":
                 self.zapi.session.verify = True
-            elif self.conf.cert_verify.upper() == "OFF":
-                self.zapi.session.verify = False
             else:
-                self.zapi.session.verify = self.conf.cert_verify
+                self.zapi.disable_ssl_verification()
             zabbix_auth_token_file = os.getenv('HOME') + '/.zabbix-cli_auth_token'
             self.api_auth_token = self.zapi.login(self.api_username, self.api_password, self.api_auth_token)
             self.zapi.user.get(userids=-1)  # Dummy call to verify authentication

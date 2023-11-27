@@ -11,8 +11,10 @@
 #
 
 from __future__ import unicode_literals
+
 import logging
 import json
+import urllib3
 
 import requests
 from packaging.version import Version
@@ -82,6 +84,11 @@ class ZabbixAPI(object):
         
         # Attributes for properties
         self._version = None
+
+    def disable_ssl_verification(self):
+        """Disables SSL verification and suppresses urllib3 SSL warning."""
+        self.session.verify = False
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     def login(self, user='', password='', auth_token=''):
         """
