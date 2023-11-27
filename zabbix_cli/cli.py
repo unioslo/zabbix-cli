@@ -35,6 +35,7 @@ import subprocess
 import sys
 import textwrap
 import time
+from typing import Dict
 
 import zabbix_cli
 from zabbix_cli import compat
@@ -147,6 +148,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         self.hostgroupname_cache = self.populate_hostgroupname_cache()
+        self.templategroupname_cache = self.populate_templategroupname_cache()
         self.hostgroupid_cache = self.populate_hostgroupid_cache()
 
     def do_show_maintenance_definitions(self, args):
@@ -6180,7 +6182,9 @@ class zabbixcli(cmd.Cmd):
         ------------------
         Possible values:
 
-        * groups
+        * groups (before Zabbix 6.2)
+        * host_groups (after Zabbix 6.2)
+        * template_groups (after Zabbix 6.2)
         * hosts
         * images
         * maps
@@ -6209,6 +6213,10 @@ class zabbixcli(cmd.Cmd):
         if self.zabbix_version.major >= 6:
             object_type_list.remove('screens')
             object_type_list.append('mediatypes')
+        if self.zabbix_version.major >= 6.2:
+            object_type_list.remove('groups')
+            object_type_list.append('host_groups')
+            object_type_list.append('template_groups')
         object_type_to_export = []
 
         # Default object type
@@ -6317,13 +6325,30 @@ class zabbixcli(cmd.Cmd):
             if object_name.lower() == '#all#':
 
                 try:
-
+                    # < 6.2
                     if obj_type == 'groups':
 
                         data = self.zapi.hostgroup.get(output="extend")
 
                         for object in data:
                             object_name_list[object['groupid']] = object['name']
+                    
+                    # >= 6.2
+                    elif obj_type == 'host_groups':
+
+                        data = self.zapi.hostgroup.get(output="extend")
+
+                        for object in data:
+                            object_name_list[object['groupid']] = object['name']
+                    
+                    # >= 6.2
+                    elif obj_type == 'template_groups':
+
+                        data = self.zapi.templategroup.get(output="extend")
+
+                        for object in data:
+                            object_name_list[object['groupid']] = object['name']
+
 
                     elif obj_type == 'hosts':
 
@@ -6385,8 +6410,17 @@ class zabbixcli(cmd.Cmd):
 
                     elif not name.strip().isdigit() and name.strip() != '':
                         try:
+                            # < 6.2
                             if obj_type == 'groups':
                                 id = str(self.get_hostgroup_id(name.strip()))
+
+                            # >= 6.2
+                            elif obj_type == 'host_groups':
+                                id = str(self.get_hostgroup_id(name.strip()))
+
+                            # >= 6.2
+                            elif obj_type == 'template_groups':
+                                id = str(self.get_templategroup_id(name.strip()))
 
                             elif obj_type == 'hosts':
                                 id = str(self.get_host_id(name.strip()))
@@ -7183,6 +7217,24 @@ class zabbixcli(cmd.Cmd):
                 raise Exception('Could not find hostgroupID for: ' + hostgroup)
 
         return str(hostgroupid)
+    
+    def get_templategroup_id(self, templategroup: str) -> str:
+        """
+        DESCRIPTION:
+        Get the ID for a given Template Group name.
+        """
+        if self.bulk_execution:
+            if templategroup in self.templategroupname_cache:
+                templategroupid = self.hostgroupname_cache[templategroup]
+            else:
+                raise Exception(f"Could not find Template Group ID for: {templategroup}")
+        else:
+            data = self.zapi.templategroup.get(filter={'name': templategroup})
+            if data != []:
+                templategroupid = data[0]['groupid']
+            else:
+                raise Exception(f"Could not find Template Group ID for: {templategroup}")
+        return str(templategroupid)
 
     def host_exists(self, host):
         """
@@ -7493,6 +7545,26 @@ class zabbixcli(cmd.Cmd):
 
         for hostgroup in data:
             temp_dict[hostgroup['name']] = hostgroup['groupid']
+
+        return temp_dict
+    
+    def populate_templategroupname_cache(self) -> Dict[str, str]:
+        """
+        DESCRIPTION:
+        Populate template group name to ID cache
+        """
+        # This method initializes a dictionary with all template groups in
+        # the system.
+        #
+        # This will help the performance of bulk executions, because we avoid
+        # extra calls to the API to verify the existence of each template group.
+
+        temp_dict = {}
+
+        data = self.zapi.templategroup.get(output=['groupid', 'name'])
+
+        for templategroup in data:
+            temp_dict[templategroup['name']] = templategroup['groupid']
 
         return temp_dict
 
