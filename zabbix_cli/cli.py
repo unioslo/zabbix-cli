@@ -146,10 +146,7 @@ class zabbixcli(cmd.Cmd):
         #
 
         self.hostgroupname_cache = self.populate_hostgroupname_cache()
-        if self.zabbix_version.release >= (6, 2, 0):
-            self.templategroupname_cache = self.populate_templategroupname_cache()
-        else:
-            self.templategroupname_cache = {}
+        self.templategroupname_cache = self.populate_templategroupname_cache()
         self.hostgroupid_cache = self.populate_hostgroupid_cache()
 
     def do_show_maintenance_definitions(self, args):
@@ -7561,6 +7558,9 @@ class zabbixcli(cmd.Cmd):
         # extra calls to the API to verify the existence of each template group.
 
         temp_dict = {}
+
+        if self.zabbix_version.release < (6, 2, 0):
+            return temp_dict
 
         data = self.zapi.templategroup.get(output=['groupid', 'name'])
 
