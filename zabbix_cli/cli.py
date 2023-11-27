@@ -6184,7 +6184,7 @@ class zabbixcli(cmd.Cmd):
 
         * groups (before Zabbix 6.2)
         * host_groups (after Zabbix 6.2)
-        * template_groups (before Zabbix 6.2)
+        * template_groups (after Zabbix 6.2)
         * hosts
         * images
         * maps
