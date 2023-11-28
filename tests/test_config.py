@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import configparser
 import unittest
 
@@ -6,18 +8,16 @@ import zabbix_cli.config
 
 # TODO: Switch from RawConfigParser to ConfigParser here and config.py
 class MockConfig(configparser.RawConfigParser, object):
-
     def __init__(self):
-        super(MockConfig, self).__init__({'option_a': 'a', 'option_b': 'b'})
-        self.add_section('foo')
-        self.add_section('bar')
+        super(MockConfig, self).__init__({"option_a": "a", "option_b": "b"})
+        self.add_section("foo")
+        self.add_section("bar")
 
 
 class TestOptionDescriptor(unittest.TestCase):
-
     class MockConfigWithDescriptors(MockConfig):
-        foo_a = zabbix_cli.config.OptionDescriptor('foo', 'option_a')
-        bar_b = zabbix_cli.config.OptionDescriptor('bar', 'option_b')
+        foo_a = zabbix_cli.config.OptionDescriptor("foo", "option_a")
+        bar_b = zabbix_cli.config.OptionDescriptor("bar", "option_b")
 
     def _make_config(self):
         return self.MockConfigWithDescriptors()
@@ -29,27 +29,23 @@ class TestOptionDescriptor(unittest.TestCase):
 
     def test_descriptor_get(self):
         config = self._make_config()
-        self.assertEqual(config.get('foo', 'option_a'),
-                         getattr(config, 'foo_a'))
+        self.assertEqual(config.get("foo", "option_a"), getattr(config, "foo_a"))
 
     def test_descriptor_set(self):
         config = self._make_config()
-        config.foo_a = 'foo'
-        self.assertEqual('foo', config.foo_a)
-        self.assertEqual(config.get('foo', 'option_a'),
-                         config.foo_a)
+        config.foo_a = "foo"
+        self.assertEqual("foo", config.foo_a)
+        self.assertEqual(config.get("foo", "option_a"), config.foo_a)
 
     def test_descriptor_del(self):
         config = self._make_config()
-        config.foo_a = 'foo'
+        config.foo_a = "foo"
         del config.foo_a
-        self.assertFalse('foo' == config.foo_a)
-        self.assertEqual(config.get('foo', 'option_a'),
-                         config.foo_a)
+        self.assertFalse("foo" == config.foo_a)
+        self.assertEqual(config.get("foo", "option_a"), config.foo_a)
 
 
 class TestOptionRegister(unittest.TestCase):
-
     def _make_register(self):
         return zabbix_cli.config.OptionRegister()
 
@@ -57,14 +53,14 @@ class TestOptionRegister(unittest.TestCase):
         register = self._make_register()
         self.assertEqual(0, len(register))
 
-        register.add('foo', 'bar')
+        register.add("foo", "bar")
         self.assertEqual(1, len(register))
 
-        register.add('foo', 'baz')
+        register.add("foo", "baz")
         self.assertEqual(2, len(register))
 
     def test_iter(self):
-        items = [('foo', 'bar'), ('foo', 'baz')]
+        items = [("foo", "bar"), ("foo", "baz")]
         register = self._make_register()
 
         for section, option in items:
@@ -74,7 +70,7 @@ class TestOptionRegister(unittest.TestCase):
             self.assertEqual(items[i], item)
 
     def test_getitem(self):
-        items = [('foo', 'bar'), ('foo', 'baz')]
+        items = [("foo", "bar"), ("foo", "baz")]
         register = self._make_register()
 
         comparison = []
@@ -86,7 +82,7 @@ class TestOptionRegister(unittest.TestCase):
             self.assertEqual(comparison[i], gotten)
 
     def test_sections(self):
-        items = [('foo', 'bar'), ('foo', 'baz'), ('bar', 'foo')]
+        items = [("foo", "bar"), ("foo", "baz"), ("bar", "foo")]
         expect = set(t[0] for t in items)
         register = self._make_register()
 
@@ -97,7 +93,7 @@ class TestOptionRegister(unittest.TestCase):
         self.assertEqual(set(expect), set(register.sections))
 
     def test_initialize(self):
-        items = [('foo', 'bar'), ('foo', 'baz'), ('bar', 'foo')]
+        items = [("foo", "bar"), ("foo", "baz"), ("bar", "foo")]
         sections = set(t[0] for t in items)
         register = self._make_register()
 

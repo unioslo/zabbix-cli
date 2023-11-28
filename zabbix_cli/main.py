@@ -20,22 +20,23 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
+
+import getpass
+import logging
+import os
+import sys
 from enum import Enum
 from pathlib import Path
-import sys
-import os
-import getpass
-import argparse
-import logging
-import textwrap
 from typing import Optional
-
 
 import typer
 
-from .config import get_config, validate_config
-from .logs import configure_logging, LogContext
 from .cli import zabbixcli
+from .config import get_config
+from .config import validate_config
+from .logs import configure_logging
+from .logs import LogContext
 
 
 logger = logging.getLogger("zabbix-cli")
@@ -55,7 +56,7 @@ def main(
         None,
         "--config",
         "-c",
-        'help'="Define an alternative configuration file.",
+        help="Define an alternative configuration file.",
     ),
     zabbix_command: str = typer.Option(
         "",
@@ -201,7 +202,7 @@ def main(
                 username = input("# Username[" + default_user + "]: ")
                 password = getpass.getpass("# Password: ")
 
-            except Exception as e:
+            except Exception:
                 print("\n[Aborted]\n")
                 sys.exit(0)
 

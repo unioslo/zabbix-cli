@@ -45,7 +45,7 @@ else
     echo -e  "TEST 4: ERROR\n"
 fi
 
-# return: ok 
+# return: ok
 ${ZABBIX_CLI} --use-json-format create_host \"aaa-001.uio.no\" \"\" \"\" \"\"
 
 RETVAL=$?
@@ -404,7 +404,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_user \"AAA-user\" \"AAA\" \"user\" \"\" \"\" \"\" \"\" \"13\" 
+${ZABBIX_CLI} --use-json-format create_user \"AAA-user\" \"AAA\" \"user\" \"\" \"\" \"\" \"\" \"13\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -414,7 +414,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_user \"BBB-user\" \"BBB\" \"user\" \"\" \"\" \"\" \"\" \"13\" 
+${ZABBIX_CLI} --use-json-format create_user \"BBB-user\" \"BBB\" \"user\" \"\" \"\" \"\" \"\" \"13\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -424,7 +424,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_user \"AAA-user\" \"AAA\" \"user\" \"\" \"\" \"\" \"\" \"13\" 
+${ZABBIX_CLI} --use-json-format create_user \"AAA-user\" \"AAA\" \"user\" \"\" \"\" \"\" \"\" \"13\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -473,4 +473,3 @@ if [ $RETVAL -eq 0 ]; then
 else
     echo -e  "TEST 46: ERROR\n"
 fi
-

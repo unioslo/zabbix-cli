@@ -1,4 +1,5 @@
 """Utility functions."""
+from __future__ import annotations
 
 
 def get_ack_status(code):
@@ -23,7 +24,14 @@ def get_event_status(code):
 
 def get_trigger_severity(code):
     """Get trigger severity from code."""
-    trigger_severity = {0: "Not classified", 1: "Information", 2: "Warning", 3: "Average", 4: "High", 5: "Disaster"}
+    trigger_severity = {
+        0: "Not classified",
+        1: "Information",
+        2: "Warning",
+        3: "Average",
+        4: "High",
+        5: "Disaster",
+    }
 
     if code in trigger_severity:
         return trigger_severity[code]
@@ -153,11 +161,7 @@ def get_autologin_type(code):
 
 def get_permission(code):
     """Get permission."""
-    permission = {
-        0: "deny",
-        2: "ro",
-        3: "rw"
-    }
+    permission = {0: "deny", 2: "ro", 3: "rw"}
 
     return permission.get(code, None)
 
@@ -174,24 +178,26 @@ def get_permission_code(permission):
 
 def get_item_type(code):
     """Get item type from code."""
-    item_type = {0: "Zabbix agent",
-                 1: "SNMPv1 agent",
-                 2: "Zabbix trapper",
-                 3: "simple check",
-                 4: "SNMPv2 agent",
-                 5: "Zabbix internal",
-                 6: "SNMPv3 agent",
-                 7: "Zabbix agent (active)",
-                 8: "Zabbix aggregate",
-                 9: "web item",
-                 10: "external check",
-                 11: "database monitor",
-                 12: "IPMI agent",
-                 13: "SSH agent",
-                 14: "TELNET agent",
-                 15: "calculated",
-                 16: "JMX agent",
-                 17: "SNMP trap"}
+    item_type = {
+        0: "Zabbix agent",
+        1: "SNMPv1 agent",
+        2: "Zabbix trapper",
+        3: "simple check",
+        4: "SNMPv2 agent",
+        5: "Zabbix internal",
+        6: "SNMPv3 agent",
+        7: "Zabbix agent (active)",
+        8: "Zabbix aggregate",
+        9: "web item",
+        10: "external check",
+        11: "database monitor",
+        12: "IPMI agent",
+        13: "SSH agent",
+        14: "TELNET agent",
+        15: "calculated",
+        16: "JMX agent",
+        17: "SNMP trap",
+    }
 
     if code in item_type:
         return item_type[code] + " (" + str(code) + ")"

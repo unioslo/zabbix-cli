@@ -1,4 +1,5 @@
 """All functions in this module extend or simplifies common API tasks."""
+from __future__ import annotations
 
 
 def update_usergroup(zapi, usrgrpid, rights=None, userids=None):
@@ -11,11 +12,19 @@ def update_usergroup(zapi, usrgrpid, rights=None, userids=None):
     The rights and userids provided are merged into the usergroup.
     """
     usrgrpid = str(usrgrpid)  # Make sure this number is a string
-    usergroup = zapi.usergroup.get(filter={"usrgrpid": usrgrpid}, selectRights=["permission", "id"], selectUsers=["userid"])[0]
+    usergroup = zapi.usergroup.get(
+        filter={"usrgrpid": usrgrpid},
+        selectRights=["permission", "id"],
+        selectUsers=["userid"],
+    )[0]
 
     if rights:
         # Get the current rights with ids from new rights filtered
-        new_rights = [current_right for current_right in usergroup["rights"] if current_right["id"] not in [right["id"] for right in rights]]
+        new_rights = [
+            current_right
+            for current_right in usergroup["rights"]
+            if current_right["id"] not in [right["id"] for right in rights]
+        ]
 
         new_rights.extend(rights)
 

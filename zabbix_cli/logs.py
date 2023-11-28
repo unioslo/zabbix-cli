@@ -18,17 +18,21 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import collections
 import logging
 import sys
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_FORMAT = " ".join((
-    "%(asctime)s",
-    "[%(name)s][%(user)s][%(process)d][%(levelname)s]:",
-    "%(message)s",
-))
+DEFAULT_FORMAT = " ".join(
+    (
+        "%(asctime)s",
+        "[%(name)s][%(user)s][%(process)d][%(levelname)s]:",
+        "%(message)s",
+    )
+)
 
 
 class ContextFilter(logging.Filter):
@@ -87,7 +91,7 @@ def get_log_level(level):
 
 def configure_logging(config):
     """Configure the root logger."""
-    enable = config.logging == 'ON'
+    enable = config.logging == "ON"
     level = get_log_level(config.log_level)
     filename = config.log_file
 
@@ -111,59 +115,55 @@ def configure_logging(config):
 # python -m zabbix_cli.logs
 #
 
+
 def main(inargs=None):
     import argparse
     from zabbix_cli.config import get_config
 
-    parser = argparse.ArgumentParser('test log settings')
+    parser = argparse.ArgumentParser("test log settings")
+    parser.add_argument("-c", "--config", default=None)
     parser.add_argument(
-        '-c', '--config',
-        default=None)
+        "--level", dest="log_level", default=None, help="override %(dest)s from config"
+    )
     parser.add_argument(
-        '--level',
-        dest='log_level',
+        "--file", dest="log_file", default=None, help="override %(dest)s from config"
+    )
+    parser.add_argument(
+        "--enable",
+        dest="logging",
+        choices=("ON", "OFF"),
         default=None,
-        help='override %(dest)s from config')
-    parser.add_argument(
-        '--file',
-        dest='log_file',
-        default=None,
-        help='override %(dest)s from config')
-    parser.add_argument(
-        '--enable',
-        dest='logging',
-        choices=('ON', 'OFF'),
-        default=None,
-        help='override %(dest)s from config')
+        help="override %(dest)s from config",
+    )
 
     args = parser.parse_args(inargs)
     config = get_config(args.config)
 
-    for attr in ('logging', 'log_level', 'log_file'):
+    for attr in ("logging", "log_level", "log_file"):
         value = getattr(args, attr)
         if value is not None:
             setattr(config, attr, value)
 
     configure_logging(config)
 
-    logger.debug('a debug message')
-    logger.info('an info message')
-    logger.warning('a warn message')
-    logger.error('an error message')
+    logger.debug("a debug message")
+    logger.info("an info message")
+    logger.warning("a warn message")
+    logger.error("an error message")
     try:
         this_name_is_not_in_scope  # noqa: F821
     except NameError:
-        logger.error('an error message with traceback', exc_info=True)
+        logger.error("an error message with traceback", exc_info=True)
 
     logger.debug("Message without user context")
-    with LogContext(logger, user='user1'):
+    with LogContext(logger, user="user1"):
         logger.debug("Message with context user=user1")
-        with LogContext(logger, user='user2'):
+        with LogContext(logger, user="user2"):
             logger.debug("Message with nested context user=user2")
     logger.debug("Message after context")
 
-    logger.info('done')
+    logger.info("done")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

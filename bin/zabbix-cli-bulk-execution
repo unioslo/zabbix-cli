@@ -20,34 +20,38 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
-import logging
-import sys
-import os
-import argparse
-import subprocess
+from __future__ import annotations
 
-from zabbix_cli.config import get_config, validate_config
+import argparse
+import logging
+import os
+import subprocess
+import sys
+
+from zabbix_cli.config import get_config
+from zabbix_cli.config import validate_config
 from zabbix_cli.logs import configure_logging
 
 
-logger = logging.getLogger('zabbix-cli-bulk-execution')
+logger = logging.getLogger("zabbix-cli-bulk-execution")
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=sys.argv[0])
+    (
+        parser.add_argument(
+            "--input-file",
+            "-f",
+            metavar="FILE",
+            type=argparse.FileType("r"),
+            default="-",
+            dest="input",
+            help="Read commands from %(metavar)s, defaults to stdin",
+        ),
+    )
     parser.add_argument(
-        '--input-file', '-f',
-        metavar='FILE',
-        type=argparse.FileType('r'),
-        default='-',
-        dest='input',
-        help='Read commands from %(metavar)s, defaults to stdin'),
-    parser.add_argument(
-        '--config', '-c',
-        metavar='<config file>',
-        required=False,
-        dest='config_file')
+        "--config", "-c", metavar="<config file>", required=False, dest="config_file"
+    )
 
     args = parser.parse_args()
 
@@ -56,12 +60,11 @@ if __name__ == '__main__':
     configure_logging(conf)
 
     # Make a sub-logger that outputs to stdout
-    messages = logger.getChild('messages')
+    messages = logger.getChild("messages")
     messages.propagate = True
     messages.setLevel(logging.INFO)
     messages_output = logging.StreamHandler(sys.stdout)
-    messages_output.setFormatter(
-        logging.Formatter("[%(levelname)s]: %(message)s"))
+    messages_output.setFormatter(logging.Formatter("[%(levelname)s]: %(message)s"))
     messages.addHandler(messages_output)
 
     #
@@ -69,8 +72,8 @@ if __name__ == '__main__':
     # with log_file in the config file.
     #
 
-    logger.debug('**** Zabbix-cli-bulk-execution started. ****')
-    messages.info('Reading commands from %r', args.input.name)
+    logger.debug("**** Zabbix-cli-bulk-execution started. ****")
+    messages.info("Reading commands from %r", args.input.name)
 
     for lineno, line in enumerate(args.input, 1):
         try:
@@ -78,23 +81,28 @@ if __name__ == '__main__':
 
             command = 'zabbix-cli -o json -C "' + zabbix_cli_command + '"'
 
-            DEVNULL = open(os.devnull, 'w')
-            proc = subprocess.Popen([command], stdout=DEVNULL, stderr=DEVNULL,
-                                    shell=True)
+            DEVNULL = open(os.devnull, "w")
+            proc = subprocess.Popen(
+                [command], stdout=DEVNULL, stderr=DEVNULL, shell=True
+            )
             proc.wait()
 
             if proc.returncode == 0:
-                logger.info('Zabbix-cli command %r executed', command)
+                logger.info("Zabbix-cli command %r executed", command)
             else:
-                logger.warning('Zabbix-cli command %r could not be executed',
-                               command)
-        except Exception as e:
-            messages.error('Encoutered an error on line %i: %r', lineno, line)
-            logger.error('Error in file=%r lineno=%d line=%r',
-                         args.input.name, lineno, line, exc_info=True)
-            logger.debug('**** Zabbix-cli-bulk-execution aborted. ****')
+                logger.warning("Zabbix-cli command %r could not be executed", command)
+        except Exception:
+            messages.error("Encoutered an error on line %i: %r", lineno, line)
+            logger.error(
+                "Error in file=%r lineno=%d line=%r",
+                args.input.name,
+                lineno,
+                line,
+                exc_info=True,
+            )
+            logger.debug("**** Zabbix-cli-bulk-execution aborted. ****")
             break
 
     if args.input is not sys.stdin:
         args.input.close()
-    logger.debug('**** Zabbix-cli-bulk-execution finished. ****')
+    logger.debug("**** Zabbix-cli-bulk-execution finished. ****")

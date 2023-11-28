@@ -3,29 +3,28 @@
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
-
 # -- Path setup --------------------------------------------------------------
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+from __future__ import annotations
 
 import os
-import sys
 import re
+import sys
 
 # Add the parent directory on PYTHONPATH.
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath(".."))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'zabbix-cli'
-copyright = '2023, University of Oslo'
-author = 'University of Oslo'
+project = "zabbix-cli"
+copyright = "2023, University of Oslo"
+author = "University of Oslo"
 
 # The full version, including alpha/beta/rc tags
-release = '2.3.2'
+release = "2.3.2"
 
 
 # -- General configuration ---------------------------------------------------
@@ -36,11 +35,11 @@ root_doc = "manual"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
+    "sphinx.ext.autodoc",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -53,7 +52,7 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = "alabaster"
 
 html_theme_options = {
     "nosidebar": True,
@@ -62,25 +61,30 @@ html_theme_options = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 html_css_files = [
-    'css/manual.css',
+    "css/manual.css",
 ]
 
 html_js_files = [
-    'js/manual.js',
+    "js/manual.js",
 ]
 
 # -- Extension configuration -------------------------------------------------
+
 
 # Select only members with "do_" prefix.
 def autodoc_skip_member_handler(app, what, name, obj, skip, options):
     return not name.startswith("do_")
 
+
 # Hide the Python function signature description.
-def autodoc_process_signature_handler(app, what, name, obj, options, signature, return_annotation):
+def autodoc_process_signature_handler(
+    app, what, name, obj, options, signature, return_annotation
+):
     return "", None
+
 
 def autodoc_process_docstring_handler(app, what, name, obj, options, lines):
     """
@@ -115,7 +119,7 @@ def autodoc_process_docstring_handler(app, what, name, obj, options, lines):
                 else:
                     break
             for i in range(lines_to_indent):
-                lines[idx+1+i] = "  " + lines[idx+1+i]
+                lines[idx + 1 + i] = "  " + lines[idx + 1 + i]
             continue
         section = re.match("^-+$", line)
         if section:
@@ -131,7 +135,8 @@ def autodoc_process_docstring_handler(app, what, name, obj, options, lines):
     lines.clear()
     lines += new_lines
 
+
 def setup(app):
-    app.connect('autodoc-process-docstring', autodoc_process_docstring_handler)
-    app.connect('autodoc-process-signature', autodoc_process_signature_handler)
-    app.connect('autodoc-skip-member', autodoc_skip_member_handler)
+    app.connect("autodoc-process-docstring", autodoc_process_docstring_handler)
+    app.connect("autodoc-process-signature", autodoc_process_signature_handler)
+    app.connect("autodoc-skip-member", autodoc_skip_member_handler)

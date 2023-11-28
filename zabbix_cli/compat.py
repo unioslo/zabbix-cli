@@ -1,4 +1,5 @@
 """Compatibility functions for different Zabbix versions."""
+from __future__ import annotations
 
 from packaging.version import Version
 
@@ -9,12 +10,12 @@ from packaging.version import Version
 
 # Compatibility methods for Zabbix API objects properties and method parameter names (same thing)
 # Returns the appropriate property name for the given Zabbix version.
-# 
+#
 # FORMAT: <object>_<property>
 # EXAMPLE: user_name() (User object, name property)
 #
-# DEV NOTE: All functions follow the same pattern: 
-# Early return if the version is older than the version where the property 
+# DEV NOTE: All functions follow the same pattern:
+# Early return if the version is older than the version where the property
 # was deprecated, otherwise return the new property name as the default.
 
 
@@ -23,7 +24,7 @@ def host_proxyid(version: Version) -> str:
     # https://www.zabbix.com/documentation/7.0/en/manual/api/changes#host
     if version.release < (7, 0, 0):
         return "proxy_hostid"
-    return "proxyid" 
+    return "proxyid"
 
 
 def login_user_name(version: Version) -> str:

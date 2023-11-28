@@ -20,6 +20,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-Cli.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import os.path
 import platform
 import sys
@@ -28,18 +30,18 @@ from setuptools import setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-'''
+"""
 setup.py installation file
-'''
+"""
 try:
     zabbix_cli = {}
-    with open(os.path.join(here, 'zabbix_cli', '__init__.py'), 'r') as version_file:
+    with open(os.path.join(here, "zabbix_cli", "__init__.py"), "r") as version_file:
         exec(version_file.read(), zabbix_cli)
 
     if sys.version_info < (3, 6):
-        raise SystemExit('ERROR: zabbix-cli needs at least python 3.6 to work')
+        raise SystemExit("ERROR: zabbix-cli needs at least python 3.6 to work")
 
-    install_requires = ['requests', 'packaging']
+    install_requires = ["requests", "packaging"]
 
     #
     # Setup
@@ -47,31 +49,38 @@ try:
     data_files = None
     current_os = platform.platform()
     if "Linux" in current_os:
-        data_files = [('/usr/share/zabbix-cli', ['etc/zabbix-cli.conf'])]
+        data_files = [("/usr/share/zabbix-cli", ["etc/zabbix-cli.conf"])]
     elif "Darwin" in current_os:
-        data_files = [('/usr/local/bin/zabbixcli', ['etc/zabbix-cli.conf'])]
+        data_files = [("/usr/local/bin/zabbixcli", ["etc/zabbix-cli.conf"])]
 
-    setup(name='zabbix_cli',
-          version=zabbix_cli['__version__'],
-          description='ZABBIX-CLI - Zabbix terminal client',
-          author='Rafael Martinez Guerrero',
-          author_email='rafael@postgresql.org.es',
-          url='https://github.com/unioslo/zabbix-cli',
-          packages=['zabbix_cli', ],
-          scripts=['bin/zabbix-cli', 'bin/zabbix-cli-bulk-execution', 'bin/zabbix-cli-init'],
-          data_files=data_files,
-          install_requires=install_requires,
-          platforms=['Linux'],
-          classifiers=[
-              'Environment :: Console',
-              'Development Status :: 5 - Production/Stable',
-              'Topic :: System :: Monitoring',
-              'Intended Audience :: System Administrators',
-              'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
-              'Programming Language :: Python',
-              'Programming Language :: Python :: 3',
-          ],
-          )
+    setup(
+        name="zabbix_cli",
+        version=zabbix_cli["__version__"],
+        description="ZABBIX-CLI - Zabbix terminal client",
+        author="Rafael Martinez Guerrero",
+        author_email="rafael@postgresql.org.es",
+        url="https://github.com/unioslo/zabbix-cli",
+        packages=[
+            "zabbix_cli",
+        ],
+        scripts=[
+            "bin/zabbix-cli",
+            "bin/zabbix-cli-bulk-execution",
+            "bin/zabbix-cli-init",
+        ],
+        data_files=data_files,
+        install_requires=install_requires,
+        platforms=["Linux"],
+        classifiers=[
+            "Environment :: Console",
+            "Development Status :: 5 - Production/Stable",
+            "Topic :: System :: Monitoring",
+            "Intended Audience :: System Administrators",
+            "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+            "Programming Language :: Python",
+            "Programming Language :: Python :: 3",
+        ],
+    )
 
 except Exception as e:
     print(e)
