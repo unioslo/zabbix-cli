@@ -1,5 +1,5 @@
 Name: zabbix-cli
-Version: 2.3.1
+Version: 2.3.2
 Release: 1%{?dist}
 Summary: Command-line interface for Zabbix
 
@@ -18,6 +18,7 @@ Obsoletes: uio-zabbix-zabbixcli < 1.5.4-2
 
 %if 0%{?rhel} == 7
 Requires: python36-requests
+Requires: python36-packaging
 %else
 %{?python_enable_dependency_generator}
 %endif
@@ -45,6 +46,10 @@ Command-line interface for Zabbix monitoring system.
 %doc LICENSE
 
 %changelog
+* Mon Oct 17 2022 Peder Hovdan Andresen <pederhan@uio.no> - 2.3.2-1
+- New version 2.3.2-1
+- Zabbix 7.0 compatibility
+
 * Mon Oct 17 2022 Marius Bakke <marius.bakke@usit.uio.no> - 2.3.1-1
 - New version 2.3.1-1
 

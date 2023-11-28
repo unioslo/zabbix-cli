@@ -21,11 +21,11 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'zabbix-cli'
-copyright = '2022, University of Oslo'
+copyright = '2023, University of Oslo'
 author = 'University of Oslo'
 
 # The full version, including alpha/beta/rc tags
-release = '2.3.1'
+release = '2.3.2'
 
 
 # -- General configuration ---------------------------------------------------
