@@ -966,7 +966,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 filter_items = _filter.split(",")
                 for filter_item in filter_items:
-                    key, value = [s.strip("'\"") for s in filter_item.split(":")]
+                    key, value = (s.strip("'\"") for s in filter_item.split(":"))
                     query["filter"][key] = value
             except ValueError:
                 self.generate_feedback("Error", "Unable to parse filter")
@@ -1270,7 +1270,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 filter_items = _filter.split(",")
                 for filter_item in filter_items:
-                    key, value = [s.strip("'\"") for s in filter_item.split(":")]
+                    key, value = (s.strip("'\"") for s in filter_item.split(":"))
                     query["filter"][key] = value
             except ValueError:
                 self.generate_feedback("Error", "Unable to parse filter")
@@ -1706,7 +1706,7 @@ class zabbixcli(cmd.Cmd):
             try:
                 filter_items = filters.split(",")
                 for filter_item in filter_items:
-                    key, value = [s.strip("'\"") for s in filter_item.split(":")]
+                    key, value = (s.strip("'\"") for s in filter_item.split(":"))
                     query["filter"][key] = value
             except ValueError:
                 self.generate_feedback("Error", "Unable to parse filter")
@@ -5119,7 +5119,7 @@ class zabbixcli(cmd.Cmd):
             )
 
             template_groups = template_info[0]["groups"]
-            current_groups = set([i["groupid"] for i in template_groups])
+            current_groups = {i["groupid"] for i in template_groups}
         except Exception as e:
             logger.error(
                 "Failed to get template group information for [%s (%s)]: %s",
@@ -5156,9 +5156,9 @@ class zabbixcli(cmd.Cmd):
                 if i["groupid"] == groupid:
                     return i["name"]
 
-        final_groups = current_groups - set(
-            [i["groupid"] for i in groups_to_remove]
-        ) | set([i["groupid"] for i in groups_to_add])
+        final_groups = current_groups - {i["groupid"] for i in groups_to_remove} | {
+            i["groupid"] for i in groups_to_add
+        }
 
         # Resolve the names of the final groups for user-friendly presentation.
         final_group_tuples = list(
@@ -7783,7 +7783,7 @@ class zabbixcli(cmd.Cmd):
                                     "updateExisting": True,
                                 }
 
-                            with open(file, "r") as import_filename:
+                            with open(file) as import_filename:
                                 import_data = import_filename.read()
 
                                 data = self.zapi.confimport(

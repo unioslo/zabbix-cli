@@ -72,7 +72,7 @@ MSWORD_FRIENDLY = 11
 PLAIN_COLUMNS = 12
 RANDOM = 20
 
-_re = re.compile("\033\[[0-9;]*m")
+_re = re.compile("\033\\[[0-9;]*m")
 
 
 def _get_size(text):
@@ -82,7 +82,7 @@ def _get_size(text):
     return (width, height)
 
 
-class PrettyTable(object):
+class PrettyTable:
     def __init__(self, field_names=None, **kwargs):
         """Return a new PrettyTable instance
 
@@ -346,7 +346,7 @@ class PrettyTable(object):
         try:
             assert int(val) >= 0
         except AssertionError:
-            raise Exception("Invalid value for %s: %s!" % (name, self._unicode(val)))
+            raise Exception(f"Invalid value for {name}: {self._unicode(val)}!")
 
     def _validate_true_or_false(self, name, val):
         try:
@@ -875,9 +875,9 @@ class PrettyTable(object):
         self._vrules = random.choice((ALL, FRAME, NONE))
         self.left_padding_width = random.randint(0, 5)
         self.right_padding_width = random.randint(0, 5)
-        self.vertical_char = random.choice("~!@#$%^&*()_+|-=\{}[];':\",./;<>?")
-        self.horizontal_char = random.choice("~!@#$%^&*()_+|-=\{}[];':\",./;<>?")
-        self.junction_char = random.choice("~!@#$%^&*()_+|-=\{}[];':\",./;<>?")
+        self.vertical_char = random.choice("~!@#$%^&*()_+|-=\\{}[];':\",./;<>?")
+        self.horizontal_char = random.choice("~!@#$%^&*()_+|-=\\{}[];':\",./;<>?")
+        self.junction_char = random.choice("~!@#$%^&*()_+|-=\\{}[];':\",./;<>?")
 
     ##############################
     # DATA INPUT METHODS         #
@@ -1304,7 +1304,7 @@ class PrettyTable(object):
         if options["attributes"]:
             for attr_name in options["attributes"]:
                 open_tag.append(
-                    ' %s="%s"' % (attr_name, options["attributes"][attr_name])
+                    ' {}="{}"'.format(attr_name, options["attributes"][attr_name])
                 )
         open_tag.append(">")
         lines.append("".join(open_tag))
@@ -1365,7 +1365,7 @@ class PrettyTable(object):
         if options["attributes"]:
             for attr_name in options["attributes"]:
                 open_tag.append(
-                    ' %s="%s"' % (attr_name, options["attributes"][attr_name])
+                    ' {}="{}"'.format(attr_name, options["attributes"][attr_name])
                 )
         open_tag.append(">")
         lines.append("".join(open_tag))

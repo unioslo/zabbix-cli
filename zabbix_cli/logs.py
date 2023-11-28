@@ -47,7 +47,7 @@ class ContextFilter(logging.Filter):
         return True
 
 
-class LogContext(object):
+class LogContext:
     """A context that adds ContextFilters to a logger."""
 
     def __init__(self, logger, **context):
@@ -64,7 +64,7 @@ class LogContext(object):
             self.logger.removeFilter(f)
 
 
-class SafeRecord(logging.LogRecord, object):
+class SafeRecord(logging.LogRecord):
     """A LogRecord wrapper that returns None for unset fields."""
 
     def __init__(self, record):
@@ -76,7 +76,7 @@ class SafeFormatter(logging.Formatter):
 
     def format(self, record):
         record = SafeRecord(record)
-        return super(SafeFormatter, self).format(record)
+        return super().format(record)
 
 
 def get_log_level(level):

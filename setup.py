@@ -35,7 +35,7 @@ setup.py installation file
 """
 try:
     zabbix_cli = {}
-    with open(os.path.join(here, "zabbix_cli", "__init__.py"), "r") as version_file:
+    with open(os.path.join(here, "zabbix_cli", "__init__.py")) as version_file:
         exec(version_file.read(), zabbix_cli)
 
     if sys.version_info < (3, 6):

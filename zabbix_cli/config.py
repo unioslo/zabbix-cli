@@ -77,7 +77,7 @@ def find_config(filename=None):
             yield filename
 
 
-class OptionDescriptor(object):
+class OptionDescriptor:
     """Descriptor to access ConfigParser settings as attributes."""
 
     # TODO: Add serialization, so that 'ON', 'OFF' -> boolean, etc...
@@ -151,7 +151,7 @@ class OptionRegister(collections.abc.Mapping):
             obj.set(section, option, self[(section, option)].default)
 
 
-class Configuration(configparser.RawConfigParser, object):
+class Configuration(configparser.RawConfigParser):
     """A custom ConfigParser object with zabbix-cli settings."""
 
     _registry = OptionRegister()
@@ -216,7 +216,7 @@ class Configuration(configparser.RawConfigParser, object):
     )
 
     def __init__(self):
-        super(Configuration, self).__init__()
+        super().__init__()
         self._registry.initialize(self)
         self.loaded_files = []
 
@@ -230,10 +230,10 @@ class Configuration(configparser.RawConfigParser, object):
                 descriptor.default,
             )
             value = descriptor.default
-        return super(Configuration, self).set(section, option, value)
+        return super().set(section, option, value)
 
     def read(self, filenames):
-        files_read = super(Configuration, self).read(filenames)
+        files_read = super().read(filenames)
         for filename in files_read:
             if filename in self.loaded_files:
                 self.loaded_files.remove(filename)
@@ -245,7 +245,7 @@ class Configuration(configparser.RawConfigParser, object):
             add_filename = filename or fp.name
         except AttributeError:
             pass
-        retval = super(Configuration, self).readfp(fp, filename=filename)
+        retval = super().readfp(fp, filename=filename)
         if add_filename:
             self.loaded_files.append(add_filename)
         return retval  # should be None
@@ -287,7 +287,7 @@ def validate_config(config):
 def main(inargs=None):
     import argparse
 
-    class Actions(object):
+    class Actions:
         """Subparser to function map."""
 
         def __init__(self):

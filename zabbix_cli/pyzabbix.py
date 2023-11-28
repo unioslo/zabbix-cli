@@ -48,7 +48,7 @@ def user_param_from_version(version: Version) -> str:
     return "username"  # defaults to new parameter name
 
 
-class ZabbixAPI(object):
+class ZabbixAPI:
     def __init__(
         self,
         server="http://localhost/zabbix",
@@ -233,7 +233,7 @@ class ZabbixAPI(object):
         return ZabbixAPIObjectClass(attr, self)
 
 
-class ZabbixAPIObjectClass(object):
+class ZabbixAPIObjectClass:
     def __init__(self, name: str, parent: ZabbixAPI):
         self.name = name
         self.parent = parent
@@ -245,9 +245,9 @@ class ZabbixAPIObjectClass(object):
             if args and kwargs:
                 raise TypeError("Found both args and kwargs")
 
-            return self.parent.do_request(
-                "{0}.{1}".format(self.name, attr), args or kwargs
-            )["result"]
+            return self.parent.do_request(f"{self.name}.{attr}", args or kwargs)[
+                "result"
+            ]
 
         return fn
 

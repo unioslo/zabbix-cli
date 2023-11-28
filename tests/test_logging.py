@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class CollectHandler(logging.Handler):
     def __init__(self):
-        super(CollectHandler, self).__init__(logging.NOTSET)
+        super().__init__(logging.NOTSET)
         self.records = []
 
     def emit(self, record):
@@ -64,7 +64,7 @@ class TestSafeFormatting(unittest.TestCase):
     def test_safe_record_missing_dict(self):
         fmt = "%(msg)s-%(this_probably_does_not_exist)s"
         record = self._make_safe_record("foo")
-        expect = "foo-%s" % (None,)
+        expect = f"foo-{None}"
         result = fmt % record.__dict__
         self.assertEqual(expect, result)
 

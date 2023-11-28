@@ -151,7 +151,7 @@ def main(
                 #       it, ssh style.
                 os.chmod(zabbix_auth_file, 0o400)
 
-                with open(zabbix_auth_file, "r") as f:
+                with open(zabbix_auth_file) as f:
                     for line in f:
                         (username, password) = line.split("::")
 
@@ -173,7 +173,7 @@ def main(
                 #       it, ssh style.
                 os.chmod(zabbix_auth_token_file, 0o600)
 
-                with open(zabbix_auth_token_file, "r") as f:
+                with open(zabbix_auth_token_file) as f:
                     for line in f:
                         (username, auth_token) = line.split("::")
 
@@ -294,7 +294,7 @@ def main(
                     # not be considered.
 
                     try:
-                        with open(input_file, "r") as f:
+                        with open(input_file) as f:
                             for input_line in f:
                                 if (
                                     input_line.find("#", 0) == -1

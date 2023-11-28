@@ -7,9 +7,9 @@ import zabbix_cli.config
 
 
 # TODO: Switch from RawConfigParser to ConfigParser here and config.py
-class MockConfig(configparser.RawConfigParser, object):
+class MockConfig(configparser.RawConfigParser):
     def __init__(self):
-        super(MockConfig, self).__init__({"option_a": "a", "option_b": "b"})
+        super().__init__({"option_a": "a", "option_b": "b"})
         self.add_section("foo")
         self.add_section("bar")
 
@@ -83,7 +83,7 @@ class TestOptionRegister(unittest.TestCase):
 
     def test_sections(self):
         items = [("foo", "bar"), ("foo", "baz"), ("bar", "foo")]
-        expect = set(t[0] for t in items)
+        expect = {t[0] for t in items}
         register = self._make_register()
 
         for section, option in items:
@@ -94,7 +94,7 @@ class TestOptionRegister(unittest.TestCase):
 
     def test_initialize(self):
         items = [("foo", "bar"), ("foo", "baz"), ("bar", "foo")]
-        sections = set(t[0] for t in items)
+        sections = {t[0] for t in items}
         register = self._make_register()
 
         for section, option in items:

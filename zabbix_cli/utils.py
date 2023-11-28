@@ -9,7 +9,7 @@ def get_ack_status(code):
     if code in ack_status:
         return ack_status[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_event_status(code):
@@ -19,7 +19,7 @@ def get_event_status(code):
     if code in event_status:
         return event_status[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_trigger_severity(code):
@@ -36,7 +36,7 @@ def get_trigger_severity(code):
     if code in trigger_severity:
         return trigger_severity[code]
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_trigger_status(code):
@@ -46,7 +46,7 @@ def get_trigger_status(code):
     if code in trigger_status:
         return trigger_status[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_maintenance_status(code):
@@ -56,7 +56,7 @@ def get_maintenance_status(code):
     if code in maintenance_status:
         return maintenance_status[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_monitoring_status(code):
@@ -66,7 +66,7 @@ def get_monitoring_status(code):
     if code in monitoring_status:
         return monitoring_status[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_zabbix_agent_status(code):
@@ -76,7 +76,7 @@ def get_zabbix_agent_status(code):
     if code in zabbix_agent_status:
         return zabbix_agent_status[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_gui_access(code):
@@ -86,7 +86,7 @@ def get_gui_access(code):
     if code in gui_access:
         return gui_access[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_usergroup_status(code):
@@ -96,7 +96,7 @@ def get_usergroup_status(code):
     if code in usergroup_status:
         return usergroup_status[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_hostgroup_flag(code):
@@ -106,7 +106,7 @@ def get_hostgroup_flag(code):
     if code in hostgroup_flag:
         return hostgroup_flag[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_hostgroup_type(code):
@@ -116,7 +116,7 @@ def get_hostgroup_type(code):
     if code in hostgroup_type:
         return hostgroup_type[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_user_type(code):
@@ -126,7 +126,7 @@ def get_user_type(code):
     if code in user_type:
         return user_type[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_maintenance_type(code):
@@ -136,7 +136,7 @@ def get_maintenance_type(code):
     if code in maintenance_type:
         return maintenance_type[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_maintenance_period_type(code):
@@ -146,7 +146,7 @@ def get_maintenance_period_type(code):
     if code in maintenance_period_type:
         return maintenance_period_type[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_autologin_type(code):
@@ -156,7 +156,7 @@ def get_autologin_type(code):
     if code in autologin_type:
         return autologin_type[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
 
 
 def get_permission(code):
@@ -202,4 +202,4 @@ def get_item_type(code):
     if code in item_type:
         return item_type[code] + " (" + str(code) + ")"
 
-    return "Unknown ({})".format(str(code))
+    return f"Unknown ({str(code)})"
