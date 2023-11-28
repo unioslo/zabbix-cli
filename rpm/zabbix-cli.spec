@@ -46,7 +46,7 @@ Command-line interface for Zabbix monitoring system.
 %doc LICENSE
 
 %changelog
-* Mon Oct 17 2022 Peder Hovdan Andresen <pederhan@uio.no> - 2.3.2-1
+* Tue Nov 28 2023 Peder Hovdan Andresen <pederhan@uio.no> - 2.3.2-1
 - New version 2.3.2-1
 - Zabbix 7.0 compatibility
 
