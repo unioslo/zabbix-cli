@@ -34,6 +34,7 @@ from click_repl import repl as start_repl
 
 from zabbix_cli.__about__ import __version__
 from zabbix_cli.auth import configure_auth
+from zabbix_cli.bulk import load_command_file
 from zabbix_cli.cli import zabbixcli
 from zabbix_cli.commands import app
 from zabbix_cli.config import Config
@@ -143,17 +144,32 @@ def main_callback(
     ),
 ) -> None:
     logger.debug("Zabbix-CLI started.")
+    state = get_state()
+    if state.is_config_loaded:
+        conf = state.config
+    else:
+        conf = get_config(config_file)
 
-    conf = get_config(config_file)
+    # Overrides for config options can be (re-)applied here
+    if output_format is not None:
+        conf.app.output_format = output_format
+
+    # If we are already inside the REPL, we don't need re-run configuration
+    if state.repl:
+        return
+
     configure_logging(conf.logging)
     configure_auth(conf)  # NOTE: move into State.configure?
     configure_state(conf)
-    if not ctx.invoked_subcommand:
+
+    if zabbix_command:
+        # run command here
+        pass
+    elif input_file:
+        commands = load_command_file(input_file)  # noqa
+    else:
         raise SystemExit(run_repl(ctx))
 
-    if output_format is not None:
-        conf.app.output_format = output_format
-        output_format = output_format.value
     try:
         #
         # If logging is activated, start logging to the file defined

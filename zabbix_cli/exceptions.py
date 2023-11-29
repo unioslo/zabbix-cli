@@ -17,6 +17,10 @@ class ConfigError(ZabbixCLIError):
     """Exception raised when there is a configuration error."""
 
 
+class CommandFileError(ZabbixCLIError):
+    """Exception raised when there is a command file error."""
+
+
 class Exiter(Protocol):
     """Protocol class for exit function that can be passed to an
     exception handler function.
