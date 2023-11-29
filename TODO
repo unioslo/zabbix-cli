@@ -1,0 +1,17 @@
+* Configure file logging for scripts as well???
+
+## scripts
+
+Some sort of shared callback function between all scripts and the main CLI. This way we can pass in config etc, and have a common way of handling errors etc.
+
+
+
+## Config
+
+Catch when users use deprecated names and warn them. Also warn when we load a .conf config.
+
+
+## Logging
+
+* Document that setting `log_file = ""` causes logs to be sent to stderr.
+  * This is not recommended, but useful for real-time debugging.

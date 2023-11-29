@@ -12,12 +12,10 @@ name: CI
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version:
-          - '3.6'
-          - '3.7'
           - '3.8'
           - '3.9'
           - '3.10'
@@ -35,6 +33,6 @@ jobs:
           cache-dependency-path: setup.py
       - name: Install dependencies
         run: |
-          pip install requests pytest
+          pip install .[test]
       - name: Test
         run: python -m pytest -vv

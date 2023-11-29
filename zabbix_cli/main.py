@@ -26,32 +26,97 @@ import getpass
 import logging
 import os
 import sys
-from enum import Enum
 from pathlib import Path
 from typing import Optional
 
 import typer
+from click_repl import repl as start_repl
 
-from .cli import zabbixcli
-from .config import get_config
-from .config import validate_config
-from .logs import configure_logging
-from .logs import LogContext
-
+from zabbix_cli.__about__ import __version__
+from zabbix_cli.auth import configure_auth
+from zabbix_cli.cli import zabbixcli
+from zabbix_cli.commands import app
+from zabbix_cli.config import Config
+from zabbix_cli.config import create_config_file
+from zabbix_cli.config import get_config
+from zabbix_cli.config import OutputFormat
+from zabbix_cli.exceptions import handle_exception
+from zabbix_cli.exceptions import ZabbixCLIError
+from zabbix_cli.logs import configure_logging
+from zabbix_cli.logs import LogContext
+from zabbix_cli.output.console import error
+from zabbix_cli.output.console import info
+from zabbix_cli.output.formatting.path import path_link
+from zabbix_cli.state import get_state
 
 logger = logging.getLogger("zabbix-cli")
 
-app = typer.Typer()
+
+def try_load_config(config_file: Optional[Path]) -> None:
+    """Attempts to load the config given a config file path.
+    Assigns the loaded config to the global state.
+
+    Parameters
+    ----------
+    config_file : Optional[Path]
+        The path to the config file.
+    create : bool, optional
+        Whether to create a new config file if one is not found, by default True
+    """
+    # Don't load the config if it's already loaded (e.g. in REPL)
+    state = get_state()
+    if not state.is_config_loaded:
+        try:
+            conf = get_config(config_file)
+        except FileNotFoundError:
+            if not config_file:  # non-existant config file passed in is fatal
+                raise ZabbixCLIError(f"Config file {config_file} not found.")
+
+            info("Config file not found. Creating new config file.")
+            config_path = create_config_file(config_file)
+            info(f"Created config file: {path_link(config_path)}")
+            conf = get_config(config_file)
+            # TODO: run some sort of wizard so we can specify url, username and password
+        except Exception as e:
+            error(f"Unable to load config: {str(e)}", exc_info=True)
+            return
+        state.config = conf
 
 
-class OutputFormat(Enum):
-    csv = "csv"
-    json = "json"
-    table = "table"
+def configure_state(config: Config) -> None:
+    state = get_state()
+    state.configure(config)
 
 
-@app.command()
-def main(
+def run_repl(ctx: typer.Context) -> None:
+    state = get_state()
+
+    intro = f"""
+#############################################################
+Welcome to the Zabbix command-line interface (v{__version__})
+Connected to server {state.config.api.url} (v{state.client.version})
+#############################################################
+Type --help for a list of commands, :h for a list of REPL commands, :q to exit.
+"""
+
+    # TODO: find a better way to print a message ONCE at the start of the REPL
+    def print_intro() -> None:
+        state = get_state()
+        if not state.repl:
+            print(intro)
+            state.repl = True
+
+    # TODO: add history file support
+    prompt_kwargs = {"pre_run": print_intro}
+    try:
+        start_repl(ctx, prompt_kwargs=prompt_kwargs)
+    finally:
+        state.logout()
+
+
+@app.callback(invoke_without_command=True)
+def main_callback(
+    ctx: typer.Context,
     config_file: Optional[Path] = typer.Option(
         None,
         "--config",
@@ -77,24 +142,23 @@ def main(
         help="Define the output format when running in command-line mode.",
     ),
 ) -> None:
+    logger.debug("Zabbix-CLI started.")
+
+    conf = get_config(config_file)
+    configure_logging(conf.logging)
+    configure_auth(conf)  # NOTE: move into State.configure?
+    configure_state(conf)
+    if not ctx.invoked_subcommand:
+        raise SystemExit(run_repl(ctx))
+
+    if output_format is not None:
+        conf.app.output_format = output_format
+        output_format = output_format.value
     try:
-        #
-        # Processing command line parameters
-        #
-
-        if output_format:
-            output_format = output_format.value
-
-        conf = get_config(config_file)
-        validate_config(conf)
-        configure_logging(conf)
-
         #
         # If logging is activated, start logging to the file defined
         # with log_file in the config file.
         #'
-
-        logger.debug("**** Zabbix-CLI startet. ****")
 
         #
         # Non-interactive authentication procedure
@@ -387,5 +451,16 @@ def main(
         raise
 
 
+def main() -> None:
+    """Main entry point for the CLI."""
+    try:
+        app()
+    except Exception as e:
+        handle_exception(e)
+    finally:
+        state = get_state()
+        state.logout()
+
+
 if __name__ == "__main__":
-    app()
+    main()

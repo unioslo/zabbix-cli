@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
 
 import requests
 import urllib3
@@ -51,16 +52,14 @@ def user_param_from_version(version: Version) -> str:
 class ZabbixAPI:
     def __init__(
         self,
-        server="http://localhost/zabbix",
-        session=None,
-        use_authenticate=False,
-        timeout=None,
+        server: str = "http://localhost/zabbix",
+        session: requests.Session = None,
+        timeout: int = None,
     ):
         """
         Parameters:
             server: Base URI for zabbix web interface (omitting /api_jsonrpc.php)
             session: optional pre-configured requests.Session instance
-            use_authenticate: Use old (Zabbix 1.8) style authentication
             timeout: optional connect and read timeout in seconds, default: None (if you're using Requests >= 2.4 you can set it as tuple: "(connect, read)" which is used to set individual connect and read timeouts.)
         """
 
@@ -78,7 +77,6 @@ class ZabbixAPI:
             }
         )
 
-        self.use_authenticate = use_authenticate
         self.auth = ""
         self.id = 0
 
@@ -95,36 +93,21 @@ class ZabbixAPI:
         self.session.verify = False
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    def login(self, user="", password="", auth_token=""):
+    def login(self, user: str = "", password: str = "", auth_token: str = "") -> str:
         """
-        Convenience method for calling user.authenticate and storing the
-        resulting auth token for further commands.  If
-        use_authenticate is set, it uses the older (Zabbix 1.8)
-        authentication command
+        Convenience method for logging into the API and storing the resulting
+        auth token as an instance variable.
         """
-
-        # If the file $HOME/.zabbix-cli_auth_token exists from an
-        # older session, the system will try to reuse the
-        # API-auth-token saved in this file.
-        #
-        # If the file $HOME/.zabbix-cli_auth_token does not exist, we
-        # will login with the username and password.
-        #
-
         # The username kwarg was called "user" in Zabbix 5.2 and earlier.
         # This sets the correct kwarg for the version of Zabbix we're using.
         user_kwarg = {compat.login_user_name(self.version): user}
 
-        if auth_token == "":
-            self.auth = ""
-            if self.use_authenticate:
-                self.auth = self.user.authenticate(user=user, password=password)
-            else:
-                self.auth = self.user.login(**user_kwarg, password=password)
+        if not auth_token:
+            self.auth = self.user.login(**user_kwarg, password=password)  # type: ignore
         else:
             self.auth = auth_token
+            # TODO: confirm we are logged in here
             self.api_version()  # NOTE: useless? can we remove this?
-
         return self.auth
 
     def confimport(self, format="", source="", rules=""):
@@ -238,7 +221,7 @@ class ZabbixAPIObjectClass:
         self.name = name
         self.parent = parent
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> Any:
         """Dynamically create a method (ie: get)"""
 
         def fn(*args, **kwargs):

@@ -24,6 +24,8 @@ import collections
 import logging
 import sys
 
+from zabbix_cli.config import LoggingConfig
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_FORMAT = " ".join(
@@ -79,7 +81,7 @@ class SafeFormatter(logging.Formatter):
         return super().format(record)
 
 
-def get_log_level(level):
+def get_log_level(level: str) -> int:
     if level and level.isdigit():
         return int(level)
     elif level:
@@ -89,16 +91,21 @@ def get_log_level(level):
         return logging.NOTSET
 
 
-def configure_logging(config):
+def configure_logging(
+    config: LoggingConfig = LoggingConfig(
+        # enabled=True,
+        # log_file=None,
+        # log_level="DEBUG",
+    ),
+):
     """Configure the root logger."""
-    enable = config.logging == "ON"
     level = get_log_level(config.log_level)
     filename = config.log_file
 
-    if enable and filename:
+    if config.enabled and filename:
         # log to given filename
         handler = logging.FileHandler(filename)
-    elif enable:
+    elif config.enabled:
         # log to stderr
         handler = logging.StreamHandler(sys.stderr)
     else:

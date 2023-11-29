@@ -20,342 +20,279 @@
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import collections
 import configparser
 import logging
-import os
-import sys
+from enum import Enum
+from pathlib import Path
+from typing import Any
+from typing import Dict
+from typing import Literal
+from typing import Optional
+from typing import Tuple
+
+import tomli
+import tomli_w
+import typer
+from pydantic import AliasChoices
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import field_validator
+from pydantic import SecretStr
+from pydantic import ValidationInfo
+from strenum import StrEnum
+
+from zabbix_cli._zcli_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
+from zabbix_cli.dirs import CONFIG_DIR
+from zabbix_cli.dirs import EXPORT_DIR
+from zabbix_cli.dirs import LOGS_DIR
+from zabbix_cli.dirs import SITE_CONFIG_DIR
+from zabbix_cli.exceptions import ConfigError
+
 
 # Config file basename
-CONFIG_FILENAME = "zabbix-cli.conf"
-CONFIG_FIXED_NAME = "zabbix-cli.fixed.conf"
+CONFIG_FILENAME = "zabbix-cli.toml"
+DEFAULT_CONFIG_FILE = CONFIG_DIR / CONFIG_FILENAME
 
-# Config file locations
-CONFIG_DEFAULT_DIR = "/usr/share/zabbix-cli"
-CONFIG_SYSTEM_DIR = "/etc/zabbix-cli"
-CONFIG_USER_DIR = os.path.expanduser("~/.zabbix-cli")
-
-# Any item will overwrite values from the previous
-CONFIG_PRIORITY = tuple(
-    (
-        os.path.join(d, f)
-        for d, f in (
-            (CONFIG_DEFAULT_DIR, CONFIG_FILENAME),
-            (CONFIG_SYSTEM_DIR, CONFIG_FILENAME),
-            (CONFIG_USER_DIR, CONFIG_FILENAME),
-            (CONFIG_SYSTEM_DIR, CONFIG_FIXED_NAME),
-            (CONFIG_DEFAULT_DIR, CONFIG_FIXED_NAME),
-        )
-    )
+CONFIG_PRIORITY = (
+    Path() / CONFIG_FILENAME,  # current directory
+    DEFAULT_CONFIG_FILE,  # local config directory
+    SITE_CONFIG_DIR / CONFIG_FILENAME,  # system config directory
 )
 
-# Where custom configs should be put into the order
-CONFIG_CUSTOM_GOES_AFTER = os.path.join(CONFIG_USER_DIR, CONFIG_FILENAME)
 
 logger = logging.getLogger(__name__)
 
 
-def get_priority(filename=None):
-    """Get and ordered list of config file locations."""
-    priority = list(CONFIG_PRIORITY)
-    if filename:
-        if CONFIG_CUSTOM_GOES_AFTER in priority:
-            priority.insert(priority.index(CONFIG_CUSTOM_GOES_AFTER) + 1, filename)
+# Environment variable names
+ENV_VAR_PREFIX = "ZABBIX_CLI_"
+ENV_ZABBIX_USERNAME = f"{ENV_VAR_PREFIX}USERNAME"
+ENV_ZABBIX_PASSWORD = f"{ENV_VAR_PREFIX}PASSWORD"
+
+
+class OutputFormat(StrEnum):
+    csv = "csv"
+    json = "json"
+    table = "table"
+
+
+class BaseModel(PydanticBaseModel):
+    model_config = ConfigDict(validate_assignment=True, extra="ignore")
+
+    @field_validator("*")
+    @classmethod
+    def _conf_bool_validator_compat(cls, v: Any, info: ValidationInfo) -> Any:
+        """Handles old config files that specified bools as ON/OFF."""
+        if not isinstance(v, str):
+            return v
+        if v.upper() == "ON":
+            return True
+        if v.upper() == "OFF":
+            return False
+        return v
+
+
+class APIConfig(BaseModel):
+    url: str = Field(..., validation_alias=AliasChoices("url", "zabbix_api_url"))
+    verify_ssl: bool = Field(
+        True, validation_alias=AliasChoices("verify_ssl", "cert_verify")
+    )
+
+
+class AppConfig(BaseModel):
+    username: str = Field(
+        "zabbix-ID", validation_alias=AliasChoices("username", "system_id")
+    )
+    password: Optional[SecretStr] = Field(None, exclude=True)
+    auth_token: Optional[SecretStr] = Field(None, exclude=True)
+    default_hostgroup: str = "All-hosts"
+    default_admin_usergroup: str = "All-root"
+    default_create_user_usergroup: str = "All-users"
+    default_notification_users_usergroup: str = "All-notification-users"
+    default_directory_exports: Path = EXPORT_DIR
+    default_export_format: Literal["XML", "JSON", "YAML", "PHP"] = Field("XML")
+    include_timestamp_export_filename: bool = True
+    use_colors: bool = True
+    use_auth_token_file: bool = False
+    use_paging: bool = False
+    output_format: OutputFormat = OutputFormat.table
+    allow_insecure_authfile: bool = True  # mimick old behavior
+
+
+class LoggingConfig(BaseModel):
+    enabled: bool = Field(
+        True, validation_alias=AliasChoices("logging", "enabled", "enable")
+    )
+    log_level: Literal[
+        "DEBUG", "INFO", "WARN", "WARNING", "ERROR", "CRITICAL", "FATAL"
+    ] = "ERROR"
+    log_file: Optional[Path] = (
+        # TODO: define this default path elsewhere
+        LOGS_DIR / "zabbix-cli.log"
+    )
+
+    @field_validator("log_file", mode="before")
+    @classmethod
+    def _empty_string_is_none(cls, v: Any) -> Any:
+        """Passing in an empty string to `log_file` sets it to `None`,
+        while omitting the option altogether sets it to the default.
+
+        Examples
+        -------
+
+        To get `LoggingConfig.log_file == None`:
+
+        ```toml
+        [logging]
+        log_file = ""
+        ```
+
+        To get `LoggingConfig.log_file == <default_log_file>`:
+
+        ```toml
+        [logging]
+        # log_file = ""
+        ```
+        """
+        if v == "":
+            return None
+        return v
+
+
+class Config(BaseModel):
+    api: APIConfig = Field(
+        default_factory=APIConfig, validation_alias=AliasChoices("api", "zabbix_api")
+    )
+    app: AppConfig = Field(
+        default_factory=AppConfig,
+        validation_alias=AliasChoices("app", "config", "zabbix_config"),
+    )
+    logging: LoggingConfig = Field(default_factory=LoggingConfig)
+
+    @classmethod
+    def sample_config(cls) -> Config:
+        """Get a sample configuration."""
+        return cls(api=APIConfig(url="https://zabbix.example.com/api_jsonrpc.php"))
+
+    @classmethod
+    def from_file(cls, filename: Optional[Path] = None) -> Config:
+        """Load configuration from a file.
+        Attempts to find a config file to load if none is specified.
+        Prioritizes newer .toml files over legacy .conf files.
+        """
+        fp = find_config(filename)
+        if not fp:  # support legacy .conf files
+            fp = find_config(filename, CONFIG_PRIORITY_LEGACY)
+            if fp:
+                logger.warning("Using legacy config file %r", fp)
+                conf = _load_config_conf(fp)
+            else:
+                raise FileNotFoundError("No configuration file found.")
         else:
-            priority.append(filename)
-    return priority
+            conf = _load_config_toml(fp)
+        return cls(**conf)
+
+    def as_toml(self) -> str:
+        """Dump the configuration to a TOML string."""
+        return tomli_w.dumps(
+            self.model_dump(
+                mode="json",
+                exclude_none=True,  # we shouldn't have any, but just in case
+            )
+        )
+
+    def dump_to_file(self, filename: Path) -> None:
+        """Dump the configuration to a TOML file."""
+        if not filename.parent.exists():
+            try:
+                filename.parent.mkdir(parents=True)
+            except OSError:
+                logger.error("unable to create directory %r", filename.parent)
+                raise ConfigError(f"unable to create directory {filename.parent}")
+        filename.write_text(self.as_toml())
 
 
-def find_config(filename=None):
+def _load_config_toml(filename: Path) -> Dict[str, Any]:
+    """Load a TOML configuration file."""
+    return tomli.loads(filename.read_text())
+
+
+def _load_config_conf(filename: Path) -> Dict[str, Any]:
+    """Load a conf configuration file with ConfigParser."""
+    config = configparser.ConfigParser()
+    config.read_file(filename.open())
+    return {s: dict(config.items(s)) for s in config.sections()}
+
+
+def find_config(
+    filename: Optional[Path] = None,
+    priority: Tuple[Path, ...] = CONFIG_PRIORITY,
+) -> Optional[Path]:
     """Find all available configuration files.
 
     :param filename: An optional user supplied file to throw into the mix
     """
-    for filename in get_priority(filename):
-        if os.path.isfile(filename):
-            logger.debug("found config %r", filename)
-            yield filename
+    # FIXME: this is a mess.
+    # If we have a file, just try to load it and call it a day?
+    filename_prio = list(priority)
+    if filename:
+        filename_prio.insert(
+            0, filename
+        )  # TODO: append last when we implement multi-file config merging
+    for fp in filename_prio:
+        if fp.exists():
+            logger.debug("found config %r", fp)
+            return fp
+    return None
 
 
-class OptionDescriptor:
-    """Descriptor to access ConfigParser settings as attributes."""
+def get_config(filename: Optional[str] = None) -> Config:
+    """Get a configuration object.
 
-    # TODO: Add serialization, so that 'ON', 'OFF' -> boolean, etc...
+    Args:
+        filename (Optional[str], optional): An optional user supplied file to throw into the mix. Defaults to None.
 
-    def __init__(self, section, option, default=None, required=False, disable=False):
-        self.section = section
-        self.option = option
-        self.default = default
-        self.required = required
-        self.disable = disable
-
-    def __get__(self, obj, cls=None):
-        if not obj:
-            return self
-        return obj.get(self.section, self.option)
-
-    def __set__(self, obj, value):
-        return obj.set(self.section, self.option, value)
-
-    def __delete__(self, obj):
-        return obj.set(self.section, self.option, self.default)
-
-    def __repr__(self):
-        return (
-            "<{cls.__name__} {obj.section}.{obj.option}"
-            " default={obj.default!r}"
-            " required={obj.required!r}"
-            " disable={obj.disable!r}"
-            ">"
-        ).format(cls=type(self), obj=self)
+    Returns:
+        Config: Config object loaded from file
+    """
+    return Config.from_file(find_config(filename))
 
 
-class OptionRegister(collections.abc.Mapping):
-    """A registry of ConfigParser sections, options and default values."""
-
-    def __init__(self):
-        self._settings = collections.OrderedDict()
-
-    def __len__(self):
-        return len(self._settings)
-
-    def __iter__(self):
-        return iter(self._settings)
-
-    def __getitem__(self, option_tuple):
-        return self._settings[option_tuple]
-
-    def add(self, section, option, *args, **kwargs):
-        self._settings[(section, option)] = OptionDescriptor(
-            section, option, *args, **kwargs
-        )
-        return self._settings[(section, option)]
-
-    @property
-    def sections(self):
-        def _get():
-            seen = set()
-            for section, option in self:
-                if section not in seen:
-                    seen.add(section)
-                    yield section
-
-        return tuple(_get())
-
-    def initialize(self, obj):
-        seen = set()
-        for section, option in self:
-            if section not in seen:
-                seen.add(section)
-                obj.add_section(section)
-            obj.set(section, option, self[(section, option)].default)
+def create_config_file(filename: Optional[Path] = None) -> Path:
+    """Create a default config file."""
+    if filename is None:
+        filename = DEFAULT_CONFIG_FILE
+    if filename.exists():
+        raise ConfigError(f"File {filename} already exists")
+    config = Config.sample_config()
+    try:
+        config.dump_to_file(filename)
+    except OSError:
+        raise ConfigError(f"unable to create config file {filename}")
+    logger.info("Created default config file %r", filename)
+    return filename
 
 
-class Configuration(configparser.RawConfigParser):
-    """A custom ConfigParser object with zabbix-cli settings."""
-
-    _registry = OptionRegister()
-
-    zabbix_api_url = _registry.add("zabbix_api", "zabbix_api_url", required=True)
-
-    cert_verify = _registry.add("zabbix_api", "cert_verify", default="ON")
-
-    system_id = _registry.add("zabbix_config", "system_id", default="zabbix-ID")
-
-    default_hostgroup = _registry.add(
-        "zabbix_config", "default_hostgroup", default="All-hosts"
-    )
-
-    default_admin_usergroup = _registry.add(
-        "zabbix_config", "default_admin_usergroup", default="All-root"
-    )
-
-    default_create_user_usergroup = _registry.add(
-        "zabbix_config", "default_create_user_usergroup", default="All-users"
-    )
-
-    default_notification_users_usergroup = _registry.add(
-        "zabbix_config",
-        "default_notification_users_usergroup",
-        default="All-notification-users",
-    )
-
-    default_directory_exports = _registry.add(
-        "zabbix_config",
-        "default_directory_exports",
-        default=os.path.expanduser("~/zabbix_exports"),
-    )
-
-    default_export_format = _registry.add(
-        "zabbix_config",
-        "default_export_format",
-        default="XML",
-        # We deactivate this until https://support.zabbix.com/browse/ZBX-10607
-        # gets fixed.  We use XML as the export format.
-        disable=True,
-    )
-
-    include_timestamp_export_filename = _registry.add(
-        "zabbix_config", "include_timestamp_export_filename", default="ON"
-    )
-
-    use_colors = _registry.add("zabbix_config", "use_colors", default="ON")
-
-    use_auth_token_file = _registry.add(
-        "zabbix_config", "use_auth_token_file", default="OFF"
-    )
-
-    use_paging = _registry.add("zabbix_config", "use_paging", default="OFF")
-
-    logging = _registry.add("logging", "logging", default="OFF")
-
-    log_level = _registry.add("logging", "log_level", default="ERROR")
-
-    log_file = _registry.add(
-        "logging", "log_file", default="/var/log/zabbix-cli/zabbix-cli.log"
-    )
-
-    def __init__(self):
-        super().__init__()
-        self._registry.initialize(self)
-        self.loaded_files = []
-
-    def set(self, section, option, value):
-        descriptor = self._registry[(section, option)]
-        if descriptor.disable and value != descriptor.default:
-            logger.warning(
-                "setting %s.%s is disabled, setting to %r",
-                section,
-                option,
-                descriptor.default,
-            )
-            value = descriptor.default
-        return super().set(section, option, value)
-
-    def read(self, filenames):
-        files_read = super().read(filenames)
-        for filename in files_read:
-            if filename in self.loaded_files:
-                self.loaded_files.remove(filename)
-            self.loaded_files.append(filename)
-        return files_read
-
-    def readfp(self, fp, filename=None):
-        try:
-            add_filename = filename or fp.name
-        except AttributeError:
-            pass
-        retval = super().readfp(fp, filename=filename)
-        if add_filename:
-            self.loaded_files.append(add_filename)
-        return retval  # should be None
-
-    def iter_descriptors(self):
-        return iter(self._registry.values())
-
-    def iter_required(self):
-        for descriptor in self.iter_descriptors():
-            if descriptor.required:
-                yield descriptor
-
-    def iter_missing(self):
-        for descriptor in self.iter_required():
-            value = self.get(descriptor.section, descriptor.option)
-            if value == descriptor.default:
-                yield descriptor
+class RunMode(str, Enum):
+    SHOW = "show"
+    DEFAULTS = "defaults"
 
 
-def get_config(filename=None):
-    config = Configuration()
-    for filename in find_config(filename):
-        logger.debug("loading config %r", filename)
-        config.read(filename)
-    return config
-
-
-def validate_config(config):
-    missing = ["{0.section}.{0.option}".format(d) for d in config.iter_missing()]
-    if missing:
-        raise ValueError("Missing settings: " + ", ".join(missing))
-
-
-#
-# python -m zabbix_cli.config
-#
-
-
-def main(inargs=None):
-    import argparse
-
-    class Actions:
-        """Subparser to function map."""
-
-        def __init__(self):
-            self.funcmap = dict()
-
-        def __getitem__(self, key):
-            return self.funcmap[key]
-
-        def __call__(self, subparser):
-            def wrapper(func):
-                key = subparser.prog.split(" ")[-1]
-                self.funcmap[key] = func
-                return func
-
-            return wrapper
-
-    parser = argparse.ArgumentParser(description="write default config")
-    commands = parser.add_subparsers(title="commands", dest="command")
-    actions = Actions()
-
-    #
-    # defaults [filename]
-    #
-    defaults_cmd = commands.add_parser("defaults")
-    defaults_cmd.add_argument(
-        "output",
-        type=argparse.FileType("w"),
-        nargs="?",
-        default="-",
-        metavar="FILE",
-        help="Write an example config to %(metavar)s (default: stdout)",
-    )
-
-    @actions(defaults_cmd)
-    def write_default_config(args):
-        config = Configuration()
-        config.write(args.output)
-        args.output.flush()
-        if args.output not in (sys.stdout, sys.stderr):
-            args.output.close()
-
-    #
-    # show
-    #
-    show_cmd = commands.add_parser("show")
-    show_cmd.add_argument(
-        "-c",
-        "--config",
-        default=None,
-        metavar="FILE",
-        help="Use config from %(metavar)s",
-    )
-    show_cmd.add_argument(
-        "-v", "--validate", action="store_true", default=False, help="validate config"
-    )
-
-    @actions(show_cmd)
-    def show_config(args):
-        config = get_config(args.config)
-        if args.validate:
-            validate_config(config)
-        config.write(sys.stdout)
-        sys.stdout.flush()
-
-    args = parser.parse_args()
-    actions[args.command](args)
+def main(
+    arg: RunMode = typer.Argument(RunMode.DEFAULTS, case_sensitive=False),
+    filename: Optional[Path] = None,
+):
+    """Print current or default config to stdout."""
+    if arg == RunMode.SHOW:
+        config = get_config(filename)
+    else:
+        config = Config.sample_config()
+    print(config.as_toml())
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    main()
+    # logging.basicConfig(level=logging.DEBUG)
+    from zabbix_cli.logs import configure_logging
+
+    configure_logging()
+    typer.run(main)

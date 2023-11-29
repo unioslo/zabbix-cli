@@ -1,0 +1,37 @@
+## 3.0.0
+
+### Added
+
+- New CLI powered by `typer` and `click-repl`
+- Shell autocompletion
+- TOML configuration file support
+  - Old configuration format is still supported, but deprecated.
+- Configuration options:
+  - `app.default_format`: Sets the default CLI output format. Defaults to `table`.
+
+
+- **REPOSITORY:** Pre-commit configuration for linting and formatting.
+
+### Changed
+
+- Use Hatch for building and publishing
+- Switch from setup.py to pyproject.toml
+- Default configuration file location is now `~/.config/zabbix-cli/config.toml`
+- Changes to TOML configuration file options:
+  - Section [zabbix_api] → [api]
+    - `zabbix_url` → `url`
+    - `cert_verify` → `verify_ssl`
+  - Section [zabbix_config] → [app]
+    - `system_id` → `username`
+  - `logging.logging` → `logging.enabled`
+  - The original names are still usable, but are deprecated and slated for removal in a future version.
+- Application creates a config file on launch if it doesn't exist.
+
+### Deprecated
+
+- `zabbix-cli.conf` format. Prefer the new TOML configuration file format.
+
+
+### Removed
+
+- Support for Zabbix <1.8 login using `user.authenticate`.

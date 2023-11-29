@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 description = "ZABBIX-CLI - Zabbix terminal client"
 name = "zabbix-cli"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = "GPL-3.0-or-later"
 keywords = []
 authors = [
@@ -22,7 +22,6 @@ classifiers = [
   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
@@ -33,9 +32,14 @@ classifiers = [
 dependencies = [
   "typer>=0.7.0",
   "rich>=13.3.1",
-  "click-repl==0.2.0", # 0.3.0 has a bug that breaks the CLI
-  "requests>=2.28.2",
+  "click-repl==0.2.0",   # 0.3.0 has a bug that breaks the CLI
+  "requests>=2.31.0",
   "packaging>=22.0",
+  "pydantic>=2.4.0",
+  "tomli>=2.0.1",
+  "tomli-w>=1.0.0",
+  "platformdirs>=2.5.4",
+  "strenum>=0.4.15",
 ]
 dynamic = ["version"]
 
@@ -46,20 +50,30 @@ Source = "https://github.com/unioslo/zabbix-cli"
 
 [project.scripts]
 zabbix-cli = "zabbix_cli.main:app"
-zabbix-cli-init = "zabbix_cli.scripts.init:main"
+zabbix-cli-init = "zabbix_cli.scripts.init:run"
 zabbix-cli-bulk-execution = "zabbix_cli.scripts.bulk_execution:main"
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-cov"]
 
 [tool.hatch.version]
 path = "zabbix_cli/__about__.py"
 
 [tool.hatch.envs.default]
-dependencies = ["pytest", "pytest-cov", "ruff", "mypy"]
+dependencies = [
+  # Linting and formatting only here
+  # Dependencies used for testing are specified in the main metadata
+  # optional dependencies
+  "ruff",
+  "mypy",
+  "zabbix_cli[test]",
+]
 [tool.hatch.envs.default.scripts]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=zabbix_cli --cov=tests {args}"
 no-cov = "cov --no-cov {args}"
 
 [[tool.hatch.envs.test.matrix]]
-python = ["37", "38", "39", "310", "311"]
+python = ["38", "39", "310", "311"]
 
 [tool.coverage.run]
 branch = true
@@ -68,3 +82,12 @@ omit = ["zabbix_cli/__about__.py"]
 
 [tool.coverage.report]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.mypy]
+python_version = "3.8"
+ignore_missing_imports = true
+strict = false
+exclude = ["tests"]
