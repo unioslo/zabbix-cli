@@ -8,6 +8,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import typer
+
 CONFIG_FILENAME = "zabbix-cli.conf"
 CONFIG_FIXED_NAME = "zabbix-cli.fixed.conf"
 
@@ -31,3 +33,23 @@ CONFIG_PRIORITY = tuple(
 
 AUTH_FILE = Path.home() / ".zabbix-cli.auth"
 AUTH_TOKEN_FILE = Path.home() / ".zabbix-cli_auth_token"
+
+
+def run_command_from_option(ctx: typer.Context, command: str) -> None:
+    """Runs a command via old-style --command/-C option."""
+    from zabbix_cli.output.console import warning
+    from zabbix_cli.output.console import error
+
+    warning(
+        "The --command/-C option is deprecated and will be removed in a future release. "
+        "Invoke command directly instead."
+    )
+    cmd_obj = ctx.command.get_command(ctx, command)
+    try:
+        ctx.invoke(cmd_obj, *ctx.args)
+    except typer.Exit:
+        pass
+    except Exception as e:
+        error(
+            f"Command {command!r} failed with error: {e}. Try re-running without --command."
+        )

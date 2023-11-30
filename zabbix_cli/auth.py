@@ -8,8 +8,8 @@ from typing import Final
 from typing import Optional
 from typing import Tuple
 
-from zabbix_cli._zcli_compat import AUTH_FILE as AUTH_FILE_LEGACY
-from zabbix_cli._zcli_compat import AUTH_TOKEN_FILE as AUTH_TOKEN_FILE_LEGACY
+from zabbix_cli._v2_compat import AUTH_FILE as AUTH_FILE_LEGACY
+from zabbix_cli._v2_compat import AUTH_TOKEN_FILE as AUTH_TOKEN_FILE_LEGACY
 from zabbix_cli.config import Config
 from zabbix_cli.config import ENV_ZABBIX_PASSWORD
 from zabbix_cli.config import ENV_ZABBIX_USERNAME

@@ -42,7 +42,7 @@ from pydantic import SecretStr
 from pydantic import ValidationInfo
 from strenum import StrEnum
 
-from zabbix_cli._zcli_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
+from zabbix_cli._v2_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
 from zabbix_cli.dirs import CONFIG_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR

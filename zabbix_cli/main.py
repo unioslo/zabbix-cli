@@ -30,6 +30,7 @@ import typer
 from click_repl import repl as start_repl
 
 from zabbix_cli.__about__ import __version__
+from zabbix_cli._v2_compat import run_command_from_option
 from zabbix_cli.app import app
 from zabbix_cli.auth import configure_auth
 from zabbix_cli.bulk import run_bulk
@@ -44,9 +45,7 @@ from zabbix_cli.logs import configure_logging
 from zabbix_cli.logs import LogContext
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import info
-from zabbix_cli.output.console import warning
 from zabbix_cli.output.formatting.path import path_link
-from zabbix_cli.output.style.style import render_cli_command
 from zabbix_cli.state import get_state
 
 logger = logging.getLogger("zabbix-cli")
@@ -172,11 +171,7 @@ def main_callback(
             # run command here.
             # Kept for backwards compatibility
             # prefer to just invoke the command directly
-            cmd_string = f"zabbix-cli {ctx.invoked_subcommand} {ctx.args}"
-            warning(
-                "The --command/-C option is deprecated and will be removed in a future release. "
-                f"Please invoke the command directly instead: zabbix-cli {render_cli_command(cmd_string)}"
-            )
+            run_command_from_option(ctx, zabbix_command)
             return
         elif input_file:
             state

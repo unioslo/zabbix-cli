@@ -137,24 +137,28 @@ class State:
             write_auth_token_file(ca.username, self.token)
 
     def logout(self):
-        """Ends the current user's API session if auth token file is not used."""
+        """Ends the current user's API session if the client is logged in
+        and the application is not configured to use an auth token file."""
         # If we are NOT keeping the API session alive between CLI invocations
         # we need to remember to log out once we are done in order to end the
         # session properly.
         # https://www.zabbix.com/documentation/current/en/manual/api/reference/user/login
-        if self._config is None or self._client is None:
-            return  # we have not been configured yet
+        if (
+            self._config is None
+            or self._client is None
+            or not self.config.app.use_auth_token_file
+        ):
+            return
 
-        if not self.config.app.use_auth_token_file:
-            try:
-                self.client.user.logout()
-                # Technically this API endpoint might return "false", which
-                # would signify that that the logout somehow failed, but it's
-                # not documented in the API docs.
-            except Exception as e:
-                from zabbix_cli.output.console import error
+        try:
+            self.client.user.logout()
+            # Technically this API endpoint might return "false", which
+            # would signify that that the logout somehow failed, but it's
+            # not documented in the API docs.
+        except Exception as e:
+            from zabbix_cli.output.console import error
 
-                error(f"Failed to log out of Zabbix API session: {e}")
+            error(f"Failed to log out of Zabbix API session: {e}")
 
 
 def get_state() -> State:
