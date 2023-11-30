@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 class State:
     """Object that encapsulates the current state of the application.
-    Holds the current configuration, harbor client, and other stateful objects.
+    Holds the current configuration, Zabbix client, and other stateful objects.
     """
 
     _instance = None
@@ -42,7 +42,10 @@ class State:
         return cls._instance
 
     repl: bool = False
-    """Whether or application is inside REPL mode."""
+    """REPL is active."""
+
+    bulk: bool = False
+    """Running in bulk mode."""
 
     _client = None  # type: ZabbixAPI | None
     """Current Zabbix API client object."""

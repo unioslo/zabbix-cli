@@ -18,7 +18,7 @@ class ConfigError(ZabbixCLIError):
 
 
 class CommandFileError(ZabbixCLIError):
-    """Exception raised when there is a command file error."""
+    """Exception raised when there is a bulk command file error."""
 
 
 class Exiter(Protocol):

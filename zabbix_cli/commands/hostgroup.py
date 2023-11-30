@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ._app import app
+from zabbix_cli.app import app
 
 
 @app.command("add_host_to_hostgroup")
