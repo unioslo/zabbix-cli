@@ -94,22 +94,42 @@ class BaseModel(PydanticBaseModel):
 
 
 class APIConfig(BaseModel):
-    url: str = Field(..., validation_alias=AliasChoices("url", "zabbix_api_url"))
+    url: str = Field(
+        ...,
+        # Changed in V3: zabbix_api_url -> url
+        validation_alias=AliasChoices("url", "zabbix_api_url"),
+    )
     verify_ssl: bool = Field(
-        True, validation_alias=AliasChoices("verify_ssl", "cert_verify")
+        True,
+        # Changed in V3: cert_verify -> verify_ssl
+        validation_alias=AliasChoices("verify_ssl", "cert_verify"),
     )
 
 
 class AppConfig(BaseModel):
     username: str = Field(
-        "zabbix-ID", validation_alias=AliasChoices("username", "system_id")
+        "zabbix-ID",
+        # Changed in V3: system_id -> username
+        validation_alias=AliasChoices("username", "system_id"),
     )
     password: Optional[SecretStr] = Field(None, exclude=True)
     auth_token: Optional[SecretStr] = Field(None, exclude=True)
     default_hostgroup: str = "All-hosts"
-    default_admin_usergroup: List[str] = ["All-root"]
-    default_create_user_usergroup: List[str] = ["All-users"]
-    default_notification_users_usergroup: str = "All-notification-users"
+    default_admin_usergroups: List[str] = Field(
+        ["All-root"],
+        # Changed in V3: default_admin_usergroup -> default_admin_usergroups
+        validation_alias=AliasChoices(
+            "default_admin_usergroups", "default_admin_usergroup"
+        ),
+    )
+    default_create_user_usergroups: List[str] = Field(
+        ["All-users"],
+        # Changed in V3: default_create_user_usergroup -> default_create_user_usergroups
+        validation_alias=AliasChoices(
+            "default_create_user_usergroups", "default_create_user_usergroup"
+        ),
+    )
+    default_notification_users_usergroups: str = "All-notification-users"
     default_directory_exports: Path = EXPORT_DIR
     default_export_format: Literal["XML", "JSON", "YAML", "PHP"] = Field("XML")
     include_timestamp_export_filename: bool = True
@@ -137,7 +157,9 @@ class AppConfig(BaseModel):
 
 class LoggingConfig(BaseModel):
     enabled: bool = Field(
-        True, validation_alias=AliasChoices("logging", "enabled", "enable")
+        True,
+        # Changed in V3: logging -> enabled (we also allow enable [why?])
+        validation_alias=AliasChoices("logging", "enabled", "enable"),
     )
     log_level: Literal[
         "DEBUG", "INFO", "WARN", "WARNING", "ERROR", "CRITICAL", "FATAL"
@@ -177,11 +199,14 @@ class LoggingConfig(BaseModel):
 
 class Config(BaseModel):
     api: APIConfig = Field(
-        default_factory=APIConfig, validation_alias=AliasChoices("api", "zabbix_api")
+        default_factory=APIConfig,
+        # Changed in V3: zabbix_api -> api
+        validation_alias=AliasChoices("api", "zabbix_api"),
     )
     app: AppConfig = Field(
         default_factory=AppConfig,
-        validation_alias=AliasChoices("app", "config", "zabbix_config"),
+        # Changed in V3: zabbix_config -> app
+        validation_alias=AliasChoices("app", "zabbix_config"),
     )
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
 
