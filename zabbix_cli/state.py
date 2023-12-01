@@ -16,17 +16,17 @@ from typing import TYPE_CHECKING
 
 from rich.console import Console
 
+
+# This module should not import from other local modules because it's widely
+# used throughout the application, and we don't want to create circular imports.
+#
+# To work around that, imports from other modules should be done inside
+# functions, or inside the TYPE_CHECKING block below.
+#
+# It's a huge code smell, but it's something we have to live with for now.
 if TYPE_CHECKING:
     from zabbix_cli.config import Config
-
-from zabbix_cli.pyzabbix import ZabbixAPI
-
-# This module generally shouldn't import from other local modules
-# because it's widely used throughout the application, and we don't want
-# to create circular import issues. It sucks, but it's the way it is.
-
-if TYPE_CHECKING:
-    pass
+    from zabbix_cli.pyzabbix import ZabbixAPI
 
 
 class State:
@@ -105,6 +105,8 @@ class State:
         """Sets the config and client objects.
         Logs into the Zabbix API with the configured credentials.
         """
+        from zabbix_cli.pyzabbix import ZabbixAPI
+
         self.config = config
         if not self.config.app.auth_token and not self.config.app.password:
             raise RuntimeError(
@@ -126,7 +128,7 @@ class State:
 
         # Write the token file if it's new and we are configured to save it
         if (
-            config.app.use_auth_token_file
+            ca.use_auth_token_file
             and ca.username  # we need a username in the token file
             and self.token  # must be not None and not empty
             and self.token != config_token  # must be a new token
@@ -139,14 +141,18 @@ class State:
     def logout(self):
         """Ends the current user's API session if the client is logged in
         and the application is not configured to use an auth token file."""
+        from zabbix_cli.auth import clear_auth_token_file
+
         # If we are NOT keeping the API session alive between CLI invocations
         # we need to remember to log out once we are done in order to end the
         # session properly.
         # https://www.zabbix.com/documentation/current/en/manual/api/reference/user/login
         if (
+            # State did not finish configuration before termination
             self._config is None
             or self._client is None
-            or not self.config.app.use_auth_token_file
+            # We want to keep the session alive
+            or self.config.app.use_auth_token_file
         ):
             return
 
@@ -155,6 +161,18 @@ class State:
             # Technically this API endpoint might return "false", which
             # would signify that that the logout somehow failed, but it's
             # not documented in the API docs.
+
+            # In case we have an existing auth token file, we want to clear
+            # its contents, so that we don't try to re-use it if we re-enable
+            # auth token file usage.
+            #
+            # NOTE: Is this actually a good idea?
+            #
+            # The rationale is that we might not want to keep it around in case
+            # a user temporarily switches to a different account, disables auth token,
+            # then re-enables it with their original account?
+            # Seems like a contrived use-case...
+            clear_auth_token_file()
         except Exception as e:
             from zabbix_cli.output.console import error
 
@@ -168,8 +186,5 @@ def get_state() -> State:
     return State()
 
 
-def get_client() -> ZabbixAPI:
-    """Returns the global Harbor client object.
-
-    Instantiates a new client object with defaults if it doesn't exist."""
-    return get_state().client
+# def init() -> None:
+#     # TODO add client and config and everything here ONCE somehow

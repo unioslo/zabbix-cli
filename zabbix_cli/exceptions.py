@@ -21,6 +21,27 @@ class CommandFileError(ZabbixCLIError):
     """Exception raised when there is a bulk command file error."""
 
 
+class AuthTokenFileError(ZabbixCLIError):
+    """Exception raised when there is an auth token file error."""
+
+
+class AuthTokenError(ZabbixCLIError):  # NOTE: unused
+    """Exception raised when there is an auth token error."""
+
+
+class ZabbixAPIException(ZabbixCLIError):
+    # Extracted from pyzabbix, hence *Exception suffix
+    """generic zabbix api exception
+    code list:
+         -32602 - Invalid params (eg already exists)
+         -32500 - no permissions
+    """
+
+
+class ZabbixNotFoundError(ZabbixAPIException):
+    """A Zabbix API resource was not found."""
+
+
 class Exiter(Protocol):
     """Protocol class for exit function that can be passed to an
     exception handler function.
@@ -55,8 +76,30 @@ def handle_notraceback(e: Exception) -> NoReturn:
     get_exit_err()(str(e), exc_info=True)
 
 
+def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
+    """Handles a ZabbixAPIException."""
+    from zabbix_cli.auth import clear_auth_token_file
+    from zabbix_cli.state import get_state
+
+    state = get_state()
+
+    # If we have a stale auth token, we need to clear it.
+    if (
+        state.is_config_loaded
+        and state.config.app.use_auth_token_file
+        and "re-login" in e.args[0]
+    ):
+        clear_auth_token_file()
+        get_exit_err()(
+            "Your auth token has expired. Please re-run the command to login."
+        )
+    else:
+        return handle_notraceback(e)
+
+
 EXC_HANDLERS = {
     ZabbixCLIError: handle_notraceback,
+    ZabbixAPIException: handle_zabbix_api_exception,  # NOTE: use different strategy for this?
 }  # type: dict[type[Exception], HandleFunc]
 """Mapping of exception types to exception handling strategies."""
 

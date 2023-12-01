@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from packaging.version import Version
 
-from zabbix_cli import compat
+from zabbix_cli.pyzabbix import compat
 
 
 def test_packaging_version_release_sanity():

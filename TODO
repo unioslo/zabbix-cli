@@ -4,7 +4,21 @@
 
 * Some sort of shared callback function between all scripts and the main CLI. This way we can pass in config etc, and have a common way of handling errors etc.
 
+## Args
 
+* Show deprecation warning when user uses positional args instead of options.
+* Hide positional args from help?
+
+## Bulk / -C mode
+
+* Add timeout to commands when running in bulk mode in case command prompts for input.
+* Populate cache when in bulk mode.
+
+## Cache
+
+* Add option to enable/disable cache.
+  * Both in REPL mode and in bulk mode.
+* Add command to clear cache.
 
 ## Config
 
@@ -12,6 +26,9 @@
 * Add support for .fixed.conf files
 * Add loading config from multiple sources. Each new config adds to the existing config and overrides values, like how it was in v2.
 
+## Documentation
+
+* Convert all docstrings to google docstring style.
 
 ## Logging
 
@@ -20,6 +37,9 @@
   * Maybe toggle normal console messages when this is set?
 
 
-## Documentation
 
-* Convert all docstrings to google docstring style.
+
+
+## No prompts in CI/headless
+
+* Add a flag to disable all prompts. Useful for CI and headless environments.

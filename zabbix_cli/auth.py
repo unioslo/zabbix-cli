@@ -14,9 +14,9 @@ from zabbix_cli.config import Config
 from zabbix_cli.config import ENV_ZABBIX_PASSWORD
 from zabbix_cli.config import ENV_ZABBIX_USERNAME
 from zabbix_cli.dirs import DATA_DIR
+from zabbix_cli.exceptions import AuthTokenFileError
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.console import error
-from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.prompts import str_prompt
 
@@ -109,19 +109,39 @@ def write_auth_token_file(
     if not file.exists():
         try:
             file.touch(mode=SECURE_PERMISSIONS)
-        except OSError:
-            exit_err(f"Unable to create auth token file {file}.")
+        except OSError as e:
+            raise AuthTokenFileError(f"Unable to create auth token file {file}.") from e
     elif not file_has_secure_permissions(file):
         try:
             file.chmod(SECURE_PERMISSIONS)
-        except OSError:
-            exit_err(
+        except OSError as e:
+            raise AuthTokenFileError(
                 f"Unable to set secure permissions ({SECURE_PERMISSIONS_STR}) on {file} when saving auth token. "
                 "Change permissions manually or delete the file."
-            )
+            ) from e
     file.write_text(contents)
     logger.debug(f"Wrote auth token file {file}")
     return file
+
+
+def clear_auth_token_file() -> None:
+    """Clear the contents of the auth token file.
+    Attempts to clear both the new and the old auth token file locations.
+    """
+    for file in (AUTH_TOKEN_FILE, AUTH_TOKEN_FILE_LEGACY):
+        try:
+            _do_clear_auth_token_file(file)
+        except OSError as e:
+            # Only happens if file exists and we fail to write to it.
+            error(f"Unable to clear auth token file {file}: {e}")
+
+
+def _do_clear_auth_token_file(file: Path) -> None:
+    if file.exists():
+        file.write_text("")
+        logger.debug(f"Cleared auth token file contents {file}")
+    else:
+        logger.debug(f"Auth token file {file} does not exist. Skipping...")
 
 
 def _prompt_username_password(config: Config) -> Tuple[str, str]:
@@ -150,7 +170,7 @@ def _parse_auth_file_contents(contents: str) -> Tuple[Optional[str], Optional[st
         lines = contents.splitlines()
         if lines:
             line = lines[0].strip()
-            username, sep, secret = line.partition("::")
+            username, _, secret = line.partition("::")
             return username, secret
     return None, None
 

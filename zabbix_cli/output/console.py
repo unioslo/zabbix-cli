@@ -4,6 +4,7 @@ from typing import Any
 from typing import NoReturn
 from typing import Optional
 
+import typer
 from rich.console import Console
 
 from zabbix_cli.logs import logger
@@ -49,6 +50,11 @@ def error(
     """Log with ERROR level and print an error message."""
     logger.error(message, extra=dict(**kwargs), exc_info=exc_info)
     err_console.print(bold(f"{red(icon)} {message}"))
+
+
+def print_help(ctx: typer.Context) -> None:
+    console.print(ctx.command.get_help(ctx))
+    raise SystemExit(1)
 
 
 def exit_ok(message: Optional[str] = None, code: int = 0, **kwargs) -> NoReturn:

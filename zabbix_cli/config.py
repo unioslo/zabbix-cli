@@ -26,6 +26,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Literal
 from typing import Optional
 from typing import Tuple
@@ -106,8 +107,8 @@ class AppConfig(BaseModel):
     password: Optional[SecretStr] = Field(None, exclude=True)
     auth_token: Optional[SecretStr] = Field(None, exclude=True)
     default_hostgroup: str = "All-hosts"
-    default_admin_usergroup: str = "All-root"
-    default_create_user_usergroup: str = "All-users"
+    default_admin_usergroup: List[str] = ["All-root"]
+    default_create_user_usergroup: List[str] = ["All-users"]
     default_notification_users_usergroup: str = "All-notification-users"
     default_directory_exports: Path = EXPORT_DIR
     default_export_format: Literal["XML", "JSON", "YAML", "PHP"] = Field("XML")
@@ -117,6 +118,21 @@ class AppConfig(BaseModel):
     use_paging: bool = False
     output_format: OutputFormat = OutputFormat.table
     allow_insecure_authfile: bool = True  # mimick old behavior
+
+    @field_validator(
+        "default_admin_usergroup", "default_create_user_usergroup", mode="before"
+    )
+    @classmethod
+    def _validate_maybe_comma_separated(cls, v: Any) -> Any:
+        """Validate argument that can be a single comma-separated values string
+        or a list of strings.
+
+        Used for backwards-compatibility with V2 config files, where multiple arguments
+        were specified as comma-separated strings.
+        """
+        if isinstance(v, str):
+            return v.strip().split(",")
+        return v
 
 
 class LoggingConfig(BaseModel):

@@ -26,5 +26,5 @@ class StatefulApp(typer.Typer):
 app = StatefulApp(
     name="zabbix-cli",
     help="Zabbix-CLI is a command line interface for Zabbix.",
-    add_completion=False,
+    add_completion=True,
 )

@@ -14,12 +14,19 @@ from __future__ import annotations
 import json
 import logging
 from typing import Any
+from typing import List
+from typing import Optional
 
 import requests
 import urllib3
 from packaging.version import Version
 
-from zabbix_cli import compat
+from zabbix_cli.cache import ZabbixCache
+from zabbix_cli.exceptions import ZabbixAPIException
+from zabbix_cli.exceptions import ZabbixNotFoundError
+from zabbix_cli.pyzabbix import compat
+from zabbix_cli.pyzabbix.types import Usergroup
+from zabbix_cli.pyzabbix.types import ZabbixRight
 
 
 class _NullHandler(logging.Handler):
@@ -30,23 +37,6 @@ class _NullHandler(logging.Handler):
 logger = logging.getLogger(__name__)
 logger.addHandler(_NullHandler())
 logger.setLevel(logging.INFO)
-
-
-class ZabbixAPIException(Exception):
-    """generic zabbix api exception
-    code list:
-         -32602 - Invalid params (eg already exists)
-         -32500 - no permissions
-    """
-
-    pass
-
-
-def user_param_from_version(version: Version) -> str:
-    """Returns the correct username parameter based on Zabbix version."""
-    if version.release < (5, 4, 0):
-        return "user"
-    return "username"  # defaults to new parameter name
 
 
 class ZabbixAPI:
@@ -87,6 +77,9 @@ class ZabbixAPI:
 
         # Attributes for properties
         self._version = None
+
+        # Cache
+        self.cache = ZabbixCache(self)
 
     def disable_ssl_verification(self):
         """Disables SSL verification and suppresses urllib3 SSL warning."""
@@ -210,6 +203,122 @@ class ZabbixAPI:
             raise ZabbixAPIException(msg, response_json["error"]["code"])
 
         return response_json
+
+    def populate_cache(self) -> None:
+        """Populates the various caches with data from the Zabbix API."""
+        # NOTE: Must be manually invoked. Can we do this in a thread?
+        self.cache.populate()
+
+    def get_hostgroup_name(self, hostgroup_id: str) -> str:
+        """Returns the name of a host group given its ID."""
+        hostgroup_name = self.cache.get_hostgroup_name(hostgroup_id)
+        if hostgroup_name:
+            return hostgroup_name
+        resp = self.hostgroup.get(filter={"groupid": hostgroup_id}, output=["name"])
+        if not resp:
+            raise ZabbixNotFoundError(f"Hostgroup with ID {hostgroup_id} not found")
+        # TODO add result to cache
+        return resp[0]["name"]
+
+    def get_hostgroup_id(self, hostgroup_name: str) -> str:
+        """Returns the ID of a host group given its name."""
+        hostgroup_id = self.cache.get_hostgroup_id(hostgroup_name)
+        if hostgroup_id:
+            return hostgroup_id
+        resp = self.hostgroup.get(filter={"name": hostgroup_name}, output=["name"])
+        if not resp:
+            raise ZabbixNotFoundError(
+                f"Hostgroup with name {hostgroup_name!r} not found"
+            )
+        # TODO add result to cache
+        return resp[0]["groupid"]
+
+    def get_host_id(self, hostname: str) -> str:
+        # TODO: implement caching for hosts
+        resp = self.host.get(filter={"host": hostname}, output=["hostid"])
+        if not resp:
+            raise ZabbixNotFoundError(f"Host with name {hostname!r} not found")
+        return resp[0]["hostid"]
+
+    def hostgroup_exists(self, hostgroup_name: str) -> bool:
+        try:
+            self.get_hostgroup_id(hostgroup_name)
+        except ZabbixNotFoundError:
+            return False
+        except Exception as e:
+            raise ZabbixAPIException(
+                f"Unknown error when fetching host group {hostgroup_name}: {e}"
+            )
+        else:
+            return True
+
+    def get_usergroup(self, usergroup_name: str) -> Usergroup:
+        """Fetches a user group by name. Always fetches the full contents of the group."""
+        query = {
+            "filter": {"name": usergroup_name},
+            "output": "extend",
+            "selectUsers": "extend",  # TODO: profile performance for large groups
+        }
+        # Rights were split into host and template group rights in 6.2.0
+        if self.version.release >= (6, 2, 0):
+            query["selectHostGroupRights"] = "extend"
+            query["selectTemplateGroupRights"] = "extend"
+        else:
+            query["selectRights"] = "extend"
+
+        try:
+            res = self.usergroup.get(**query, output="extend")
+            if not res:
+                raise ZabbixNotFoundError(
+                    f"Usergroup with name {usergroup_name!r} not found"
+                )
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Unknown error when fetching user group {usergroup_name}: {e}"
+            )
+        else:
+            return Usergroup(**res[0])
+
+    def update_usergroup(
+        self,
+        usergroup_name: str,
+        rights: Optional[List[ZabbixRight]] = None,
+        userids: Optional[List[ZabbixRight]] = None,
+    ) -> Optional[list]:
+        """
+        Merge update a usergroup.
+
+        Updating usergroups without replacing current state (i.e. merge update) is hard.
+        This function simplifies the process.
+
+        The rights and userids provided are merged into the usergroup.
+        """
+        usergroup = self.get_usergroup(usergroup_name)
+        # usergroup = self.usergroup.get(
+        #     filter={"usrgrpid": ug.usrgrpid},
+        #     selectRights=["permission", "id"],
+        #     selectUsers=["userid"],
+        # )[0]
+
+        if rights:
+            # Get the current rights with ids from new rights filtered
+            new_rights = [
+                current_right
+                for current_right in usergroup.rights
+                if current_right["id"] not in [right["id"] for right in rights]
+            ]  # type: list[ZabbixRight]
+            new_rights.extend(rights)
+            return self.usergroup.update(usrgrpid=usergroup.usrgrpid, rights=new_rights)
+
+        if userids:
+            current_userids = [user["userid"] for user in usergroup["users"]]  # type: list[str]
+            # Make sure we only have unique ids
+            new_userids = list(set(current_userids + userids))
+            return self.usergroup.update(
+                usrgrpid=usergroup.usrgrpid, userids=new_userids
+            )
+
+        return None
 
     def __getattr__(self, attr: str):
         """Dynamically create an object class (ie: host)"""

@@ -41,10 +41,10 @@ from typing import Dict
 
 import zabbix_cli.apiutils
 import zabbix_cli.utils
-from zabbix_cli import compat
 from zabbix_cli.prettytable import ALL
 from zabbix_cli.prettytable import FRAME
 from zabbix_cli.prettytable import PrettyTable
+from zabbix_cli.pyzabbix import compat
 from zabbix_cli.pyzabbix import ZabbixAPI
 
 logger = logging.getLogger(__name__)
