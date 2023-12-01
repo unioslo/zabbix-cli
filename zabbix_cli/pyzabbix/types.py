@@ -15,9 +15,13 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel
 from pydantic import ConfigDict
 from typing_extensions import TypedDict
+
+from zabbix_cli.models import ColsRowType
+from zabbix_cli.models import ResultType
+from zabbix_cli.utils.utils import get_hostgroup_flag
+from zabbix_cli.utils.utils import get_hostgroup_type
 
 
 class UsergroupPermission(Enum):
@@ -28,7 +32,12 @@ class UsergroupPermission(Enum):
     READ_WRITE = 3
 
 
-class ZabbixAPIBaseModel(BaseModel):
+class ZabbixAPIBaseModel(ResultType):
+    """Base model for Zabbix API objects.
+
+    Implements the `ResultType` interface, which allows us to render
+    it as a table, JSON, csv, etc."""
+
     model_config = ConfigDict(validate_assignment=True, extra="allow")
 
 
@@ -43,3 +52,27 @@ class Usergroup(ZabbixAPIBaseModel):
     rights: list[ZabbixRight] = []
     hostgroup_rights: list[ZabbixRight] = []
     templategroup_rights: list[ZabbixRight] = []
+
+
+class Host(ZabbixAPIBaseModel):
+    hostid: str
+    host: str
+
+
+class Hostgroup(ZabbixAPIBaseModel):
+    groupid: str
+    name: str
+    hosts: list[Host] = []
+    flags: int = 0
+    internal: int = 0
+
+    def _table_cols_row(self) -> ColsRowType:
+        cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
+        row = [
+            self.groupid,
+            self.name,
+            get_hostgroup_flag(self.flags),
+            get_hostgroup_type(self.internal),
+            ", ".join([host.host for host in self.hosts]),
+        ]
+        return cols, row

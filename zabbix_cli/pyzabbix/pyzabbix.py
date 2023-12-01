@@ -25,6 +25,8 @@ from zabbix_cli.cache import ZabbixCache
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
+from zabbix_cli.pyzabbix.types import Host
+from zabbix_cli.pyzabbix.types import Hostgroup
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import ZabbixRight
 
@@ -232,6 +234,32 @@ class ZabbixAPI:
             )
         # TODO add result to cache
         return resp[0]["groupid"]
+
+    def get_hostgroup(self, name_or_id: str) -> Hostgroup:
+        """Fetches a host group given its name or ID."""
+        name_or_id = name_or_id.strip()
+        is_id = name_or_id.isnumeric()
+        filter_ = {"groupid": name_or_id} if is_id else {"name": name_or_id}
+        resp = self.hostgroup.get(
+            filter=filter_, output="extend", searchWildcardsEnabled=True
+        )
+        if not resp:
+            raise ZabbixNotFoundError(
+                f"Hostgroup with name or id {name_or_id!r} not found"
+            )
+        # TODO add result to cache
+        return Hostgroup(**resp[0])
+
+    def get_host(self, name_or_id: str) -> Host:
+        """Fetches a host given its name or ID."""
+        name_or_id = name_or_id.strip()
+        is_id = name_or_id.isnumeric()
+        filter_ = {"hostid": name_or_id} if is_id else {"host": name_or_id}
+        resp = self.host.get(filter=filter_, output="extend")
+        if not resp:
+            raise ZabbixNotFoundError(f"Host with name or ID {name_or_id!r} not found")
+        # TODO add result to cache
+        return Host(**resp[0])
 
     def get_host_id(self, hostname: str) -> str:
         # TODO: implement caching for hosts

@@ -37,9 +37,10 @@
   * Maybe toggle normal console messages when this is set?
 
 
-
-
-
 ## No prompts in CI/headless
 
 * Add a flag to disable all prompts. Useful for CI and headless environments.
+
+## Rendering
+
+calling `exit_err` in JSON mode should render the error as JSON to stdout with return_code "Error" like in V2.

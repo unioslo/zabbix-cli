@@ -5,10 +5,10 @@ from typing import Any
 from typing import Sequence
 
 import typer
-from pydantic import BaseModel
 
 from ..config import OutputFormat
 from .console import console
+from .console import info
 from zabbix_cli.models import ResultType
 from zabbix_cli.state import get_state
 
@@ -48,13 +48,13 @@ def render_table(
 ) -> None:
     """Render the result of a command as a table."""
 
-    def print_item(item: ResultType | str) -> None:
+    def print_item(item: ResultType) -> None:
         """Prints a harbor base model as a table (optionally with description),
         if it is a harborapi BaseModel, otherwise just prints the item."""
-        if isinstance(item, BaseModel):
-            console.print(item.as_table())
+        if item.message:
+            info(item.message)
         else:
-            console.print(item)
+            console.print(item.as_table())
 
     if isinstance(result, Sequence) and not isinstance(result, str):
         for item in result:

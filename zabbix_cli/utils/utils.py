@@ -99,7 +99,7 @@ def get_usergroup_status(code):
     return f"Unknown ({str(code)})"
 
 
-def get_hostgroup_flag(code):
+def get_hostgroup_flag(code: int) -> str:
     """Get hostgroup flag from code."""
     hostgroup_flag = {0: "Plain", 4: "Discover"}
 
@@ -109,7 +109,7 @@ def get_hostgroup_flag(code):
     return f"Unknown ({str(code)})"
 
 
-def get_hostgroup_type(code):
+def get_hostgroup_type(code: int) -> str:
     """Get hostgroup type from code."""
     hostgroup_type = {0: "Not internal", 1: "Internal"}
 
