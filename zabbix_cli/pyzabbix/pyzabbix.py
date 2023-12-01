@@ -267,11 +267,13 @@ class ZabbixAPI:
             query["selectRights"] = "extend"
 
         try:
-            res = self.usergroup.get(**query, output="extend")
+            res = self.usergroup.get(**query)
             if not res:
                 raise ZabbixNotFoundError(
                     f"Usergroup with name {usergroup_name!r} not found"
                 )
+        except ZabbixNotFoundError:
+            raise
         except ZabbixAPIException as e:
             raise ZabbixAPIException(
                 f"Unknown error when fetching user group {usergroup_name}: {e}"

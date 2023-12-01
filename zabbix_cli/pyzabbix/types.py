@@ -14,10 +14,10 @@ Zabbix versions.
 from __future__ import annotations
 
 from enum import Enum
-from typing import TypedDict
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
+from typing_extensions import TypedDict
 
 
 class UsergroupPermission(Enum):

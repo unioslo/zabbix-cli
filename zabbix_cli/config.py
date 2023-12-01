@@ -72,9 +72,9 @@ ENV_ZABBIX_PASSWORD = f"{ENV_VAR_PREFIX}PASSWORD"
 
 
 class OutputFormat(StrEnum):
-    csv = "csv"
-    json = "json"
-    table = "table"
+    CSV = "csv"
+    JSON = "json"
+    TABLE = "table"
 
 
 class BaseModel(PydanticBaseModel):
@@ -136,11 +136,11 @@ class AppConfig(BaseModel):
     use_colors: bool = True
     use_auth_token_file: bool = False
     use_paging: bool = False
-    output_format: OutputFormat = OutputFormat.table
+    output_format: OutputFormat = OutputFormat.TABLE
     allow_insecure_authfile: bool = True  # mimick old behavior
 
     @field_validator(
-        "default_admin_usergroup", "default_create_user_usergroup", mode="before"
+        "default_admin_usergroups", "default_create_user_usergroups", mode="before"
     )
     @classmethod
     def _validate_maybe_comma_separated(cls, v: Any) -> Any:
@@ -152,6 +152,14 @@ class AppConfig(BaseModel):
         """
         if isinstance(v, str):
             return v.strip().split(",")
+        return v
+
+    @field_validator("output_format", mode="before")
+    @classmethod
+    def _ignore_enum_case(cls, v: Any) -> Any:
+        """Ignore case when validating enum value."""
+        if isinstance(v, str):
+            return v.lower()
         return v
 
 

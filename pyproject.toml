@@ -32,7 +32,7 @@ classifiers = [
 dependencies = [
   "typer>=0.7.0",
   "rich>=13.3.1",
-  "click-repl==0.2.0",   # 0.3.0 has a bug that breaks the CLI
+  "click-repl==0.2.0",        # 0.3.0 has a bug that breaks the CLI
   "requests>=2.31.0",
   "packaging>=22.0",
   "pydantic>=2.4.0",
@@ -40,6 +40,7 @@ dependencies = [
   "tomli-w>=1.0.0",
   "platformdirs>=2.5.4",
   "strenum>=0.4.15",
+  "typing-extensions>=4.8.0",
 ]
 dynamic = ["version"]
 
