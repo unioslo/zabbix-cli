@@ -32,6 +32,7 @@ def str_prompt(
     show_default: bool = True,
     choices: list[str] | None = None,
     empty_ok: bool = False,
+    strip: bool = True,
     **kwargs: Any,
 ) -> str:
     """Prompts the user for a string input. Optionally controls
@@ -47,11 +48,14 @@ def str_prompt(
     password : bool, optional
         Whether to hide the input, by default False
     show_default : bool, optional
-        Whether to show the default value, by default True
+        Show the default value, by default True
         `password=True` supercedes this option, and sets it to False.
     empty_ok : bool, optional
-        Whether to allow input consisting of only whitespace, by default False
-
+        Allow input consisting of no characters or only whitespace,
+        by default False
+    strip : bool, optional
+        Strip whitespace from the input, by default True
+        Must be `False` to preserve whitespace when `empty_ok=True`.
     """
     # Don't permit secrets to be shown ever
     if password:
@@ -85,7 +89,7 @@ def str_prompt(
             error("Input cannot solely consist of whitespace.")
         else:
             break
-    return inp
+    return inp.strip() if strip else inp
 
 
 def int_prompt(

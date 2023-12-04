@@ -12,6 +12,7 @@ from typing_extensions import TypedDict
 
 from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixCLIError
+from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import Result
 from zabbix_cli.output.console import exit_err
@@ -27,7 +28,10 @@ from zabbix_cli.utils.utils import get_hostgroup_type
 from zabbix_cli.utils.utils import get_permission
 
 
-@app.command("add_host_to_hostgroup", options_metavar="<hostnames> <hostgroups>")
+V2_HNHG_METAVAR = "<hostnames> <hostgroups>"
+
+
+@app.command("add_host_to_hostgroup", options_metavar=V2_HNHG_METAVAR)
 def add_host_to_hostgroup(
     ctx: typer.Context,
     args: List[str] = ARG_POSITIONAL,
@@ -155,7 +159,7 @@ def create_hostgroup(
     )
 
 
-@app.command("remove_host_from_hostgroup")
+@app.command("remove_host_from_hostgroup", options_metavar=V2_HNHG_METAVAR)
 def remove_host_from_hostgroup(
     args: List[str] = ARG_POSITIONAL,
     hostnames: Optional[str] = typer.Option(
@@ -258,33 +262,25 @@ class HostgroupPermissions(Result):
         return cols, [row]
 
 
-class HostgroupPermissionsResult(Result):
-    permissions: List[HostgroupPermissions]
-
-    def _table_cols_rows(self) -> ColsRowsType:
-        cols = ["GroupID", "Name", "Permissions"]
-        # This is pretty ugly and potentially unsafe...
-        # We are guaranteed to have cols and a row list, but the row
-        # list might be empty.
-        rows = [hg._table_cols_rows()[1][0] for hg in self.permissions]
-        return cols, rows
+class HostgroupPermissionsResult(AggregateResult):
+    result: List[HostgroupPermissions] = []  # type: ignore # make generic?
 
 
 @app.command("show_hostgroup_permissions")
 def show_hostgroup_permissions(
     hostgroup_arg: Optional[str] = typer.Argument(
-        None, help="Hostgroup name. Support wildcards."
+        None, help="Hostgroup name. Supports wildcards."
     ),
 ) -> None:
     """Show usergroups with permissions for the given hostgroup. Supports wildcards.
 
-    List all host groups with "*" as the argument."""
+    Use "*" to list all host groups."""
 
     if not hostgroup_arg:
         hostgroup_arg = str_prompt("Host group")
 
     permissions = _get_hostgroup_permissions(hostgroup_arg)
-    return render_result(HostgroupPermissionsResult(permissions=permissions))
+    return render_result(HostgroupPermissionsResult(result=permissions))
 
 
 def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostgroupPermissions]:
@@ -324,6 +320,21 @@ def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostgroupPermissions]
     return hg_results
 
 
+class HostgroupsResult(AggregateResult):
+    result: List[HostgroupResult] = []  # type: ignore # make generic?
+
+
+# TODO: match V2 behavior
 @app.command("show_hostgroups")
 def show_hostgroups() -> None:
-    pass
+    """Show details for all host groups."""
+    try:
+        hostgroups = app.state.client.get_hostgroups("*", hosts=True, search=True)
+    except Exception as e:
+        exit_err(f"Failed to get all host groups: {e}")
+
+    render_result(
+        HostgroupsResult(
+            result=[HostgroupResult(**hg.model_dump()) for hg in hostgroups]
+        )
+    )

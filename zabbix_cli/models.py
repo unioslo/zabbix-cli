@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 from typing import List
-from typing import Optional
 from typing import Tuple
-from typing import Union
 
 from packaging.version import Version
 from pydantic import BaseModel
@@ -34,7 +32,6 @@ class Result(BaseModel):
     message: str = Field(default="")
     """Field that signals that the result should be printed as a message, not a table."""
     return_code: ReturnCode = ReturnCode.DONE
-    result: Optional[Union[List[Result], Result]] = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True, validate_assignment=True)
 
@@ -66,4 +63,18 @@ class Result(BaseModel):
         return table
 
 
-Result.model_rebuild()  # resolve forward reference to Result
+class AggregateResult(Result):  # NOTE: make generic?
+    """Aggregate result of multiple results."""
+
+    result: List[Result] = []
+
+    def _table_cols_rows(self) -> ColsRowsType:
+        cols = []  # type: list[str]
+        rows = []  # type: list[list[str]]
+        for result in self.result:
+            c, r = result._table_cols_rows()
+            if not cols:
+                cols = c
+            if r:
+                rows.append(r[0])
+        return cols, rows

@@ -16,7 +16,9 @@ from __future__ import annotations
 from enum import Enum
 from typing import List
 
+from pydantic import AliasChoices
 from pydantic import ConfigDict
+from pydantic import Field
 from pydantic import field_validator
 from pydantic import ValidationInfo
 from typing_extensions import TypedDict
@@ -36,7 +38,7 @@ class UsergroupPermission(Enum):
     _UNKNOWN = -1
 
     @classmethod
-    def _missing_(cls, value: int) -> UsergroupPermission:
+    def _missing_(cls, value: object) -> UsergroupPermission:
         return cls._UNKNOWN
 
 
@@ -54,12 +56,18 @@ class ZabbixRight(TypedDict):
     id: str
 
 
+class User(ZabbixAPIBaseModel):
+    userid: str
+    username: str = Field(..., validation_alias=AliasChoices("username", "alias"))
+
+
 class Usergroup(ZabbixAPIBaseModel):
     name: str
     usrgrpid: str  # technically not required, but we always fetch it
     rights: List[ZabbixRight] = []
     hostgroup_rights: List[ZabbixRight] = []
     templategroup_rights: List[ZabbixRight] = []
+    users: List[User] = []
 
 
 class Host(ZabbixAPIBaseModel):
@@ -92,3 +100,8 @@ class Hostgroup(ZabbixAPIBaseModel):
             ", ".join([host.host for host in self.hosts]),
         ]
         return cols, [row]
+
+
+class Proxy(ZabbixAPIBaseModel):
+    proxyid: str
+    name: str = Field(..., validation_alias=AliasChoices("name", "host"))

@@ -5,12 +5,15 @@ import shlex
 from pathlib import Path
 from typing import Dict
 from typing import List
+from typing import Union
 
-import typer
+import click.core
+import typer.core
 from pydantic import BaseModel
 from pydantic import Field
 
 from zabbix_cli.exceptions import CommandFileError
+from zabbix_cli.exceptions import ZabbixCLIError
 
 
 logger = logging.getLogger(__name__)
@@ -37,12 +40,15 @@ class CommandFileNotFoundError(FileNotFoundError, CommandFileError):
     """Raised when a command file is not found."""
 
 
+KwargType = Union[str, bool, int, float, None]
+
+
 class BulkCommand(BaseModel):
     """A command to be run in bulk."""
 
     command: str
     args: List[str] = Field(default_factory=list)
-    kwargs: Dict[str, str] = Field(default_factory=dict)
+    kwargs: Dict[str, KwargType] = Field(default_factory=dict)
 
     @classmethod
     def from_line(cls, line: str) -> BulkCommand:
@@ -55,8 +61,8 @@ class BulkCommand(BaseModel):
         elements = shlex.split(line, comments=True)
 
         command = elements[0]
-        args = []  # type: List[str]
-        kwargs = {}  # type: Dict[str, str] # TODO: support other types. ints, floats, bools
+        args = []  # type: list[str]
+        kwargs = {}  # type: dict[str, KwargType] # TODO: support other types. ints, floats, bools
 
         next_is_kwarg = False
         next_kwarg = None  # type: str | None
@@ -80,7 +86,10 @@ class BulkCommand(BaseModel):
                 # TODO: support kwargs that can be specified multiple times
                 # by appending to a list
                 # Alternatively, always use a list?
-                kwargs.setdefault(kwarg, None)
+
+                # Assume option is flag.
+                # This value is overwritten if an argument follows next.
+                kwargs[next_kwarg] = not kwarg.startswith("no-")
             else:
                 args.append(arg)
 
@@ -133,13 +142,25 @@ def run_bulk(ctx: typer.Context, file: Path) -> None:
     commands = load_command_file(file)
     for command in commands:
         try:
-            ctx.invoke(command.command, *command.args, **command.kwargs)
+            # TODO: get the command here
+            cmd = get_command_by_name(ctx, command.command)
+            ctx.invoke(cmd, *command.args, **command.kwargs)
         except (SystemExit, typer.Exit) as e:  # others?
             logger.debug("Bulk command %s exited: %s", command, e)
         except Exception as e:
             raise CommandFileError(f"Error running command {command}: {e}") from e
         else:
             logger.info("Bulk command %s succeeded", command)
+
+
+def get_command_by_name(ctx: typer.Context, name: str) -> click.core.Command:
+    """Get a CLI command given its name."""
+    if not isinstance(ctx.command, typer.core.TyperGroup):
+        raise ZabbixCLIError("Bulk commands not launched from a group context.")
+    command = ctx.command.commands.get(name)
+    if not command:
+        raise ZabbixCLIError(f"Command {name} not found.")
+    return command
 
 
 def _read_command_file(file: Path) -> str:

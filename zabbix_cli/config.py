@@ -114,7 +114,11 @@ class AppConfig(BaseModel):
     )
     password: Optional[SecretStr] = Field(None, exclude=True)
     auth_token: Optional[SecretStr] = Field(None, exclude=True)
-    default_hostgroup: str = "All-hosts"
+    default_hostgroups: List[str] = Field(
+        ["All-hosts"],
+        # Changed in V3: default_hostgroup -> default_hostgroups
+        validation_alias=AliasChoices("default_hostgroups", "default_hostgroup"),
+    )
     default_admin_usergroups: List[str] = Field(
         ["All-root"],
         # Changed in V3: default_admin_usergroup -> default_admin_usergroups
@@ -129,7 +133,14 @@ class AppConfig(BaseModel):
             "default_create_user_usergroups", "default_create_user_usergroup"
         ),
     )
-    default_notification_users_usergroups: str = "All-notification-users"
+    default_notification_users_usergroups: List[str] = Field(
+        ["All-notification-users"],
+        # Changed in V3: default_notification_users_usergroup -> default_notification_users_usergroups
+        validation_alias=AliasChoices(
+            "default_notification_users_usergroups",
+            "default_notification_users_usergroup",
+        ),
+    )
     default_directory_exports: Path = EXPORT_DIR
     default_export_format: Literal["XML", "JSON", "YAML", "PHP"] = Field("XML")
     include_timestamp_export_filename: bool = True
@@ -141,13 +152,15 @@ class AppConfig(BaseModel):
     legacy_json_format: bool = False
     """Mimicks V2 behavior where the JSON output was ALWAYS a dict, where
     each entry was stored under the keys "0", "1", "2", etc.
-
-    With this disabled, the JSON output is always a dict, where data is stored
-    in the "result" key.
     """
 
     @field_validator(
-        "default_admin_usergroups", "default_create_user_usergroups", mode="before"
+        # Group names that were previously singular that are now plural
+        "default_admin_usergroups",
+        "default_create_user_usergroups",
+        "default_hostgroups",
+        "default_notification_users_usergroups",
+        mode="before",
     )
     @classmethod
     def _validate_maybe_comma_separated(cls, v: Any) -> Any:

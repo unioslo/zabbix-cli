@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import json
 import logging
+import random
+import re
 from typing import Any
 from typing import List
 from typing import Optional
@@ -27,6 +29,7 @@ from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import Hostgroup
+from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import ZabbixRight
 
@@ -45,8 +48,8 @@ class ZabbixAPI:
     def __init__(
         self,
         server: str = "http://localhost/zabbix",
-        session: requests.Session = None,
-        timeout: int = None,
+        session: Optional[requests.Session] = None,
+        timeout: Optional[int] = None,
     ):
         """
         Parameters:
@@ -78,7 +81,7 @@ class ZabbixAPI:
         logger.info("JSON-RPC Server Endpoint: %s", self.url)
 
         # Attributes for properties
-        self._version = None
+        self._version = None  # type: Version | None
 
         # Cache
         self.cache = ZabbixCache(self)
@@ -293,8 +296,6 @@ class ZabbixAPI:
             query["search"] = {norid_key: name_or_id}
         else:
             query["filter"] = {norid_key: name_or_id}
-
-        # kwargs always take precedence
         query.update(kwargs)
 
         resp = self.hostgroup.get(
@@ -386,11 +387,15 @@ class ZabbixAPI:
         else:
             return [Usergroup(**usergroup) for usergroup in res]
 
+    # TODO: do any commands update both rights and users?
+    # Can we split this into two methods?
+    # The only benefit of combining them is to avoid multiple API calls
+    # to fetch the usergroup and its users.
     def update_usergroup(
         self,
         usergroup_name: str,
         rights: Optional[List[ZabbixRight]] = None,
-        userids: Optional[List[ZabbixRight]] = None,
+        userids: Optional[List[str]] = None,
     ) -> Optional[list]:
         """
         Merge update a usergroup.
@@ -401,11 +406,6 @@ class ZabbixAPI:
         The rights and userids provided are merged into the usergroup.
         """
         usergroup = self.get_usergroup(usergroup_name)
-        # usergroup = self.usergroup.get(
-        #     filter={"usrgrpid": ug.usrgrpid},
-        #     selectRights=["permission", "id"],
-        #     selectUsers=["userid"],
-        # )[0]
 
         if rights:
             # Get the current rights with ids from new rights filtered
@@ -418,7 +418,7 @@ class ZabbixAPI:
             return self.usergroup.update(usrgrpid=usergroup.usrgrpid, rights=new_rights)
 
         if userids:
-            current_userids = [user["userid"] for user in usergroup["users"]]  # type: list[str]
+            current_userids = [user.userid for user in usergroup.users]  # type: list[str]
             # Make sure we only have unique ids
             new_userids = list(set(current_userids + userids))
             return self.usergroup.update(
@@ -426,6 +426,32 @@ class ZabbixAPI:
             )
 
         return None
+
+    def get_proxies(self, **kwargs) -> List[Proxy]:
+        """Fetches all proxies."""
+        query = {"output": "extend"}
+        query.update(kwargs)
+        try:
+            res = self.proxy.get(**query)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Unknown error when fetching proxies: {e}")
+        else:
+            return [Proxy(**proxy) for proxy in res]
+
+    def get_random_proxy(self, pattern: Optional[str] = None) -> Proxy:
+        """Fetches a random proxy."""
+        proxies = self.get_proxies()
+        if not proxies:
+            raise ZabbixNotFoundError("No proxies found")
+        if pattern:
+            try:
+                re_pattern = re.compile(pattern)
+            except re.error:
+                raise ZabbixAPIException(f"Invalid proxy regex pattern: {pattern!r}")
+            proxies = [proxy for proxy in proxies if re_pattern.match(proxy.name)]
+            if not proxies:
+                raise ZabbixNotFoundError(f"No proxies matching pattern {pattern!r}")
+        return random.choice(proxies)
 
     def __getattr__(self, attr: str):
         """Dynamically create an object class (ie: host)"""
