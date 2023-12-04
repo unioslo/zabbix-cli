@@ -8,6 +8,8 @@ from typing import Final
 from typing import Optional
 from typing import Tuple
 
+from pydantic import SecretStr
+
 from zabbix_cli._v2_compat import AUTH_FILE as AUTH_FILE_LEGACY
 from zabbix_cli._v2_compat import AUTH_TOKEN_FILE as AUTH_TOKEN_FILE_LEGACY
 from zabbix_cli.config import Config
@@ -22,7 +24,7 @@ from zabbix_cli.output.prompts import str_prompt
 
 logger = logging.getLogger(__name__)
 
-AuthFunc = Callable[[Config], Optional[Tuple[str, str]]]
+AuthFunc = Callable[[Config], Tuple[Optional[str], Optional[str]]]
 """Function that returns a username/password tuple or None if not available."""
 
 # Auth file location
@@ -68,10 +70,10 @@ def configure_auth_token(config: Config) -> None:
         )
         return
     if auth_token:  # technically not needed, but might as well
-        config.app.auth_token = auth_token
+        config.app.auth_token = SecretStr(auth_token)
 
 
-def configure_auth_username_password(config: Config) -> Tuple[str, str]:
+def configure_auth_username_password(config: Config) -> None:
     """Gets a Zabbix username and password with the following priority:
 
     1. Environment variables
@@ -82,11 +84,12 @@ def configure_auth_username_password(config: Config) -> Tuple[str, str]:
     for func in funcs:
         username, password = func(config)
         if username and password:
-            return username, password
-    # Found no auth methods, prompt for it
-    username, password = _prompt_username_password(config)
+            break
+    else:
+        # Found no auth methods, prompt for it
+        username, password = _prompt_username_password(config)
     config.app.username = username
-    config.app.password = password
+    config.app.password = SecretStr(password)
 
 
 def load_auth_token_file(config: Config) -> Optional[str]:
@@ -151,7 +154,7 @@ def _prompt_username_password(config: Config) -> Tuple[str, str]:
     return username, password
 
 
-def _get_username_password_env(config: Config) -> Optional[Tuple[str, str]]:
+def _get_username_password_env(config: Config) -> Tuple[Optional[str], Optional[str]]:
     """Get username and password from environment variables."""
     username = os.environ.get(ENV_ZABBIX_USERNAME)
     password = os.environ.get(ENV_ZABBIX_PASSWORD)
@@ -159,13 +162,17 @@ def _get_username_password_env(config: Config) -> Optional[Tuple[str, str]]:
 
 
 # TODO: refactor. Support other auth file locations(?)
-def _get_username_password_auth_file(config: Config) -> Optional[Tuple[str, str]]:
+def _get_username_password_auth_file(
+    config: Config
+) -> Tuple[Optional[str], Optional[str]]:
     """Get username and password from environment variables."""
     contents = load_auth_file(config)
     return _parse_auth_file_contents(contents)
 
 
-def _parse_auth_file_contents(contents: str) -> Tuple[Optional[str], Optional[str]]:
+def _parse_auth_file_contents(
+    contents: Optional[str]
+) -> Tuple[Optional[str], Optional[str]]:
     if contents:
         lines = contents.splitlines()
         if lines:
