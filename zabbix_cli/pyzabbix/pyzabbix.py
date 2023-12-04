@@ -235,20 +235,75 @@ class ZabbixAPI:
         # TODO add result to cache
         return resp[0]["groupid"]
 
-    def get_hostgroup(self, name_or_id: str) -> Hostgroup:
-        """Fetches a host group given its name or ID."""
-        name_or_id = name_or_id.strip()
-        is_id = name_or_id.isnumeric()
-        filter_ = {"groupid": name_or_id} if is_id else {"name": name_or_id}
-        resp = self.hostgroup.get(
-            filter=filter_, output="extend", searchWildcardsEnabled=True
-        )
-        if not resp:
+    def get_hostgroup(
+        self, name_or_id: str, search: bool = False, hosts: bool = False, **kwargs
+    ) -> Hostgroup:
+        """Fetches a host group given its name or ID.
+
+        Name or ID argument is interpeted as an ID if the argument is numeric.
+
+        Uses filtering by default, but can be switched to searching by setting
+        the `search` argument to True.
+
+        Args:
+            name_or_id (str): Name or ID of the host group.
+            search (bool, optional): Search for host groups using the given pattern instead of filtering. Defaults to False.
+            hosts (bool, optional): Fetch full information for each host in the group. Defaults to False.
+
+        Raises:
+            ZabbixNotFoundError: Group is not found.
+
+        Returns:
+            Hostgroup: The host group object.
+        """
+        hostgroups = self.get_hostgroups(name_or_id, search, hosts, **kwargs)
+        if not hostgroups:
             raise ZabbixNotFoundError(
-                f"Hostgroup with name or id {name_or_id!r} not found"
+                f"Hostgroup with name or ID {name_or_id!r} not found"
             )
-        # TODO add result to cache
-        return Hostgroup(**resp[0])
+        return hostgroups[0]
+
+    def get_hostgroups(
+        self, name_or_id: str, search: bool = False, hosts: bool = False, **kwargs
+    ) -> List[Hostgroup]:
+        """Fetches a list of host groups given its name or ID.
+
+        Name or ID argument is interpeted as an ID if the argument is numeric.
+
+        Uses filtering by default, but can be switched to searching by setting
+        the `search` argument to True.
+
+        Args:
+            name_or_id (str): Name or ID of the host group.
+            search (bool, optional): Search for host groups using the given pattern instead of filtering. Defaults to False.
+            hosts (bool, optional): Fetch full information for each host in the group. Defaults to False.
+
+        Raises:
+            ZabbixNotFoundError: Group is not found.
+
+        Returns:
+            List[Hostgroup]: List of host groups.
+        """
+        norid = name_or_id.strip()
+        query = {}
+
+        norid_key = "groupid" if norid.isnumeric() else "name"
+        if search:
+            query["searchWildcardsEnabled"] = True
+            query["search"] = {norid_key: name_or_id}
+        else:
+            query["filter"] = {norid_key: name_or_id}
+
+        # kwargs always take precedence
+        query.update(kwargs)
+
+        resp = self.hostgroup.get(
+            output="extend",
+            selectHosts=hosts,
+            **query,
+        )
+        resp = resp or []
+        return [Hostgroup(**hostgroup) for hostgroup in resp]
 
     def get_host(self, name_or_id: str) -> Host:
         """Fetches a host given its name or ID."""
@@ -280,6 +335,8 @@ class ZabbixAPI:
         else:
             return True
 
+    # TODO: refactor usergroup fetching, combine methods for fetching a single group
+    # and fetching all groups
     def get_usergroup(self, usergroup_name: str) -> Usergroup:
         """Fetches a user group by name. Always fetches the full contents of the group."""
         query = {
@@ -308,6 +365,26 @@ class ZabbixAPI:
             )
         else:
             return Usergroup(**res[0])
+
+    def get_usergroups(self) -> List[Usergroup]:
+        """Fetches all user groups. Always fetches the full contents of the groups."""
+        query = {
+            "output": "extend",
+            "selectUsers": "extend",  # TODO: profile performance for large groups
+        }
+        # Rights were split into host and template group rights in 6.2.0
+        if self.version.release >= (6, 2, 0):
+            query["selectHostGroupRights"] = "extend"
+            query["selectTemplateGroupRights"] = "extend"
+        else:
+            query["selectRights"] = "extend"
+
+        try:
+            res = self.usergroup.get(**query)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Unknown error when fetching user groups: {e}")
+        else:
+            return [Usergroup(**usergroup) for usergroup in res]
 
     def update_usergroup(
         self,

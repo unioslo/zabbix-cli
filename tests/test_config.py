@@ -1,110 +1,19 @@
 from __future__ import annotations
 
-import configparser
-import unittest
+import pytest
+from pydantic import ValidationError
 
-import zabbix_cli.config
-
-
-# TODO: Switch from RawConfigParser to ConfigParser here and config.py
-class MockConfig(configparser.RawConfigParser):
-    def __init__(self):
-        super().__init__({"option_a": "a", "option_b": "b"})
-        self.add_section("foo")
-        self.add_section("bar")
+from zabbix_cli.config import Config
 
 
-class TestOptionDescriptor(unittest.TestCase):
-    class MockConfigWithDescriptors(MockConfig):
-        foo_a = zabbix_cli.config.OptionDescriptor("foo", "option_a")
-        bar_b = zabbix_cli.config.OptionDescriptor("bar", "option_b")
-
-    def _make_config(self):
-        return self.MockConfigWithDescriptors()
-
-    def test_descriptor_cls(self):
-        cls = self.MockConfigWithDescriptors
-        desc = cls.foo_a
-        self.assertTrue(isinstance(desc, zabbix_cli.config.OptionDescriptor))
-
-    def test_descriptor_get(self):
-        config = self._make_config()
-        self.assertEqual(config.get("foo", "option_a"), getattr(config, "foo_a"))
-
-    def test_descriptor_set(self):
-        config = self._make_config()
-        config.foo_a = "foo"
-        self.assertEqual("foo", config.foo_a)
-        self.assertEqual(config.get("foo", "option_a"), config.foo_a)
-
-    def test_descriptor_del(self):
-        config = self._make_config()
-        config.foo_a = "foo"
-        del config.foo_a
-        self.assertFalse("foo" == config.foo_a)
-        self.assertEqual(config.get("foo", "option_a"), config.foo_a)
+def test_config_default() -> None:
+    """Assert that the config by default only requires a URL."""
+    with pytest.raises(ValidationError) as excinfo:
+        Config()
+    assert "1 validation error" in str(excinfo.value)
+    assert "url" in str(excinfo.value)
 
 
-class TestOptionRegister(unittest.TestCase):
-    def _make_register(self):
-        return zabbix_cli.config.OptionRegister()
-
-    def test_len(self):
-        register = self._make_register()
-        self.assertEqual(0, len(register))
-
-        register.add("foo", "bar")
-        self.assertEqual(1, len(register))
-
-        register.add("foo", "baz")
-        self.assertEqual(2, len(register))
-
-    def test_iter(self):
-        items = [("foo", "bar"), ("foo", "baz")]
-        register = self._make_register()
-
-        for section, option in items:
-            register.add(section, option)
-
-        for i, item in enumerate(register):
-            self.assertEqual(items[i], item)
-
-    def test_getitem(self):
-        items = [("foo", "bar"), ("foo", "baz")]
-        register = self._make_register()
-
-        comparison = []
-        for section, option in items:
-            comparison.append(register.add(section, option))
-
-        for i, item in enumerate(items):
-            gotten = register[item]
-            self.assertEqual(comparison[i], gotten)
-
-    def test_sections(self):
-        items = [("foo", "bar"), ("foo", "baz"), ("bar", "foo")]
-        expect = {t[0] for t in items}
-        register = self._make_register()
-
-        for section, option in items:
-            register.add(section, option)
-
-        self.assertEqual(len(expect), len(register.sections))
-        self.assertEqual(set(expect), set(register.sections))
-
-    def test_initialize(self):
-        items = [("foo", "bar"), ("foo", "baz"), ("bar", "foo")]
-        sections = {t[0] for t in items}
-        register = self._make_register()
-
-        for section, option in items:
-            register.add(section, option)
-
-        config = configparser.RawConfigParser()
-        register.initialize(config)
-
-        for section in sections:
-            self.assertTrue(config.has_section(section))
-
-        for section, option in items:
-            self.assertTrue(config.has_option(section, option))
+def test_sample_config() -> None:
+    """Assert that the sample config can be instantiated."""
+    assert Config.sample_config()

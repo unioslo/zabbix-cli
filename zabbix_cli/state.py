@@ -61,12 +61,10 @@ class State:
 
     @property
     def client(self) -> ZabbixAPI:
-        """Harbor async client object.
-
-        Returns a client with bogus defaults if the client is not configured.
-        """
+        """Zabbix API client object.
+        Fails if the client is not configured."""
         if self._client is None:
-            raise RuntimeError("Client not configured")
+            raise RuntimeError("Not connected to the Zabbix API.")
         return self._client
 
     @client.setter
@@ -106,6 +104,7 @@ class State:
         Logs into the Zabbix API with the configured credentials.
         """
         from zabbix_cli.pyzabbix import ZabbixAPI
+        from zabbix_cli.pyzabbix.types import Result
 
         self.config = config
         if not self.config.app.auth_token and not self.config.app.password:
@@ -125,6 +124,10 @@ class State:
             password=ca.password.get_secret_value() if ca.password else None,
             auth_token=config_token,
         )
+
+        # Set the API version on the Result class, so that we know
+        # how to render the results for the given version of the API.
+        Result.version = self.client.version
 
         # Write the token file if it's new and we are configured to save it
         if (

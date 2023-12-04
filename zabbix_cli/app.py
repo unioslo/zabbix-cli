@@ -4,6 +4,8 @@ app object here, which we share between the different command modules.
 Thus, every command is part of the same command group."""
 from __future__ import annotations
 
+from typing import Tuple
+
 import typer
 
 from zabbix_cli.state import get_state
@@ -21,6 +23,11 @@ class StatefulApp(typer.Typer):
     @property
     def state(self) -> State:
         return get_state()
+
+    @property
+    def api_version(self) -> Tuple[int, ...]:
+        """Get the current API version. Will fail if not connected to the API."""
+        return self.state.client.version.release
 
 
 app = StatefulApp(

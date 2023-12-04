@@ -159,14 +159,22 @@ def get_autologin_type(code):
     return f"Unknown ({str(code)})"
 
 
-def get_permission(code):
+# TODO: refactor these two functions and add them to
+# pyzabbix.types.UsergroupPermission
+
+
+def get_permission(code: int) -> str:
     """Get permission."""
-    permission = {0: "deny", 2: "ro", 3: "rw"}
+    permission = {
+        0: "deny",
+        2: "ro",
+        3: "rw",
+    }
 
-    return permission.get(code, None)
+    return permission.get(code, "Unknown")
 
 
-def get_permission_code(permission):
+def get_permission_code(permission: str) -> int:
     """Get permission code."""
     permission_code = {"deny": 0, "ro": 2, "rw": 3}
 

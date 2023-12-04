@@ -13,6 +13,7 @@ from zabbix_cli.output.style.color import bold
 from zabbix_cli.output.style.color import green
 from zabbix_cli.output.style.color import red
 from zabbix_cli.output.style.color import yellow
+from zabbix_cli.state import get_state
 
 
 # stdout console used to print results
@@ -87,5 +88,12 @@ def exit_err(message: str, code: int = 1, **kwargs: Any) -> NoReturn:
     **kwargs
         Additional keyword arguments to pass to the extra dict.
     """
-    error(message, **kwargs)
+    state = get_state()
+    if state.is_config_loaded and state.config.app.output_format == "json":
+        from zabbix_cli.output.render import render_json
+        from zabbix_cli.models import Result, ReturnCode
+
+        render_json(Result(message=message, return_code=ReturnCode.ERROR))
+    else:
+        error(message, **kwargs)
     raise SystemExit(code)

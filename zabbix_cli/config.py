@@ -138,6 +138,13 @@ class AppConfig(BaseModel):
     use_paging: bool = False
     output_format: OutputFormat = OutputFormat.TABLE
     allow_insecure_authfile: bool = True  # mimick old behavior
+    legacy_json_format: bool = False
+    """Mimicks V2 behavior where the JSON output was ALWAYS a dict, where
+    each entry was stored under the keys "0", "1", "2", etc.
+
+    With this disabled, the JSON output is always a dict, where data is stored
+    in the "result" key.
+    """
 
     @field_validator(
         "default_admin_usergroups", "default_create_user_usergroups", mode="before"
@@ -217,6 +224,7 @@ class Config(BaseModel):
         validation_alias=AliasChoices("app", "zabbix_config"),
     )
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    config_path: Optional[Path] = None
 
     @classmethod
     def sample_config(cls) -> Config:
@@ -239,7 +247,7 @@ class Config(BaseModel):
                 raise FileNotFoundError("No configuration file found.")
         else:
             conf = _load_config_toml(fp)
-        return cls(**conf)
+        return cls(**conf, config_path=fp)
 
     def as_toml(self) -> str:
         """Dump the configuration to a TOML string."""
@@ -295,7 +303,7 @@ def find_config(
     return None
 
 
-def get_config(filename: Optional[str] = None) -> Config:
+def get_config(filename: Optional[Path] = None) -> Config:
     """Get a configuration object.
 
     Args:

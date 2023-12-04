@@ -14,7 +14,8 @@
 # (at your option) any later version.
 #
 # Zabbix-CLI is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# but WITHOUT ANY W
+# ARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
@@ -180,7 +181,7 @@ def main_callback(
             return  # modern alternative to `-C` option to run a single command
         else:
             # If no command is passed in, we enter the REPL
-            raise SystemExit(run_repl(ctx))
+            run_repl(ctx)
 
 
 def main() -> None:
