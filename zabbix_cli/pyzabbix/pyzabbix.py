@@ -91,7 +91,12 @@ class ZabbixAPI:
         self.session.verify = False
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    def login(self, user: str = "", password: str = "", auth_token: str = "") -> str:
+    def login(
+        self,
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+        auth_token: Optional[str] = None,
+    ) -> str:
         """
         Convenience method for logging into the API and storing the resulting
         auth token as an instance variable.
@@ -101,7 +106,7 @@ class ZabbixAPI:
         user_kwarg = {compat.login_user_name(self.version): user}
 
         if not auth_token:
-            self.auth = self.user.login(**user_kwarg, password=password)  # type: ignore
+            self.auth = self.user.login(**user_kwarg, password=password)
         else:
             self.auth = auth_token
             # TODO: confirm we are logged in here
@@ -439,7 +444,7 @@ class ZabbixAPI:
             return [Proxy(**proxy) for proxy in res]
 
     def get_random_proxy(self, pattern: Optional[str] = None) -> Proxy:
-        """Fetches a random proxy."""
+        """Fetches a random proxy, optionally matching a regex pattern."""
         proxies = self.get_proxies()
         if not proxies:
             raise ZabbixNotFoundError("No proxies found")

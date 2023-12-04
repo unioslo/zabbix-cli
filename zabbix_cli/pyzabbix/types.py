@@ -20,6 +20,7 @@ from pydantic import AliasChoices
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
+from pydantic import model_validator
 from pydantic import ValidationInfo
 from typing_extensions import TypedDict
 
@@ -104,4 +105,12 @@ class Hostgroup(ZabbixAPIBaseModel):
 
 class Proxy(ZabbixAPIBaseModel):
     proxyid: str
-    name: str = Field(..., validation_alias=AliasChoices("name", "host"))
+    name: str = Field(..., validation_alias=AliasChoices("host", "name"))
+
+    @model_validator(mode="after")
+    def _set_name_field(self) -> Proxy:
+        """Ensures the name field is set to the correct value given the current Zabbix API version."""
+        # NOTE: should we use compat.proxy_name here to determine attr names?
+        if self.version.release < (7, 0, 0) and hasattr(self, "host") and not self.name:
+            self.name = self.host
+        return self

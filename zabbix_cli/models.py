@@ -21,7 +21,7 @@ ColsRowsType = Tuple[List[str], List[List[str]]]
 
 
 class Result(BaseModel):
-    _version: ClassVar[Version] = Version("6.4.0")  # assume latest released version
+    version: ClassVar[Version] = Version("6.4.0")  # assume latest released version
     """Zabbix API version the data stems from.
     This is a class variable that can be overridden, which causes all
     subclasses to use the new value when accessed.
@@ -34,15 +34,6 @@ class Result(BaseModel):
     return_code: ReturnCode = ReturnCode.DONE
 
     model_config = ConfigDict(arbitrary_types_allowed=True, validate_assignment=True)
-
-    @property
-    def version(self) -> Tuple[int, ...]:
-        """Zabbix API version release tuple."""
-        return Result._version.release
-
-    @version.setter
-    def version(self, version: Version) -> None:
-        Result._version = version
 
     def _table_cols_rows(self) -> ColsRowsType:
         """Returns the columns and row for the table representation of the object."""

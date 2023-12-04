@@ -58,13 +58,26 @@ def create_host(
         "--status",
         help="Status of the host. 0 - monitored host; 1 - unmonitored host.",
     ),
+    # Options below are new in V3:
     no_default_hostgroup: bool = typer.Option(
         False,
         "--no-default-hostgroup",
         help="Do not add host to default host group.",
     ),
+    name: Optional[str] = typer.Option(
+        None,
+        "--name",
+        help="Visible name of the host. Uses hostname or IP if omitted.",
+    ),
+    description: Optional[str] = typer.Option(
+        None,
+        "--description",
+        help="Description of the host.",
+    ),
 ) -> None:
     """Creates a host.
+
+    Prefer using options over the positional arguments.
 
     Always adds the host to the default host group unless `--no-default-hostgroup`
     is specified.
@@ -128,7 +141,7 @@ def create_host(
 
     # Find a proxy (No match = monitored by zabbix server)
     try:
-        random_proxy = app.state.client.get_random_proxy()
+        random_proxy = app.state.client.get_random_proxy(pattern=proxy)
         proxy_id = random_proxy.proxyid
     except ZabbixNotFoundError:
         proxy_id = None
@@ -142,23 +155,32 @@ def create_host(
     else:
         raise ZabbixCLIError(f"Host {hostname_or_ip} already exists.")
 
+    host_name = name or hostname_or_ip
     query = {
-        "host": hostname_or_ip,
+        "host": host_name,
         "groups": hostgroup_id_params,
         compat.host_proxyid(app.state.client.version): proxy_id,
         "status": int(status),
         "interfaces": interfaces,
         "inventory_mode": 1,
         "inventory": {"name": hostname_or_ip},
+        "description": description,
     }
     result = app.state.client.host.create(**query)
     render_result(
-        Result(message=f"Created host {hostname_or_ip} with ID {result['hostids'][0]}.")
+        Result(message=f"Created host {host_name!r} with ID {result['hostids'][0]}.")
     )
+    # TODO: cache host ID
 
 
-@app.command(name="create_host_interface")
-def create_host_interface() -> None:
+@app.command(
+    name="create_host_interface",
+    options_metavar="[hostname] [interface connection] [interface type] [interface port] [interface IP] [interface DNS] [default interface]",
+)
+def create_host_interface(
+    args: List[str] = ARG_POSITIONAL,
+    hostname: Optional[str] = typer.Option(None, "--hostname"),
+) -> None:
     pass
 
 
