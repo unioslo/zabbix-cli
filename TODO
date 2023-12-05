@@ -43,4 +43,14 @@
 
 ## Rendering
 
-calling `exit_err` in JSON mode should render the error as JSON to stdout with return_code "Error" like in V2.
+* ~~calling `exit_err` in JSON mode should render the error as JSON to stdout with return_code "Error" like in V2.~~ DONE
+
+## Legacy
+
+* Assume legacy JSON format when loading from .conf file.
+
+
+## Tests
+
+* Choice enum mappings contain all choices.
+  * I.e. `InterfaceConnectionMode` & `InterfaceType`

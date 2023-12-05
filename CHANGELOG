@@ -9,17 +9,23 @@
 - New configuration options:
   - `app.default_format`: Sets the default CLI output format. Defaults to `table`.
   - `app.legacy_json_format`: Enables the old JSON output format. Defaults to `false`.
+- New command options:
+  - `create_host`:
+    - `--name`: Host name
+      - Host name still defaults to host DNS name or IP address if not specified.
+    - `--description`: Host description
 
 
 - **REPOSITORY:** Pre-commit configuration for linting and formatting.
 
 ### Changed
 
+- Commands now take named options instead of positional arguments.
+  - Positional arguments are still supported, but deprecated.
 - JSON output is no longer always a dict with numeric string keys.
   - See V3 migration guide for more information.
-  - The old format can be enabled with the new option `app.legacy_json_format`
-- Use Hatch for building and publishing
-- Switch from setup.py to pyproject.toml
+  - The old format can be enabled with the new option `app.legacy_json_format` in the new TOML configuration file format.
+  - When loading configuration from a legacy `.conf`-file, the old format is assumed.
 - Default configuration file location is now `~/.config/zabbix-cli/config.toml`
 - Changes to TOML configuration file options:
   - Table [zabbix_api] → [api]
@@ -30,6 +36,8 @@
   - `logging.logging` → `logging.enabled`
   - The original names are still usable, but are deprecated and slated for removal in a future version.
 - Application creates a config file on launch if it doesn't exist.
+- Use Hatch for building and publishing
+- Switch from setup.py to pyproject.toml
 
 ### Deprecated
 

@@ -1,3 +1,12 @@
+""""Module for loading/storing Zabbix API authentication info.
+
+Manages the following:
+- Loading and saving auth token files (file containing API session token)
+- Loading and saving auth files (file containing username and password)
+- Loading username and password from environment variables
+- Prompting for username and password
+- Updating the Config object with the authentication information
+"""
 from __future__ import annotations
 
 import logging
@@ -199,10 +208,9 @@ def _do_load_auth_file(file: Path, allow_insecure: bool) -> Optional[str]:
     """
     if not file.exists():
         return None
-    permissions = file.stat().st_mode & 0o777
-    if not allow_insecure and permissions != 0o600:
+    if not allow_insecure and not file_has_secure_permissions(file):
         error(
-            f"Auth file {file} must have 600 permissions, has {oct(permissions)}. Refusing to load."
+            f"Auth file {file} must have {SECURE_PERMISSIONS_STR} permissions, has {oct(get_file_permissions(file))}. Refusing to load."
         )
         return None
     return file.read_text().strip()
@@ -210,4 +218,9 @@ def _do_load_auth_file(file: Path, allow_insecure: bool) -> Optional[str]:
 
 def file_has_secure_permissions(file: Path) -> bool:
     """Check if a file has secure permissions."""
-    return file.stat().st_mode & 0o777 == SECURE_PERMISSIONS
+    return get_file_permissions(file) == SECURE_PERMISSIONS
+
+
+def get_file_permissions(file: Path) -> int:
+    """Get the 3 digit octal permissions of a file."""
+    return file.stat().st_mode & 0o777

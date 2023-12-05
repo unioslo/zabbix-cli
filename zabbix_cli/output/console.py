@@ -50,7 +50,7 @@ def error(
 ) -> None:
     """Log with ERROR level and print an error message."""
     logger.error(message, extra=dict(**kwargs), exc_info=exc_info)
-    err_console.print(bold(f"{red(icon)} {message}"))
+    err_console.print(bold(red(f"{icon} ERROR: {message}")))
 
 
 def print_help(ctx: typer.Context) -> None:

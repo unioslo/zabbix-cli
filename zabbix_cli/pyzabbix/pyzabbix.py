@@ -18,6 +18,7 @@ import re
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 
 import requests
 import urllib3
@@ -32,6 +33,9 @@ from zabbix_cli.pyzabbix.types import Hostgroup
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import ZabbixRight
+
+if TYPE_CHECKING:
+    from zabbix_cli.pyzabbix.types import QueryType  # noqa: F401
 
 
 class _NullHandler(logging.Handler):
@@ -293,7 +297,7 @@ class ZabbixAPI:
             List[Hostgroup]: List of host groups.
         """
         norid = name_or_id.strip()
-        query = {}
+        query = {}  # type: QueryType
 
         norid_key = "groupid" if norid.isnumeric() else "name"
         if search:
@@ -322,6 +326,19 @@ class ZabbixAPI:
         # TODO add result to cache
         return Host(**resp[0])
 
+    def host_exists(self, name_or_id: str) -> bool:
+        """Checks if a host exists given its name or ID."""
+        try:
+            self.get_host(name_or_id)
+        except ZabbixNotFoundError:
+            return False
+        except Exception as e:
+            raise ZabbixAPIException(
+                f"Unknown error when fetching host {name_or_id}: {e}"
+            )
+        else:
+            return True
+
     def get_host_id(self, hostname: str) -> str:
         # TODO: implement caching for hosts
         resp = self.host.get(filter={"host": hostname}, output=["hostid"])
@@ -349,7 +366,7 @@ class ZabbixAPI:
             "filter": {"name": usergroup_name},
             "output": "extend",
             "selectUsers": "extend",  # TODO: profile performance for large groups
-        }
+        }  # type: QueryType
         # Rights were split into host and template group rights in 6.2.0
         if self.version.release >= (6, 2, 0):
             query["selectHostGroupRights"] = "extend"
@@ -377,7 +394,7 @@ class ZabbixAPI:
         query = {
             "output": "extend",
             "selectUsers": "extend",  # TODO: profile performance for large groups
-        }
+        }  # type: QueryType
         # Rights were split into host and template group rights in 6.2.0
         if self.version.release >= (6, 2, 0):
             query["selectHostGroupRights"] = "extend"
@@ -434,7 +451,7 @@ class ZabbixAPI:
 
     def get_proxies(self, **kwargs) -> List[Proxy]:
         """Fetches all proxies."""
-        query = {"output": "extend"}
+        query = {"output": "extend"}  # type: QueryType
         query.update(kwargs)
         try:
             res = self.proxy.get(**query)

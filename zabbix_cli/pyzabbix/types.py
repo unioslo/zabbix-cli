@@ -14,7 +14,9 @@ Zabbix versions.
 from __future__ import annotations
 
 from enum import Enum
+from typing import Dict
 from typing import List
+from typing import Union
 
 from pydantic import AliasChoices
 from pydantic import ConfigDict
@@ -28,6 +30,10 @@ from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import Result
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
+
+# Technically this should maybe be called ParamsType?
+QueryType = Dict[str, Union[str, int, float, bool, "QueryType"]]
+"""Type definition for Zabbix API query parameters."""
 
 
 class UsergroupPermission(Enum):
