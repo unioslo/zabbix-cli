@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 import os
 from functools import wraps
@@ -37,6 +38,12 @@ def no_headless(f: Callable[P, T]) -> Callable[P, T]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         if is_headless():
             # TODO: determine caller etc. via the stack
+            # If a default argument was passed in, we can return that:
+            if "default" in kwargs:
+                logging.debug(
+                    "Returning default value from %s(%s, %s)", f, args, kwargs
+                )
+                return kwargs["default"]  # type: ignore # bit of a hack
             exit_err(
                 f"Headless session detected; user input required. Arguments: {args}, {kwargs}."
             )

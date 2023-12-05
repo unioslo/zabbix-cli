@@ -35,7 +35,7 @@ from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import ZabbixRight
 
 if TYPE_CHECKING:
-    from zabbix_cli.pyzabbix.types import QueryType  # noqa: F401
+    from zabbix_cli.pyzabbix.types import ParamsType  # noqa: F401
 
 
 class _NullHandler(logging.Handler):
@@ -297,7 +297,7 @@ class ZabbixAPI:
             List[Hostgroup]: List of host groups.
         """
         norid = name_or_id.strip()
-        query = {}  # type: QueryType
+        query = {}  # type: ParamsType
 
         norid_key = "groupid" if norid.isnumeric() else "name"
         if search:
@@ -366,7 +366,7 @@ class ZabbixAPI:
             "filter": {"name": usergroup_name},
             "output": "extend",
             "selectUsers": "extend",  # TODO: profile performance for large groups
-        }  # type: QueryType
+        }  # type: ParamsType
         # Rights were split into host and template group rights in 6.2.0
         if self.version.release >= (6, 2, 0):
             query["selectHostGroupRights"] = "extend"
@@ -394,7 +394,7 @@ class ZabbixAPI:
         query = {
             "output": "extend",
             "selectUsers": "extend",  # TODO: profile performance for large groups
-        }  # type: QueryType
+        }  # type: ParamsType
         # Rights were split into host and template group rights in 6.2.0
         if self.version.release >= (6, 2, 0):
             query["selectHostGroupRights"] = "extend"
@@ -451,7 +451,7 @@ class ZabbixAPI:
 
     def get_proxies(self, **kwargs) -> List[Proxy]:
         """Fetches all proxies."""
-        query = {"output": "extend"}  # type: QueryType
+        query = {"output": "extend"}  # type: ParamsType
         query.update(kwargs)
         try:
             res = self.proxy.get(**query)

@@ -14,10 +14,11 @@ from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.models import Result
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import bool_prompt
+from zabbix_cli.output.prompts import int_prompt
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix import compat
-from zabbix_cli.pyzabbix.types import QueryType
+from zabbix_cli.pyzabbix.types import ParamsType
 from zabbix_cli.utils.commands import ARG_POSITIONAL
 
 
@@ -184,6 +185,9 @@ class ChoiceMixin(Enum):
         return [str(e) for e in cls]
 
 
+# TODO: add factory function for creating choice enums from mappings
+
+
 class InterfaceConnectionMode(StrEnum, ChoiceMixin):
     """Interface connection mode.
 
@@ -240,6 +244,109 @@ InterfaceTypeMapping = {
     InterfaceType.JMX: "4",
 }
 
+InterfacePortMapping = {
+    InterfaceType.AGENT: 10050,
+    InterfaceType.SNMP: 161,
+    InterfaceType.IPMI: 623,
+    InterfaceType.JMX: 12345,
+}
+
+
+class SNMPSecurityLevel(StrEnum, ChoiceMixin):
+    # Match casing from Zabbix API
+    NO_AUTH_NO_PRIV = "noAuthNoPriv"
+    AUTH_NO_PRIV = "authNoPriv"
+    AUTH_PRIV = "authPriv"
+
+    @classmethod
+    def _missing_(cls, value: object) -> SNMPSecurityLevel:
+        """Supports Zabbix API-style interface type values."""
+        for k, v in SNMPSecurityLevelMapping.items():
+            if v == value:
+                return k
+        raise ZabbixCLIError(f"Invalid interface type {value!r}.")
+
+    def as_api_value(self) -> str:
+        """Return the Zabbix API value for this interface type."""
+        return SNMPSecurityLevelMapping[self]
+
+
+SNMPSecurityLevelMapping = {
+    SNMPSecurityLevel.NO_AUTH_NO_PRIV: "0",
+    SNMPSecurityLevel.AUTH_NO_PRIV: "1",
+    SNMPSecurityLevel.AUTH_PRIV: "2",
+}
+
+
+class SNMPAuthProtocol(StrEnum, ChoiceMixin):
+    """Authentication protocol for SNMPv3."""
+
+    MD5 = "MD5"
+    SHA1 = "SHA1"  # <6.0 only
+    # >=6.0 only:
+    SHA224 = "SHA224"
+    SHA256 = "SHA256"
+    SHA384 = "SHA384"
+    SHA512 = "SHA512"
+
+    @classmethod
+    def _missing_(cls, value: object) -> SNMPAuthProtocol:
+        """Supports Zabbix API-style interface type values."""
+        for k, v in SNMPAuthProtocolMapping.items():
+            if v == value:
+                return k
+        raise ZabbixCLIError(f"Invalid auth protocol {value!r}.")
+
+    def as_api_value(self) -> str:
+        """Return the Zabbix API value for this interface type."""
+        return SNMPAuthProtocolMapping[self]
+
+
+SNMPAuthProtocolMapping = {
+    SNMPAuthProtocol.MD5: "0",
+    SNMPAuthProtocol.SHA1: "1",
+    SNMPAuthProtocol.SHA224: "2",
+    SNMPAuthProtocol.SHA256: "3",
+    SNMPAuthProtocol.SHA384: "4",
+    SNMPAuthProtocol.SHA512: "5",
+}
+
+
+class SNMPPrivProtocol(StrEnum, ChoiceMixin):
+    """Privacy protocol for SNMPv3."""
+
+    DES = "DES"
+    AES = "AES"  # < 6.0 only
+    # >=6.0 only:
+    AES128 = "AES128"
+    AES192 = "AES192"
+    AES256 = "AES256"
+    AES192C = "AES192C"
+    AES256C = "AES256C"
+
+    @classmethod
+    def _missing_(cls, value: object) -> SNMPPrivProtocol:
+        """Supports Zabbix API-style interface type values."""
+        for k, v in SNMPPrivProtocolMapping.items():
+            if v == value:
+                return k
+        raise ZabbixCLIError(f"Invalid privacy protocol {value!r}.")
+
+    def as_api_value(self) -> str:
+        """Return the equivalent Zabbix API value."""
+        return SNMPPrivProtocol[self]
+
+
+SNMPPrivProtocolMapping = {
+    SNMPPrivProtocol.DES: "0",
+    SNMPPrivProtocol.AES: "1",  # <6.0
+    SNMPPrivProtocol.AES128: "1",  # >=6.0
+    SNMPPrivProtocol.AES192: "2",
+    SNMPPrivProtocol.AES256: "3",
+    SNMPPrivProtocol.AES192C: "4",
+    SNMPPrivProtocol.AES256C: "5",
+}
+
 
 @app.command(
     name="create_host_interface",
@@ -249,30 +356,106 @@ def create_host_interface(
     ctx: typer.Context,
     # NOTE: use unified parsing func for args and options?
     args: List[str] = ARG_POSITIONAL,
-    hostname: Optional[str] = typer.Option(None, "--hostname"),
+    hostname: Optional[str] = typer.Option(
+        None,
+        "--hostname",
+        help="Name of host to create interface on.",
+        show_default=False,
+    ),
     connection: InterfaceConnectionMode = typer.Option(
         InterfaceConnectionMode.DNS,
         "--connection",
         help="Interface connection mode.",
         case_sensitive=False,
     ),
-    type_: InterfaceType = typer.Option(
-        InterfaceType.SNMP,
+    type_: Optional[InterfaceType] = typer.Option(
+        None,
         "--type",
-        help="Interface type.",
+        help="Interface type. SNMP enables --snmp-* options.",
         case_sensitive=False,
     ),
-    port: int = typer.Option(161, "--port", help="Interface port."),
+    port: Optional[int] = typer.Option(
+        None,
+        "--port",
+        help="Interface port. Defaults to 10050 for agent, 161 for SNMP, 623 for IPMI, and 12345 for JMX.",
+    ),
     address: Optional[str] = typer.Option(
         None,
         "--address",
         help="IP address if IP connection, or DNS address if DNS connection.",
+        show_default=False,
     ),
-    default: bool = typer.Option(
-        False, "--default", help="Whether this is the default interface."
+    default: Optional[bool] = typer.Option(
+        None, "--default/--no-default", help="Whether this is the default interface."
+    ),
+    snmp_version: Optional[int] = typer.Option(
+        None,
+        "--snmp-version",
+        help="SNMP version.",
+        min=1,
+        max=3,
+        show_default=False,
+    ),
+    snmp_bulk: Optional[bool] = typer.Option(
+        None,
+        "--snmp-bulk/--no-snmp-bulk",
+        help="Use bulk SNMP requests.",
+        show_default=False,
+    ),
+    snmp_community: Optional[str] = typer.Option(
+        None,
+        "--snmp-community",
+        help="SNMPv{1,2} community.",
+        show_default=False,
+    ),
+    snmp_security_name: Optional[str] = typer.Option(
+        None,
+        "--snmp-security-name",
+        help="SNMPv3 security name.",
+        show_default=False,
+    ),
+    snmp_context_name: Optional[str] = typer.Option(
+        None,
+        "--snmp-context-name",
+        help="SNMPv3 context name.",
+        show_default=False,
+    ),
+    snmp_security_level: Optional[SNMPSecurityLevel] = typer.Option(
+        None,
+        "--snmp-security-level",
+        help="SNMPv3 security level.",
+        show_default=False,
+    ),
+    snmp_auth_protocol: Optional[str] = typer.Option(
+        None,
+        "--snmp-auth-protocol",
+        help="SNMPv3 auth protocol (authNoPriv & authPriv).",
+        show_default=False,
+    ),
+    snmp_auth_passphrase: Optional[str] = typer.Option(
+        None,
+        "--snmp-auth-passphrase",
+        help="SNMPv3 auth passphrase (authNoPriv & authPriv).",
+        show_default=False,
+    ),
+    snmp_priv_protocol: Optional[str] = typer.Option(
+        None,
+        "--snmp-priv-protocol",
+        help="SNMPv3 priv protocol (authPriv)",
+        show_default=False,
+    ),
+    snmp_priv_passphrase: Optional[str] = typer.Option(
+        None,
+        "--snmp-priv-passphrase",
+        help="SNMPv3 priv passphrase (authPriv).",
+        show_default=False,
     ),
 ) -> None:
-    """Create a host interface."""
+    """Create a host interface.
+
+    Prompts for required values if not specified.
+    NOTE: V2-style positional args do not support SNMP options.
+    """
     # Handle V2 positional args
     if args and len(args) == 7:
         if args[0]:
@@ -298,31 +481,29 @@ def create_host_interface(
             "create_host_interface takes exactly 7 positional arguments."
         )
 
-    # Changed from V2:
+    # Changed from V2: Reduced number of prompts
     # Will only prompt for hostname, address, and default interface
     # Defaults are there for a reason...
     if not hostname:
         hostname = str_prompt("Hostname")
-    # if not param_used("connection"):
-    #     c = str_prompt(
-    #         "Interface connection", choices=InterfaceConnectionMode.choices()
-    #     )
-    #     connection = InterfaceConnectionMode(c)
-    # if not type_:
-    #     t = str_prompt("Interface type", choices=InterfaceType.choices())
-    #     type_ = InterfaceType(t)
-    # if not port:
-    #     port = int_prompt("Interface port")
     if not address:
         if connection == InterfaceConnectionMode.IP:
             p = "IP"
-            default_address = ...
+            default_address = "127.0.0.1"
         else:
             p = "DNS"
-            default_address = hostname  # type: ignore # ellipsis
+            default_address = hostname
         address = str_prompt(f"Interface {p}", default=default_address)
-    if not default:
+    if type_ is None:
+        t = str_prompt("Interface type", choices=InterfaceType.choices())
+        type_ = InterfaceType(t)
+    if default is None:
         default = bool_prompt("Default interface?", default=True)
+
+    if port is None:
+        port = InterfacePortMapping.get(type_, None)
+        if port is None:
+            raise ZabbixCLIError(f"Invalid interface type {type_!r}.")
 
     # FIXME: optimize this. We call the API twice here.
     if not app.state.client.host_exists(hostname):
@@ -331,32 +512,114 @@ def create_host_interface(
         )
     host = app.state.client.get_host(hostname)
 
-    # NOTE: for consistency we should probably handle this inside pyzabbix.ZabbixAPI
-    # but creating a clean abstraction for that now, when this is the only place
-    # we create host interfaces is probably not worth it.
-    query: QueryType = {
+    # NOTE: for consistency we should probably handle this inside pyzabbix.ZabbixAPI,
+    # but creating a clean abstraction for that, when this is the only place
+    # we create host interfaces, is probably not worth it.
+    query: ParamsType = {
         # All API values are strings!
         "hostid": host.hostid,
-        "type": type_.as_api_value(),
         "main": str(int(default)),
+        "type": type_.as_api_value(),
         "useip": connection.as_api_value(),
         "port": str(port),
-        "dns": "",
         "ip": "",
+        "dns": "",
     }
     if connection == InterfaceConnectionMode.IP:
         query["ip"] = address
     else:
         query["dns"] = address
 
+    if type_ == InterfaceType.SNMP:
+        # NOTE (pederhan): this block is a bit clumsy
+        # We populate this dict with whatever types and None
+        # then filter out None and convert to strings afterwards
+        details = {
+            "version": snmp_version,
+            "bulk": snmp_bulk,
+            "community": snmp_community,
+            "securityname": None,
+            "contextname": None,
+            "securitylevel": None,
+            "authpassphrase": None,
+            "privpassphrase": None,
+            "authprotocol": None,
+            "privprotocol": None,
+        }
+        if not snmp_version:
+            snmp_version = int_prompt("SNMP version", default=2)
+            details["version"] = str(snmp_version)
+        if snmp_bulk is None:
+            snmp_bulk = bool_prompt("Use SNMP bulk requests?", default=True)
+        details["bulk"] = str(int(snmp_bulk))
+
+        # V3-specific options
+        if snmp_version == 3:
+            details["securityname"] = str_prompt("SNMP security name")
+            details["contextname"] = str_prompt("SNMP context name")
+            if not snmp_security_level:
+                sec_inp = str_prompt(
+                    "SNMPv3 security level",
+                    default=SNMPSecurityLevel.NO_AUTH_NO_PRIV,
+                    choices=SNMPSecurityLevel.choices(),
+                )
+                snmp_security_level = SNMPSecurityLevel(sec_inp)
+            if snmp_security_level != SNMPSecurityLevel.NO_AUTH_NO_PRIV:
+                auth_proto = str_prompt(
+                    "SNMPv3 auth protocol",
+                    default=SNMPAuthProtocol.MD5,
+                    choices=SNMPAuthProtocol.choices(),
+                )
+                details["authprotocol"] = SNMPAuthProtocol(auth_proto).as_api_value()
+                details["authpassphrase"] = str_prompt(
+                    "SNMPv3 auth passphrase",
+                    default="",
+                    password=True,
+                    empty_ok=True,
+                )
+                if snmp_security_level == SNMPSecurityLevel.AUTH_PRIV:
+                    proto = str_prompt(
+                        "SNMPv3 privacy protocol",
+                        default=SNMPPrivProtocol.DES,
+                        choices=SNMPPrivProtocol.choices(),
+                    )
+                    details["privprotocol"] = SNMPPrivProtocol(proto).as_api_value()
+                    details["privpassphrase"] = str_prompt(
+                        "SNMPv3 privacy passphrase",
+                        default="",
+                        password=True,
+                        empty_ok=True,
+                    )
+        # V1/V2 options
+        else:
+            if not snmp_community:
+                snmp_community = str_prompt(
+                    "SNMP community", default="${SNMP_COMMUNITY}"
+                )
+                details["community"] = snmp_community
+
+        # Filter out None values and convert to strings
+        query["details"] = {k: str(v) for k, v in details.items() if v is not None}
+
+    # query = {
+    #     "hostid": "10562",
+    #     "main": "0",
+    #     "type": "1",
+    #     "useip": "1",
+    #     "ip": "127.0.0.1",
+    #     "dns": "",
+    #     "port": "10050",
+    # }
+
     try:
         resp = app.state.client.hostinterface.create(**query)
     except Exception as e:
-        raise ZabbixCLIError(f"Failed to create host interface: {e}")
+        raise ZabbixCLIError(f"Failed to create host interface: {e}") from e
     else:
+        ifaces = resp.get("interfaceids", [])
         render_result(
             Result(
-                message=f"Created host interface with ID {resp[0] if resp else 'unknown'}."
+                message=f"Created host interface with ID {ifaces[0] if ifaces else 'unknown'}."
             )
         )
 
