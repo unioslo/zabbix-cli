@@ -10,7 +10,7 @@ from typing_extensions import TypedDict
 
 from ..config import OutputFormat
 from .console import console
-from .console import info
+from .console import success
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import Result
 from zabbix_cli.state import get_state
@@ -53,9 +53,11 @@ def render_result(
 def render_table(
     result: Result, ctx: typer.Context | None = None, **kwargs: Any
 ) -> None:
-    """Render the result of a command as a table."""
+    """Render the result of a command as a table if possible.
+    If result contains a message, print success message instead.
+    """
     if result.message:
-        info(result.message)
+        success(result.message)
     else:
         console.print(result.as_table())
 

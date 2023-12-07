@@ -39,11 +39,11 @@ def no_headless(f: Callable[P, T]) -> Callable[P, T]:
         if is_headless():
             # TODO: determine caller etc. via the stack
             # If a default argument was passed in, we can return that:
-            if "default" in kwargs:
+            if (default := kwargs.get("default")) and default is not Ellipsis:
                 logging.debug(
                     "Returning default value from %s(%s, %s)", f, args, kwargs
                 )
-                return kwargs["default"]  # type: ignore # bit of a hack
+                return default  # type: ignore # bit of a hack
             exit_err(
                 f"Headless session detected; user input required. Arguments: {args}, {kwargs}."
             )

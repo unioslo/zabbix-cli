@@ -30,6 +30,7 @@ from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import Hostgroup
+from zabbix_cli.pyzabbix.types import Macro
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import ZabbixRight
@@ -297,20 +298,20 @@ class ZabbixAPI:
             List[Hostgroup]: List of host groups.
         """
         norid = name_or_id.strip()
-        query = {}  # type: ParamsType
+        params = {}  # type: ParamsType
 
         norid_key = "groupid" if norid.isnumeric() else "name"
         if search:
-            query["searchWildcardsEnabled"] = True
-            query["search"] = {norid_key: name_or_id}
+            params["searchWildcardsEnabled"] = True
+            params["search"] = {norid_key: name_or_id}
         else:
-            query["filter"] = {norid_key: name_or_id}
-        query.update(kwargs)
+            params["filter"] = {norid_key: name_or_id}
+        params.update(kwargs)
 
         resp = self.hostgroup.get(
             output="extend",
             selectHosts=hosts,
-            **query,
+            **params,
         )
         resp = resp or []
         return [Hostgroup(**hostgroup) for hostgroup in resp]
@@ -322,7 +323,9 @@ class ZabbixAPI:
         filter_ = {"hostid": name_or_id} if is_id else {"host": name_or_id}
         resp = self.host.get(filter=filter_, output="extend")
         if not resp:
-            raise ZabbixNotFoundError(f"Host with name or ID {name_or_id!r} not found")
+            raise ZabbixNotFoundError(
+                f"Host with {'ID' if is_id else 'name'} {name_or_id!r} not found"
+            )
         # TODO add result to cache
         return Host(**resp[0])
 
@@ -362,20 +365,20 @@ class ZabbixAPI:
     # and fetching all groups
     def get_usergroup(self, usergroup_name: str) -> Usergroup:
         """Fetches a user group by name. Always fetches the full contents of the group."""
-        query = {
+        params = {
             "filter": {"name": usergroup_name},
             "output": "extend",
             "selectUsers": "extend",  # TODO: profile performance for large groups
         }  # type: ParamsType
         # Rights were split into host and template group rights in 6.2.0
         if self.version.release >= (6, 2, 0):
-            query["selectHostGroupRights"] = "extend"
-            query["selectTemplateGroupRights"] = "extend"
+            params["selectHostGroupRights"] = "extend"
+            params["selectTemplateGroupRights"] = "extend"
         else:
-            query["selectRights"] = "extend"
+            params["selectRights"] = "extend"
 
         try:
-            res = self.usergroup.get(**query)
+            res = self.usergroup.get(**params)
             if not res:
                 raise ZabbixNotFoundError(
                     f"Usergroup with name {usergroup_name!r} not found"
@@ -391,19 +394,19 @@ class ZabbixAPI:
 
     def get_usergroups(self) -> List[Usergroup]:
         """Fetches all user groups. Always fetches the full contents of the groups."""
-        query = {
+        params = {
             "output": "extend",
             "selectUsers": "extend",  # TODO: profile performance for large groups
         }  # type: ParamsType
         # Rights were split into host and template group rights in 6.2.0
         if self.version.release >= (6, 2, 0):
-            query["selectHostGroupRights"] = "extend"
-            query["selectTemplateGroupRights"] = "extend"
+            params["selectHostGroupRights"] = "extend"
+            params["selectTemplateGroupRights"] = "extend"
         else:
-            query["selectRights"] = "extend"
+            params["selectRights"] = "extend"
 
         try:
-            res = self.usergroup.get(**query)
+            res = self.usergroup.get(**params)
         except ZabbixAPIException as e:
             raise ZabbixAPIException(f"Unknown error when fetching user groups: {e}")
         else:
@@ -451,10 +454,10 @@ class ZabbixAPI:
 
     def get_proxies(self, **kwargs) -> List[Proxy]:
         """Fetches all proxies."""
-        query = {"output": "extend"}  # type: ParamsType
-        query.update(kwargs)
+        params = {"output": "extend"}  # type: ParamsType
+        params.update(kwargs)
         try:
-            res = self.proxy.get(**query)
+            res = self.proxy.get(**params)
         except ZabbixAPIException as e:
             raise ZabbixAPIException(f"Unknown error when fetching proxies: {e}")
         else:
@@ -474,6 +477,45 @@ class ZabbixAPI:
             if not proxies:
                 raise ZabbixNotFoundError(f"No proxies matching pattern {pattern!r}")
         return random.choice(proxies)
+
+    def get_macro(self, hostid: str, macro: str) -> Macro:
+        """Fetches a macro given a host ID and macro name."""
+        resp = self.usermacro.get(
+            hostids=hostid,
+            filter={"macro": macro},
+            output="extend",
+        )
+        if not resp:
+            raise ZabbixNotFoundError(
+                f"Macro {macro!r} not found for host with ID {hostid}"
+            )
+        return Macro(**resp[0])
+
+    def create_macro(self, hostid: str, macro: str, value: str) -> str:
+        """Creates a macro given a host ID, macro name and value."""
+        try:
+            resp = self.usermacro.create(hostid=hostid, macro=macro, value=value)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to create macro {macro!r} for host with ID {hostid}"
+            ) from e
+        if not resp or not resp.get("hostmacroids"):
+            raise ZabbixNotFoundError(
+                f"No macro ID returned when creating macro {macro!r} for host with ID {hostid}"
+            )
+        return resp["hostmacroids"][0]
+
+    def update_macro(self, macroid: str, value: str) -> str:
+        """Updates a macro given a host ID, macro name and value."""
+        try:
+            resp = self.usermacro.update(hostmacroid=macroid, value=value)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to update macro with ID {macroid}") from e
+        if not resp or not resp.get("hostmacroids"):
+            raise ZabbixNotFoundError(
+                f"No macro ID returned when updating macro with ID {macroid}"
+            )
+        return resp["hostmacroids"][0]
 
     def __getattr__(self, attr: str):
         """Dynamically create an object class (ie: host)"""

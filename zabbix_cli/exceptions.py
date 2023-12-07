@@ -52,7 +52,11 @@ class Exiter(Protocol):
     """
 
     def __call__(
-        self, msg: str, code: int = ..., prefix: str = ..., **extra: Any
+        self,
+        message: str,
+        code: int = ...,
+        exception: Optional[Exception] = ...,
+        **kwargs: Any,
     ) -> NoReturn:
         ...
 
@@ -73,7 +77,7 @@ class HandleFunc(Protocol):
 def handle_notraceback(e: Exception) -> NoReturn:
     """Handles an exception with no traceback in console.
     The exception is logged with a traceback in the log file."""
-    get_exit_err()(str(e), exc_info=True)
+    get_exit_err()(str(e), exception=e, exc_info=True)
 
 
 def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
@@ -94,7 +98,7 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
             "Your auth token has expired. Please re-run the command to login."
         )
     else:
-        return handle_notraceback(e)
+        handle_notraceback(e)
 
 
 EXC_HANDLERS = {

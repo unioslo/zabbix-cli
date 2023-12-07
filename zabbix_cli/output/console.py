@@ -34,8 +34,8 @@ def info(message: str, icon: str = Icon.INFO, *args, **kwargs) -> None:
 
 
 def success(message: str, icon: str = Icon.OK, **kwargs) -> None:
-    """Log with DEBUG level and print a success message."""
-    logger.debug(message, extra=dict(**kwargs))
+    """Log with INFO level and print a success message."""
+    logger.info(message, extra=dict(**kwargs))
     err_console.print(f"{green(icon)} {message}")
 
 
@@ -75,7 +75,9 @@ def exit_ok(message: Optional[str] = None, code: int = 0, **kwargs) -> NoReturn:
     raise SystemExit(code)
 
 
-def exit_err(message: str, code: int = 1, **kwargs: Any) -> NoReturn:
+def exit_err(
+    message: str, code: int = 1, exception: Optional[Exception] = None, **kwargs: Any
+) -> NoReturn:
     """Logs a message with ERROR level and exits with the given
     code (default: 1).
 
@@ -93,7 +95,14 @@ def exit_err(message: str, code: int = 1, **kwargs: Any) -> NoReturn:
         from zabbix_cli.output.render import render_json
         from zabbix_cli.models import Result, ReturnCode
 
-        render_json(Result(message=message, return_code=ReturnCode.ERROR))
+        errors = []  # type: list[str]
+        if exception:
+            errors.extend(str(a) for a in exception.args)
+            if exception.__cause__:
+                errors.extend(str(a) for a in exception.__cause__.args)
+        render_json(
+            Result(message=message, return_code=ReturnCode.ERROR, errors=errors)
+        )
     else:
         error(message, **kwargs)
     raise SystemExit(code)

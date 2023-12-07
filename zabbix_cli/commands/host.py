@@ -1,24 +1,25 @@
 from __future__ import annotations
 
 import ipaddress
-from enum import Enum
+from typing import cast
 from typing import List
 from typing import Optional
 
 import typer
-from strenum import StrEnum
 
 from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.models import Result
-from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import bool_prompt
 from zabbix_cli.output.prompts import int_prompt
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix import compat
 from zabbix_cli.pyzabbix.types import ParamsType
+from zabbix_cli.utils.args import APIStr
+from zabbix_cli.utils.args import APIStrEnum
+from zabbix_cli.utils.args import ChoiceMixin
 from zabbix_cli.utils.commands import ARG_POSITIONAL
 
 
@@ -179,173 +180,80 @@ def create_host(
     # TODO: cache host ID
 
 
-class ChoiceMixin(Enum):
-    @classmethod
-    def choices(cls) -> List[str]:
-        return [str(e) for e in cls]
-
-
 # TODO: add factory function for creating choice enums from mappings
 
 
-class InterfaceConnectionMode(StrEnum, ChoiceMixin):
+class InterfaceConnectionMode(ChoiceMixin[str], APIStrEnum):
     """Interface connection mode.
 
     Controls the value of `useip` when creating interfaces in the API."""
 
-    DNS = "DNS"
-    IP = "IP"
-
-    @classmethod
-    def _missing_(cls, value: object) -> InterfaceConnectionMode:
-        """Supports Zabbix API-style interface connection mode values."""
-        for k, v in InterfaceConnectionModeMapping.items():
-            if v == value:
-                return k
-        raise ZabbixCLIError(f"Invalid interface connection mode {value!r}.")
-
-    def as_api_value(self) -> str:
-        """Return the Zabbix API value for this interface connection mode."""
-        return InterfaceConnectionModeMapping[self]
+    DNS = APIStr("DNS", "0")
+    IP = APIStr("IP", "1")
 
 
-InterfaceConnectionModeMapping = {
-    InterfaceConnectionMode.DNS: "0",
-    InterfaceConnectionMode.IP: "1",
-}
+class PortStr(APIStr[str]):
+    port: int
+
+    def __new__(cls, s: str, api_value: str, port: int) -> PortStr:
+        # Why do we need a cast here but not in APIStr.__new__?
+        obj = cast(PortStr, APIStr.__new__(cls, s, api_value))
+        obj.port = port
+        return obj
 
 
-class InterfaceType(StrEnum, ChoiceMixin):
+class InterfaceType(ChoiceMixin[str], APIStrEnum):
     """Interface type."""
 
-    AGENT = "Agent"
-    SNMP = "SNMP"
-    IPMI = "IPMI"
-    JMX = "JMX"
+    value: PortStr  # Must update type of value from APIStr to PortStr
 
-    @classmethod
-    def _missing_(cls, value: object) -> InterfaceType:
-        """Supports Zabbix API-style interface type values."""
-        for k, v in InterfaceTypeMapping.items():
-            if v == value:
-                return k
-        raise ZabbixCLIError(f"Invalid interface type {value!r}.")
+    AGENT = PortStr("Agent", "1", port=10050)
+    SNMP = PortStr("SNMP", "2", port=161)
+    IPMI = PortStr("IPMI", "3", port=623)
+    JMX = PortStr("JMX", "4", port=12345)
 
-    def as_api_value(self) -> str:
-        """Return the Zabbix API value for this interface type."""
-        return InterfaceTypeMapping[self]
+    @property
+    def port(self) -> int:
+        """Returns the default port for this interface type."""
+        return self.value.port
 
 
-# TODO: add tests to ensure this is always in sync with InterfaceType
-InterfaceTypeMapping = {
-    InterfaceType.AGENT: "1",
-    InterfaceType.SNMP: "2",
-    InterfaceType.IPMI: "3",
-    InterfaceType.JMX: "4",
-}
+class SNMPSecurityLevel(ChoiceMixin[str], APIStrEnum):
+    __choice_name__ = "SNMPv3 security level"
 
-InterfacePortMapping = {
-    InterfaceType.AGENT: 10050,
-    InterfaceType.SNMP: 161,
-    InterfaceType.IPMI: 623,
-    InterfaceType.JMX: 12345,
-}
-
-
-class SNMPSecurityLevel(StrEnum, ChoiceMixin):
     # Match casing from Zabbix API
-    NO_AUTH_NO_PRIV = "noAuthNoPriv"
-    AUTH_NO_PRIV = "authNoPriv"
-    AUTH_PRIV = "authPriv"
-
-    @classmethod
-    def _missing_(cls, value: object) -> SNMPSecurityLevel:
-        """Supports Zabbix API-style interface type values."""
-        for k, v in SNMPSecurityLevelMapping.items():
-            if v == value:
-                return k
-        raise ZabbixCLIError(f"Invalid interface type {value!r}.")
-
-    def as_api_value(self) -> str:
-        """Return the Zabbix API value for this interface type."""
-        return SNMPSecurityLevelMapping[self]
+    NO_AUTH_NO_PRIV = APIStr("noAuthNoPriv", "0")
+    AUTH_NO_PRIV = APIStr("authNoPriv", "1")
+    AUTH_PRIV = APIStr("authPriv", "2")
 
 
-SNMPSecurityLevelMapping = {
-    SNMPSecurityLevel.NO_AUTH_NO_PRIV: "0",
-    SNMPSecurityLevel.AUTH_NO_PRIV: "1",
-    SNMPSecurityLevel.AUTH_PRIV: "2",
-}
-
-
-class SNMPAuthProtocol(StrEnum, ChoiceMixin):
+class SNMPAuthProtocol(ChoiceMixin[str], APIStrEnum):
     """Authentication protocol for SNMPv3."""
 
-    MD5 = "MD5"
-    SHA1 = "SHA1"  # <6.0 only
+    __choice_name__ = "SNMPv3 auth protocol"
+
+    MD5 = APIStr("MD5", "0")
+    SHA1 = APIStr("SHA1", "1")
     # >=6.0 only:
-    SHA224 = "SHA224"
-    SHA256 = "SHA256"
-    SHA384 = "SHA384"
-    SHA512 = "SHA512"
-
-    @classmethod
-    def _missing_(cls, value: object) -> SNMPAuthProtocol:
-        """Supports Zabbix API-style interface type values."""
-        for k, v in SNMPAuthProtocolMapping.items():
-            if v == value:
-                return k
-        raise ZabbixCLIError(f"Invalid auth protocol {value!r}.")
-
-    def as_api_value(self) -> str:
-        """Return the Zabbix API value for this interface type."""
-        return SNMPAuthProtocolMapping[self]
+    SHA224 = APIStr("SHA224", "2")
+    SHA256 = APIStr("SHA256", "3")
+    SHA384 = APIStr("SHA384", "4")
+    SHA512 = APIStr("SHA512", "5")
 
 
-SNMPAuthProtocolMapping = {
-    SNMPAuthProtocol.MD5: "0",
-    SNMPAuthProtocol.SHA1: "1",
-    SNMPAuthProtocol.SHA224: "2",
-    SNMPAuthProtocol.SHA256: "3",
-    SNMPAuthProtocol.SHA384: "4",
-    SNMPAuthProtocol.SHA512: "5",
-}
-
-
-class SNMPPrivProtocol(StrEnum, ChoiceMixin):
+class SNMPPrivProtocol(ChoiceMixin[str], APIStrEnum):
     """Privacy protocol for SNMPv3."""
 
-    DES = "DES"
-    AES = "AES"  # < 6.0 only
+    __choice_name__ = "SNMPv3 privacy protocol"
+
+    DES = APIStr("DES", "0")
+    AES = APIStr("AES", "1")  # < 6.0 only
     # >=6.0 only:
-    AES128 = "AES128"
-    AES192 = "AES192"
-    AES256 = "AES256"
-    AES192C = "AES192C"
-    AES256C = "AES256C"
-
-    @classmethod
-    def _missing_(cls, value: object) -> SNMPPrivProtocol:
-        """Supports Zabbix API-style interface type values."""
-        for k, v in SNMPPrivProtocolMapping.items():
-            if v == value:
-                return k
-        raise ZabbixCLIError(f"Invalid privacy protocol {value!r}.")
-
-    def as_api_value(self) -> str:
-        """Return the equivalent Zabbix API value."""
-        return SNMPPrivProtocol[self]
-
-
-SNMPPrivProtocolMapping = {
-    SNMPPrivProtocol.DES: "0",
-    SNMPPrivProtocol.AES: "1",  # <6.0
-    SNMPPrivProtocol.AES128: "1",  # >=6.0
-    SNMPPrivProtocol.AES192: "2",
-    SNMPPrivProtocol.AES256: "3",
-    SNMPPrivProtocol.AES192C: "4",
-    SNMPPrivProtocol.AES256C: "5",
-}
+    AES128 = APIStr("AES128", "1")  # >= 6.0
+    AES192 = APIStr("AES192", "2")
+    AES256 = APIStr("AES256", "3")
+    AES192C = APIStr("AES192C", "4")
+    AES256C = APIStr("AES256C", "5")
 
 
 @app.command(
@@ -426,7 +334,7 @@ def create_host_interface(
         help="SNMPv3 security level.",
         show_default=False,
     ),
-    snmp_auth_protocol: Optional[str] = typer.Option(
+    snmp_auth_protocol: Optional[SNMPAuthProtocol] = typer.Option(
         None,
         "--snmp-auth-protocol",
         help="SNMPv3 auth protocol (authNoPriv & authPriv).",
@@ -438,7 +346,7 @@ def create_host_interface(
         help="SNMPv3 auth passphrase (authNoPriv & authPriv).",
         show_default=False,
     ),
-    snmp_priv_protocol: Optional[str] = typer.Option(
+    snmp_priv_protocol: Optional[SNMPPrivProtocol] = typer.Option(
         None,
         "--snmp-priv-protocol",
         help="SNMPv3 priv protocol (authPriv)",
@@ -495,27 +403,18 @@ def create_host_interface(
             default_address = hostname
         address = str_prompt(f"Interface {p}", default=default_address)
     if type_ is None:
-        t = str_prompt("Interface type", choices=InterfaceType.choices())
-        type_ = InterfaceType(t)
+        type_ = InterfaceType.from_prompt()
     if default is None:
         default = bool_prompt("Default interface?", default=True)
 
     if port is None:
-        port = InterfacePortMapping.get(type_, None)
-        if port is None:
-            raise ZabbixCLIError(f"Invalid interface type {type_!r}.")
-
-    # FIXME: optimize this. We call the API twice here.
-    if not app.state.client.host_exists(hostname):
-        exit_err(
-            f"Host {hostname!r} does not exist. Host Interface can not be created."
-        )
+        port = type_.port
     host = app.state.client.get_host(hostname)
 
     # NOTE: for consistency we should probably handle this inside pyzabbix.ZabbixAPI,
     # but creating a clean abstraction for that, when this is the only place
     # we create host interfaces, is probably not worth it.
-    query: ParamsType = {
+    params: ParamsType = {
         # All API values are strings!
         "hostid": host.hostid,
         "main": str(int(default)),
@@ -526,9 +425,9 @@ def create_host_interface(
         "dns": "",
     }
     if connection == InterfaceConnectionMode.IP:
-        query["ip"] = address
+        params["ip"] = address
     else:
-        query["dns"] = address
+        params["dns"] = address
 
     if type_ == InterfaceType.SNMP:
         # NOTE (pederhan): this block is a bit clumsy
@@ -558,38 +457,43 @@ def create_host_interface(
             details["securityname"] = str_prompt("SNMP security name")
             details["contextname"] = str_prompt("SNMP context name")
             if not snmp_security_level:
-                sec_inp = str_prompt(
-                    "SNMPv3 security level",
-                    default=SNMPSecurityLevel.NO_AUTH_NO_PRIV,
-                    choices=SNMPSecurityLevel.choices(),
+                snmp_security_level = SNMPSecurityLevel.from_prompt(
+                    default=SNMPSecurityLevel.NO_AUTH_NO_PRIV
                 )
-                snmp_security_level = SNMPSecurityLevel(sec_inp)
+            details["securitylevel"] = snmp_security_level.as_api_value()
+
+            # authNoPriv and authPriv security levels:
             if snmp_security_level != SNMPSecurityLevel.NO_AUTH_NO_PRIV:
-                auth_proto = str_prompt(
-                    "SNMPv3 auth protocol",
-                    default=SNMPAuthProtocol.MD5,
-                    choices=SNMPAuthProtocol.choices(),
-                )
-                details["authprotocol"] = SNMPAuthProtocol(auth_proto).as_api_value()
-                details["authpassphrase"] = str_prompt(
-                    "SNMPv3 auth passphrase",
-                    default="",
-                    password=True,
-                    empty_ok=True,
-                )
-                if snmp_security_level == SNMPSecurityLevel.AUTH_PRIV:
-                    proto = str_prompt(
-                        "SNMPv3 privacy protocol",
-                        default=SNMPPrivProtocol.DES,
-                        choices=SNMPPrivProtocol.choices(),
+                if not snmp_auth_protocol:
+                    snmp_auth_protocol = SNMPAuthProtocol.from_prompt(
+                        default=SNMPAuthProtocol.MD5
                     )
-                    details["privprotocol"] = SNMPPrivProtocol(proto).as_api_value()
-                    details["privpassphrase"] = str_prompt(
-                        "SNMPv3 privacy passphrase",
+                details["authprotocol"] = snmp_auth_protocol.as_api_value()
+
+                if not snmp_auth_passphrase:
+                    snmp_auth_passphrase = str_prompt(
+                        "SNMPv3 auth passphrase",
                         default="",
                         password=True,
                         empty_ok=True,
                     )
+                details["authpassphrase"] = snmp_auth_passphrase
+
+                # authPriv security level only:
+                if snmp_security_level == SNMPSecurityLevel.AUTH_PRIV:
+                    if not snmp_priv_protocol:
+                        snmp_priv_protocol = SNMPPrivProtocol.from_prompt(
+                            default=SNMPPrivProtocol.DES
+                        )
+                    details["privprotocol"] = snmp_priv_protocol.as_api_value()
+                    if not snmp_priv_passphrase:
+                        snmp_priv_passphrase = str_prompt(
+                            "SNMPv3 privacy passphrase",
+                            default="",
+                            password=True,
+                            empty_ok=True,
+                        )
+                    details["privpassphrase"] = snmp_priv_passphrase
         # V1/V2 options
         else:
             if not snmp_community:
@@ -599,20 +503,10 @@ def create_host_interface(
                 details["community"] = snmp_community
 
         # Filter out None values and convert to strings
-        query["details"] = {k: str(v) for k, v in details.items() if v is not None}
-
-    # query = {
-    #     "hostid": "10562",
-    #     "main": "0",
-    #     "type": "1",
-    #     "useip": "1",
-    #     "ip": "127.0.0.1",
-    #     "dns": "",
-    #     "port": "10050",
-    # }
+        params["details"] = {k: str(v) for k, v in details.items() if v is not None}
 
     try:
-        resp = app.state.client.hostinterface.create(**query)
+        resp = app.state.client.hostinterface.create(**params)
     except Exception as e:
         raise ZabbixCLIError(f"Failed to create host interface: {e}") from e
     else:
@@ -624,24 +518,141 @@ def create_host_interface(
         )
 
 
+# See: zabbix_cli.utils.args.OnOffChoice for why we re-define on/off enum here
+class MonitoringStatus(ChoiceMixin[str], APIStrEnum):
+    """Monitoring status is on/off."""
+
+    ON = APIStr("on", "0")  # Yes, 0 is on, 1 is off...
+    OFF = APIStr("off", "1")
+
+
 @app.command(name="define_host_monitoring_status")
-def define_host_monitoring_status() -> None:
-    pass
+def define_host_monitoring_status(
+    hostname: Optional[str] = typer.Argument(
+        None,
+        help="Name of host",
+        show_default=False,
+    ),
+    new_status: Optional[MonitoringStatus] = typer.Argument(
+        None,
+        help="Monitoring status",
+        case_sensitive=False,
+        show_default=False,
+    ),
+) -> None:
+    if not hostname:
+        hostname = str_prompt("Hostname")
+    if new_status is None:
+        new_status = MonitoringStatus.from_prompt()
+    host = app.state.client.get_host(hostname)
+    try:
+        app.state.client.host.update(
+            hostid=host.hostid,
+            status=new_status.as_api_value(),
+        )
+    except Exception as e:
+        raise ZabbixCLIError(f"Failed to update host: {e}") from e
+    else:
+        render_result(
+            Result(message=f"Updated host {hostname!r}. New status: {new_status}")
+        )
 
 
 @app.command(name="define_host_usermacro")
-def define_host_usermacro() -> None:
-    pass
+def define_host_usermacro(
+    hostname: Optional[str] = typer.Argument(None, help="Host to define macro for."),
+    macro_name: Optional[str] = typer.Argument(
+        None,
+        help=(
+            "Name of macro. "
+            "Names will be converted to the Zabbix format, "
+            "i.e. `site_url` becomes {$SITE_URL}."
+        ),
+    ),
+    macro_value: Optional[str] = typer.Argument(None, help="Default value of macro."),
+) -> None:
+    """Create or update a host usermacro."""
+    if not hostname:
+        hostname = str_prompt("Hostname")
+    if not macro_name:
+        macro_name = str_prompt("Macro name")
+    if not macro_value:
+        macro_value = str_prompt("Macro value")
+    host = app.state.client.get_host(hostname)
+
+    # Determine if we should create or update macro
+    try:
+        macro = app.state.client.get_macro(host.hostid, macro_name)
+    except ZabbixNotFoundError:
+        macro_id = app.state.client.create_macro(host.hostid, macro_name, macro_value)
+        action = "Created"
+    else:
+        macro_id = app.state.client.update_macro(macro.hostmacroid, macro_value)
+        action = "Updated"
+
+    render_result(
+        Result(
+            message=f"{action} macro {macro_name!r} with ID {macro_id} for host {hostname!r}."
+        )
+    )
 
 
 @app.command(name="remove_host")
-def remove_host() -> None:
-    pass
+def remove_host(
+    ctx: typer.Context,
+    hostname: Optional[str] = typer.Argument(None, help="Name of host to remove."),
+) -> None:
+    if not hostname:
+        hostname = str_prompt("Hostname")
+    host = app.state.client.get_host(hostname)
+    # TODO: delegate deletion to ZabbixAPI, so that cache is updated
+    # after we delete the host.
+    try:
+        app.state.client.host.delete(host.hostid)
+    except Exception as e:
+        raise ZabbixCLIError(f"Failed to remove host {hostname!r}") from e
+    else:
+        render_result(Result(message=f"Removed host {hostname!r}."))
+
+
+# def _parse_legacy_filter(filter: str) -> Tuple[...]:
+#     """Parses the legacy filter argument from V2."""
+#     pass
+
+
+class AgentAvailabilityStatus(ChoiceMixin[int], APIStrEnum):
+    """Agent availability status."""
+
+    UNKNOWN = APIStr("unknown", 0)
+    AVAILABLE = APIStr("available", 1)
+    UNAVAILABLE = APIStr("unavailable", 2)
 
 
 @app.command(name="show_host")
-def show_host() -> None:
-    pass
+def show_host(
+    ctx: typer.Context,
+    hostname: str,
+    # This is the legacy filter argument from V2
+    filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
+    agent: Optional[AgentAvailabilityStatus] = typer.Option(
+        None,
+        "--agent",
+        "--available",
+        help="Agent availability status.",
+        case_sensitive=False,
+    ),
+    maintenance: Optional[bool] = typer.Option(
+        None,
+        "--maintenance/--no-maintenance",
+        help="Maintenance status.",
+    ),
+    monitored: Optional[bool] = typer.Option(
+        None,
+        "--monitored/--no-monitored",
+        help="Monitoring status.",
+    ),
+) -> None:
+    print(ctx)
 
 
 @app.command(name="show_hosts")

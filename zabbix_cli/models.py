@@ -30,6 +30,7 @@ class Result(BaseModel):
     Prefer the `version` property instead.
     """
     message: str = Field(default="")
+    errors: List[str] = Field(default_factory=list)
     """Field that signals that the result should be printed as a message, not a table."""
     return_code: ReturnCode = ReturnCode.DONE
 

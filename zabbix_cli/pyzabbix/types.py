@@ -16,6 +16,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import List
 from typing import MutableMapping
+from typing import Optional
 from typing import Union
 
 from pydantic import AliasChoices
@@ -31,11 +32,13 @@ from zabbix_cli.models import Result
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
 
-ParamsType = MutableMapping[str, Union[str, "ParamsType", List["ParamsType"]]]
+ParamsType = MutableMapping[
+    str, Union[str, bool, int, "ParamsType", List["ParamsType"]]
+]
 """Type definition for Zabbix API query parameters.
 
-Zabbix API values are always strings, but they can be contained in nested
-dicts or lists.
+Most Zabbix API parameters are strings, but not _always_.
+They can also be contained in nested dicts or in lists.
 """
 
 
@@ -123,3 +126,23 @@ class Proxy(ZabbixAPIBaseModel):
         if self.version.release < (7, 0, 0) and hasattr(self, "host") and not self.name:
             self.name = self.host
         return self
+
+
+class MacroBase(ZabbixAPIBaseModel):
+    macro: str
+    value: str  # could this fail if macro is secret?
+    type: str
+    description: str
+
+
+class Macro(MacroBase):
+    """Macro object. Known as 'host macro' in the Zabbix API."""
+
+    hostid: str
+    """Macro type. 0 - text, 1 - secret, 2 - vault secret (>=7.0)"""
+    hostmacroid: str
+    automatic: Optional[int] = None  # >= 7.0 only. 0 = user, 1 = discovery rule
+
+
+class GlobalMacro(MacroBase):
+    globalmacroid: str
