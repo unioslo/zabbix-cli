@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import ipaddress
-from typing import cast
 from typing import List
+from typing import Literal
+from typing import NamedTuple
 from typing import Optional
+from typing import TypedDict
 
 import typer
 
@@ -180,9 +182,6 @@ def create_host(
     # TODO: cache host ID
 
 
-# TODO: add factory function for creating choice enums from mappings
-
-
 class InterfaceConnectionMode(ChoiceMixin[str], APIStrEnum):
     """Interface connection mode.
 
@@ -192,30 +191,21 @@ class InterfaceConnectionMode(ChoiceMixin[str], APIStrEnum):
     IP = APIStr("IP", "1")
 
 
-class PortStr(APIStr[str]):
-    port: int
-
-    def __new__(cls, s: str, api_value: str, port: int) -> PortStr:
-        # Why do we need a cast here but not in APIStr.__new__?
-        obj = cast(PortStr, APIStr.__new__(cls, s, api_value))
-        obj.port = port
-        return obj
-
-
 class InterfaceType(ChoiceMixin[str], APIStrEnum):
     """Interface type."""
 
-    value: PortStr  # Must update type of value from APIStr to PortStr
+    AGENT = APIStr("Agent", "1", metadata={"port": 10050})
+    SNMP = APIStr("SNMP", "2", metadata={"port": 161})
+    IPMI = APIStr("IPMI", "3", metadata={"port": 623})
+    JMX = APIStr("JMX", "4", metadata={"port": 12345})
 
-    AGENT = PortStr("Agent", "1", port=10050)
-    SNMP = PortStr("SNMP", "2", port=161)
-    IPMI = PortStr("IPMI", "3", port=623)
-    JMX = PortStr("JMX", "4", port=12345)
-
-    @property
-    def port(self) -> int:
-        """Returns the default port for this interface type."""
-        return self.value.port
+    # TODO: test to ensure we always catch all cases (i.e. error should never be thrown)
+    def get_port(self: InterfaceType) -> int:
+        """Returns the default port for the given interface type."""
+        try:
+            return int(self.value.metadata["port"])
+        except KeyError:
+            raise ZabbixCLIError(f"Unknown interface type: {self}")
 
 
 class SNMPSecurityLevel(ChoiceMixin[str], APIStrEnum):
@@ -256,13 +246,23 @@ class SNMPPrivProtocol(ChoiceMixin[str], APIStrEnum):
     AES256C = APIStr("AES256C", "5")
 
 
+class CreateHostInterfaceV2Args(NamedTuple):
+    hostname: Optional[str] = None
+    connection: Optional[str] = None
+    type: Optional[str] = None
+    port: Optional[str] = None
+    address_ip: Optional[str] = None
+    address_dns: Optional[str] = None
+    default: Optional[str] = None
+
+
 @app.command(
     name="create_host_interface",
     options_metavar="[hostname] [interface connection] [interface type] [interface port] [interface IP] [interface DNS] [default interface]",
 )
 def create_host_interface(
     ctx: typer.Context,
-    # NOTE: use unified parsing func for args and options?
+    # Typer does not yet support NamedTuple arguments, so we use a list of
     args: List[str] = ARG_POSITIONAL,
     hostname: Optional[str] = typer.Option(
         None,
@@ -363,31 +363,28 @@ def create_host_interface(
 
     Prompts for required values if not specified.
     NOTE: V2-style positional args do not support SNMP options.
+    Prefer using options over positional args.
+    Positional args take precedence over options.
     """
-    # Handle V2 positional args
-    if args and len(args) == 7:
-        if args[0]:
-            hostname = args[0]
-        if args[1]:
-            connection = InterfaceConnectionMode(args[1])
-        if args[2]:
-            type_ = InterfaceType(args[2])
-        if args[3]:
-            port = int(args[3])  # unsafe? use custom parser?
-        if args[4]:
-            address_ip = args[4]  # no parsing here
-        if args[5]:
-            address_dns = args[5]
-        if args[6]:
-            default = args[6] == "1"
+    # Handle V2 positional args (deprecated)
+    if args:
+        a = CreateHostInterfaceV2Args(*args)
+        if a.hostname:
+            hostname = a.hostname
+        if a.connection:
+            connection = InterfaceConnectionMode(a.connection)
+        if a.type:
+            type_ = InterfaceType(a.type)
+        if a.port:
+            port = int(a.port)  # unsafe? use custom parser?
+        address_ip = a.address_ip  # no parsing here
+        address_dns = a.address_dns
+        if a.default:
+            default = a.default == "1"
         if connection == InterfaceConnectionMode.IP:
             address = address_ip
         else:
             address = address_dns
-    elif args:
-        raise ZabbixCLIError(
-            "create_host_interface takes exactly 7 positional arguments."
-        )
 
     # Changed from V2: Reduced number of prompts
     # Will only prompt for hostname, address, and default interface
@@ -408,7 +405,7 @@ def create_host_interface(
         default = bool_prompt("Default interface?", default=True)
 
     if port is None:
-        port = type_.port
+        port = type_.get_port()
     host = app.state.client.get_host(hostname)
 
     # NOTE: for consistency we should probably handle this inside pyzabbix.ZabbixAPI,
@@ -433,6 +430,9 @@ def create_host_interface(
         # NOTE (pederhan): this block is a bit clumsy
         # We populate this dict with whatever types and None
         # then filter out None and convert to strings afterwards
+        # Maybe better to have two different functions that gather this
+        # information and define some TypedDict interfaces for the params?
+        # E.g. Union[V1V2Params, V3Params]?
         details = {
             "version": snmp_version,
             "bulk": snmp_bulk,
@@ -454,8 +454,12 @@ def create_host_interface(
 
         # V3-specific options
         if snmp_version == 3:
-            details["securityname"] = str_prompt("SNMP security name")
-            details["contextname"] = str_prompt("SNMP context name")
+            if not snmp_security_name:
+                snmp_security_name = str_prompt("SNMP security name")
+            details["securityname"] = snmp_security_name
+            if not snmp_context_name:
+                snmp_context_name = str_prompt("SNMP context name")
+            details["contextname"] = snmp_context_name
             if not snmp_security_level:
                 snmp_security_level = SNMPSecurityLevel.from_prompt(
                     default=SNMPSecurityLevel.NO_AUTH_NO_PRIV
@@ -615,17 +619,44 @@ def remove_host(
         render_result(Result(message=f"Removed host {hostname!r}."))
 
 
-# def _parse_legacy_filter(filter: str) -> Tuple[...]:
-#     """Parses the legacy filter argument from V2."""
-#     pass
-
-
-class AgentAvailabilityStatus(ChoiceMixin[int], APIStrEnum):
+class AgentAvailable(ChoiceMixin[int], APIStrEnum):
     """Agent availability status."""
+
+    __choice_name__ = "Agent availability status"
 
     UNKNOWN = APIStr("unknown", 0)
     AVAILABLE = APIStr("available", 1)
     UNAVAILABLE = APIStr("unavailable", 2)
+
+
+class HostFilterArgs(NamedTuple):
+    available: Optional[
+        Literal[0, 1, 2]
+    ] = None  # 0 = unknown, 1 = available, 2 = unavailable
+    maintenance_status: Optional[
+        Literal[0, 1]
+    ] = None  # 0 = no maintenance, 1 = maintenance
+    status: Optional[Literal[0, 1]] = None  # 0 = monitored, 1 = not monitored
+
+
+class HostFilterParams(TypedDict, total=False):
+    available: Optional[Literal[0, 1]]  # < 6.0 # but what about 6.0?
+    active_available: Optional[Literal[0, 1]]  # >= 6.4
+    maintenance_status: Optional[Literal[0, 1]]
+    status: Optional[Literal[0, 1]]
+
+
+def _parse_legacy_filter(filter_: str) -> HostFilterArgs:
+    """Parses the legacy filter argument from V2."""
+
+    try:
+        filter_items = filter_.split(",")
+        for filter_item in filter_items:
+            key, value = (s.strip("'\"") for s in filter_item.split(":"))
+            # query["filter"][key] = value
+    except ValueError:
+        raise ZabbixCLIError("Failed to parse filter argument.")
+    return filter_  # type: ignore # just let me commit this
 
 
 @app.command(name="show_host")
@@ -634,7 +665,7 @@ def show_host(
     hostname: str,
     # This is the legacy filter argument from V2
     filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
-    agent: Optional[AgentAvailabilityStatus] = typer.Option(
+    agent: Optional[AgentAvailable] = typer.Option(
         None,
         "--agent",
         "--available",
@@ -652,7 +683,18 @@ def show_host(
         help="Monitoring status.",
     ),
 ) -> None:
-    print(ctx)
+    """Show host details."""
+    if filter_legacy:
+        filter_ = _parse_legacy_filter(filter_legacy)  # noqa: F841
+    else:
+        pass
+
+    try:
+        host = app.state.client.get_host(hostname)
+    except Exception as e:
+        raise ZabbixCLIError(f"Failed to get host {hostname!r}: {e}") from e
+    else:
+        render_result(Result(data=host))  # type: ignore
 
 
 @app.command(name="show_hosts")

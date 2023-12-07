@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Any
 from typing import Generic
 from typing import List
+from typing import Mapping
+from typing import Optional
 from typing import Type
 from typing import TYPE_CHECKING
 from typing import TypeVar
@@ -31,10 +34,17 @@ class APIStr(str, Generic[T]):
     carrying an API value associated with the string."""
 
     api_value: T
+    metadata: Mapping[str, Any]
 
-    def __new__(cls, s, api_value: T) -> APIStr[T]:
+    def __new__(
+        cls,
+        s,
+        api_value: T = None,  # type: ignore # we need a default for inheritance...
+        metadata: Optional[Mapping[str, Any]] = None,
+    ) -> APIStr[T]:
         obj = str.__new__(cls, s)
         obj.api_value = api_value
+        obj.metadata = metadata or {}
         return obj
 
 
@@ -43,7 +53,10 @@ MixinType = TypeVar("MixinType", bound="ChoiceMixin")
 
 class ChoiceMixin(Generic[T]):
     """Mixin that allows for an Enum to have APIStr values, which
-    enables it to be instantiated with both the string and the API value.
+    enables it to be instantiated with either the name of the option
+    or the Zabbix API value of the option.
+
+    E.g. `AgentAvailable("available")` or `AgentAvailable(1)`
 
     Provides the `from_prompt` class method, which prompts the user to select
     one of the enum members. The prompt text is generated from the class name
@@ -64,7 +77,7 @@ class ChoiceMixin(Generic[T]):
         """Return the name of the enum class in a human-readable format.
 
         If no default is provided, the class name is split on capital letters and
-        lowercased, e.g. `AgentAvailabilityStatus` becomes `agent availability status`.
+        lowercased, e.g. `AgentAvailable` becomes `agent availability status`.
         """
         if cls.__choice_name__:
             return cls.__choice_name__
@@ -74,6 +87,7 @@ class ChoiceMixin(Generic[T]):
             .strip()
         )
 
+    # NOTE: should we use a custom prompt class instead of repurposing the str prompt?
     @classmethod
     def from_prompt(
         cls: Type[MixinType],
@@ -95,7 +109,11 @@ class ChoiceMixin(Generic[T]):
             # Uppercase first letter without mangling the rest of the string
             if prompt and prompt[0].islower():
                 prompt = prompt[0].upper() + prompt[1:]
-        choice = str_prompt(prompt, choices=cls.choices(), default=str(default))
+        choice = str_prompt(
+            prompt,
+            choices=cls.choices(),
+            default=default,
+        )
         return cls(choice)  # type: ignore # mixin takes no args...
 
     @classmethod
@@ -109,10 +127,20 @@ class ChoiceMixin(Generic[T]):
 
     @classmethod
     def _missing_(cls, value: object) -> object:
-        """Attempts to instantiate Enum from Zabbix API value if argument
+        """
+        Method that is called when an enum member is not found.
+
+        Attempts to find the member with 2 strategies:
+        1. Search for a member with the given string value (ignoring case)
+        2. Search for a member with the given API value
+
+        Attempts to instantiate Enum from Zabbix API value if argument
         was not found among member string values."""
         for v in cls:  # type: ignore # again with the cls.__iter__ problem
             if v.value.api_value == value:
+                return v
+            # kinda hacky. Should make sure we are dealing with strings here:
+            elif str(v.value).lower() == str(value).lower():
                 return v
         raise ZabbixCLIError(f"Invalid {cls.__fmt_name__()}: {value!r}.")
 
@@ -123,12 +151,17 @@ class APIStrEnum(Enum):
     # FIXME: should inherit from string somehow!
     # Does not inherit from str now, as it would convert enum member value
     # to string, thereby losing the API associated value.
+    # If we are do that, we need to hijack the object creation and inject
+    # the member value somehow?
 
     def __str__(self) -> str:
         return self.value
 
+    def casefold(self) -> str:
+        return self.value.casefold()
 
-class AgentAvailabilityStatus(ChoiceMixin[int], APIStrEnum):
+
+class AgentAvailable(ChoiceMixin[int], APIStrEnum):
     """Agent availability status."""
 
     UNKNOWN = APIStr("unknown", 0)
@@ -147,6 +180,3 @@ class OnOffChoice(ChoiceMixin[str], APIStrEnum):
 
     ON = APIStr("on", "0")  # Yes, 0 is on, 1 is off...
     OFF = APIStr("off", "1")
-
-
-AgentAvailabilityStatus.choices()
