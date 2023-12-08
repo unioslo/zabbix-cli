@@ -39,7 +39,7 @@ class APIStr(str, Generic[T]):
     def __new__(
         cls,
         s,
-        api_value: T = None,  # type: ignore # we need a default for inheritance...
+        api_value: T,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> APIStr[T]:
         obj = str.__new__(cls, s)

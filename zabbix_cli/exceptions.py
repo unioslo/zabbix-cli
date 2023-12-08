@@ -98,6 +98,10 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
             "Your auth token has expired. Please re-run the command to login."
         )
     else:
+        # TODO: extract the reason for the error from the exception here
+        # and add it to the message.
+        # if e.__cause__ and e.__cause__.args:
+        #     e.args
         handle_notraceback(e)
 
 

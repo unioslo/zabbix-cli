@@ -15,6 +15,7 @@ from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import Result
+from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.prompts import str_prompt
@@ -249,7 +250,7 @@ def show_hostgroup(
     render_result(HostgroupResult(**hg.model_dump()))
 
 
-class HostgroupPermissions(Result):
+class HostgroupPermissions(TableRenderable):
     """Result type for hostgroup permissions."""
 
     groupid: str
@@ -280,7 +281,7 @@ def show_hostgroup_permissions(
         hostgroup_arg = str_prompt("Host group")
 
     permissions = _get_hostgroup_permissions(hostgroup_arg)
-    return render_result(HostgroupPermissionsResult(result=permissions))
+    return render_result(AggregateResult(result=permissions))
 
 
 def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostgroupPermissions]:

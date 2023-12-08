@@ -17,6 +17,7 @@ import random
 import re
 from typing import Any
 from typing import List
+from typing import Literal
 from typing import Optional
 from typing import TYPE_CHECKING
 
@@ -191,7 +192,13 @@ class ZabbixAPI:
             # password.
             #
 
-            if response_json["error"]["data"] == "Login name or password is incorrect.":
+            if (
+                response_json["error"]["data"]
+                in (
+                    "Login name or password is incorrect.",
+                    "Incorrect user name or password or account is temporarily blocked.",  # >=6.4
+                )
+            ):
                 msg = "Error {code}: {message}: {data}".format(
                     code=response_json["error"]["code"],
                     message=response_json["error"]["message"],
@@ -298,7 +305,7 @@ class ZabbixAPI:
             List[Hostgroup]: List of host groups.
         """
         norid = name_or_id.strip()
-        params = {}  # type: ParamsType
+        params = {"output": "extend"}  # type: ParamsType
 
         norid_key = "groupid" if norid.isnumeric() else "name"
         if search:
@@ -306,28 +313,89 @@ class ZabbixAPI:
             params["search"] = {norid_key: name_or_id}
         else:
             params["filter"] = {norid_key: name_or_id}
+        if hosts:
+            params["selectHosts"] = "extend"
         params.update(kwargs)
 
-        resp = self.hostgroup.get(
-            output="extend",
-            selectHosts=hosts,
-            **params,
-        )
-        resp = resp or []
+        resp = self.hostgroup.get(**params) or []
         return [Hostgroup(**hostgroup) for hostgroup in resp]
 
-    def get_host(self, name_or_id: str) -> Host:
-        """Fetches a host given its name or ID."""
-        name_or_id = name_or_id.strip()
-        is_id = name_or_id.isnumeric()
-        filter_ = {"hostid": name_or_id} if is_id else {"host": name_or_id}
-        resp = self.host.get(filter=filter_, output="extend")
-        if not resp:
-            raise ZabbixNotFoundError(
-                f"Host with {'ID' if is_id else 'name'} {name_or_id!r} not found"
-            )
+    def get_host(
+        self,
+        name_or_id: str,
+        select_groups: bool = False,
+        select_templates: bool = False,
+        select_inventory: bool = False,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[Literal["ASC", "DESC"]] = None,
+        search: bool = False,
+        **filter_kwargs,
+    ) -> Host:
+        """Fetches a host given a name or id."""
+        hosts = self.get_hosts(
+            name_or_id,
+            select_groups=select_groups,
+            select_templates=select_templates,
+            select_inventory=select_inventory,
+            sort_field=sort_field,
+            sort_order=sort_order,
+            search=search,
+            **filter_kwargs,
+        )
+        if not hosts:
+            raise ZabbixNotFoundError(f"Host with name or ID {name_or_id!r} not found")
+        return hosts[0]
+
+    # NOTE: we could add *host_name_or_ids, so multiple hostnames can be used
+    def get_hosts(
+        self,
+        name_or_id: str,
+        select_groups: bool = False,
+        select_templates: bool = False,
+        select_inventory: bool = False,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[Literal["ASC", "DESC"]] = None,
+        search: bool = True,  # we generally always want to search when multiple hosts are requested
+        **filter_kwargs,
+    ) -> List[Host]:
+        """Fetches host(s) given a name or id."""
+
+        norid = name_or_id.strip()
+        params = {"output": "extend"}  # type: ParamsType
+        filter_params = {**filter_kwargs}
+
+        is_id = norid.isnumeric()
+        norid_key = "hostid" if is_id else "host"
+        if search:
+            params["searchWildcardsEnabled"] = True
+            if is_id:  # why this over just searching?
+                params["hostids"] = norid  # doesnt have to be a list
+            else:
+                params["search"] = {norid_key: name_or_id}
+        else:
+            filter_params[norid_key] = name_or_id
+
+        # Add filter params to params if we actually have params
+        if filter_params:
+            params["filter"] = filter_params
+
+        if select_groups:
+            # still returns the result under the "groups" property
+            # even if we use the new 6.2 selectHostGroups param
+            param = compat.param_host_get_groups(self.version)
+            params[param] = "extend"
+        if select_templates:
+            params["selectParentTemplates"] = "extend"
+        if select_inventory:
+            params["selectInventory"] = "extend"
+        if sort_field:
+            params["sortfield"] = sort_field
+        if sort_order:
+            params["sortorder"] = sort_order
+
+        resp = self.host.get(**params) or []
         # TODO add result to cache
-        return Host(**resp[0])
+        return [Host(**resp) for resp in resp]
 
     def host_exists(self, name_or_id: str) -> bool:
         """Checks if a host exists given its name or ID."""
@@ -343,6 +411,7 @@ class ZabbixAPI:
             return True
 
     def get_host_id(self, hostname: str) -> str:
+        # FIXME: remove this method. we don't use it!
         # TODO: implement caching for hosts
         resp = self.host.get(filter={"host": hostname}, output=["hostid"])
         if not resp:

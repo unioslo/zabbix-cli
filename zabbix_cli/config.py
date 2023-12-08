@@ -100,7 +100,7 @@ class APIConfig(BaseModel):
         validation_alias=AliasChoices("url", "zabbix_api_url"),
     )
     verify_ssl: bool = Field(
-        True,
+        default=True,
         # Changed in V3: cert_verify -> verify_ssl
         validation_alias=AliasChoices("verify_ssl", "cert_verify"),
     )
@@ -108,33 +108,33 @@ class APIConfig(BaseModel):
 
 class AppConfig(BaseModel):
     username: str = Field(
-        "zabbix-ID",
+        default="zabbix-ID",
         # Changed in V3: system_id -> username
         validation_alias=AliasChoices("username", "system_id"),
     )
-    password: Optional[SecretStr] = Field(None, exclude=True)
-    auth_token: Optional[SecretStr] = Field(None, exclude=True)
+    password: Optional[SecretStr] = Field(default=None, exclude=True)
+    auth_token: Optional[SecretStr] = Field(default=None, exclude=True)
     default_hostgroups: List[str] = Field(
-        ["All-hosts"],
+        default=["All-hosts"],
         # Changed in V3: default_hostgroup -> default_hostgroups
         validation_alias=AliasChoices("default_hostgroups", "default_hostgroup"),
     )
     default_admin_usergroups: List[str] = Field(
-        ["All-root"],
+        default=["All-root"],
         # Changed in V3: default_admin_usergroup -> default_admin_usergroups
         validation_alias=AliasChoices(
             "default_admin_usergroups", "default_admin_usergroup"
         ),
     )
     default_create_user_usergroups: List[str] = Field(
-        ["All-users"],
+        default=["All-users"],
         # Changed in V3: default_create_user_usergroup -> default_create_user_usergroups
         validation_alias=AliasChoices(
             "default_create_user_usergroups", "default_create_user_usergroup"
         ),
     )
     default_notification_users_usergroups: List[str] = Field(
-        ["All-notification-users"],
+        default=["All-notification-users"],
         # Changed in V3: default_notification_users_usergroup -> default_notification_users_usergroups
         validation_alias=AliasChoices(
             "default_notification_users_usergroups",
@@ -142,7 +142,7 @@ class AppConfig(BaseModel):
         ),
     )
     default_directory_exports: Path = EXPORT_DIR
-    default_export_format: Literal["XML", "JSON", "YAML", "PHP"] = Field("XML")
+    default_export_format: Literal["XML", "JSON", "YAML", "PHP"] = "XML"
     include_timestamp_export_filename: bool = True
     use_colors: bool = True
     use_auth_token_file: bool = False
@@ -185,7 +185,7 @@ class AppConfig(BaseModel):
 
 class LoggingConfig(BaseModel):
     enabled: bool = Field(
-        True,
+        default=True,
         # Changed in V3: logging -> enabled (we also allow enable [why?])
         validation_alias=AliasChoices("logging", "enabled", "enable"),
     )
@@ -227,7 +227,6 @@ class LoggingConfig(BaseModel):
 
 class Config(BaseModel):
     api: APIConfig = Field(
-        default_factory=APIConfig,
         # Changed in V3: zabbix_api -> api
         validation_alias=AliasChoices("api", "zabbix_api"),
     )

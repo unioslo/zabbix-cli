@@ -1,6 +1,14 @@
 """Utility functions."""
 from __future__ import annotations
 
+from typing import Dict
+from typing import Optional
+
+
+def _format_status(code: Optional[str], status_map: Dict[str, str]) -> str:
+    status = status_map.get(code, "Unknown")  # type: ignore # passing in None to dict.get() is fine
+    return f"{status} ({code})" if code else status
+
 
 def get_ack_status(code):
     """Get ack status from code."""
@@ -49,34 +57,22 @@ def get_trigger_status(code):
     return f"Unknown ({str(code)})"
 
 
-def get_maintenance_status(code):
+def get_maintenance_status(code: Optional[str]) -> str:
     """Get maintenance status from code."""
-    maintenance_status = {0: "No maintenance", 1: "In progress"}
-
-    if code in maintenance_status:
-        return maintenance_status[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
+    maintenance_status = {"0": "No maintenance", "1": "In progress"}
+    return _format_status(code, maintenance_status)
 
 
-def get_monitoring_status(code):
+def get_monitoring_status(code: Optional[str]) -> str:
     """Get monitoring status from code."""
-    monitoring_status = {0: "Monitored", 1: "Not monitored"}
-
-    if code in monitoring_status:
-        return monitoring_status[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
+    monitoring_status = {"0": "Monitored", "1": "Not monitored"}
+    return _format_status(code, monitoring_status)
 
 
-def get_zabbix_agent_status(code):
+def get_zabbix_agent_status(code: Optional[str]) -> str:
     """Get zabbix agent status from code."""
-    zabbix_agent_status = {1: "Available", 2: "Unavailable"}
-
-    if code in zabbix_agent_status:
-        return zabbix_agent_status[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
+    zabbix_agent_status = {"1": "Available", "2": "Unavailable"}
+    return _format_status(code, zabbix_agent_status)
 
 
 def get_gui_access(code):

@@ -14,11 +14,13 @@ Zabbix versions.
 from __future__ import annotations
 
 from enum import Enum
+from typing import ClassVar
 from typing import List
 from typing import MutableMapping
 from typing import Optional
 from typing import Union
 
+from packaging.version import Version
 from pydantic import AliasChoices
 from pydantic import ConfigDict
 from pydantic import Field
@@ -28,12 +30,17 @@ from pydantic import ValidationInfo
 from typing_extensions import TypedDict
 
 from zabbix_cli.models import ColsRowsType
-from zabbix_cli.models import Result
+from zabbix_cli.models import TableRenderable
+from zabbix_cli.models import TableRenderableDict
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
+from zabbix_cli.utils.utils import get_maintenance_status
+from zabbix_cli.utils.utils import get_monitoring_status
+from zabbix_cli.utils.utils import get_zabbix_agent_status
 
+PrimitiveType = Union[str, bool, int]
 ParamsType = MutableMapping[
-    str, Union[str, bool, int, "ParamsType", List["ParamsType"]]
+    str, Union[PrimitiveType, "ParamsType", List[Union["ParamsType", PrimitiveType]]]
 ]
 """Type definition for Zabbix API query parameters.
 
@@ -55,13 +62,21 @@ class UsergroupPermission(Enum):
         return cls._UNKNOWN
 
 
-class ZabbixAPIBaseModel(Result):
+class ZabbixAPIBaseModel(TableRenderable):
     """Base model for Zabbix API objects.
 
-    Implements the `Result` interface, which allows us to render
+    Implements the `TableRenderable` interface, which allows us to render
     it as a table, JSON, csv, etc."""
 
-    model_config = ConfigDict(validate_assignment=True, extra="allow")
+    version: ClassVar[Version] = Version("6.4.0")  # assume latest released version
+    """Zabbix API version the data stems from.
+    This is a class variable that can be overridden, which causes all
+    subclasses to use the new value when accessed.
+
+    WARNING: Do not access directly from outside this class.
+    Prefer the `version` property instead.
+    """
+    model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
 
 class ZabbixRight(TypedDict):
@@ -83,19 +98,6 @@ class Usergroup(ZabbixAPIBaseModel):
     users: List[User] = []
 
 
-class Host(ZabbixAPIBaseModel):
-    hostid: str
-    host: str = ""
-
-    @field_validator("host", mode="before")  # TODO: add test for this
-    @classmethod
-    def _use_id_if_empty(cls, v: str, info: ValidationInfo) -> str:
-        """In case the Zabbix API returns no host name, use the ID instead."""
-        if not v:
-            return f"Unknown (ID: {info.data['hostid']})"
-        return v
-
-
 class Hostgroup(ZabbixAPIBaseModel):
     groupid: str
     name: str
@@ -113,6 +115,81 @@ class Hostgroup(ZabbixAPIBaseModel):
             ", ".join([host.host for host in self.hosts]),
         ]
         return cols, [row]
+
+
+class Template(ZabbixAPIBaseModel):
+    templateid: str
+    name: Optional[str] = None
+    host: Optional[str] = None
+
+    @property
+    def name_or_host(self) -> str:
+        """Returns the name or host field or a default value."""
+        return self.name or self.host or "Unknown"
+
+
+class Inventory(TableRenderableDict):
+    """An adapter for a dict that allows it to be rendered as a table."""
+
+
+# TODO: expand Host model with all possible fields
+# Add alternative constructor to construct from API result
+class Host(ZabbixAPIBaseModel):
+    hostid: str
+    host: str = ""
+    groups: List[Hostgroup] = Field(
+        default_factory=list,
+        # Compat for >= 6.2.0
+        validation_alias=AliasChoices("groups", "hostgroups"),
+    )
+    templates: List[Template] = Field(default_factory=list)
+    inventory: TableRenderableDict = Field(
+        default_factory=TableRenderableDict
+    )  # everything is a string as of 7.0
+    proxyid: Optional[str] = Field(
+        None,
+        # Compat for <7.0.0
+        validation_alias=AliasChoices("proxyid", "proxy_hostid"),
+    )
+    proxy_address: Optional[str] = None
+    maintenance_status: Optional[str] = None
+    zabbix_agent: Optional[str] = Field(
+        None, validation_alias=AliasChoices("available", "active_available")
+    )
+    status: Optional[str] = None
+
+    @field_validator("host", mode="before")  # TODO: add test for this
+    @classmethod
+    def _use_id_if_empty(cls, v: str, info: ValidationInfo) -> str:
+        """In case the Zabbix API returns no host name, use the ID instead."""
+        if not v:
+            return f"Unknown (ID: {info.data['hostid']})"
+        return v
+
+    def _table_cols_rows(self) -> ColsRowsType:
+        cols = [
+            "HostID",
+            "Name",
+            "Hostgroups",
+            "Templates",
+            "Zabbix agent",
+            "Maintenance",
+            "Status",
+            "Proxy",
+        ]
+        rows = [
+            [
+                self.hostid,
+                self.host,
+                "\n".join([group.name for group in self.groups]),
+                "\n".join([template.name_or_host for template in self.templates]),
+                get_zabbix_agent_status(self.zabbix_agent),
+                get_maintenance_status(self.maintenance_status),
+                get_monitoring_status(self.status),
+                self.proxy_address or "",
+            ]
+        ]
+        return cols, rows
 
 
 class Proxy(ZabbixAPIBaseModel):
@@ -146,3 +223,7 @@ class Macro(MacroBase):
 
 class GlobalMacro(MacroBase):
     globalmacroid: str
+
+
+# Resolve forward references
+Hostgroup.model_rebuild()

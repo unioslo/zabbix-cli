@@ -2,29 +2,42 @@ from __future__ import annotations
 
 import ipaddress
 from typing import List
-from typing import Literal
 from typing import NamedTuple
 from typing import Optional
-from typing import TypedDict
+from typing import TYPE_CHECKING
 
 import typer
+from packaging.version import Version
+from pydantic import BaseModel
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import field_validator
 
 from zabbix_cli.app import app
+from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixNotFoundError
+from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import Result
 from zabbix_cli.output.prompts import bool_prompt
 from zabbix_cli.output.prompts import int_prompt
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix import compat
+from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import ParamsType
 from zabbix_cli.utils.args import APIStr
 from zabbix_cli.utils.args import APIStrEnum
 from zabbix_cli.utils.args import ChoiceMixin
+from zabbix_cli.utils.commands import ARG_HOSTNAME_OR_ID
 from zabbix_cli.utils.commands import ARG_POSITIONAL
 
+if TYPE_CHECKING:
+    from zabbix_cli.models import ColsType  # noqa: F401
+    from zabbix_cli.models import ColsRowsType
+    from zabbix_cli.models import RowsType  # noqa: F401
 
+# FIXME: replace this with how we handle defaults/prompting in `create_host_interface`
 DEFAULT_HOST_STATUS = "0"
 DEFAULT_PROXY = ".+"
 
@@ -512,7 +525,7 @@ def create_host_interface(
     try:
         resp = app.state.client.hostinterface.create(**params)
     except Exception as e:
-        raise ZabbixCLIError(f"Failed to create host interface: {e}") from e
+        raise ZabbixAPIException("Failed to create host interface") from e
     else:
         ifaces = resp.get("interfaceids", [])
         render_result(
@@ -619,50 +632,109 @@ def remove_host(
         render_result(Result(message=f"Removed host {hostname!r}."))
 
 
-class AgentAvailable(ChoiceMixin[int], APIStrEnum):
+class AgentAvailable(ChoiceMixin[str], APIStrEnum):
     """Agent availability status."""
 
     __choice_name__ = "Agent availability status"
 
-    UNKNOWN = APIStr("unknown", 0)
-    AVAILABLE = APIStr("available", 1)
-    UNAVAILABLE = APIStr("unavailable", 2)
+    UNKNOWN = APIStr("unknown", "0")
+    AVAILABLE = APIStr("available", "1")
+    UNAVAILABLE = APIStr("unavailable", "2")
 
 
-class HostFilterArgs(NamedTuple):
-    available: Optional[
-        Literal[0, 1, 2]
-    ] = None  # 0 = unknown, 1 = available, 2 = unavailable
-    maintenance_status: Optional[
-        Literal[0, 1]
-    ] = None  # 0 = no maintenance, 1 = maintenance
-    status: Optional[Literal[0, 1]] = None  # 0 = monitored, 1 = not monitored
+class HostFilterArgs(BaseModel):
+    """Unified processing of old filter string and new filter options."""
+
+    # NOTE: is this reinventing the wheel? Could we just have used enums for this?
+
+    available: Optional[str] = None  # 0 = unknown, 1 = available, 2 = unavailable
+    maintenance_status: Optional[str] = None  # 0 = no maintenance, 1 = maintenance
+    status: Optional[str] = None  # 0 = monitored, 1 = not monitored
+
+    model_config = ConfigDict(validate_assignment=True)
+
+    # We could maybe just use a pydantic.Field with some pattern or w/e instead of these?
+    @field_validator("available", mode="after")
+    @classmethod
+    def _validate_available(cls, value: str) -> Optional[str]:
+        if value is None:
+            return value
+        if value not in ("0", "1", "2"):
+            raise ZabbixCLIError(
+                f"Invalid value for available: {value!r}. " "Must be one of 0, 1, or 2."
+            )
+        return value
+
+    @field_validator("maintenance_status", mode="after")
+    @classmethod
+    def _validate_maintenance(cls, value: str) -> Optional[str]:
+        if value is None:
+            return value
+        if value not in ("0", "1"):
+            raise ZabbixCLIError(
+                f"Invalid value for maintenance status: {value!r}. Must be one of 0, 1."
+            )
+        return value
+
+    @field_validator("status", mode="after")
+    @classmethod
+    def _validate_status(cls, value: str) -> Optional[str]:
+        if value is None:
+            return value
+        if value not in ("0", "1"):
+            raise ZabbixCLIError(
+                f"Invalid value for monitoring status: {value!r}. Must be one of 0, 1."
+            )
+        return value
+
+    def as_params(self, version: Version) -> ParamsType:
+        params: ParamsType = {}
+        if self.available:
+            key = compat.host_available(version)
+            params[key] = self.available
+        if self.maintenance_status:
+            params["maintenance_status"] = self.maintenance_status
+        if self.status:
+            params["status"] = self.status
+        return params
 
 
-class HostFilterParams(TypedDict, total=False):
-    available: Optional[Literal[0, 1]]  # < 6.0 # but what about 6.0?
-    active_available: Optional[Literal[0, 1]]  # >= 6.4
-    maintenance_status: Optional[Literal[0, 1]]
-    status: Optional[Literal[0, 1]]
-
-
-def _parse_legacy_filter(filter_: str) -> HostFilterArgs:
+def _parse_legacy_filter(filter_: str, version: Version) -> HostFilterArgs:
     """Parses the legacy filter argument from V2."""
+    items = filter_.split(",")
+    args = HostFilterArgs()
+    for item in items:
+        try:
+            key, value = (s.strip("'\"") for s in item.split(":"))
+        except ValueError as e:
+            raise ZabbixCLIError(f"Failed to parse filter argument at: {item!r}") from e
+        if key == "available":
+            args.available = value
+        elif key == "maintenance":
+            args.maintenance_status = value
+        elif key == "status":
+            args.status = value
+    return args
 
-    try:
-        filter_items = filter_.split(",")
-        for filter_item in filter_items:
-            key, value = (s.strip("'\"") for s in filter_item.split(":"))
-            # query["filter"][key] = value
-    except ValueError:
-        raise ZabbixCLIError("Failed to parse filter argument.")
-    return filter_  # type: ignore # just let me commit this
+
+class HostsResult(Result):
+    hosts: List[Host] = Field(default_factory=list)
+
+    def _table_cols_rows(self) -> ColsRowsType:
+        cols = []  # type: ColsType
+        rows = []  # type: RowsType
+        for host in self.hosts:
+            host_cols, host_rows = host._table_cols_rows()  # type: ignore # TODO: add test for this
+            rows.extend(host_rows)
+            if not cols:
+                cols = host_cols
+        return cols, rows
 
 
 @app.command(name="show_host")
 def show_host(
     ctx: typer.Context,
-    hostname: str,
+    hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID,
     # This is the legacy filter argument from V2
     filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
     agent: Optional[AgentAvailable] = typer.Option(
@@ -684,29 +756,74 @@ def show_host(
     ),
 ) -> None:
     """Show host details."""
-    if filter_legacy:
-        filter_ = _parse_legacy_filter(filter_legacy)  # noqa: F841
-    else:
-        pass
+    if not hostname_or_id:
+        hostname_or_id = str_prompt("Hostname or ID")
 
-    try:
-        host = app.state.client.get_host(hostname)
-    except Exception as e:
-        raise ZabbixCLIError(f"Failed to get host {hostname!r}: {e}") from e
+    if filter_legacy:
+        args = _parse_legacy_filter(filter_legacy, app.state.client.version)  # noqa: F841
     else:
-        render_result(Result(data=host))  # type: ignore
+        args = HostFilterArgs(
+            available=agent.as_api_value() if agent else None,
+            maintenance_status=str(int(maintenance)) if maintenance else None,
+            status=str(int(monitored)) if monitored else None,
+        )
+    filter_params = args.as_params(app.state.client.version)
+
+    host = app.state.client.get_host(
+        hostname_or_id,
+        select_groups=True,
+        select_templates=True,
+        sort_field="host",
+        sort_order="ASC",
+        search=True,
+        **filter_params,  # type: ignore # this is safe, no?
+    )
+
+    render_result(host)
 
 
 @app.command(name="show_hosts")
-def show_hosts() -> None:
-    pass
+def show_hosts(
+    ctx: typer.Context,
+) -> None:
+    """Show host details."""
+    hosts = app.state.client.get_hosts(
+        "*",
+        select_groups=True,
+        select_templates=True,
+        sort_field="host",
+        sort_order="ASC",
+        search=True,
+    )
+
+    render_result(AggregateResult(result=hosts))
 
 
 @app.command(name="show_host_inventory")
-def show_host_inventory() -> None:
-    pass
+def show_host_inventory(hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID) -> None:
+    """Show host inventory details."""
+    # TODO: support undocumented filter argument from V2
+    if not hostname_or_id:
+        hostname_or_id = str_prompt("Hostname or ID")
+    host = app.state.client.get_host(hostname_or_id, select_inventory=True)
+    # Need some way to print {} in JSON mode, but write "no inventory" in table mode
+    render_result(host.inventory)
 
 
 @app.command(name="show_host_usermacros")
-def show_host_usermacros() -> None:
+def show_host_usermacros(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
+    if not hostname_or_id:
+        hostname_or_id = str_prompt("Hostname or ID")
+
+
+@app.command(name="show_usermacro_host_list")
+def show_usermacro_host_list(
+    usermacro: Optional[str] = typer.Argument(
+        None,
+        help=(
+            "Name of macro to find hosts with. "
+            "Application will automatically format macro names, e.g. `site_url` becomes `{$SITE_URL}`."
+        ),
+    ),
+) -> None:
     pass

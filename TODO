@@ -30,6 +30,11 @@
 
 * Convert all docstrings to google docstring style.
 
+## Exceptions
+
+* Store error code and message in ZabbixAPIException, so that we can automatically add it to the error message when we write custom ZabbixAPIExceptions.
+  * If we raise ZabbixAPIException from a ZabbixAPIException, we should be able to extract the data from the original exception (`__cause__`) and add it to whatever we are printing.
+
 ## Logging
 
 * Document that setting `log_file = ""` causes logs to be sent to stderr.
@@ -44,6 +49,8 @@
 ## Rendering
 
 * ~~calling `exit_err` in JSON mode should render the error as JSON to stdout with return_code "Error" like in V2.~~ DONE
+* Should we wrap API data in results or not?
+
 
 ## Legacy
 

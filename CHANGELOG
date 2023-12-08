@@ -14,6 +14,8 @@
     - `--name`: Host name
       - Host name still defaults to host DNS name or IP address if not specified.
     - `--description`: Host description
+  - `create_host_interface`:
+    - `--snmp...` TODO
 
 
 - **REPOSITORY:** Pre-commit configuration for linting and formatting.
@@ -35,9 +37,19 @@
     - `system_id` → `username`
   - `logging.logging` → `logging.enabled`
   - The original names are still usable, but are deprecated and slated for removal in a future version.
-- Application creates a config file on launch if it doesn't exist.
+- Application now creates a config file on launch if it doesn't exist.
 - Use Hatch for building and publishing
 - Switch from setup.py to pyproject.toml
+- Command changes:
+  - `create_host_interface`
+    - Default port number is now determined by interface type.
+      - Agent: 10050
+      - SNMP: 161
+      - IPMI: 623
+      - JMX: 12345
+  - `show_host_inventory`
+    - Now shows shows any inventory field that is set in the table.
+    - Includes _all_ inventory fields in JSON output.
 
 ### Deprecated
 

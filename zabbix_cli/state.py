@@ -104,7 +104,7 @@ class State:
         Logs into the Zabbix API with the configured credentials.
         """
         from zabbix_cli.pyzabbix import ZabbixAPI
-        from zabbix_cli.pyzabbix.types import Result
+        from zabbix_cli.pyzabbix.types import ZabbixAPIBaseModel
 
         self.config = config
         if not self.config.app.auth_token and not self.config.app.password:
@@ -125,9 +125,9 @@ class State:
             auth_token=config_token,
         )
 
-        # Set the API version on the Result class, so that we know
+        # Set the API version on the ZabbixAPIBaseModel class, so that we know
         # how to render the results for the given version of the API.
-        Result.version = self.client.version
+        ZabbixAPIBaseModel.version = self.client.version
 
         # Write the token file if it's new and we are configured to save it
         if (

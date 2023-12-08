@@ -9,6 +9,10 @@ import os
 from pathlib import Path
 
 import typer
+from click.core import CommandCollection
+from click.core import Group
+
+from zabbix_cli.output.console import exit_err
 
 CONFIG_FILENAME = "zabbix-cli.conf"
 CONFIG_FIXED_NAME = "zabbix-cli.fixed.conf"
@@ -44,7 +48,15 @@ def run_command_from_option(ctx: typer.Context, command: str) -> None:
         "The --command/-C option is deprecated and will be removed in a future release. "
         "Invoke command directly instead."
     )
+    if not isinstance(ctx.command, (CommandCollection, Group)):
+        exit_err(  # TODO: find out if this could ever happen?
+            f"Cannot run command {command!r}. Ensure it is a valid command and try again."
+        )
     cmd_obj = ctx.command.get_command(ctx, command)
+    if not cmd_obj:
+        exit_err(
+            f"Cannot run command {command!r}. Ensure it is a valid command and try again."
+        )
     try:
         ctx.invoke(cmd_obj, *ctx.args)
     except typer.Exit:
