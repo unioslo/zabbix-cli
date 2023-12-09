@@ -125,7 +125,17 @@ def create_hostgroup(
         info(f"Created host group {hostgroup}.")
 
     # Give host group rights to default user groups
-    # TODO: possibly refactor and extract this logic?
+    # FIXME: extract this logic and perform this in ZabbixAPI
+    # We really want to handle all this inside ZabbixAPI since it handles
+    # errors and logs them, so that we can debug issues more easily.
+    #
+    # It should be trivial to add a method to ZabbixAPI that takes a usergroup
+    # and a list of hostgroups+permissions.
+    # The only question is whether to allow different permissions in the same
+    # method call, or one method call per permission, i.e.:
+    # ZabbixAPI.update_usergroup("ugroup", ["hgroup1", "hgroup2", "hgroup3"], "rw")
+    # or
+    # ZabbixAPI.update_usergroup("ugroup", [("hgroup1", "rw"), ("hgroup2", "ro")])
     try:
         # Admin group(s) gets Read/Write
         for usergroup in app.state.config.app.default_admin_usergroups:
@@ -167,7 +177,9 @@ def remove_host_from_hostgroup(
         None, "--hostnames", help="Hostnames or IDs. Separate values with commas."
     ),
     hostgroups: Optional[str] = typer.Option(
-        None, "--hostnames", help="Hostnames or IDs. Separate values with commas."
+        None,
+        "--hostgroups",
+        help="Host group names or IDs. Separate values with commas.",
     ),
 ) -> None:
     hosts, hgs = _parse_hostname_hostgroup_args(args, hostnames, hostgroups)

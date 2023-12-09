@@ -3,11 +3,9 @@ from __future__ import annotations
 import json
 from contextlib import nullcontext
 from typing import Any
-from typing import Set
 
 import typer
 from pydantic import BaseModel
-from typing_extensions import TypedDict
 
 from ..config import OutputFormat
 from .console import console
@@ -21,6 +19,9 @@ from zabbix_cli.state import get_state
 
 
 def wrap_result(result: BaseModel) -> Result:
+    """Wraps a BaseModel instance in a Result object so that it receives
+    `return_code`, `errors`, and `message` fields, and the original object
+    is available as `result`."""
     if isinstance(result, Result):
         return result
     # TODO: handle AggregateResult
@@ -78,23 +79,11 @@ def render_table(
     if isinstance(result, Result) and result.message:
         success(result.message)
     else:
-        console.print(result.as_table())
-
-
-class JsonDumpsKwargs(TypedDict):
-    """Common BaseModel.dump_json kwargs for both new and legacy
-    JSON formats.
-    """
-
-    exclude_unset: bool
-    include: Set[str]
-
-
-# Always includes return code even if not set
-JSON_DUMP_KWARGS = JsonDumpsKwargs(
-    exclude_unset=True,
-    include={"return_code"},
-)
+        tbl = result.as_table()
+        if not tbl.rows:
+            console.print("No results found.")
+        else:
+            console.print(tbl)
 
 
 def render_json(
@@ -103,14 +92,15 @@ def render_json(
     **kwargs: Any,
 ) -> None:
     """Render the result of a command as JSON."""
-    # include = result.model_fields | {"return_code"}
     result = wrap_result(result)
     o_json = result.model_dump_json(indent=2)
     console.print_json(o_json, indent=2, sort_keys=False)
 
 
 def render_json_legacy(
-    result: TableRenderable | TableRenderableDict, ctx: typer.Context | None = None
+    result: TableRenderable | TableRenderableDict,
+    ctx: typer.Context | None = None,
+    **kwargs: Any,
 ) -> None:
     """Render the result of a command as JSON (legacy V2 format).
 

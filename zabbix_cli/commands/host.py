@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
     from zabbix_cli.models import RowsType  # noqa: F401
 
-# FIXME: replace this with how we handle defaults/prompting in `create_host_interface`
+# XXX: replace this with how we handle defaults/prompting in `create_host_interface`
 DEFAULT_HOST_STATUS = "0"
 DEFAULT_PROXY = ".+"
 
@@ -814,6 +814,10 @@ def show_host_inventory(hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID) -> N
 def show_host_usermacros(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
     if not hostname_or_id:
         hostname_or_id = str_prompt("Hostname or ID")
+    # By calling get_host, we also ensure the host exists
+    host = app.state.client.get_host(hostname_or_id, select_macros=True)
+    # Sort macros by name when rendering
+    render_result(AggregateResult(result=sorted(host.macros, key=lambda m: m.macro)))
 
 
 @app.command(name="show_usermacro_host_list")

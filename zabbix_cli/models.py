@@ -62,17 +62,11 @@ class TableRenderableProto(Protocol):
 class TableRenderable(BaseModel):
     """Base model that can be rendered as a table."""
 
-    # def _table_fields(self) -> List[str]:
-    #     """Returns the fields that should be rendered as a table.
-    #     Can be overriden by subclasses for low-level control.
-    #     Generally, you should override `_table_cols_rows` instead."""
-    #     return list(self.model_fields)
-
     def _table_cols_rows(self) -> ColsRowsType:
         """Returns the columns and row for the table representation of the object."""
         cols = list(self.model_fields)
         row = [str(getattr(self, field_name)) for field_name in cols]
-        return cols, [row]
+        return cols, [row] if row else []
 
     def as_table(self) -> Table:
         """Renders a Rich table given the rows and cols generated for the object."""
@@ -98,8 +92,8 @@ class TableRenderableDict(RootModel[Dict[str, str]]):
     def _table_cols_rows(self) -> ColsRowsType:
         # only returns the keys that have a value
         cols = [k for k, v in self.root.items() if v]
-        rows = [[self.root[k] for k in cols]]
-        return cols, rows
+        row = [self.root[k] for k in cols]
+        return cols, [row] if row else []
 
     as_table = TableRenderable.as_table
 
@@ -122,7 +116,7 @@ class Result(TableRenderable, Generic[DataT]):
 TableRenderableT = TypeVar("TableRenderableT", bound=TableRenderable)
 
 
-class AggregateResult(Result[TableRenderableT]):  # NOTE: make generic?
+class AggregateResult(Result[TableRenderableT]):
     """Aggregate result of multiple results."""
 
     @validator("result")

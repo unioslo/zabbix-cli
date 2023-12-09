@@ -4,6 +4,10 @@
 
 * Some sort of shared callback function between all scripts and the main CLI. This way we can pass in config etc, and have a common way of handling errors etc.
 
+## API
+
+Add some sort of `process_params` method that can be used to process params and add them to the ParamsType mapping, to reduce code duplication within each method.
+
 ## Args
 
 * Show deprecation warning when user uses positional args instead of options.
@@ -49,12 +53,16 @@
 ## Rendering
 
 * ~~calling `exit_err` in JSON mode should render the error as JSON to stdout with return_code "Error" like in V2.~~ DONE
-* Should we wrap API data in results or not?
+* ~~Should we wrap API data in results or not?~~ YES?! We do now.
+* Extract as_table out of the model classes and into a separate function that just takes a TableRenderableProto object.
+  * This way we can control the style of the table in a single function instead of trying to modify the style in each model class OR by modifying the table object after it has been created.
 
 
 ## Legacy
 
 * Assume legacy JSON format when loading from .conf file.
+* Render some names as legacy names when using legacy JSON format.
+  * E.g. `name` instead of `macro` for `show_host_usermacros`
 
 
 ## Tests

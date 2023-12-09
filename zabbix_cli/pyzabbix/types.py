@@ -24,6 +24,7 @@ from packaging.version import Version
 from pydantic import AliasChoices
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import field_serializer
 from pydantic import field_validator
 from pydantic import model_validator
 from pydantic import ValidationInfo
@@ -76,6 +77,12 @@ class ZabbixAPIBaseModel(TableRenderable):
     WARNING: Do not access directly from outside this class.
     Prefer the `version` property instead.
     """
+    legacy_json_format: ClassVar[bool] = False
+    """Whether to use the legacy JSON format for rendering objects.
+    This class variable is set by `State.configure` based on the
+    current configuration. By default, we assume the new JSON format,
+    since we eventually want to phase out support for the legacy format."""
+
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
 
@@ -102,8 +109,9 @@ class Hostgroup(ZabbixAPIBaseModel):
     groupid: str
     name: str
     hosts: List[Host] = []
+    # FIXME: Use Optional[str] and None default?
     flags: int = 0
-    internal: int = 0
+    internal: int = 0  # should these be ints?
 
     def _table_cols_rows(self) -> ColsRowsType:
         cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
@@ -157,6 +165,32 @@ class Host(ZabbixAPIBaseModel):
         None, validation_alias=AliasChoices("available", "active_available")
     )
     status: Optional[str] = None
+    macros: List[Macro] = Field(default_factory=list)
+
+    # Legacy V2 JSON format compatibility
+    @field_serializer("maintenance_status")
+    def _maintenance_status_serializer(self, v: Optional[str], _info) -> Optional[str]:
+        """Serializes the maintenance status as a formatted string
+        in legacy mode, and as-is in new mode."""
+        if self.legacy_json_format:
+            return get_maintenance_status(v)
+        return v
+
+    @field_serializer("zabbix_agent")
+    def _zabbix_agent_serializer(self, v: Optional[str], _info) -> Optional[str]:
+        """Serializes the zabbix agent status as a formatted string
+        in legacy mode, and as-is in new mode."""
+        if self.legacy_json_format:
+            return get_zabbix_agent_status(v)
+        return v
+
+    @field_serializer("status")
+    def _status_serializer(self, v: Optional[str], _info) -> Optional[str]:
+        """Serializes the monitoring status as a formatted string
+        in legacy mode, and as-is in new mode."""
+        if self.legacy_json_format:
+            return get_monitoring_status(v)
+        return v
 
     @field_validator("host", mode="before")  # TODO: add test for this
     @classmethod
@@ -207,7 +241,7 @@ class Proxy(ZabbixAPIBaseModel):
 
 class MacroBase(ZabbixAPIBaseModel):
     macro: str
-    value: str  # could this fail if macro is secret?
+    value: Optional[str] = None  # Optional in case secret value
     type: str
     description: str
 
@@ -227,3 +261,4 @@ class GlobalMacro(MacroBase):
 
 # Resolve forward references
 Hostgroup.model_rebuild()
+Host.model_rebuild()

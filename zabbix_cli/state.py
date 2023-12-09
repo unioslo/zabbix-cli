@@ -128,6 +128,7 @@ class State:
         # Set the API version on the ZabbixAPIBaseModel class, so that we know
         # how to render the results for the given version of the API.
         ZabbixAPIBaseModel.version = self.client.version
+        ZabbixAPIBaseModel.legacy_json_format = ca.legacy_json_format
 
         # Write the token file if it's new and we are configured to save it
         if (

@@ -12,7 +12,6 @@ import typer
 from click.core import CommandCollection
 from click.core import Group
 
-from zabbix_cli.output.console import exit_err
 
 CONFIG_FILENAME = "zabbix-cli.conf"
 CONFIG_FIXED_NAME = "zabbix-cli.fixed.conf"
@@ -43,6 +42,7 @@ def run_command_from_option(ctx: typer.Context, command: str) -> None:
     """Runs a command via old-style --command/-C option."""
     from zabbix_cli.output.console import warning
     from zabbix_cli.output.console import error
+    from zabbix_cli.output.console import exit_err
 
     warning(
         "The --command/-C option is deprecated and will be removed in a future release. "

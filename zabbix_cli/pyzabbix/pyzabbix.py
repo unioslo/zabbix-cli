@@ -49,6 +49,8 @@ logger = logging.getLogger(__name__)
 logger.addHandler(_NullHandler())
 logger.setLevel(logging.INFO)
 
+SortOrder = Literal["ASC", "DESC"]
+
 
 class ZabbixAPI:
     def __init__(
@@ -326,8 +328,9 @@ class ZabbixAPI:
         select_groups: bool = False,
         select_templates: bool = False,
         select_inventory: bool = False,
+        select_macros: bool = False,
         sort_field: Optional[str] = None,
-        sort_order: Optional[Literal["ASC", "DESC"]] = None,
+        sort_order: Optional[SortOrder] = None,
         search: bool = False,
         **filter_kwargs,
     ) -> Host:
@@ -337,6 +340,7 @@ class ZabbixAPI:
             select_groups=select_groups,
             select_templates=select_templates,
             select_inventory=select_inventory,
+            select_macros=select_macros,
             sort_field=sort_field,
             sort_order=sort_order,
             search=search,
@@ -353,6 +357,7 @@ class ZabbixAPI:
         select_groups: bool = False,
         select_templates: bool = False,
         select_inventory: bool = False,
+        select_macros: bool = False,
         sort_field: Optional[str] = None,
         sort_order: Optional[Literal["ASC", "DESC"]] = None,
         search: bool = True,  # we generally always want to search when multiple hosts are requested
@@ -388,6 +393,8 @@ class ZabbixAPI:
             params["selectParentTemplates"] = "extend"
         if select_inventory:
             params["selectInventory"] = "extend"
+        if select_macros:
+            params["selectMacros"] = "extend"
         if sort_field:
             params["sortfield"] = sort_field
         if sort_order:
@@ -559,6 +566,40 @@ class ZabbixAPI:
                 f"Macro {macro!r} not found for host with ID {hostid}"
             )
         return Macro(**resp[0])
+
+    def get_macros(
+        self,
+        hostname_or_id: str,
+        search: bool = False,
+        sort_field: Optional[str] = "macro",
+        sort_order: Optional[SortOrder] = None,
+    ) -> List[Macro]:
+        norid = hostname_or_id.strip()
+        params = {"output": "extend"}  # type: ParamsType
+        filter_params = {}  # type: ParamsType
+
+        is_id = norid.isnumeric()
+        norid_key = "hostid" if is_id else "host"
+        if search:
+            params["searchWildcardsEnabled"] = True
+            if is_id:  # why this over just searching?
+                params["hostids"] = norid  # doesnt have to be a list
+            else:
+                params["search"] = {norid_key: norid}
+        else:
+            filter_params[norid_key] = norid
+
+        # Add filter params to params if we actually have params
+        if filter_params:
+            params["filter"] = filter_params
+
+        if sort_field:
+            params["sortfield"] = sort_field
+        if sort_order:
+            params["sortorder"] = sort_order
+
+        result = self.usermacro.get(**params)
+        return [Macro(**macro) for macro in result]
 
     def create_macro(self, hostid: str, macro: str, value: str) -> str:
         """Creates a macro given a host ID, macro name and value."""
