@@ -235,6 +235,7 @@ class Host(ZabbixAPIBaseModel):
 class Proxy(ZabbixAPIBaseModel):
     proxyid: str
     name: str = Field(..., validation_alias=AliasChoices("host", "name"))
+    hosts: List[Host] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def _set_name_field(self) -> Proxy:

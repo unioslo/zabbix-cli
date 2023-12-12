@@ -329,6 +329,7 @@ class ZabbixAPI:
         select_templates: bool = False,
         select_inventory: bool = False,
         select_macros: bool = False,
+        proxyid: Optional[str] = None,
         sort_field: Optional[str] = None,
         sort_order: Optional[SortOrder] = None,
         search: bool = False,
@@ -336,11 +337,12 @@ class ZabbixAPI:
     ) -> Host:
         """Fetches a host given a name or id."""
         hosts = self.get_hosts(
-            name_or_id,
+            name_or_id=name_or_id,
             select_groups=select_groups,
             select_templates=select_templates,
             select_inventory=select_inventory,
             select_macros=select_macros,
+            proxyid=proxyid,
             sort_field=sort_field,
             sort_order=sort_order,
             search=search,
@@ -353,32 +355,46 @@ class ZabbixAPI:
     # NOTE: we could add *host_name_or_ids, so multiple hostnames can be used
     def get_hosts(
         self,
-        name_or_id: str,
+        name_or_id: Optional[str] = None,
         select_groups: bool = False,
         select_templates: bool = False,
         select_inventory: bool = False,
         select_macros: bool = False,
+        proxyid: Optional[str] = None,
         sort_field: Optional[str] = None,
         sort_order: Optional[Literal["ASC", "DESC"]] = None,
         search: bool = True,  # we generally always want to search when multiple hosts are requested
         **filter_kwargs,
     ) -> List[Host]:
-        """Fetches host(s) given a name or id."""
+        """Fetches all hosts matching the given criteria.
 
-        norid = name_or_id.strip()
+        Hosts can be filtered by name or ID, and optionally by proxy ID.
+        If no criteria are given, all hosts are returned.
+
+        A number of extra properties can be fetched for each host by setting
+        the corresponding `select_*` argument to True.
+        """
+
         params = {"output": "extend"}  # type: ParamsType
         filter_params = {**filter_kwargs}
 
-        is_id = norid.isnumeric()
-        norid_key = "hostid" if is_id else "host"
-        if search:
-            params["searchWildcardsEnabled"] = True
-            if is_id:  # why this over just searching?
-                params["hostids"] = norid  # doesnt have to be a list
+        # Filter by the given host name or ID if we have one
+        if name_or_id:
+            norid = name_or_id.strip()
+            is_id = norid.isnumeric()
+            norid_key = "hostid" if is_id else "host"
+            if search:
+                params["searchWildcardsEnabled"] = True
+                if is_id:  # why this over just searching?
+                    params["hostids"] = norid  # doesnt have to be a list
+                else:
+                    params["search"] = {norid_key: name_or_id}
             else:
-                params["search"] = {norid_key: name_or_id}
-        else:
-            filter_params[norid_key] = name_or_id
+                filter_params[norid_key] = name_or_id
+
+        # Filter by the given proxy ID if we have one
+        if proxyid:
+            filter_params[compat.host_proxyid(self.version)] = proxyid
 
         # Add filter params to params if we actually have params
         if filter_params:
@@ -528,18 +544,22 @@ class ZabbixAPI:
 
         return None
 
-    def get_proxy(self, name: str) -> Proxy:
-        """Fetches all proxies."""
-        proxies = self.get_proxies(name=name)
+    def get_proxy(self, name: str, select_hosts: bool = False) -> Proxy:
+        """Fetches a single proxy matching the given name."""
+        proxies = self.get_proxies(name=name, select_hosts=select_hosts)
         if not proxies:
             raise ZabbixNotFoundError(f"Proxy with name {name!r} not found")
         return proxies[0]
 
-    def get_proxies(self, name: Optional[str] = None, **kwargs) -> List[Proxy]:
+    def get_proxies(
+        self, name: Optional[str] = None, select_hosts: bool = False, **kwargs
+    ) -> List[Proxy]:
         """Fetches all proxies."""
         params = {"output": "extend"}  # type: ParamsType
         if name:
             params.setdefault("search", {})[compat.proxy_name(self.version)] = name  # type: ignore
+        if select_hosts:
+            params["selectHosts"] = "extend"
 
         params.update(**kwargs)
         try:
@@ -683,6 +703,18 @@ class ZabbixAPI:
                 f"No host ID returned when updating proxy for host {host.host!r} (ID {host.hostid})"
             )
         return resp["hostids"][0]
+
+    def move_hosts_to_proxy(self, hosts: List[Host], proxy: Proxy) -> None:
+        params = {
+            "hosts": [{"hostid": host.hostid} for host in hosts],
+            compat.host_proxyid(self.version): proxy.proxyid,
+        }  # type: ParamsType
+        try:
+            self.host.massupdate(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to move hosts {[str(host) for host in hosts]} to proxy {proxy.name!r}"
+            ) from e
 
     # def _construct_params(
     #     self,

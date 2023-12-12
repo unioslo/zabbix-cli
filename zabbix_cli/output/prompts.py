@@ -40,7 +40,8 @@ def no_headless(f: Callable[P, T]) -> Callable[P, T]:
         if is_headless():
             # TODO: determine caller etc. via the stack
             # If a default argument was passed in, we can return that:
-            if (default := kwargs.get("default")) and default is not Ellipsis:
+            default = kwargs.get("default")
+            if "default" in kwargs and default is not ...:
                 logging.debug(
                     "Returning default value from %s(%s, %s)", f, args, kwargs
                 )

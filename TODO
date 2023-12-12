@@ -12,6 +12,7 @@ Add some sort of `process_params` method that can be used to process params and 
 
 * Show deprecation warning when user uses positional args instead of options.
 * Hide positional args from help?
+* Consistent hostname vs hostname_or_id arguments
 
 ## Bulk / -C mode
 
@@ -37,7 +38,7 @@ Add some sort of `process_params` method that can be used to process params and 
 ## Exceptions
 
 * Store error code and message in ZabbixAPIException, so that we can automatically add it to the error message when we write custom ZabbixAPIExceptions.
-  * If we raise ZabbixAPIException from a ZabbixAPIException, we should be able to extract the data from the original exception (`__cause__`) and add it to whatever we are printing.
+  * **VERY VERY IMPORTANT:** If we raise ZabbixAPIException from a ZabbixAPIException, we should be able to extract the data from the original exception (`__cause__`) and add it to whatever we are printing.
 
 ## Logging
 
@@ -69,3 +70,14 @@ Add some sort of `process_params` method that can be used to process params and 
 
 * Choice enum mappings contain all choices.
   * I.e. `InterfaceConnectionMode` & `InterfaceType`
+
+
+--------------------
+
+## Optimization
+
+* Define result models inside commands
+  * Faster startup time, but slower command execution
+    * Startup: O(n) -> O(1)
+    * Command execution: O(1) -> O(n/n)
+    * Where n is the number of commands/result models.

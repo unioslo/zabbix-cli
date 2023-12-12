@@ -2,8 +2,11 @@
 """Utility functions."""
 from __future__ import annotations
 
+import re
 from typing import Dict
 from typing import Optional
+
+from zabbix_cli.exceptions import ZabbixCLIError
 
 
 def _format_status(code: Optional[str], status_map: Dict[str, str]) -> str:
@@ -208,3 +211,20 @@ def get_item_type(code):
         return item_type[code] + " (" + str(code) + ")"
 
     return f"Unknown ({str(code)})"
+
+
+def compile_pattern(pattern: str) -> re.Pattern[str]:
+    """Compile regex pattern."""
+    try:
+        p = re.compile(pattern)
+    except re.error as e:
+        raise ZabbixCLIError(f"Invalid regex pattern: {pattern}") from e
+    return p
+
+
+def convert_int(value: str) -> int:
+    """Convert string to int."""
+    try:
+        return int(value)
+    except ValueError as e:
+        raise ZabbixCLIError(f"Invalid integer value: {value}") from e

@@ -114,14 +114,19 @@ def render_json_legacy(
     We should try to move away from this format ASAP, so we can remove
     this function and all its hacks.
     """
-    res = result.model_dump(mode="json")
-    jdict = {}  # type: dict[str, Any] # always a dict in legacy mode
-    if isinstance(result, AggregateResult):
-        py_result = res.get("result", [])  # type: ignore # bad annotation
+    # If we have a message, it should not be indexed
+    # NOTE: do we have a more accurate heuristic for this?
+    if isinstance(result, Result) and result.message:
+        j = result.model_dump_json(indent=2)
     else:
-        py_result = [res]
+        jdict = {}  # type: dict[str, Any] # always a dict in legacy mode
+        res = result.model_dump(mode="json")
+        if isinstance(result, AggregateResult):
+            py_result = res.get("result", [])  # type: ignore # bad annotation
+        else:
+            py_result = [res]
 
-    for idx, item in enumerate(py_result):
-        jdict[str(idx)] = item
-    j = json.dumps(jdict, indent=2)
+        for idx, item in enumerate(py_result):
+            jdict[str(idx)] = item
+        j = json.dumps(jdict, indent=2)
     console.print_json(j, indent=2, sort_keys=False)
