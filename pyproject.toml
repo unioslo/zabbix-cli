@@ -60,6 +60,10 @@ test = ["pytest", "pytest-cov"]
 [tool.hatch.version]
 path = "zabbix_cli/__about__.py"
 
+[tool.hatch.build.targets.app]
+pyapp-version = "0.12.0"
+python-version = "3.11"
+
 [tool.hatch.envs.default]
 dependencies = [
   # Linting and formatting only here

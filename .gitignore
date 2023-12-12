@@ -13,3 +13,6 @@ venv/
 .dccache
 .vscode/launch.json
 my_tests/
+
+# Hatch Pyapp
+pyapp
