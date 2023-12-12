@@ -74,7 +74,7 @@ def user_name(version: Version) -> Literal["alias", "username"]:
 
 
 def param_host_get_groups(
-    version: Version
+    version: Version,
 ) -> Literal["selectHostGroups", "selectGroups"]:
     # https://support.zabbix.com/browse/ZBXNEXT-2592
     # hhttps://www.zabbix.com/documentation/6.2/en/manual/api/changes_6.0_-_6.2#host

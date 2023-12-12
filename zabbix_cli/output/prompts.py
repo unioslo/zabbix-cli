@@ -25,6 +25,7 @@ from .formatting.path import path_link
 from .style import Icon
 from .style.color import green
 from .style.color import yellow
+from zabbix_cli._types import EllipsisType
 from zabbix_cli.state import get_state
 
 T = TypeVar("T")
@@ -69,7 +70,7 @@ def prompt_msg(*msgs: str) -> str:
 @no_headless
 def str_prompt(
     prompt: str,
-    default: Any = ...,
+    default: str | EllipsisType = ...,
     password: bool = False,
     show_default: bool = True,
     choices: list[str] | None = None,
@@ -98,6 +99,9 @@ def str_prompt(
     strip : bool, optional
         Strip whitespace from the input, by default True
         Must be `False` to preserve whitespace when `empty_ok=True`.
+    callback : Callable[[str], str], optional
+        Callback function to run on the input before returning it,
+        by default None
     """
     # Don't permit secrets to be shown ever
     if password:
@@ -131,7 +135,6 @@ def str_prompt(
             error("Input cannot solely consist of whitespace.")
         else:
             break
-    # TODO: make this type safe if we pass in a non-string default
     return inp.strip() if strip else inp
 
 

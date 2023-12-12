@@ -33,7 +33,7 @@ ARG_POSITIONAL = typer.Argument(
 )
 
 
-# This arg should probably get a custom parser or callback to prompt for missing value
+# NOTE: This arg should probably get a custom parser or callback to prompt for missing value
 # But parsers dont fire on defaults, and callbacks don't carry the value in a typesafe way;
 # we have to access it via the ctx object...
 ARG_HOSTNAME_OR_ID = typer.Argument(None, help="Hostname or ID of host.")

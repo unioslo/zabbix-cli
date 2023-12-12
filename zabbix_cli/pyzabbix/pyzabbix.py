@@ -16,6 +16,7 @@ import logging
 import random
 import re
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Literal
 from typing import Optional
@@ -38,6 +39,7 @@ from zabbix_cli.pyzabbix.types import ZabbixRight
 
 if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import ParamsType  # noqa: F401
+    from zabbix_cli.pyzabbix.types import SortOrder  # noqa: F401
 
 
 class _NullHandler(logging.Handler):
@@ -48,8 +50,6 @@ class _NullHandler(logging.Handler):
 logger = logging.getLogger(__name__)
 logger.addHandler(_NullHandler())
 logger.setLevel(logging.INFO)
-
-SortOrder = Literal["ASC", "DESC"]
 
 
 class ZabbixAPI:
@@ -528,10 +528,20 @@ class ZabbixAPI:
 
         return None
 
-    def get_proxies(self, **kwargs) -> List[Proxy]:
+    def get_proxy(self, name: str) -> Proxy:
+        """Fetches all proxies."""
+        proxies = self.get_proxies(name=name)
+        if not proxies:
+            raise ZabbixNotFoundError(f"Proxy with name {name!r} not found")
+        return proxies[0]
+
+    def get_proxies(self, name: Optional[str] = None, **kwargs) -> List[Proxy]:
         """Fetches all proxies."""
         params = {"output": "extend"}  # type: ParamsType
-        params.update(kwargs)
+        if name:
+            params.setdefault("search", {})[compat.proxy_name(self.version)] = name  # type: ignore
+
+        params.update(**kwargs)
         try:
             res = self.proxy.get(**params)
         except ZabbixAPIException as e:
@@ -554,40 +564,53 @@ class ZabbixAPI:
                 raise ZabbixNotFoundError(f"No proxies matching pattern {pattern!r}")
         return random.choice(proxies)
 
-    def get_macro(self, hostid: str, macro: str) -> Macro:
+    def get_macro(
+        self,
+        host: Optional[Host] = None,
+        macro_name: Optional[str] = None,
+        select_hosts: bool = False,
+    ) -> Macro:
         """Fetches a macro given a host ID and macro name."""
-        resp = self.usermacro.get(
-            hostids=hostid,
-            filter={"macro": macro},
-            output="extend",
+        macros = self.get_macros(
+            macro_name=macro_name,
+            host=host,
+            select_hosts=select_hosts,
         )
-        if not resp:
-            raise ZabbixNotFoundError(
-                f"Macro {macro!r} not found for host with ID {hostid}"
-            )
-        return Macro(**resp[0])
+        if not macros:
+            raise ZabbixNotFoundError("Macro not found")
+        return macros[0]
+
+    def get_hosts_with_macro(self, macro: str) -> List[Host]:
+        """Fetches a macro given a host ID and macro name."""
+        macros = self.get_macros(macro_name=macro)
+        if not macros:
+            raise ZabbixNotFoundError(f"Macro {macro!r} not found.")
+        return macros[0].hosts
 
     def get_macros(
         self,
-        hostname_or_id: str,
+        macro_name: Optional[str] = None,
+        host: Optional[Host] = None,
         search: bool = False,
         sort_field: Optional[str] = "macro",
         sort_order: Optional[SortOrder] = None,
+        select_hosts: bool = False,
     ) -> List[Macro]:
-        norid = hostname_or_id.strip()
         params = {"output": "extend"}  # type: ParamsType
         filter_params = {}  # type: ParamsType
 
-        is_id = norid.isnumeric()
-        norid_key = "hostid" if is_id else "host"
-        if search:
+        if host:
+            params.setdefault("search", {})["hostids"] = host.hostid  # type: ignore
+
+        if macro_name:
+            params.setdefault("search", {})["macro"] = macro_name  # type: ignore
+
+        # Enable wildcard searching if we have one or more search terms
+        if params.get("search"):
             params["searchWildcardsEnabled"] = True
-            if is_id:  # why this over just searching?
-                params["hostids"] = norid  # doesnt have to be a list
-            else:
-                params["search"] = {norid_key: norid}
-        else:
-            filter_params[norid_key] = norid
+
+        if select_hosts:
+            params["selectHosts"] = "extend"
 
         # Add filter params to params if we actually have params
         if filter_params:
@@ -597,26 +620,28 @@ class ZabbixAPI:
             params["sortfield"] = sort_field
         if sort_order:
             params["sortorder"] = sort_order
-
-        result = self.usermacro.get(**params)
+        try:
+            result = self.usermacro.get(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException("Failed to retrive macros") from e
         return [Macro(**macro) for macro in result]
 
-    def create_macro(self, hostid: str, macro: str, value: str) -> str:
+    def create_macro(self, host: Host, macro: str, value: str) -> str:
         """Creates a macro given a host ID, macro name and value."""
         try:
-            resp = self.usermacro.create(hostid=hostid, macro=macro, value=value)
+            resp = self.usermacro.create(hostid=host.hostid, macro=macro, value=value)
         except ZabbixAPIException as e:
             raise ZabbixAPIException(
-                f"Failed to create macro {macro!r} for host with ID {hostid}"
+                f"Failed to create macro {macro!r} for host {host}"
             ) from e
         if not resp or not resp.get("hostmacroids"):
             raise ZabbixNotFoundError(
-                f"No macro ID returned when creating macro {macro!r} for host with ID {hostid}"
+                f"No macro ID returned when creating macro {macro!r} for host {host}"
             )
         return resp["hostmacroids"][0]
 
     def update_macro(self, macroid: str, value: str) -> str:
-        """Updates a macro given a host ID, macro name and value."""
+        """Updates a macro given a macro ID and value."""
         try:
             resp = self.usermacro.update(hostmacroid=macroid, value=value)
         except ZabbixAPIException as e:
@@ -626,6 +651,53 @@ class ZabbixAPI:
                 f"No macro ID returned when updating macro with ID {macroid}"
             )
         return resp["hostmacroids"][0]
+
+    def update_host_inventory(self, host: Host, inventory: Dict[str, str]) -> str:
+        """Updates a host inventory given a host ID and inventory."""
+        try:
+            resp = self.host.update(hostid=host.hostid, inventory=inventory)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to update host inventory for host {host.host!r} (ID {host.hostid})"
+            ) from e
+        if not resp or not resp.get("hostids"):
+            raise ZabbixNotFoundError(
+                f"No host ID returned when updating inventory for host {host.host!r} (ID {host.hostid})"
+            )
+        return resp["hostids"][0]
+
+    def update_host_proxy(self, host: Host, proxy: Proxy) -> str:
+        """Updates a host proxy given a host ID and proxy."""
+        params = {
+            "hostid": host.hostid,
+            compat.host_proxyid(self.version): proxy.proxyid,
+        }
+        try:
+            resp = self.host.update(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to update host proxy for host {host.host!r} (ID {host.hostid})"
+            ) from e
+        if not resp or not resp.get("hostids"):
+            raise ZabbixNotFoundError(
+                f"No host ID returned when updating proxy for host {host.host!r} (ID {host.hostid})"
+            )
+        return resp["hostids"][0]
+
+    # def _construct_params(
+    #     self,
+    #     hostname_or_id: Optional[str] = None,
+    #     macro_name: Optional[str] = None,
+    #     search: bool = False,
+    #     sort_field: Optional[str] = None,
+    #     sort_order: Optional[SortOrder] = None,
+    #     select_groups: bool = False,
+    #     select_templates: bool = False,
+    #     select_inventory: bool = False,
+    #     select_macros: bool = False,
+    #     **filter_kwargs,
+    # ) -> ParamsType:
+    #     pass
 
     def __getattr__(self, attr: str):
         """Dynamically create an object class (ie: host)"""

@@ -28,6 +28,7 @@ from pydantic import field_serializer
 from pydantic import field_validator
 from pydantic import model_validator
 from pydantic import ValidationInfo
+from typing_extensions import Literal
 from typing_extensions import TypedDict
 
 from zabbix_cli.models import ColsRowsType
@@ -38,6 +39,8 @@ from zabbix_cli.utils.utils import get_hostgroup_type
 from zabbix_cli.utils.utils import get_maintenance_status
 from zabbix_cli.utils.utils import get_monitoring_status
 from zabbix_cli.utils.utils import get_zabbix_agent_status
+
+SortOrder = Literal["ASC", "DESC"]
 
 PrimitiveType = Union[str, bool, int]
 ParamsType = MutableMapping[
@@ -167,6 +170,9 @@ class Host(ZabbixAPIBaseModel):
     status: Optional[str] = None
     macros: List[Macro] = Field(default_factory=list)
 
+    def __str__(self) -> str:
+        return f"{self.host!r} ({self.hostid})"
+
     # Legacy V2 JSON format compatibility
     @field_serializer("maintenance_status")
     def _maintenance_status_serializer(self, v: Optional[str], _info) -> Optional[str]:
@@ -253,6 +259,7 @@ class Macro(MacroBase):
     """Macro type. 0 - text, 1 - secret, 2 - vault secret (>=7.0)"""
     hostmacroid: str
     automatic: Optional[int] = None  # >= 7.0 only. 0 = user, 1 = discovery rule
+    hosts: List[Host] = Field(default_factory=list)
 
 
 class GlobalMacro(MacroBase):

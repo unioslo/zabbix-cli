@@ -105,6 +105,14 @@ def render_json_legacy(
     """Render the result of a command as JSON (legacy V2 format).
 
     Result is always a dict with numeric string keys.
+
+    NOTE
+    ----
+
+    This function is very hacky, and will inevitably contain a number of band-aid
+    fixes to enable 1:1 compatibility with the legacy V2 JSON format.
+    We should try to move away from this format ASAP, so we can remove
+    this function and all its hacks.
     """
     res = result.model_dump(mode="json")
     jdict = {}  # type: dict[str, Any] # always a dict in legacy mode

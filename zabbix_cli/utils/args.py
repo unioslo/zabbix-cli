@@ -7,20 +7,12 @@ from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Type
-from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
 
+from zabbix_cli._types import EllipsisType
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.prompts import str_prompt
-
-if TYPE_CHECKING:
-    import sys
-
-    if sys.version_info >= (3, 10):
-        from types import EllipsisType
-    else:
-        from typing import Any as EllipsisType
 
 
 # from strenum import StrEnum

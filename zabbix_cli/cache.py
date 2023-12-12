@@ -82,6 +82,3 @@ class ZabbixCache:
     def get_templategroup_id(self, templategroup_name: str) -> Optional[str]:
         """Returns the ID of a template group given its name."""
         return self._templategroup_name_cache.get(templategroup_name)
-
-
-z = ZabbixCache("asdasd")
