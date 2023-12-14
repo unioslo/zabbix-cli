@@ -13,7 +13,6 @@ from packaging.version import Version
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
-from pydantic import field_validator
 from pydantic import model_serializer
 
 from zabbix_cli.app import app
@@ -31,8 +30,11 @@ from zabbix_cli.output.prompts import int_prompt
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix import compat
+from zabbix_cli.pyzabbix.types import AgentAvailable
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import Macro
+from zabbix_cli.pyzabbix.types import MaintenanceStatus
+from zabbix_cli.pyzabbix.types import MonitoringStatus
 from zabbix_cli.pyzabbix.types import ParamsType
 from zabbix_cli.utils.args import APIStr
 from zabbix_cli.utils.args import APIStrEnum
@@ -542,14 +544,6 @@ def create_host_interface(
         )
 
 
-# See: zabbix_cli.utils.args.OnOffChoice for why we re-define on/off enum here
-class MonitoringStatus(ChoiceMixin[str], APIStrEnum):
-    """Monitoring status is on/off."""
-
-    ON = APIStr("on", "0")  # Yes, 0 is on, 1 is off...
-    OFF = APIStr("off", "1")
-
-
 @app.command(name="define_host_monitoring_status")
 def define_host_monitoring_status(
     hostname: Optional[str] = typer.Argument(
@@ -646,71 +640,50 @@ def remove_host(
         render_result(Result(message=f"Removed host {hostname!r}."))
 
 
-class AgentAvailable(ChoiceMixin[str], APIStrEnum):
-    """Agent availability status."""
-
-    __choice_name__ = "Agent availability status"
-
-    UNKNOWN = APIStr("unknown", "0")
-    AVAILABLE = APIStr("available", "1")
-    UNAVAILABLE = APIStr("unavailable", "2")
-
-
 class HostFilterArgs(BaseModel):
     """Unified processing of old filter string and new filter options."""
 
-    # NOTE: is this reinventing the wheel? Could we just have used enums for this?
-
-    available: Optional[str] = None  # 0 = unknown, 1 = available, 2 = unavailable
-    maintenance_status: Optional[str] = None  # 0 = no maintenance, 1 = maintenance
-    status: Optional[str] = None  # 0 = monitored, 1 = not monitored
+    available: Optional[AgentAvailable] = None
+    maintenance_status: Optional[MaintenanceStatus] = None
+    status: Optional[MonitoringStatus] = None
 
     model_config = ConfigDict(validate_assignment=True)
 
-    # We could maybe just use a pydantic.Field with some pattern or w/e instead of these?
-    @field_validator("available", mode="after")
     @classmethod
-    def _validate_available(cls, value: str) -> Optional[str]:
-        if value is None:
-            return value
-        if value not in ("0", "1", "2"):
-            raise ZabbixCLIError(
-                f"Invalid value for available: {value!r}. " "Must be one of 0, 1, or 2."
-            )
-        return value
-
-    @field_validator("maintenance_status", mode="after")
-    @classmethod
-    def _validate_maintenance(cls, value: str) -> Optional[str]:
-        if value is None:
-            return value
-        if value not in ("0", "1"):
-            raise ZabbixCLIError(
-                f"Invalid value for maintenance status: {value!r}. Must be one of 0, 1."
-            )
-        return value
-
-    @field_validator("status", mode="after")
-    @classmethod
-    def _validate_status(cls, value: str) -> Optional[str]:
-        if value is None:
-            return value
-        if value not in ("0", "1"):
-            raise ZabbixCLIError(
-                f"Invalid value for monitoring status: {value!r}. Must be one of 0, 1."
-            )
-        return value
-
-    def as_params(self, version: Version) -> ParamsType:
-        params: ParamsType = {}
-        if self.available:
-            key = compat.host_available(version)
-            params[key] = self.available
-        if self.maintenance_status:
-            params["maintenance_status"] = self.maintenance_status
-        if self.status:
-            params["status"] = self.status
-        return params
+    def from_command_args(
+        cls,
+        filter_legacy: Optional[str],
+        agent: Optional[AgentAvailable],
+        maintenance: Optional[bool],
+        monitored: Optional[bool],
+    ) -> HostFilterArgs:
+        args = cls()
+        if filter_legacy:
+            items = filter_legacy.split(",")
+            for item in items:
+                try:
+                    key, value = (s.strip("'\"") for s in item.split(":"))
+                except ValueError as e:
+                    raise ZabbixCLIError(
+                        f"Failed to parse filter argument at: {item!r}"
+                    ) from e
+                if key == "available":
+                    args.available = value  # type: ignore # validator converts it
+                elif key == "maintenance":
+                    args.maintenance_status = value  # type: ignore # validator converts it
+                elif key == "status":
+                    args.status = value  # type: ignore # validator converts it
+        else:
+            if agent is not None:
+                args.available = agent
+            if monitored is not None:
+                # Inverted API values (0 = ON, 1 = OFF) - use enums directly
+                args.status = MonitoringStatus.ON if monitored else MonitoringStatus.OFF
+            if maintenance is not None:
+                args.maintenance_status = (
+                    MaintenanceStatus.ON if maintenance else MaintenanceStatus.OFF
+                )
+        return args
 
 
 def _parse_legacy_filter(filter_: str, version: Version) -> HostFilterArgs:
@@ -723,11 +696,11 @@ def _parse_legacy_filter(filter_: str, version: Version) -> HostFilterArgs:
         except ValueError as e:
             raise ZabbixCLIError(f"Failed to parse filter argument at: {item!r}") from e
         if key == "available":
-            args.available = value
+            args.available = value  # type: ignore # validator converts it
         elif key == "maintenance":
-            args.maintenance_status = value
+            args.maintenance_status = value  # type: ignore # validator converts it
         elif key == "status":
-            args.status = value
+            args.status = value  # type: ignore # validator converts it
     return args
 
 
@@ -773,15 +746,22 @@ def show_host(
     if not hostname_or_id:
         hostname_or_id = str_prompt("Hostname or ID")
 
-    if filter_legacy:
-        args = _parse_legacy_filter(filter_legacy, app.state.client.version)  # noqa: F841
-    else:
-        args = HostFilterArgs(
-            available=agent.as_api_value() if agent else None,
-            maintenance_status=str(int(maintenance)) if maintenance else None,
-            status=str(int(monitored)) if monitored else None,
-        )
-    filter_params = args.as_params(app.state.client.version)
+    args = HostFilterArgs.from_command_args(
+        filter_legacy, agent, maintenance, monitored
+    )
+    # if filter_legacy:
+    #     args = _parse_legacy_filter(filter_legacy, app.state.client.version)
+    # else:
+    #     args = HostFilterArgs()
+    #     if agent is not None:
+    #         args.available = agent
+    #     if monitored is not None:
+    #         # Inverted API values (0 = ON, 1 = OFF) - use enums directly
+    #         args.status = MonitoringStatus.ON if monitored else MonitoringStatus.OFF
+    #     if maintenance is not None:
+    #         args.maintenance_status = (
+    #             MaintenanceStatus.ON if maintenance else MaintenanceStatus.OFF
+    #         )
 
     host = app.state.client.get_host(
         hostname_or_id,
@@ -789,8 +769,10 @@ def show_host(
         select_templates=True,
         sort_field="host",
         sort_order="ASC",
-        search=True,
-        **filter_params,  # type: ignore # this is safe, no?
+        search=True,  # we allow wildcard patterns
+        maintenance=args.maintenance_status,
+        monitored=args.status,
+        agent_status=args.available,
     )
 
     render_result(host)
@@ -799,15 +781,40 @@ def show_host(
 @app.command(name="show_hosts")
 def show_hosts(
     ctx: typer.Context,
+    # This is the legacy filter argument from V2
+    filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
+    agent: Optional[AgentAvailable] = typer.Option(
+        None,
+        "--agent",
+        "--available",
+        help="Agent availability status.",
+        case_sensitive=False,
+    ),
+    maintenance: Optional[bool] = typer.Option(
+        None,
+        "--maintenance/--no-maintenance",
+        help="Maintenance status.",
+    ),
+    monitored: Optional[bool] = typer.Option(
+        None,
+        "--monitored/--unmonitored",
+        help="Monitoring status.",
+    ),
 ) -> None:
     """Show host details."""
+    args = HostFilterArgs.from_command_args(
+        filter_legacy, agent, maintenance, monitored
+    )
     hosts = app.state.client.get_hosts(
         "*",
         select_groups=True,
         select_templates=True,
         sort_field="host",
         sort_order="ASC",
-        search=True,
+        search=True,  # we use a wildcard pattern here!
+        maintenance=args.maintenance_status,
+        monitored=args.status,
+        agent_status=args.available,
     )
 
     render_result(AggregateResult(result=hosts))

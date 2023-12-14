@@ -30,7 +30,7 @@ class AuthTokenError(ZabbixCLIError):  # NOTE: unused
 
 
 class ZabbixAPIException(ZabbixCLIError):
-    # Extracted from pyzabbix, hence *Exception suffix
+    # Extracted from pyzabbix, hence *Exception suffix instead of *Error
     """generic zabbix api exception
     code list:
          -32602 - Invalid params (eg already exists)

@@ -34,6 +34,9 @@ from typing_extensions import TypedDict
 from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.models import TableRenderableDict
+from zabbix_cli.utils.args import APIStr
+from zabbix_cli.utils.args import APIStrEnum
+from zabbix_cli.utils.args import ChoiceMixin
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
 from zabbix_cli.utils.utils import get_maintenance_status
@@ -64,6 +67,50 @@ class UsergroupPermission(Enum):
     @classmethod
     def _missing_(cls, value: object) -> UsergroupPermission:
         return cls._UNKNOWN
+
+
+class ModifyHostItem(TypedDict):
+    """Argument for a host ID in an API request."""
+
+    hostid: Union[str, int]
+
+
+ModifyHostParams = List[ModifyHostItem]
+
+
+class ModifyTemplateItem(TypedDict):
+    """Argument for a template ID in an API request."""
+
+    templateid: Union[str, int]
+
+
+ModifyTemplateParams = List[ModifyTemplateItem]
+
+
+class AgentAvailable(ChoiceMixin[str], APIStrEnum):
+    """Agent availability status."""
+
+    __choice_name__ = "Agent availability status"
+
+    UNKNOWN = APIStr("unknown", "0")
+    AVAILABLE = APIStr("available", "1")
+    UNAVAILABLE = APIStr("unavailable", "2")
+
+
+# See: zabbix_cli.utils.args.OnOffChoice for why we re-define on/off enum here
+class MonitoringStatus(ChoiceMixin[str], APIStrEnum):
+    """Monitoring status is on/off."""
+
+    ON = APIStr("on", "0")  # Yes, 0 is on, 1 is off...
+    OFF = APIStr("off", "1")
+
+
+class MaintenanceStatus(ChoiceMixin[str], APIStrEnum):
+    """Maintenance status is on/off."""
+
+    # API values are inverted here compared to monitoring status...
+    ON = APIStr("on", "1")
+    OFF = APIStr("off", "0")
 
 
 class ZabbixAPIBaseModel(TableRenderable):

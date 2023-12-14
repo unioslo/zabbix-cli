@@ -34,12 +34,18 @@ from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import Hostgroup
 from zabbix_cli.pyzabbix.types import Macro
 from zabbix_cli.pyzabbix.types import Proxy
+from zabbix_cli.pyzabbix.types import Template
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import ZabbixRight
 
 if TYPE_CHECKING:
+    from zabbix_cli.pyzabbix.types import MaintenanceStatus
+    from zabbix_cli.pyzabbix.types import MonitoringStatus
+    from zabbix_cli.pyzabbix.types import AgentAvailable
     from zabbix_cli.pyzabbix.types import ParamsType  # noqa: F401
     from zabbix_cli.pyzabbix.types import SortOrder  # noqa: F401
+    from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
+    from zabbix_cli.pyzabbix.types import ModifyTemplateParams  # noqa: F401
 
 
 class _NullHandler(logging.Handler):
@@ -330,14 +336,16 @@ class ZabbixAPI:
         select_inventory: bool = False,
         select_macros: bool = False,
         proxyid: Optional[str] = None,
+        maintenance: Optional[MaintenanceStatus] = None,
+        monitored: Optional[MonitoringStatus] = None,
+        agent_status: Optional[AgentAvailable] = None,
         sort_field: Optional[str] = None,
         sort_order: Optional[SortOrder] = None,
         search: bool = False,
-        **filter_kwargs,
     ) -> Host:
         """Fetches a host given a name or id."""
         hosts = self.get_hosts(
-            name_or_id=name_or_id,
+            name_or_id,
             select_groups=select_groups,
             select_templates=select_templates,
             select_inventory=select_inventory,
@@ -346,58 +354,121 @@ class ZabbixAPI:
             sort_field=sort_field,
             sort_order=sort_order,
             search=search,
-            **filter_kwargs,
+            maintenance=maintenance,
+            monitored=monitored,
+            agent_status=agent_status,
         )
         if not hosts:
-            raise ZabbixNotFoundError(f"Host with name or ID {name_or_id!r} not found")
+            raise ZabbixNotFoundError(
+                f"Host with name or ID {name_or_id!r} matching filters not found"
+            )
+        if len(hosts) > 1:
+            logger.debug(
+                "Found multiple hosts matching %s, choosing first result: %s",
+                name_or_id,
+                hosts[0],
+            )
         return hosts[0]
 
-    # NOTE: we could add *host_name_or_ids, so multiple hostnames can be used
     def get_hosts(
         self,
-        name_or_id: Optional[str] = None,
+        *names_or_ids: str,
         select_groups: bool = False,
         select_templates: bool = False,
         select_inventory: bool = False,
         select_macros: bool = False,
         proxyid: Optional[str] = None,
+        # These params take special API values we don't want to evaluate
+        # inside this method, so we delegate it to the enums.
+        maintenance: Optional[MaintenanceStatus] = None,
+        monitored: Optional[MonitoringStatus] = None,
+        agent_status: Optional[AgentAvailable] = None,
         sort_field: Optional[str] = None,
         sort_order: Optional[Literal["ASC", "DESC"]] = None,
-        search: bool = True,  # we generally always want to search when multiple hosts are requested
-        **filter_kwargs,
+        search: Optional[
+            bool
+        ] = True,  # we generally always want to search when multiple hosts are requested
+        # **filter_kwargs,
     ) -> List[Host]:
-        """Fetches all hosts matching the given criteria.
+        """Fetches all hosts matching the given criteria(s).
 
-        Hosts can be filtered by name or ID, and optionally by proxy ID.
+        Hosts can be filtered by name or ID. Names and IDs cannot be mixed.
         If no criteria are given, all hosts are returned.
 
         A number of extra properties can be fetched for each host by setting
-        the corresponding `select_*` argument to True.
+        the corresponding `select_*` argument to `True`. Each Host object
+        will have the corresponding property populated.
+
+
+        If `search=True`, only a single hostname pattern should be given;
+        criterias are matched using logical AND (narrows down results).
+        If `search=False`, multiple hostnames or IDs can be used.
+
+        Args:
+            select_groups (bool, optional): Include host (& template groups if >=6.2). Defaults to False.
+            select_templates (bool, optional): Include templates. Defaults to False.
+            select_inventory (bool, optional): Include inventory items. Defaults to False.
+            select_macros (bool, optional): Include host macros. Defaults to False.
+            proxyid (Optional[str], optional): Filter by proxy ID. Defaults to None.
+            maintenance (Optional[MaintenanceStatus], optional): Filter by maintenance status. Defaults to None.
+            monitored (Optional[MonitoringStatus], optional): Filter by monitoring status. Defaults to None.
+            agent_status (Optional[AgentAvailable], optional): Filter by agent availability. Defaults to None.
+            sort_field (Optional[str], optional): Sort hosts by the given field. Defaults to None.
+            sort_order (Optional[Literal[ASC, DESC]], optional): Sort order. Defaults to None.
+            search (Optional[bool], optional): Force positional arguments to be treated as a search pattern. Defaults to True.
+
+        Raises:
+            ZabbixAPIException: _description_
+
+        Returns:
+            List[Host]: _description_
         """
 
         params = {"output": "extend"}  # type: ParamsType
-        filter_params = {**filter_kwargs}
+        filter_params = {}  # type: ParamsType
 
         # Filter by the given host name or ID if we have one
-        if name_or_id:
-            norid = name_or_id.strip()
-            is_id = norid.isnumeric()
-            norid_key = "hostid" if is_id else "host"
-            if search:
-                params["searchWildcardsEnabled"] = True
-                if is_id:  # why this over just searching?
-                    params["hostids"] = norid  # doesnt have to be a list
-                else:
-                    params["search"] = {norid_key: name_or_id}
-            else:
-                filter_params[norid_key] = name_or_id
+        if names_or_ids:
+            id_mode = None  # type: Optional[bool]
+            for name_or_id in names_or_ids:
+                name_or_id = name_or_id.strip()
+                is_id = name_or_id.isnumeric()
+                if search is None:  # determine if we should search
+                    search = not is_id
 
-        # Filter by the given proxy ID if we have one
+                # Set ID mode if we haven't already
+                # and ensure we aren't mixing IDs and names
+                if id_mode is None:
+                    id_mode = is_id
+                else:
+                    if id_mode != is_id:
+                        raise ZabbixAPIException("Cannot mix host names and IDs.")
+
+                # Searching for IDs is pointless - never allow it
+                # Logical AND for multiple unique identifiers is not possible
+                if search and not is_id:
+                    params["searchWildcardsEnabled"] = True
+                    params.setdefault("search", {}).setdefault("host", []).append(  # type: ignore # bad annotation
+                        name_or_id
+                    )
+                elif is_id:
+                    params.setdefault("hostids", []).append(name_or_id)  # type: ignore
+                else:
+                    filter_params.setdefault("host", []).append(name_or_id)  # type: ignore # bad annotation
+
+        # Filters are applied with a logical AND (narrows down)
         if proxyid:
             filter_params[compat.host_proxyid(self.version)] = proxyid
+        if maintenance is not None:
+            filter_params["maintenance_status"] = maintenance.as_api_value()
+        if monitored is not None:
+            filter_params["status"] = monitored.as_api_value()
+        if agent_status is not None:
+            filter_params[
+                compat.host_available(self.version)
+            ] = agent_status.as_api_value()
 
-        # Add filter params to params if we actually have params
-        if filter_params:
+        if filter_params:  # Only add filter if we actually have filter params
             params["filter"] = filter_params
 
         if select_groups:
@@ -704,7 +775,10 @@ class ZabbixAPI:
             )
         return resp["hostids"][0]
 
+    # NOTE: maybe passing in a list of hosts to this is overkill?
+    # Just pass in a list of host IDs instead?
     def move_hosts_to_proxy(self, hosts: List[Host], proxy: Proxy) -> None:
+        """Moves a list of hosts to a proxy."""
         params = {
             "hosts": [{"hostid": host.hostid} for host in hosts],
             compat.host_proxyid(self.version): proxy.proxyid,
@@ -714,6 +788,50 @@ class ZabbixAPI:
         except ZabbixAPIException as e:
             raise ZabbixAPIException(
                 f"Failed to move hosts {[str(host) for host in hosts]} to proxy {proxy.name!r}"
+            ) from e
+
+    def get_templates(self, *template_names_or_ids: str) -> List[Template]:
+        """Fetches one or more templates given a name or ID."""
+        params = {"output": "extend"}  # type: ParamsType
+        for name_or_id in template_names_or_ids:
+            name_or_id = name_or_id.strip()
+            is_id = name_or_id.isnumeric()
+            if is_id:
+                params.setdefault("templateids", []).append(name_or_id)  # type: ignore # bad annotation
+            else:
+                params.setdefault("filter", {}).setdefault("host", []).append(  # type: ignore # bad annotation
+                    name_or_id
+                )
+        try:
+            self.template.get(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Unknown error when fetching templates: {e}"
+            ) from e
+        return [Template(**template) for template in self.template.get(**params)]
+
+    def link_templates_to_hosts(
+        self, templates: List[Template], hosts: List[Host]
+    ) -> None:
+        """Links one or more templates to one or more hosts.
+
+        Does not verify that the templates and hosts exist.
+
+        Args:
+            templates (List[str]): A list of template names or IDs
+            hosts (List[str]): A list of host names or IDs
+        """
+        if not templates:
+            raise ZabbixAPIException("At least one template is required")
+        if not hosts:
+            raise ZabbixAPIException("At least one host is required")
+        template_ids = [{"templateid": template.templateid} for template in templates]  # type: ModifyTemplateParams
+        host_ids = [{"hostid": host.hostid} for host in hosts]  # type: ModifyHostParams
+        try:
+            self.template.massadd(templates=template_ids, hosts=host_ids)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to link templates {templates} to hosts {hosts}"
             ) from e
 
     # def _construct_params(

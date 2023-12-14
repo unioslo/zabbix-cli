@@ -23,6 +23,9 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import Proxy  # noqa: F401
 
 
+HELP_PANEL = "Proxy"
+
+
 class UpdateHostProxyResult(BaseModel):
     """Result type for `update_host_proxy` command."""
 
@@ -32,12 +35,15 @@ class UpdateHostProxyResult(BaseModel):
     """ID of the destination (new) proxy."""
 
 
-@app.command(name="update_host_proxy")
+@app.command(name="update_host_proxy", rich_help_panel=HELP_PANEL)
 def update_host_proxy(
     ctx: typer.Context,
     hostname_or_id: Optional[str] = typer.Argument(None, help="Hostname or ID"),
-    proxy_name: Optional[str] = typer.Argument(None, help="Name of proxy to update"),
+    proxy_name: Optional[str] = typer.Argument(
+        None, help="Name of new proxy for host."
+    ),
 ) -> None:
+    """Change the proxy for a host."""
     if not hostname_or_id:
         hostname_or_id = str_prompt("Hostname or ID")
     if not proxy_name:
@@ -66,7 +72,7 @@ class MoveProxyHostsResult(UpdateHostProxyResult):
     hosts: List[str] = []
 
 
-@app.command(name="move_proxy_hosts")
+@app.command(name="move_proxy_hosts", rich_help_panel=HELP_PANEL)
 def move_proxy_hosts(
     ctx: typer.Context,
     proxy_src: Optional[str] = typer.Argument(None, help="Proxy to move hosts from."),
@@ -80,6 +86,7 @@ def move_proxy_hosts(
         None, "--filter", help="Pattern to filter hosts to move by."
     ),
 ) -> None:
+    """Move hosts from one proxy to another."""
     if not proxy_src:
         proxy_src = str_prompt("Source proxy")
     if not proxy_dst:
@@ -138,22 +145,35 @@ class LoadBalanceProxyHostsResult(BaseModel):
     proxies: List[ProxySpec] = []
 
 
-@app.command(name="load_balance_proxy_hosts")
+@app.command(name="load_balance_proxy_hosts", rich_help_panel=HELP_PANEL)
 def load_balance_proxy_hosts(
     ctx: typer.Context,
     proxies: Optional[str] = typer.Argument(
         None,
         help="Comma delimited list of proxies to share hosts between.",
         metavar="[proxy1,proxy2,...]",
+        show_default=False,
     ),
-    # Prefer --weight over positional arg
     weight: Optional[str] = typer.Argument(
         None,
-        # "--weight",
         help="Optional comma delimited list of weights for each proxy.",
         metavar="[weight1,weight2,...]",
+        show_default=False,
     ),
 ) -> None:
+    """Spreads hosts between multiple proxies.
+    Hosts are determined based on the hosts assigned to the given proxies.
+    Weighting for the load balancing is optional, and defaults to equal weights.
+
+    To load balance hosts evenly between two proxies:
+        [green]load_balance_proxy_hosts proxy1,proxy2[/green]
+
+    To place twice as many hosts on proxy1 as proxy2:
+        [green]load_balance_proxy_hosts proxy1,proxy2 2,1[/green]
+
+    Multiple proxies and weights can be specified:
+        [green]load_balance_proxy_hosts proxy1,proxy2,proxy3 1,1,2[/green]
+    """
     if not proxies:
         # TODO: add some sort of multi prompt for this
         proxies = str_prompt("Proxies")
@@ -168,10 +188,13 @@ def load_balance_proxy_hosts(
     else:
         weights = [1] * len(proxy_names)  # default to equal weights
 
+    # Ensure arguments are valid
     if len(proxy_names) != len(weights):
         exit_err("Number of proxies must match number of weights.")
     elif len(proxy_names) < 2:
         exit_err("Must specify at least two proxies to load balance.")
+    elif all(w == 0 for w in weights):
+        exit_err("All weights cannot be zero.")
 
     # I kind of hate `*_list` vars, but we already have proxies, so...
     proxy_list = [app.state.client.get_proxy(p, select_hosts=True) for p in proxy_names]
@@ -194,23 +217,23 @@ def load_balance_proxy_hosts(
 
     # FIXME: this is a MESS!
     host_map = {host.hostid: host for host in all_hosts}
-    host_proxy_relation = {}  # type: dict[str, Proxy] # hostid -> Proxy (unhashable type Host)
+    host_proxy_map = {}  # type: dict[str, Proxy] # hostid -> Proxy (unhashable type Host)
     for host in all_hosts:
         # Assign random proxy to host based on weights
-        host_proxy_relation[host.hostid] = random.choices(
-            proxy_list, weights=weights, k=1
-        )[0]
+        host_proxy_map[host.hostid] = random.choices(proxy_list, weights=weights, k=1)[
+            0
+        ]
 
     # Abort on failure
     try:
         for proxy in proxy_list:
             hostids = []  #  type: list[str] # list of hostids to move to proxy
             logging.debug(f"Proxy {proxy.name!r} has {len(proxy.hosts)} hosts.")
-            for hostid, proxy in host_proxy_relation.items():
-                if proxy.proxyid == proxy.proxyid:
+            for hostid, host_proxy in host_proxy_map.items():
+                if proxy.proxyid == host_proxy.proxyid:
                     hostids.append(hostid)
             if not hostids:
-                logging.debug(f"Proxy {proxy.name!r} has no hosts.")
+                logging.debug(f"Proxy {proxy.name!r} has no hosts after balancing.")
                 continue
             logging.debug(f"Moving {len(hostids)} hosts to proxy {proxy.name!r}")
 

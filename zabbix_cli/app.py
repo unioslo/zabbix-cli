@@ -34,4 +34,5 @@ app = StatefulApp(
     name="zabbix-cli",
     help="Zabbix-CLI is a command line interface for Zabbix.",
     add_completion=True,
+    rich_markup_mode="rich",
 )

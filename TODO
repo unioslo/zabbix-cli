@@ -40,6 +40,11 @@ Add some sort of `process_params` method that can be used to process params and 
 * Store error code and message in ZabbixAPIException, so that we can automatically add it to the error message when we write custom ZabbixAPIExceptions.
   * **VERY VERY IMPORTANT:** If we raise ZabbixAPIException from a ZabbixAPIException, we should be able to extract the data from the original exception (`__cause__`) and add it to whatever we are printing.
 
+
+## Hosts
+* Go through all `get_hosts()` calls. Make sure we only search for one term
+* Show templates and proxies in `show_host` and `show_hosts`
+
 ## Logging
 
 * Document that setting `log_file = ""` causes logs to be sent to stderr.
@@ -81,3 +86,17 @@ Add some sort of `process_params` method that can be used to process params and 
     * Startup: O(n) -> O(1)
     * Command execution: O(1) -> O(n/n)
     * Where n is the number of commands/result models.
+* Reduce number of cross-imports
+* Perform more cached lazy imports
+
+## New command ideas
+
+### Assign unproxied hosts to proxies
+
+* Allow for pattern matching in host names.
+  * E.g. `assign_host_to_proxy "proxy-prod01.example.com" "*.example.com"`
+
+### Assign all hosts in host group to proxy
+
+* Allow for pattern matching in host names.
+  * E.g. `assign_hostgroup_to_proxy "proxy-prod01.example.com" "Siteadmin-iti-*"`

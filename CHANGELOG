@@ -16,6 +16,13 @@
     - `--description`: Host description
   - `create_host_interface`:
     - `--snmp...` TODO
+  - `show_host`:
+    - `--monitored/--unmonitored`: Filter by monitored status
+    - `--maintenance/--no-maintenance`: Filter by maintenance status
+    - `--agent [available | unavailable | unknown ]`: Filter by agent availability
+    - Old positional filter argument syntax is deprecated.
+  - `show_hosts`:
+    - Same as `show_host`
 
 
 - **REPOSITORY:** Pre-commit configuration for linting and formatting.

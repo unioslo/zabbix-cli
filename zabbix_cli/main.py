@@ -42,6 +42,7 @@ from zabbix_cli.config import get_config
 from zabbix_cli.config import OutputFormat
 from zabbix_cli.exceptions import handle_exception
 from zabbix_cli.exceptions import ZabbixCLIError
+from zabbix_cli.history import History
 from zabbix_cli.logs import configure_logging
 from zabbix_cli.logs import LogContext
 from zabbix_cli.output.console import error
@@ -52,6 +53,8 @@ from zabbix_cli.state import get_state
 logger = logging.getLogger("zabbix-cli")
 
 bootstrap_commands()
+
+history = History()
 
 
 def try_load_config(config_file: Optional[Path]) -> None:
@@ -146,6 +149,8 @@ def main_callback(
     ),
 ) -> None:
     logger.debug("Zabbix-CLI started.")
+    history.add(ctx)
+
     state = get_state()
     if state.is_config_loaded:
         conf = state.config

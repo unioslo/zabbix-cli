@@ -48,7 +48,7 @@ class ChoiceMixin(Generic[T]):
     enables it to be instantiated with either the name of the option
     or the Zabbix API value of the option.
 
-    E.g. `AgentAvailable("available")` or `AgentAvailable(1)`
+    E.g. `AgentAvailable("available")` or `AgentAvailable("1")`
 
     Provides the `from_prompt` class method, which prompts the user to select
     one of the enum members. The prompt text is generated from the class name
@@ -151,14 +151,6 @@ class APIStrEnum(Enum):
 
     def casefold(self) -> str:
         return self.value.casefold()
-
-
-class AgentAvailable(ChoiceMixin[int], APIStrEnum):
-    """Agent availability status."""
-
-    UNKNOWN = APIStr("unknown", 0)
-    AVAILABLE = APIStr("available", 1)
-    UNAVAILABLE = APIStr("unavailable", 2)
 
 
 class OnOffChoice(ChoiceMixin[str], APIStrEnum):
