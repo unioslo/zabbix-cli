@@ -104,7 +104,7 @@ def configure_logging(
 
     if config.enabled and filename:
         # log to given filename
-        handler = logging.FileHandler(filename)
+        handler = logging.FileHandler(filename)  # type: logging.Handler
     elif config.enabled:
         # log to stderr
         handler = logging.StreamHandler(sys.stderr)
@@ -114,6 +114,7 @@ def configure_logging(
 
     handler.setFormatter(SafeFormatter(fmt=DEFAULT_FORMAT))
     root = logging.getLogger()
+    root.handlers.clear()  # clear any existing handlers
     root.addHandler(handler)
     root.setLevel(level)
 

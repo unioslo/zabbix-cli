@@ -27,6 +27,19 @@ err_console = Console(
 )
 
 
+def debug_kv(key: str, value: Any) -> None:
+    """Print and log a key value pair."""
+    msg = f"[bold]{key:<20}:[/bold] {value}"
+    logger.debug(msg, extra=dict(key=key, value=value))
+    debug(msg, key=key, value=value)
+
+
+def debug(message: str, icon: str = "", *args, **kwargs) -> None:
+    """Log with INFO level and print an informational message."""
+    logger.debug(message, extra=dict(**kwargs))
+    err_console.print(message)
+
+
 def info(message: str, icon: str = Icon.INFO, *args, **kwargs) -> None:
     """Log with INFO level and print an informational message."""
     logger.info(message, extra=dict(**kwargs))

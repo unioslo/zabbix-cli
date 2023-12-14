@@ -714,7 +714,7 @@ class ZabbixAPI:
         try:
             result = self.usermacro.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException("Failed to retrive macros") from e
+            raise ZabbixAPIException("Failed to retrieve macros") from e
         return [Macro(**macro) for macro in result]
 
     def create_macro(self, host: Host, macro: str, value: str) -> str:
@@ -828,10 +828,11 @@ class ZabbixAPI:
         template_ids = [{"templateid": template.templateid} for template in templates]  # type: ModifyTemplateParams
         host_ids = [{"hostid": host.hostid} for host in hosts]  # type: ModifyHostParams
         try:
-            self.template.massadd(templates=template_ids, hosts=host_ids)
+            self.host.massadd(templates=template_ids, hosts=host_ids)
         except ZabbixAPIException as e:
             raise ZabbixAPIException(
-                f"Failed to link templates {templates} to hosts {hosts}"
+                f"Failed to link templates: {e}"
+                # f"Failed to link templates {templates} to hosts {hosts}: {e}"
             ) from e
 
     # def _construct_params(
