@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Tuple
 
 import typer
+from typer.main import Typer
 
 from zabbix_cli.state import get_state
 from zabbix_cli.state import State
@@ -19,6 +20,14 @@ class StatefulApp(typer.Typer):
     def __init__(self, *args, **kwargs) -> None:
         StatefulApp.__init__.__doc__ = typer.Typer.__init__.__doc__
         super().__init__(*args, **kwargs)
+
+    def add_typer(self, typer_instance: Typer, **kwargs) -> None:
+        kwargs.setdefault("no_args_is_help", True)
+        return super().add_typer(typer_instance, **kwargs)
+
+    def add_subcommand(self, app: typer.Typer, *args, **kwargs) -> None:
+        kwargs.setdefault("rich_help_panel", "Subcommands")
+        self.add_typer(app, **kwargs)
 
     @property
     def state(self) -> State:

@@ -78,6 +78,15 @@ class ModifyHostItem(TypedDict):
 ModifyHostParams = List[ModifyHostItem]
 
 
+class ModifyGroupItem(TypedDict):
+    """Argument for a host ID in an API request."""
+
+    groupid: Union[str, int]
+
+
+ModifyGroupParams = List[ModifyGroupItem]
+
+
 class ModifyTemplateItem(TypedDict):
     """Argument for a template ID in an API request."""
 
@@ -155,7 +164,7 @@ class Usergroup(ZabbixAPIBaseModel):
     users: List[User] = []
 
 
-class Hostgroup(ZabbixAPIBaseModel):
+class HostGroup(ZabbixAPIBaseModel):
     groupid: str
     name: str
     hosts: List[Host] = []
@@ -173,6 +182,12 @@ class Hostgroup(ZabbixAPIBaseModel):
             ", ".join([host.host for host in self.hosts]),
         ]
         return cols, [row]
+
+
+class TemplateGroup(ZabbixAPIBaseModel):
+    groupid: str
+    name: str
+    uuid: str
 
 
 class Template(ZabbixAPIBaseModel):
@@ -195,7 +210,7 @@ class Inventory(TableRenderableDict):
 class Host(ZabbixAPIBaseModel):
     hostid: str
     host: str = ""
-    groups: List[Hostgroup] = Field(
+    groups: List[HostGroup] = Field(
         default_factory=list,
         # Compat for >= 6.2.0
         validation_alias=AliasChoices("groups", "hostgroups"),
@@ -257,7 +272,7 @@ class Host(ZabbixAPIBaseModel):
         cols = [
             "HostID",
             "Name",
-            "Hostgroups",
+            "HostGroups",
             "Templates",
             "Zabbix agent",
             "Maintenance",
@@ -315,5 +330,5 @@ class GlobalMacro(MacroBase):
 
 
 # Resolve forward references
-Hostgroup.model_rebuild()
+HostGroup.model_rebuild()
 Host.model_rebuild()

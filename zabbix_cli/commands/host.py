@@ -9,13 +9,13 @@ from typing import Optional
 from typing import TYPE_CHECKING
 
 import typer
-from packaging.version import Version
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import model_serializer
 
 from zabbix_cli.app import app
+from zabbix_cli.app import StatefulApp
 from zabbix_cli.config import OutputFormat
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixCLIError
@@ -46,14 +46,48 @@ if TYPE_CHECKING:
     from zabbix_cli.models import ColsType  # noqa: F401
     from zabbix_cli.models import RowsType  # noqa: F401
 
-# XXX: replace this with how we handle defaults/prompting in `create_host_interface`
+# FIXME: replace this with how we handle defaults/prompting in `create_host_interface`
 DEFAULT_HOST_STATUS = "0"
 DEFAULT_PROXY = ".+"
 
 
-@app.command(
-    name="create_host", options_metavar="[hostname|IP] [hostgroups] [proxy] [status]"
+HELP_PANEL = "Host"
+
+# `zabbix-cli host <cmd>`
+host_cmd = StatefulApp(
+    name="host",
+    help="Host commands.",
 )
+# app.add_typer(host_cmd)
+
+# `zabbix-cli host macro <cmd>`
+macro_cmd = StatefulApp(
+    name="macro",
+    help="Host macro commands.",
+)
+host_cmd.add_subcommand(macro_cmd)
+
+# `zabbix-cli host inventory <cmd>`
+inventory_cmd = StatefulApp(
+    name="inventory",
+    help="Host inventory commands.",
+)
+host_cmd.add_subcommand(inventory_cmd)
+
+# `zabbix-cli host interface <cmd>`
+interface_cmd = StatefulApp(
+    name="interface",
+    help="Host interface commands.",
+)
+host_cmd.add_subcommand(interface_cmd)
+
+
+@host_cmd.command(
+    name="create",
+    options_metavar="[hostname|IP] [hostgroups] [proxy] [status]",
+    rich_help_panel=HELP_PANEL,
+)
+@app.command(name="create_host", rich_help_panel=HELP_PANEL, hidden=False)
 def create_host(
     ctx: typer.Context,
     args: List[str] = ARG_POSITIONAL,
@@ -106,7 +140,7 @@ def create_host(
         help="Description of the host.",
     ),
 ) -> None:
-    """Creates a host.
+    """Create a host.
 
     Prefer using options over the positional arguments.
 
@@ -278,9 +312,15 @@ class CreateHostInterfaceV2Args(NamedTuple):
     default: Optional[str] = None
 
 
+@interface_cmd.command(
+    name="create",
+    options_metavar="[hostname] [interface connection] [interface type] [interface port] [interface IP] [interface DNS] [default interface]",
+    rich_help_panel=HELP_PANEL,
+)
 @app.command(
     name="create_host_interface",
     options_metavar="[hostname] [interface connection] [interface type] [interface port] [interface IP] [interface DNS] [default interface]",
+    rich_help_panel=HELP_PANEL,
 )
 def create_host_interface(
     ctx: typer.Context,
@@ -544,7 +584,7 @@ def create_host_interface(
         )
 
 
-@app.command(name="define_host_monitoring_status")
+@app.command(name="define_host_monitoring_status", rich_help_panel=HELP_PANEL)
 def define_host_monitoring_status(
     hostname: Optional[str] = typer.Argument(
         None,
@@ -558,6 +598,7 @@ def define_host_monitoring_status(
         show_default=False,
     ),
 ) -> None:
+    """Monitor or unmonitor a host."""
     if not hostname:
         hostname = str_prompt("Hostname")
     if new_status is None:
@@ -576,7 +617,7 @@ def define_host_monitoring_status(
         )
 
 
-@app.command(name="define_host_usermacro")
+@app.command(name="define_host_usermacro", rich_help_panel="Macro")
 def define_host_usermacro(
     # NOTE: should this use old style args?
     hostname: Optional[str] = typer.Argument(None, help="Host to define macro for."),
@@ -622,11 +663,13 @@ def define_host_usermacro(
     )
 
 
-@app.command(name="remove_host")
+@host_cmd.command(name="remove", rich_help_panel=HELP_PANEL)
+@app.command(name="remove_host", rich_help_panel=HELP_PANEL, hidden=False)
 def remove_host(
     ctx: typer.Context,
     hostname: Optional[str] = typer.Argument(None, help="Name of host to remove."),
 ) -> None:
+    """Delete a host."""
     if not hostname:
         hostname = str_prompt("Hostname")
     host = app.state.client.get_host(hostname)
@@ -686,24 +729,6 @@ class HostFilterArgs(BaseModel):
         return args
 
 
-def _parse_legacy_filter(filter_: str, version: Version) -> HostFilterArgs:
-    """Parses the legacy filter argument from V2."""
-    items = filter_.split(",")
-    args = HostFilterArgs()
-    for item in items:
-        try:
-            key, value = (s.strip("'\"") for s in item.split(":"))
-        except ValueError as e:
-            raise ZabbixCLIError(f"Failed to parse filter argument at: {item!r}") from e
-        if key == "available":
-            args.available = value  # type: ignore # validator converts it
-        elif key == "maintenance":
-            args.maintenance_status = value  # type: ignore # validator converts it
-        elif key == "status":
-            args.status = value  # type: ignore # validator converts it
-    return args
-
-
 class HostsResult(Result):
     hosts: List[Host] = Field(default_factory=list)
 
@@ -718,7 +743,8 @@ class HostsResult(Result):
         return cols, rows
 
 
-@app.command(name="show_host")
+@host_cmd.command(name="show", rich_help_panel=HELP_PANEL)
+@app.command(name="show_host", rich_help_panel=HELP_PANEL, hidden=False)
 def show_host(
     ctx: typer.Context,
     hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID,
@@ -742,26 +768,13 @@ def show_host(
         help="Monitoring status.",
     ),
 ) -> None:
-    """Show host details."""
+    """Show a specific host."""
     if not hostname_or_id:
         hostname_or_id = str_prompt("Hostname or ID")
 
     args = HostFilterArgs.from_command_args(
         filter_legacy, agent, maintenance, monitored
     )
-    # if filter_legacy:
-    #     args = _parse_legacy_filter(filter_legacy, app.state.client.version)
-    # else:
-    #     args = HostFilterArgs()
-    #     if agent is not None:
-    #         args.available = agent
-    #     if monitored is not None:
-    #         # Inverted API values (0 = ON, 1 = OFF) - use enums directly
-    #         args.status = MonitoringStatus.ON if monitored else MonitoringStatus.OFF
-    #     if maintenance is not None:
-    #         args.maintenance_status = (
-    #             MaintenanceStatus.ON if maintenance else MaintenanceStatus.OFF
-    #         )
 
     host = app.state.client.get_host(
         hostname_or_id,
@@ -778,7 +791,8 @@ def show_host(
     render_result(host)
 
 
-@app.command(name="show_hosts")
+@host_cmd.command(name="list", rich_help_panel=HELP_PANEL)
+@app.command(name="show_hosts", rich_help_panel=HELP_PANEL, hidden=False)
 def show_hosts(
     ctx: typer.Context,
     # This is the legacy filter argument from V2
@@ -800,8 +814,13 @@ def show_hosts(
         "--monitored/--unmonitored",
         help="Monitoring status.",
     ),
+    # TODO: add sorting mode?
 ) -> None:
-    """Show host details."""
+    """Show all hosts.
+
+    Hosts can be filtered by agent, monitoring and maintenance status.
+    Hosts are sorted by name.
+    """
     args = HostFilterArgs.from_command_args(
         filter_legacy, agent, maintenance, monitored
     )
@@ -820,20 +839,22 @@ def show_hosts(
     render_result(AggregateResult(result=hosts))
 
 
-@app.command(name="show_host_inventory")
+@inventory_cmd.command(name="get", rich_help_panel=HELP_PANEL)
+@app.command(name="show_host_inventory", rich_help_panel=HELP_PANEL, hidden=False)
 def show_host_inventory(hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID) -> None:
-    """Show host inventory details."""
+    """Show host inventory details for a specific host."""
     # TODO: support undocumented filter argument from V2
     # TODO: Add mapping of inventory keys to human readable names (Web GUI names)
     if not hostname_or_id:
         hostname_or_id = str_prompt("Hostname or ID")
     host = app.state.client.get_host(hostname_or_id, select_inventory=True)
-    # Need some way to print {} in JSON mode, but write "no inventory" in table mode
     render_result(host.inventory)
 
 
-@app.command(name="show_host_usermacros")
+@macro_cmd.command(name="list", rich_help_panel=HELP_PANEL)
+@app.command(name="show_host_usermacros", rich_help_panel=HELP_PANEL, hidden=False)
 def show_host_usermacros(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
+    """Shows all macros defined for a host."""
     if not hostname_or_id:
         hostname_or_id = str_prompt("Hostname or ID")
     # By getting the macros via the host, we also ensure the host exists.
@@ -890,9 +911,10 @@ class MacroHostListV3(TableRenderable):
 
 
 # TODO: find out what we actually want this command to do.
-# Each user macro belongs to one host, so we can't really list all hosts
+# Each user macro belongs to one host, so we can't really list all hostss
 # with a single macro...
-@app.command(name="show_usermacro_host_list")
+@macro_cmd.command(name="find", rich_help_panel="Macro")
+@app.command(name="show_usermacro_host_list", rich_help_panel="Macro", hidden=False)
 def show_usermacro_host_list(
     usermacro: Optional[str] = typer.Argument(
         None,
@@ -902,7 +924,7 @@ def show_usermacro_host_list(
         ),
     ),
 ) -> None:
-    """Find all hosts with a macro of the given name.
+    """Find all hosts with a user macro of the given name.
 
     Renders a list of the complete macro object and its hosts in JSON mode."""
     if not usermacro:
@@ -931,7 +953,7 @@ def show_usermacro_host_list(
         )
 
 
-@app.command(name="update_host_inventory")
+@app.command(name="update_host_inventory", rich_help_panel=HELP_PANEL)
 def update_host_inventory(
     ctx: typer.Context,
     hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID,

@@ -35,6 +35,7 @@ def debug_cmd(
     """Print debug info."""
     # In-line imports to reduce startup time
     # (This is a hidden command after all)
+    # NOTE: move to separate function if we want to test this
     from zabbix_cli.models import TableRenderable
     from pathlib import Path
     from rich.table import Table
@@ -51,12 +52,11 @@ def debug_cmd(
 
     class PythonInfo(TypedDict):
         version: str
-        version_info: Tuple[Any, ...]
         implementation: ImplementationInfo
         platform: str
 
     class DebugInfo(TableRenderable):
-        config: Optional[Path] = None
+        config_path: Optional[Path] = None
         api_version: Optional[Version] = None
         url: Optional[str] = None
         user: Optional[str] = None
@@ -76,7 +76,6 @@ def debug_cmd(
             obj = cls(
                 python={
                     "version": sys.version,
-                    "version_info": sys.version_info,
                     "implementation": {
                         "name": sys.implementation.name,
                         "version": sys.implementation.version,
@@ -89,7 +88,7 @@ def debug_cmd(
 
             # Config might not be configured
             try:
-                obj.config = state.config.config_path
+                obj.config_path = state.config.config_path
             except RuntimeError:
                 pass
 
@@ -110,8 +109,14 @@ def debug_cmd(
             table.add_column("Key", justify="right", style="cyan")
             table.add_column("Value", justify="left", style="magenta")
 
-            for key, value in self.model_dump(mode="json").items():
-                table.add_row(key, str(value))
+            table.add_row("Config File", str(self.config_path))
+            table.add_row("API URL", str(self.url))
+            table.add_row("API Version", str(self.api_version))
+            table.add_row("User", str(self.user))
+            table.add_row("Auth Token", str(self.auth))
+            table.add_row("Connected to Zabbix", str(self.connected_to_zabbix))
+            table.add_row("Python Version", str(self.python["version"]))
+            table.add_row("Platform", str(self.python["platform"]))
 
             return table
 

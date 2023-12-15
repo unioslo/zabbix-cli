@@ -31,10 +31,11 @@ from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
 from zabbix_cli.pyzabbix.types import Host
-from zabbix_cli.pyzabbix.types import Hostgroup
+from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import Macro
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Template
+from zabbix_cli.pyzabbix.types import TemplateGroup
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import ZabbixRight
 
@@ -45,6 +46,7 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import ParamsType  # noqa: F401
     from zabbix_cli.pyzabbix.types import SortOrder  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
+    from zabbix_cli.pyzabbix.types import ModifyGroupParams  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyTemplateParams  # noqa: F401
 
 
@@ -54,8 +56,6 @@ class _NullHandler(logging.Handler):
 
 
 logger = logging.getLogger(__name__)
-logger.addHandler(_NullHandler())
-logger.setLevel(logging.INFO)
 
 
 class ZabbixAPI:
@@ -160,15 +160,15 @@ class ZabbixAPI:
         if self.auth and method != "apiinfo.version":
             request_json["auth"] = self.auth
 
-        logger.debug(
-            "Sending: %s", json.dumps(request_json, indent=4, separators=(",", ": "))
-        )
+        # logger.debug(
+        #     "Sending: %s", json.dumps(request_json, indent=4, separators=(",", ": "))
+        # )
 
         response = self.session.post(
             self.url, data=json.dumps(request_json), timeout=self.timeout
         )
 
-        logger.debug("Response Code: %s", str(response.status_code))
+        # logger.debug("Response Code: %s", str(response.status_code))
 
         # NOTE: Getting a 412 response code means the headers are not in the
         # list of allowed headers.
@@ -181,10 +181,10 @@ class ZabbixAPI:
             response_json = json.loads(response.text)
         except ValueError:
             raise ZabbixAPIException("Unable to parse json: %s" % response.text)
-        logger.debug(
-            "Response Body: %s",
-            json.dumps(response_json, indent=4, separators=(",", ": ")),
-        )
+        # logger.debug(
+        #     "Response Body: %s",
+        #     json.dumps(response_json, indent=4, separators=(",", ": ")),
+        # )
 
         self.id += 1
 
@@ -246,7 +246,7 @@ class ZabbixAPI:
             return hostgroup_name
         resp = self.hostgroup.get(filter={"groupid": hostgroup_id}, output=["name"])
         if not resp:
-            raise ZabbixNotFoundError(f"Hostgroup with ID {hostgroup_id} not found")
+            raise ZabbixNotFoundError(f"HostGroup with ID {hostgroup_id} not found")
         # TODO add result to cache
         return resp[0]["name"]
 
@@ -258,14 +258,14 @@ class ZabbixAPI:
         resp = self.hostgroup.get(filter={"name": hostgroup_name}, output=["name"])
         if not resp:
             raise ZabbixNotFoundError(
-                f"Hostgroup with name {hostgroup_name!r} not found"
+                f"HostGroup with name {hostgroup_name!r} not found"
             )
         # TODO add result to cache
         return resp[0]["groupid"]
 
     def get_hostgroup(
         self, name_or_id: str, search: bool = False, hosts: bool = False, **kwargs
-    ) -> Hostgroup:
+    ) -> HostGroup:
         """Fetches a host group given its name or ID.
 
         Name or ID argument is interpeted as an ID if the argument is numeric.
@@ -282,18 +282,25 @@ class ZabbixAPI:
             ZabbixNotFoundError: Group is not found.
 
         Returns:
-            Hostgroup: The host group object.
+            HostGroup: The host group object.
         """
-        hostgroups = self.get_hostgroups(name_or_id, search, hosts, **kwargs)
+        hostgroups = self.get_hostgroups(
+            name_or_id, search=search, hosts=hosts, **kwargs
+        )
         if not hostgroups:
             raise ZabbixNotFoundError(
-                f"Hostgroup with name or ID {name_or_id!r} not found"
+                f"HostGroup with name or ID {name_or_id!r} not found"
             )
         return hostgroups[0]
 
     def get_hostgroups(
-        self, name_or_id: str, search: bool = False, hosts: bool = False, **kwargs
-    ) -> List[Hostgroup]:
+        self,
+        *names_or_ids: str,
+        search: bool = False,
+        # TODO: change param name to select_hosts
+        hosts: bool = False,
+        **kwargs,
+    ) -> List[HostGroup]:
         """Fetches a list of host groups given its name or ID.
 
         Name or ID argument is interpeted as an ID if the argument is numeric.
@@ -310,23 +317,78 @@ class ZabbixAPI:
             ZabbixNotFoundError: Group is not found.
 
         Returns:
-            List[Hostgroup]: List of host groups.
+            List[HostGroup]: List of host groups.
         """
-        norid = name_or_id.strip()
-        params = {"output": "extend"}  # type: ParamsType
+        # HACK: don't filter if we have an asterisk (all templates)
+        # TODO: refactor this along with other methods that take names or ids (or wildcards)
+        if "*" in names_or_ids:
+            names_or_ids = tuple()
 
-        norid_key = "groupid" if norid.isnumeric() else "name"
-        if search:
-            params["searchWildcardsEnabled"] = True
-            params["search"] = {norid_key: name_or_id}
-        else:
-            params["filter"] = {norid_key: name_or_id}
-        if hosts:
-            params["selectHosts"] = "extend"
-        params.update(kwargs)
+        if names_or_ids:
+            for name_or_id in names_or_ids:
+                norid = name_or_id.strip()
+                params = {"output": "extend"}  # type: ParamsType
+                is_id = norid.isnumeric()
+                norid_key = "groupid" if is_id else "name"
+                if search and not is_id:
+                    params["searchWildcardsEnabled"] = True
+                    params.setdefault("search", {}).setdefault("name", []).append(  # type: ignore # bad annotation
+                        name_or_id
+                    )
+                else:
+                    params["filter"] = {norid_key: name_or_id}
+                if hosts:
+                    params["selectHosts"] = "extend"
+                params.update(kwargs)
 
         resp = self.hostgroup.get(**params) or []
-        return [Hostgroup(**hostgroup) for hostgroup in resp]
+        return [HostGroup(**hostgroup) for hostgroup in resp]
+
+    def get_templategroups(
+        self,
+        *names_or_ids: str,
+        search: bool = False,
+        **kwargs,
+    ) -> List[TemplateGroup]:
+        """Fetches a list of template groups, optionally filtered by name(s).
+
+        Name or ID argument is interpeted as an ID if the argument is numeric.
+
+        Uses filtering by default, but can be switched to searching by setting
+        the `search` argument to True.
+
+        Args:
+            name_or_id (str): Name or ID of the template group.
+            search (bool, optional): Search for host groups using the given pattern instead of filtering. Defaults to False.
+
+        Raises:
+            ZabbixNotFoundError: Group is not found.
+
+        Returns:
+            List[TemplateGroup]: List of template groups.
+        """
+        # HACK: don't filter if we have an asterisk (all templates)
+        # TODO: refactor this along with other methods that take names or ids (or wildcards)
+        if "*" in names_or_ids:
+            names_or_ids = tuple()
+
+        if names_or_ids:
+            for name_or_id in names_or_ids:
+                norid = name_or_id.strip()
+                params = {"output": "extend"}  # type: ParamsType
+                is_id = norid.isnumeric()
+                norid_key = "groupid" if is_id else "name"
+                if search and not is_id:
+                    params["searchWildcardsEnabled"] = True
+                    params.setdefault("search", {}).setdefault("name", []).append(  # type: ignore # bad annotation
+                        name_or_id
+                    )
+                else:
+                    params["filter"] = {norid_key: name_or_id}
+                params.update(kwargs)
+
+        resp = self.templategroup.get(**params) or []
+        return [TemplateGroup(**tgroup) for tgroup in resp]
 
     def get_host(
         self,
@@ -793,6 +855,12 @@ class ZabbixAPI:
     def get_templates(self, *template_names_or_ids: str) -> List[Template]:
         """Fetches one or more templates given a name or ID."""
         params = {"output": "extend"}  # type: ParamsType
+
+        # HACK: don't filter if we have an asterisk (all templates)
+        # TODO: refactor this along with other methods that take names or ids (or wildcards)
+        if "*" in template_names_or_ids:
+            template_names_or_ids = tuple()
+
         for name_or_id in template_names_or_ids:
             name_or_id = name_or_id.strip()
             is_id = name_or_id.isnumeric()
@@ -802,20 +870,19 @@ class ZabbixAPI:
                 params.setdefault("filter", {}).setdefault("host", []).append(  # type: ignore # bad annotation
                     name_or_id
                 )
+                params.setdefault("searchWildcardsEnabled", True)
         try:
-            self.template.get(**params)
+            templates = self.template.get(**params)
         except ZabbixAPIException as e:
             raise ZabbixAPIException(
                 f"Unknown error when fetching templates: {e}"
             ) from e
-        return [Template(**template) for template in self.template.get(**params)]
+        return [Template(**template) for template in templates]
 
     def link_templates_to_hosts(
         self, templates: List[Template], hosts: List[Host]
     ) -> None:
         """Links one or more templates to one or more hosts.
-
-        Does not verify that the templates and hosts exist.
 
         Args:
             templates (List[str]): A list of template names or IDs
@@ -830,10 +897,60 @@ class ZabbixAPI:
         try:
             self.host.massadd(templates=template_ids, hosts=host_ids)
         except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to link templates: {e}") from e
+
+    def unlink_templates_from_hosts(
+        self, templates: List[Template], hosts: List[Host]
+    ) -> None:
+        """Unlinks and clears one or more templates from one or more hosts.
+
+        Args:
+            templates (List[str]): A list of template names or IDs
+            hosts (List[str]): A list of host names or IDs
+        """
+        if not templates:
+            raise ZabbixAPIException("At least one template is required")
+        if not hosts:
+            raise ZabbixAPIException("At least one host is required")
+
+        try:
+            resp = self.host.massremove(
+                hostids=[h.hostid for h in hosts],
+                templateids_clear=[t.templateid for t in templates],
+            )
+        except ZabbixAPIException as e:
             raise ZabbixAPIException(
-                f"Failed to link templates: {e}"
-                # f"Failed to link templates {templates} to hosts {hosts}: {e}"
+                f"Failed to unlink and clear templates: {e}"
             ) from e
+        else:
+            logger.debug("Unlink and clear templates response: %s", resp)
+
+    def link_templates_to_groups(
+        self,
+        templates: list[Template],
+        groups: list[HostGroup] | List[TemplateGroup],
+    ) -> None:
+        """Links one or more templates to one or more host/template groups.
+
+        Callers must ensure that the right type of group is passed in depending
+        on the Zabbix version:
+            * Host groups for Zabbix < 6.2
+            * Template groups for Zabbix >= 6.2
+
+        Args:
+            templates (List[str]): A list of template names or IDs
+            groups (list[HostGroup] | List[TemplateGroup]): A list of host/template groups
+        """
+        if not templates:
+            raise ZabbixAPIException("At least one template is required")
+        if not groups:
+            raise ZabbixAPIException("At least one group is required")
+        template_ids = [{"templateid": template.templateid} for template in templates]  # type: ModifyTemplateParams
+        group_ids = [{"groupid": group.groupid} for group in groups]  # type: ModifyGroupParams
+        try:
+            self.template.massadd(templates=template_ids, groups=group_ids)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to link templates: {e}") from e
 
     # def _construct_params(
     #     self,

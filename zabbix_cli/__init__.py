@@ -7,7 +7,7 @@ try:
     import typer
 
     typer.rich_utils.STYLE_HELPTEXT = ""
-except Exception:
+except Exception:  # likely AttributeError?
     import rich
     import sys
 

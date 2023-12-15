@@ -5,22 +5,24 @@ import logging
 import random
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 
 import typer
 from pydantic import BaseModel
+from pydantic import model_serializer
 
 from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixCLIError
+from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import Result
+from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
+from zabbix_cli.output.console import success
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
+from zabbix_cli.pyzabbix.types import Host
+from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.utils.utils import compile_pattern
 from zabbix_cli.utils.utils import convert_int
-
-if TYPE_CHECKING:
-    from zabbix_cli.pyzabbix.types import Proxy  # noqa: F401
 
 
 HELP_PANEL = "Proxy"
@@ -115,7 +117,7 @@ def move_proxy_hosts(
 
     render_result(
         Result(
-            message=f"Moved {len(hosts)} host(s) from {source_proxy.name!r} to {destination_proxy.name!r}",
+            message=f"Moved {len(hosts)} hosts from {source_proxy.name!r} to {destination_proxy.name!r}",
             result=MoveProxyHostsResult(
                 source=source_proxy.proxyid,
                 destination=destination_proxy.proxyid,
@@ -125,24 +127,36 @@ def move_proxy_hosts(
     )
 
 
-class LoadBalancedProxy(BaseModel):
-    proxyid: str
-    name: str
-    weight: int
+class LBProxy(BaseModel):
+    """A load balanced proxy."""
 
-
-class ProxySpec(BaseModel):
-    id: str
-    name: str
+    proxy: Proxy
+    hosts: List[Host] = []
     weight: int
     count: int = 0
 
+    @model_serializer
+    def ser_model(self):
+        return {
+            "name": self.proxy.name,
+            "proxyid": self.proxy.proxyid,
+            "weight": self.weight,
+            "count": self.count,
+            "hosts": [h.host for h in self.hosts],
+        }
 
-class LoadBalanceProxyHostsResult(BaseModel):
+
+class LBProxyResult(TableRenderable):
     """Result type for `load_balance_proxy_hosts` command."""
 
-    hosts: List[str] = []
-    proxies: List[ProxySpec] = []
+    proxies: List[LBProxy]
+
+    def _table_cols_rows(self) -> ColsRowsType:
+        cols = ["Proxy", "Weight", "Hosts"]
+        rows = []
+        for proxy in self.proxies:
+            rows.append([proxy.proxy.name, str(proxy.weight), str(len(proxy.hosts))])
+        return cols, rows
 
 
 @app.command(name="load_balance_proxy_hosts", rich_help_panel=HELP_PANEL)
@@ -162,6 +176,7 @@ def load_balance_proxy_hosts(
     ),
 ) -> None:
     """Spreads hosts between multiple proxies.
+
     Hosts are determined based on the hosts assigned to the given proxies.
     Weighting for the load balancing is optional, and defaults to equal weights.
 
@@ -196,7 +211,7 @@ def load_balance_proxy_hosts(
     elif all(w == 0 for w in weights):
         exit_err("All weights cannot be zero.")
 
-    # I kind of hate `*_list` vars, but we already have proxies, so...
+    # *_list` var are ugly, but we already have proxies, so...
     proxy_list = [app.state.client.get_proxy(p, select_hosts=True) for p in proxy_names]
 
     # Make sure list of proxies is in same order we specified them
@@ -209,49 +224,37 @@ def load_balance_proxy_hosts(
         exit_err("Proxies have no hosts to load balance.")
     logging.debug(f"Found {len(all_hosts)} hosts to load balance.")
 
-    # Mapping of proxy name to stats for each proxy
-    proxy_specs = {
-        p.name: ProxySpec(id=p.proxyid, name=p.name, weight=w)
-        for p, w in zip(proxy_list, weights)
+    lb_proxies = {
+        p.proxyid: LBProxy(proxy=p, weight=w) for p, w in zip(proxy_list, weights)
     }
-
-    # FIXME: this is a MESS!
-    host_map = {host.hostid: host for host in all_hosts}
-    host_proxy_map = {}  # type: dict[str, Proxy] # hostid -> Proxy (unhashable type Host)
     for host in all_hosts:
-        # Assign random proxy to host based on weights
-        host_proxy_map[host.hostid] = random.choices(proxy_list, weights=weights, k=1)[
-            0
-        ]
+        p = random.choices(proxy_list, weights=weights, k=1)[0]
+        lb_proxies[p.proxyid].hosts.append(host)
 
     # Abort on failure
     try:
-        for proxy in proxy_list:
-            hostids = []  #  type: list[str] # list of hostids to move to proxy
-            logging.debug(f"Proxy {proxy.name!r} has {len(proxy.hosts)} hosts.")
-            for hostid, host_proxy in host_proxy_map.items():
-                if proxy.proxyid == host_proxy.proxyid:
-                    hostids.append(hostid)
-            if not hostids:
-                logging.debug(f"Proxy {proxy.name!r} has no hosts after balancing.")
+        for lb_proxy in lb_proxies.values():
+            n_hosts = len(lb_proxy.hosts)
+            logging.debug(
+                "Proxy '%s' has %d hosts after balancing.",
+                lb_proxy.proxy.name,
+                n_hosts,
+            )
+            if not n_hosts:
+                logging.debug(
+                    "Proxy '%s' has no hosts after balancing.", lb_proxy.proxy.name
+                )
                 continue
-            logging.debug(f"Moving {len(hostids)} hosts to proxy {proxy.name!r}")
+            logging.debug(f"Moving {n_hosts} hosts to proxy {lb_proxy.proxy.name!r}")
 
             app.state.client.move_hosts_to_proxy(
-                # blind indexing is a bit scary, but the keys SHOULD be valid!
-                hosts=[host_map[hostid] for hostid in hostids],
-                proxy=proxy,
+                hosts=lb_proxy.hosts,
+                proxy=lb_proxy.proxy,
             )
-            proxy_specs[proxy.name].count = len(hostids)
+            lb_proxy.count = n_hosts
     except Exception as e:
         raise ZabbixCLIError(f"Failed to load balance hosts: {e}") from e
 
-    render_result(
-        Result(
-            message=f"Load balanced {len(all_hosts)} host(s) between {len(proxy_list)} proxies.",
-            result=LoadBalanceProxyHostsResult(
-                proxies=[spec for spec in proxy_specs.values()],
-                hosts=[host.host for host in all_hosts],
-            ),
-        )
-    )
+    render_result(LBProxyResult(proxies=list(lb_proxies.values())))
+    # HACK: render_result doesn't print a message for table results
+    success(f"Load balanced {len(all_hosts)} hosts between {len(proxy_list)} proxies.")

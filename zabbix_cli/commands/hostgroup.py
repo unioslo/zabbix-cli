@@ -21,7 +21,7 @@ from zabbix_cli.output.console import info
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.types import Host
-from zabbix_cli.pyzabbix.types import Hostgroup
+from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import UsergroupPermission
 from zabbix_cli.utils.commands import ARG_POSITIONAL
 from zabbix_cli.utils.utils import get_hostgroup_flag
@@ -63,7 +63,7 @@ def add_host_to_hostgroup(
 
 def _parse_hostname_hostgroup_args(
     args: List[str], hostnames: Optional[str], hostgroups: Optional[str]
-) -> Tuple[List[Host], List[Hostgroup]]:
+) -> Tuple[List[Host], List[HostGroup]]:
     """Helper function for parsing hostnames and hostgroups from args.
     Args take presedence over options.
 
@@ -87,7 +87,7 @@ def _parse_hostname_hostgroup_args(
         hostgroups = str_prompt("Host group(s)")
 
     host_models = []  # type: list[Host]
-    hg_models = []  # type: list[Hostgroup]
+    hg_models = []  # type: list[HostGroup]
 
     for hostname in hostnames.strip().split(","):
         host_models.append(app.state.client.get_host(hostname))
@@ -199,17 +199,17 @@ def remove_host_from_hostgroup(
     )
 
 
-class HostgroupHostResult(TypedDict):
+class HostGroupHostResult(TypedDict):
     hostid: str
     host: str
 
 
-class HostgroupResult(Result):
+class HostGroupResult(Result):
     """Result type for hostgroup."""
 
     groupid: str
     name: str
-    hosts: List[HostgroupHostResult] = []
+    hosts: List[HostGroupHostResult] = []
     flags: str
     internal: str = Field(
         get_hostgroup_type(0),
@@ -259,10 +259,10 @@ def show_hostgroup(
     except Exception as e:
         exit_err(f"Failed to get host group {hostgroup!r}: {e}")
 
-    render_result(HostgroupResult(**hg.model_dump()))
+    render_result(HostGroupResult(**hg.model_dump()))
 
 
-class HostgroupPermissions(TableRenderable):
+class HostGroupPermissions(TableRenderable):
     """Result type for hostgroup permissions."""
 
     groupid: str
@@ -275,14 +275,14 @@ class HostgroupPermissions(TableRenderable):
         return cols, [row]
 
 
-class HostgroupPermissionsResult(AggregateResult):
-    result: List[HostgroupPermissions] = []  # type: ignore # make generic?
+class HostGroupPermissionsResult(AggregateResult):
+    result: List[HostGroupPermissions] = []  # type: ignore # make generic?
 
 
 @app.command("show_hostgroup_permissions")
 def show_hostgroup_permissions(
     hostgroup_arg: Optional[str] = typer.Argument(
-        None, help="Hostgroup name. Supports wildcards."
+        None, help="HostGroup name. Supports wildcards."
     ),
 ) -> None:
     """Show usergroups with permissions for the given hostgroup. Supports wildcards.
@@ -296,7 +296,7 @@ def show_hostgroup_permissions(
     return render_result(AggregateResult(result=permissions))
 
 
-def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostgroupPermissions]:
+def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostGroupPermissions]:
     if not hostgroup_arg:
         hostgroup_arg = str_prompt("Host group")
 
@@ -324,7 +324,7 @@ def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostgroupPermissions]
                     )
                     break
         hg_results.append(
-            HostgroupPermissions(
+            HostGroupPermissions(
                 groupid=hostgroup.groupid,
                 name=hostgroup.name,
                 permissions=permissions,
@@ -333,8 +333,8 @@ def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostgroupPermissions]
     return hg_results
 
 
-class HostgroupsResult(AggregateResult):
-    result: List[HostgroupResult] = []  # type: ignore # make generic?
+class HostGroupsResult(AggregateResult):
+    result: List[HostGroupResult] = []  # type: ignore # make generic?
 
 
 # TODO: match V2 behavior
@@ -347,7 +347,7 @@ def show_hostgroups() -> None:
         exit_err(f"Failed to get all host groups: {e}")
 
     render_result(
-        HostgroupsResult(
-            result=[HostgroupResult(**hg.model_dump()) for hg in hostgroups]
+        HostGroupsResult(
+            result=[HostGroupResult(**hg.model_dump()) for hg in hostgroups]
         )
     )

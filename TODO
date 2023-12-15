@@ -25,6 +25,17 @@ Add some sort of `process_params` method that can be used to process params and 
   * Both in REPL mode and in bulk mode.
 * Add command to clear cache.
 
+## Commands
+
+* Add command aliases: https://github.com/tiangolo/typer/issues/132
+* Two options:
+  * Add new name `show_host` -> `host show`, hide old name. (easy)
+    * It's legal to have spaces in command names.
+    * Need some sort of decorator like @app.old_name("show_host")
+      * Registers the command with hidden=True
+      * Adds `Old name: show_host` to the bottom of the help text.
+      * This lets us traverse all the commands and create a mapping of old to new names, as well as providing it in the help text.
+
 ## Config
 
 * Catch when users use deprecated names and warn them. Also warn when we load a .conf config.
@@ -50,7 +61,8 @@ Add some sort of `process_params` method that can be used to process params and 
 * Document that setting `log_file = ""` causes logs to be sent to stderr.
   * This is not recommended, but useful for real-time debugging.
   * Maybe toggle normal console messages when this is set?
-
+* Either only use root logger OR add a logger for each module.
+  * Currently we have a mix of both.
 
 ## No prompts in CI/headless
 

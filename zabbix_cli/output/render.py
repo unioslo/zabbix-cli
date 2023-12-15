@@ -20,15 +20,13 @@ from zabbix_cli.state import get_state
 
 def wrap_result(result: BaseModel) -> Result:
     """Wraps a BaseModel instance in a Result object so that it receives
-    `return_code`, `errors`, and `message` fields, and the original object
-    is available as `result`."""
+    `return_code`, `errors`, and `message` fields, with the original object
+    is available as `result`.
+
+    Does nothing if the function argument is already a Result object."""
     if isinstance(result, Result):
         return result
-    # TODO: handle AggregateResult
-    # TODO: fix serialization of Result
-    #       Specifying BaseModel as the type of result causes
-    #       the serialized object to have 0 properties.
-    #       How do we include this cleanly?
+    # TODO: handle AggregateResult?
     return Result(result=result)
 
 
