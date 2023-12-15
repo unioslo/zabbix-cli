@@ -15,6 +15,7 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import RootModel
 from pydantic import validator
+from rich import box
 from rich.table import Table
 from strenum import StrEnum
 
@@ -71,7 +72,7 @@ class TableRenderable(BaseModel):
     def as_table(self) -> Table:
         """Renders a Rich table given the rows and cols generated for the object."""
         # TODO: figure out how to render data field in a structured way :)))
-        table = Table()
+        table = Table(box=box.ROUNDED)
         cols, rows = self._table_cols_rows()
         for col in cols:
             table.add_column(col, overflow="fold")
