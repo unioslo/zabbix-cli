@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from typing import Union
 
 import typer
+from pydantic import Field
 from pydantic import model_serializer
 
 from zabbix_cli.app import app
@@ -36,7 +37,7 @@ class LinkTemplateResult(TableRenderable):
 
     templates: List[Template] = []
     hosts: List[Host] = []
-    groups: Union[List[HostGroup], List[TemplateGroup]] = []
+    groups: Union[List[HostGroup], List[TemplateGroup]] = Field(default_factory=list)
     action: Literal["link", "unlink", "unlink_clear"]
 
     @model_serializer
@@ -310,8 +311,35 @@ def link_template_to_group(
     hidden=True,
     rich_help_panel=HELP_PANEL,
 )
-def unlink_template_from_group(ctx: typer.Context) -> None:
-    pass
+def unlink_template_from_group(
+    ctx: typer.Context,
+    template_names_or_ids: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
+    group_names_or_ids: Optional[str] = ARG_GROUP_NAMES_OR_IDS,
+    strict: bool = typer.Option(
+        False,
+        "--strict",
+        help="Fail if any host groups or templates aren't found. Should not be used in conjunction with wildcards.",
+    ),
+    # TODO: add toggle for NOT clearing when unlinking?
+) -> None:
+    """Unlink and clear template(s) from host/template group(s)."""
+    groups: Union[List[HostGroup], List[TemplateGroup]]
+    if app.state.client.version.release >= (6, 2, 0):
+        groups = _handle_templategroup_args(group_names_or_ids, strict)
+    else:
+        groups = _handle_hostgroups_args(group_names_or_ids, strict)
+
+    templates = _handle_template_arg(template_names_or_ids, strict)
+
+    app.state.client.unlink_templates_from_groups(templates, groups)
+    render_result(
+        LinkTemplateGroupResult(
+            templates=templates,
+            groups=groups,
+            action="unlink_clear",
+        )
+    )
+    success(f"Unlinked and cleared {len(templates)} templates to {len(groups)} groups.")
 
 
 @app.command("show_template", rich_help_panel=HELP_PANEL)

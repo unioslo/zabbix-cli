@@ -976,12 +976,18 @@ class ZabbixAPI:
             raise ZabbixAPIException("At least one template is required")
         if not groups:
             raise ZabbixAPIException("At least one group is required")
-        template_ids = [{"templateid": template.templateid} for template in templates]  # type: ModifyTemplateParams
-        group_ids = [{"groupid": group.groupid} for group in groups]  # type: ModifyGroupParams
+        template_ids = [template.templateid for template in templates]
+        group_ids = [group.groupid for group in groups]
         try:
-            self.template.massadd(templates=template_ids, groups=group_ids)
+            self.template.massremove(
+                templateids=template_ids,
+                templateids_clear=template_ids,
+                groupids=group_ids,
+            )
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to link templates: {e}") from e
+            raise ZabbixAPIException(
+                f"Failed to unlink and clear templates: {e}"
+            ) from e
 
     # def _construct_params(
     #     self,
