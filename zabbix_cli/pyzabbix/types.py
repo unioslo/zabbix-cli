@@ -22,6 +22,7 @@ from typing import Union
 
 from packaging.version import Version
 from pydantic import AliasChoices
+from pydantic import computed_field
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_serializer
@@ -39,8 +40,10 @@ from zabbix_cli.utils.args import APIStrEnum
 from zabbix_cli.utils.args import ChoiceMixin
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
+from zabbix_cli.utils.utils import get_item_type
 from zabbix_cli.utils.utils import get_maintenance_status
 from zabbix_cli.utils.utils import get_monitoring_status
+from zabbix_cli.utils.utils import get_value_type
 from zabbix_cli.utils.utils import get_zabbix_agent_status
 
 SortOrder = Literal["ASC", "DESC"]
@@ -191,14 +194,38 @@ class TemplateGroup(ZabbixAPIBaseModel):
 
 
 class Template(ZabbixAPIBaseModel):
-    templateid: str
-    name: Optional[str] = None
-    host: Optional[str] = None
+    """A template object. Can contain"""
 
-    @property
-    def name_or_host(self) -> str:
-        """Returns the name or host field or a default value."""
-        return self.name or self.host or "Unknown"
+    templateid: str
+    host: str
+    hosts: List[Host] = []
+    templates: List[Template] = []
+    """Child templates (templates inherited from this template)."""
+
+    parent_templates: List[Template] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("parentTemplates", "parent_templates"),
+        serialization_alias="parentTemplates",  # match JSON output to API format
+    )
+    """Parent templates (templates this template inherits from)."""
+
+    name: Optional[str] = Field(None, exclude=True)
+    """The visible name of the template.
+
+    In most cases it will be the same as `host`.
+    Excluded from JSON output, since it's redundant in 99% of cases.
+    """
+
+    def _table_cols_rows(self) -> ColsRowsType:
+        cols = ["ID", "Name", "Hosts", "Children", "Parents"]
+        row = [
+            self.templateid,
+            self.host,
+            "\n".join([host.host for host in self.hosts]),
+            "\n".join([template.host for template in self.templates]),
+            "\n".join([parent.host for parent in self.parent_templates]),
+        ]
+        return cols, [row]
 
 
 class Inventory(TableRenderableDict):
@@ -284,7 +311,7 @@ class Host(ZabbixAPIBaseModel):
                 self.hostid,
                 self.host,
                 "\n".join([group.name for group in self.groups]),
-                "\n".join([template.name_or_host for template in self.templates]),
+                "\n".join([template.host for template in self.templates]),
                 get_zabbix_agent_status(self.zabbix_agent),
                 get_maintenance_status(self.maintenance_status),
                 get_monitoring_status(self.status),
@@ -329,6 +356,76 @@ class GlobalMacro(MacroBase):
     globalmacroid: str
 
 
-# Resolve forward references
+class Item(ZabbixAPIBaseModel):
+    itemid: str
+    delay: Optional[str] = None
+    hostid: Optional[str] = None
+    interfaceid: Optional[str] = None
+    key: Optional[str] = None
+    name: Optional[str] = None
+    type: Optional[int] = None
+    url: Optional[str] = None
+    value_type: Optional[int] = None
+    description: Optional[str] = None
+    history: Optional[str] = None
+
+    @computed_field  # type: ignore[misc] # pydantic docs use decorators on top of property (https://docs.pydantic.dev/2.0/usage/computed_fields/)
+    @property
+    def type_fmt(self) -> str:
+        """Returns the item type as a formatted string."""
+        return get_item_type(self.type)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def value_type_fmt(self) -> str:
+        """Returns the item type as a formatted string."""
+        return get_value_type(self.value_type)
+
+    @field_serializer("type")
+    def _LEGACY_type_serializer(self, v: Optional[int], _info) -> Union[str, int, None]:
+        """Serializes the item type as a formatted string in legacy JSON mode"""
+        if self.legacy_json_format:
+            return self.type_fmt
+        return v
+
+    @field_serializer("value_type")
+    def _LEGACY_value_type_serializer(
+        self, v: Optional[int], _info
+    ) -> Union[str, int, None]:
+        """Serializes the item type as a formatted string in legacy JSON mode"""
+        if self.legacy_json_format:
+            return self.type_fmt
+        return v
+
+    def _table_cols_rows(self) -> ColsRowsType:
+        cols = ["ID", "Name", "Key", "Type", "Interval", "History", "Description"]
+        rows = [
+            [
+                self.itemid,
+                str(self.name),
+                str(self.key),
+                str(self.type_fmt),
+                str(self.delay),
+                str(self.history),
+                str(self.description),
+            ]
+        ]
+        return cols, rows
+
+
+# Resolve recursive and/or cyclic references via forward declarations
+#
+# See: https://docs.pydantic.dev/latest/concepts/models/#rebuild-model-schema
+#
+# Certain models refer to each other i.e.:
+#  * Host can have multiple HostGroup
+#  * HostGroup can have multiple Host
+#  * Host can have multiple Template
+#  * Template can have multiple Host
+#  * etc.
+#
+# They refer to each other, thus we must establish a forward reference,
+# by using string annotations, and then resolving them later.
 HostGroup.model_rebuild()
 Host.model_rebuild()
+Template.model_rebuild()

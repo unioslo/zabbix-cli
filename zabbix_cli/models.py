@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import cast
 from typing import Dict
 from typing import Generic
 from typing import List
@@ -13,7 +12,6 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import RootModel
-from pydantic import validator
 from rich.table import Table
 from strenum import StrEnum
 
@@ -49,15 +47,6 @@ ColsRowsType = Tuple[List[str], List[List[str]]]
 #
 # Yeah, this all passes type checking and all that, but it's very Bad (tm)
 # and way more complicated than it probably has to be.
-
-
-# @runtime_checkable
-# class TableRenderableProto(Protocol):
-#     def _table_cols_rows(self) -> ColsRowsType:
-#         ...
-
-#     def as_table(self) -> Table:
-#         ...
 
 
 TableRenderableProto = Union["TableRenderable", "TableRenderableDict"]
@@ -103,38 +92,34 @@ class TableRenderableDict(RootModel[Dict[str, str]]):
 DataT = TypeVar("DataT", bound=BaseModel)
 
 
-class Result(TableRenderable, Generic[DataT]):
+class ResultBase(TableRenderable):
     message: str = Field(default="")
     """Field that signals that the result should be printed as a message, not a table."""
     errors: List[str] = Field(default_factory=list)
     return_code: ReturnCode = ReturnCode.DONE
-    result: Optional[Union[DataT, List[DataT]]] = None
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True, validate_assignment=True, extra="allow"
     )
 
 
+class Result(ResultBase, Generic[DataT]):
+    result: Optional[Union[DataT, List[DataT]]] = None
+
+
 TableRenderableT = TypeVar("TableRenderableT", bound=TableRenderable)
 
 
-class AggregateResult(Result[TableRenderableT]):
+class AggregateResult(ResultBase, Generic[TableRenderableT]):
     """Aggregate result of multiple results.
 
     Used for compatibility with the legacy JSON format."""
 
-    @validator("result")
-    def _result_must_be_list(cls, v: object) -> List[DataT]:
-        if not isinstance(v, list):
-            raise ValueError("AggregateResult result must be a list")
-        return v
+    result: List[TableRenderableT] = Field(default_factory=list)
 
     def _table_cols_rows(self) -> ColsRowsType:
         cols = []  # type: ColsType
         rows = []  # type: RowsType
-
-        # Mypy doesn't understand validator ensured this is a list
-        self.result = cast(List[TableRenderableT], self.result)
 
         for result in self.result:
             c, r = result._table_cols_rows()

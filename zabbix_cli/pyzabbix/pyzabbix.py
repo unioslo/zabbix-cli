@@ -32,6 +32,7 @@ from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
+from zabbix_cli.pyzabbix.types import Item
 from zabbix_cli.pyzabbix.types import Macro
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Template
@@ -852,7 +853,33 @@ class ZabbixAPI:
                 f"Failed to move hosts {[str(host) for host in hosts]} to proxy {proxy.name!r}"
             ) from e
 
-    def get_templates(self, *template_names_or_ids: str) -> List[Template]:
+    def get_template(
+        self,
+        template_name_or_id: str,
+        select_hosts: bool = False,
+        select_templates: bool = False,
+        select_parent_templates: bool = False,
+    ) -> Template:
+        """Fetch a single template given its name or ID."""
+        templates = self.get_templates(
+            template_name_or_id,
+            select_hosts=select_hosts,
+            select_templates=select_templates,
+            select_parent_templates=select_parent_templates,
+        )
+        if not templates:
+            raise ZabbixNotFoundError(
+                f"Template with name or ID {template_name_or_id!r} not found"
+            )
+        return templates[0]
+
+    def get_templates(
+        self,
+        *template_names_or_ids: str,
+        select_hosts: bool = False,
+        select_templates: bool = False,
+        select_parent_templates: bool = False,
+    ) -> List[Template]:
         """Fetches one or more templates given a name or ID."""
         params = {"output": "extend"}  # type: ParamsType
 
@@ -871,6 +898,12 @@ class ZabbixAPI:
                     name_or_id
                 )
                 params.setdefault("searchWildcardsEnabled", True)
+        if select_hosts:
+            params["selectHosts"] = "extend"
+        if select_templates:
+            params["selectTemplates"] = "extend"
+        if select_parent_templates:
+            params["selectParentTemplates"] = "extend"
         try:
             templates = self.template.get(**params)
         except ZabbixAPIException as e:
@@ -878,6 +911,25 @@ class ZabbixAPI:
                 f"Unknown error when fetching templates: {e}"
             ) from e
         return [Template(**template) for template in templates]
+
+    def get_items(
+        self,
+        item_names_or_ids: Optional[List[str]] = None,  # NYI
+        templates: Optional[List[Template]] = None,
+        hosts: Optional[List[Template]] = None,  # NYI
+        proxies: Optional[List[Proxy]] = None,  # NYI
+        # TODO: implement interfaces
+        # TODO: implement graphs
+        # TODO: implement triggers
+    ) -> List[Item]:
+        params = {"output": "extend"}  # type: ParamsType
+        if templates:
+            params = {"templateids": [template.templateid for template in templates]}
+        try:
+            items = self.item.get(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Unknown error when fetching items: {e}") from e
+        return [Item(**item) for item in items]
 
     def link_templates_to_hosts(
         self, templates: List[Template], hosts: List[Host]

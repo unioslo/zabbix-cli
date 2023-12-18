@@ -91,7 +91,7 @@ def render_json(
 ) -> None:
     """Render the result of a command as JSON."""
     result = wrap_result(result)
-    o_json = result.model_dump_json(indent=2)
+    o_json = result.model_dump_json(indent=2, by_alias=True)
     console.print_json(o_json, indent=2, sort_keys=False)
 
 
@@ -118,7 +118,7 @@ def render_json_legacy(
         j = result.model_dump_json(indent=2)
     else:
         jdict = {}  # type: dict[str, Any] # always a dict in legacy mode
-        res = result.model_dump(mode="json")
+        res = result.model_dump(mode="json", by_alias=True)
         if isinstance(result, AggregateResult):
             py_result = res.get("result", [])  # type: ignore # bad annotation
         else:

@@ -12,6 +12,7 @@ from pydantic import Field
 from pydantic import model_serializer
 
 from zabbix_cli.app import app
+from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
@@ -69,7 +70,7 @@ class LinkTemplateHostResult(LinkTemplateResult):
         rows = []
         hostnames = ", ".join([h.host for h in self.hosts])
         for template in self.templates:
-            rows.append([template.name_or_host, hostnames])
+            rows.append([template.host, hostnames])
         return cols, rows
 
 
@@ -77,7 +78,7 @@ class LinkTemplateGroupResult(LinkTemplateResult):
     def _table_cols_rows(self) -> ColsRowsType:
         cols = ["Groups", "Templates"]
         rows = []
-        tmp_names = "\n".join([t.name_or_host for t in self.templates])
+        tmp_names = "\n".join([t.host for t in self.templates])
         for group in self.groups:
             rows.append([group.name, tmp_names])
         return cols, rows
@@ -343,10 +344,48 @@ def unlink_template_from_group(
 
 
 @app.command("show_template", rich_help_panel=HELP_PANEL)
-def show_template(ctx: typer.Context) -> None:
-    pass
+def show_template(
+    ctx: typer.Context,
+    template_name: Optional[str] = typer.Argument(
+        None, help="Template name or ID. Names support wildcards."
+    ),
+) -> None:
+    """Show a template."""
+    if not template_name:
+        template_name = str_prompt("Template")
+    template = app.state.client.get_template(
+        template_name,
+        select_hosts=True,
+        select_templates=True,
+        select_parent_templates=True,
+    )
+    render_result(template)
 
 
 @app.command("show_templates", rich_help_panel=HELP_PANEL)
-def show_templates(ctx: typer.Context) -> None:
-    pass
+def show_templates(
+    ctx: typer.Context,
+) -> None:
+    """Show all templates."""
+    templates = app.state.client.get_templates(
+        "*",
+        select_hosts=True,
+        select_templates=True,
+        select_parent_templates=True,
+    )
+    render_result(AggregateResult(result=templates))
+
+
+@app.command("show_items", rich_help_panel=HELP_PANEL)
+def show_items(
+    ctx: typer.Context,
+    template_name: Optional[str] = typer.Argument(
+        None, help="Template name or ID. Names support wildcards."
+    ),
+) -> None:
+    """Show items that belong to a template."""
+    if not template_name:
+        template_name = str_prompt("Template")
+    templates = app.state.client.get_templates(template_name)
+    items = app.state.client.get_items(templates=templates)
+    render_result(AggregateResult(result=items))

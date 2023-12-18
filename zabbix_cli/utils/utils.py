@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import re
-from typing import Dict
+from typing import Any
 from typing import Optional
+from typing import Union
 
 from zabbix_cli.exceptions import ZabbixCLIError
 
 
-def _format_status(code: Optional[str], status_map: Dict[str, str]) -> str:
+def _format_code(code: Union[str, int, None], status_map: dict[Any, str]) -> str:
     status = status_map.get(code, "Unknown")  # type: ignore # passing in None to dict.get() is fine
     return f"{status} ({code})" if code else status
 
@@ -64,19 +65,19 @@ def get_trigger_status(code):
 def get_maintenance_status(code: Optional[str]) -> str:
     """Get maintenance status from code."""
     maintenance_status = {"0": "No maintenance", "1": "In progress"}
-    return _format_status(code, maintenance_status)
+    return _format_code(code, maintenance_status)
 
 
 def get_monitoring_status(code: Optional[str]) -> str:
     """Get monitoring status from code."""
     monitoring_status = {"0": "Monitored", "1": "Not monitored"}
-    return _format_status(code, monitoring_status)
+    return _format_code(code, monitoring_status)
 
 
 def get_zabbix_agent_status(code: Optional[str]) -> str:
     """Get zabbix agent status from code."""
     zabbix_agent_status = {"1": "Available", "2": "Unavailable"}
-    return _format_status(code, zabbix_agent_status)
+    return _format_code(code, zabbix_agent_status)
 
 
 def get_gui_access(code):
@@ -184,33 +185,45 @@ def get_permission_code(permission: str) -> int:
     return 0
 
 
-def get_item_type(code):
+def get_item_type(code: int | None) -> str:
     """Get item type from code."""
     item_type = {
         0: "Zabbix agent",
         1: "SNMPv1 agent",
         2: "Zabbix trapper",
-        3: "simple check",
+        3: "Simple check",
         4: "SNMPv2 agent",
         5: "Zabbix internal",
         6: "SNMPv3 agent",
         7: "Zabbix agent (active)",
         8: "Zabbix aggregate",
-        9: "web item",
-        10: "external check",
-        11: "database monitor",
+        9: "Web item",
+        10: "External check",
+        11: "Database monitor",
         12: "IPMI agent",
         13: "SSH agent",
         14: "TELNET agent",
         15: "calculated",
         16: "JMX agent",
         17: "SNMP trap",
+        18: "Dependent item",
+        19: "HTTP agent",
+        20: "SNMP agent",
+        21: "Script",
     }
+    return _format_code(code, item_type)
 
-    if code in item_type:
-        return item_type[code] + " (" + str(code) + ")"
 
-    return f"Unknown ({str(code)})"
+def get_value_type(code: int | None) -> str:
+    """Get value type from code."""
+    value_type = {
+        0: "Numeric float",
+        1: "Character",
+        2: "Log",
+        3: "Numeric unsigned",
+        4: "Text",
+    }
+    return _format_code(code, value_type)
 
 
 def compile_pattern(pattern: str) -> re.Pattern[str]:
