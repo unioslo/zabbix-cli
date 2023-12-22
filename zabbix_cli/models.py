@@ -55,15 +55,29 @@ TableRenderableProto = Union["TableRenderable", "TableRenderableDict"]
 class TableRenderable(BaseModel):
     """Base model that can be rendered as a table."""
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols__(self) -> ColsType:
+        """Returns the columns for the table representation of the object.
+
+        Only override if you want to customize the column headers without
+        overriding the rows. Otherwise, override `__cols_rows__`.
+        """
+        return list(self.model_fields)
+
+    def __rows__(self) -> RowsType:
+        """Returns the rows for the table representation of the object.
+
+        Only override if you want to customize the rows without
+        overriding the columns. Otherwise, override `__cols_rows__`.
+        """
+        return [[str(getattr(self, field_name)) for field_name in self.model_fields]]
+
+    def __cols_rows__(self) -> ColsRowsType:
         """Returns the columns and row for the table representation of the object."""
-        cols = list(self.model_fields)
-        row = [str(getattr(self, field_name)) for field_name in cols]
-        return cols, [row] if row else []
+        return self.__cols__(), self.__rows__()
 
     def as_table(self) -> Table:
         """Renders a Rich table given the rows and cols generated for the object."""
-        cols, rows = self._table_cols_rows()
+        cols, rows = self.__cols_rows__()
         return get_table(cols, rows)
 
     # We should implement the rich renderable protocol...
@@ -77,7 +91,7 @@ class TableRenderableDict(RootModel[Dict[str, str]]):
 
     root: Dict[str, str] = {}
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         # only returns the keys that have a value
         cols = ["Key", "Value"]
         rows = [[k, str(v)] for k, v in self.root.items() if v]
@@ -85,11 +99,11 @@ class TableRenderableDict(RootModel[Dict[str, str]]):
 
     def as_table(self) -> Table:
         """Renders a Rich table given the rows and cols generated for the object."""
-        cols, rows = self._table_cols_rows()
+        cols, rows = self.__cols_rows__()
         return get_table(cols, rows)
 
 
-DataT = TypeVar("DataT", bound=BaseModel)
+DataT = TypeVar("DataT")
 
 
 class ResultBase(TableRenderable):
@@ -113,16 +127,18 @@ TableRenderableT = TypeVar("TableRenderableT", bound=TableRenderable)
 class AggregateResult(ResultBase, Generic[TableRenderableT]):
     """Aggregate result of multiple results.
 
-    Used for compatibility with the legacy JSON format."""
+    Used for compatibility with the legacy JSON format,
+    as well as implementing table rendering for multiple
+    results."""
 
     result: List[TableRenderableT] = Field(default_factory=list)
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = []  # type: ColsType
         rows = []  # type: RowsType
 
         for result in self.result:
-            c, r = result._table_cols_rows()
+            c, r = result.__cols_rows__()
             if not cols:
                 cols = c
             if r:

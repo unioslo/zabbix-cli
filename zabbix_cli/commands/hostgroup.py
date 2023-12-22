@@ -234,7 +234,7 @@ class HostGroupResult(Result):
         else:
             return v
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
         row = [
             self.groupid,
@@ -269,7 +269,7 @@ class HostGroupPermissions(TableRenderable):
     name: str
     permissions: List[str]
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = ["GroupID", "Name", "Permissions"]
         row = [self.groupid, self.name, "\n".join(self.permissions)]
         return cols, [row]

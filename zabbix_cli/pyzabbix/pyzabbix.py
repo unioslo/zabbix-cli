@@ -30,6 +30,7 @@ from zabbix_cli.cache import ZabbixCache
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
+from zabbix_cli.pyzabbix.types import GlobalMacro
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import Item
@@ -722,13 +723,21 @@ class ZabbixAPI:
         self,
         host: Optional[Host] = None,
         macro_name: Optional[str] = None,
+        search: bool = False,
         select_hosts: bool = False,
+        select_templates: bool = False,
+        sort_field: Optional[str] = "macro",
+        sort_order: Optional[SortOrder] = None,
     ) -> Macro:
         """Fetches a macro given a host ID and macro name."""
         macros = self.get_macros(
             macro_name=macro_name,
             host=host,
+            search=search,
             select_hosts=select_hosts,
+            select_templates=select_templates,
+            sort_field=sort_field,
+            sort_order=sort_order,
         )
         if not macros:
             raise ZabbixNotFoundError("Macro not found")
@@ -746,12 +755,12 @@ class ZabbixAPI:
         macro_name: Optional[str] = None,
         host: Optional[Host] = None,
         search: bool = False,
+        select_hosts: bool = False,
+        select_templates: bool = False,
         sort_field: Optional[str] = "macro",
         sort_order: Optional[SortOrder] = None,
-        select_hosts: bool = False,
     ) -> List[Macro]:
         params = {"output": "extend"}  # type: ParamsType
-        filter_params = {}  # type: ParamsType
 
         if host:
             params.setdefault("search", {})["hostids"] = host.hostid  # type: ignore
@@ -766,9 +775,8 @@ class ZabbixAPI:
         if select_hosts:
             params["selectHosts"] = "extend"
 
-        # Add filter params to params if we actually have params
-        if filter_params:
-            params["filter"] = filter_params
+        if select_templates:
+            params["selectTemplates"] = "extend"
 
         if sort_field:
             params["sortfield"] = sort_field
@@ -779,6 +787,51 @@ class ZabbixAPI:
         except ZabbixAPIException as e:
             raise ZabbixAPIException("Failed to retrieve macros") from e
         return [Macro(**macro) for macro in result]
+
+    def get_global_macro(
+        self,
+        macro_name: Optional[str] = None,
+        search: bool = False,
+        sort_field: Optional[str] = "macro",
+        sort_order: Optional[SortOrder] = None,
+    ) -> Macro:
+        """Fetches a global macro given a macro name."""
+        macros = self.get_macros(
+            macro_name=macro_name,
+            search=search,
+            sort_field=sort_field,
+            sort_order=sort_order,
+        )
+        if not macros:
+            raise ZabbixNotFoundError("Global macro not found")
+        return macros[0]
+
+    def get_global_macros(
+        self,
+        macro_name: Optional[str] = None,
+        search: bool = False,
+        sort_field: Optional[str] = "macro",
+        sort_order: Optional[SortOrder] = None,
+    ) -> List[GlobalMacro]:
+        params = {"output": "extend", "globalmacro": True}  # type: ParamsType
+
+        if macro_name:
+            params.setdefault("search", {})["macro"] = macro_name  # type: ignore
+
+        # Enable wildcard searching if we have one or more search terms
+        if params.get("search"):
+            params["searchWildcardsEnabled"] = True
+
+        if sort_field:
+            params["sortfield"] = sort_field
+        if sort_order:
+            params["sortorder"] = sort_order
+        try:
+            result = self.usermacro.get(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException("Failed to retrieve global macros") from e
+
+        return [GlobalMacro(**macro) for macro in result]
 
     def create_macro(self, host: Host, macro: str, value: str) -> str:
         """Creates a macro given a host ID, macro name and value."""
@@ -793,6 +846,18 @@ class ZabbixAPI:
                 f"No macro ID returned when creating macro {macro!r} for host {host}"
             )
         return resp["hostmacroids"][0]
+
+    def create_global_macro(self, macro: str, value: str) -> str:
+        """Creates a global macro given a macro name and value."""
+        try:
+            resp = self.usermacro.createglobal(macro=macro, value=value)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to create global macro {macro!r}.") from e
+        if not resp or not resp.get("globalmacroids"):
+            raise ZabbixNotFoundError(
+                f"No macro ID returned when creating global macro {macro!r}."
+            )
+        return resp["globalmacroids"][0]
 
     def update_macro(self, macroid: str, value: str) -> str:
         """Updates a macro given a macro ID and value."""

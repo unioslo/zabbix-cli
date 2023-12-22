@@ -151,7 +151,7 @@ class LBProxyResult(TableRenderable):
 
     proxies: List[LBProxy]
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = ["Proxy", "Weight", "Hosts"]
         rows = []
         for proxy in self.proxies:

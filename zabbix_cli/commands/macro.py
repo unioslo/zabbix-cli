@@ -37,6 +37,19 @@ if TYPE_CHECKING:
 HELP_PANEL = "Macro"
 
 
+def fmt_macro_name(macro: str) -> str:
+    """Format macro name for use in a query."""
+    if not macro.isupper():
+        macro = macro.upper()
+    if not macro.startswith("{"):
+        macro = "{" + macro
+    if not macro.endswith("}"):
+        macro = macro + "}"
+    if not macro[1] == "$":
+        macro = "{$" + macro[1:]
+    return macro
+
+
 @app.command(name="define_host_usermacro", rich_help_panel=HELP_PANEL)
 def define_host_usermacro(
     # NOTE: should this use old style args?
@@ -95,28 +108,14 @@ def show_host_usermacros(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
     render_result(AggregateResult(result=sorted(host.macros, key=lambda m: m.macro)))
 
 
-def fmt_macro_name(macro: str) -> str:
-    """Format macro name for use in a query."""
-    if not macro.isupper():
-        macro = macro.upper()
-    if not macro.startswith("{"):
-        macro = "{" + macro
-    if not macro.endswith("}"):
-        macro = macro + "}"
-    if not macro[1] == "$":
-        macro = "{$" + macro[1:]
-    return macro
-
-
 class MacroHostListV2(TableRenderable):
     macro: Macro
 
-    def _table_cols_rows(self) -> ColsRowsType:
-        rows = []
-        for host in self.macro.hosts:
-            rows.append(
-                [self.macro.macro, str(self.macro.value), host.hostid, host.host]
-            )
+    def __cols_rows__(self) -> ColsRowsType:
+        rows = [
+            [self.macro.macro, str(self.macro.value), host.hostid, host.host]
+            for host in self.macro.hosts
+        ]
         return ["Macro", "Value", "HostID", "Host"], rows
 
     @model_serializer()
@@ -134,7 +133,7 @@ class MacroHostListV2(TableRenderable):
 class MacroHostListV3(TableRenderable):
     macro: Macro
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         rows = [
             [host.hostid, host.host, self.macro.macro, str(self.macro.value)]
             for host in self.macro.hosts
@@ -143,7 +142,7 @@ class MacroHostListV3(TableRenderable):
 
 
 # TODO: find out what we actually want this command to do.
-# Each user macro belongs to one host, so we can't really list all hostss
+# Each user macro belongs to one host, so we can't really list all hosts
 # with a single macro...
 # @macro_cmd.command(name="find", rich_help_panel=HELP_PANEL)
 @app.command(name="show_usermacro_host_list", rich_help_panel=HELP_PANEL, hidden=False)
@@ -185,20 +184,88 @@ def show_usermacro_host_list(
         )
 
 
+class GlobalMacroResult(TableRenderable):
+    """Result of `define_global_macro` command."""
+
+    globalmacroid: str
+    macro: str
+    value: Optional[str] = None  # for usermacro.get calls
+
+
 # TODO: find out how to log full command invocations (especially in REPL, where we cant use sys.argv)
 @app.command("define_global_macro", rich_help_panel=HELP_PANEL)
 def define_global_macro(
     ctx: typer.Context,
     name: Optional[str] = typer.Argument(None, help="Name of the macro"),
+    value: Optional[str] = typer.Argument(None, help="Value of the macro"),
 ) -> None:
-    pass
+    if not name:
+        name = str_prompt("Macro name")
+    if not value:
+        value = str_prompt("Macro value")
+    name = fmt_macro_name(name)
+    try:
+        macro = app.state.client.get_global_macro(macro_name=name)
+    except ZabbixNotFoundError:
+        pass
+    else:
+        exit_err(f"Macro {name!r} already exists with value {macro.value!r}")
+    macro_id = app.state.client.create_global_macro(macro=name, value=value)
+    render_result(
+        Result(
+            message=f"Created macro {name!r} with ID {macro_id}.",
+            result=GlobalMacroResult(macro=name, globalmacroid=macro_id, value=value),
+        ),
+    )
 
 
 @app.command("show_global_macros", rich_help_panel=HELP_PANEL)
 def show_global_macros(ctx: typer.Context) -> None:
-    pass
+    macros = app.state.client.get_global_macros()
+    render_result(
+        AggregateResult(
+            result=[
+                GlobalMacroResult(
+                    macro=m.macro, globalmacroid=m.globalmacroid, value=m.value
+                )
+                for m in macros
+            ]
+        )
+    )
+
+
+class ShowUsermacroTemplateListResult(TableRenderable):
+    macro: str
+    value: Optional[str] = None
+    templateid: str
+    template: str
+
+    def __cols__(self) -> list[str]:
+        return ["Macro", "Value", "Template ID", "Template"]
 
 
 @app.command("show_usermacro_template_list", rich_help_panel=HELP_PANEL)
-def show_usermacro_template_list(ctx: typer.Context) -> None:
-    pass
+def show_usermacro_template_list(
+    ctx: typer.Context,
+    macro_name: Optional[str] = typer.Argument(
+        None, help="Name of the macro to find templates with. Automatically formatted."
+    ),
+) -> None:
+    """Find all templates with a user macro of the given name."""
+    if not macro_name:
+        macro_name = str_prompt("Macro name")
+    macro_name = fmt_macro_name(macro_name)
+    macro = app.state.client.get_macro(macro_name=macro_name, select_templates=True)
+    render_result(
+        AggregateResult(
+            result=[
+                ShowUsermacroTemplateListResult(
+                    macro=macro.macro,
+                    value=macro.value,
+                    templateid=template.templateid,
+                    template=template.host,
+                )
+                for template in macro.templates
+            ]
+        )
+    )

@@ -671,13 +671,14 @@ class HostFilterArgs(BaseModel):
 
 
 class HostsResult(Result):
+    # TODO: Just use AggregateResult instead?
     hosts: List[Host] = Field(default_factory=list)
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = []  # type: ColsType
         rows = []  # type: RowsType
         for host in self.hosts:
-            host_cols, host_rows = host._table_cols_rows()  # type: ignore # TODO: add test for this
+            host_cols, host_rows = host.__cols_rows__()  # type: ignore # TODO: add test for this
             rows.extend(host_rows)
             if not cols:
                 cols = host_cols

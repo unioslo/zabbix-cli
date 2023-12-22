@@ -65,17 +65,15 @@ class LinkTemplateResult(TableRenderable):
 
 
 class LinkTemplateHostResult(LinkTemplateResult):
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = ["Template", "Hosts"]
-        rows = []
         hostnames = ", ".join([h.host for h in self.hosts])
-        for template in self.templates:
-            rows.append([template.host, hostnames])
+        rows = [[template.host, hostnames] for template in self.templates]
         return cols, rows
 
 
 class LinkTemplateGroupResult(LinkTemplateResult):
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = ["Groups", "Templates"]
         rows = []
         tmp_names = "\n".join([t.host for t in self.templates])

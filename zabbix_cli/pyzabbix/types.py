@@ -175,7 +175,7 @@ class HostGroup(ZabbixAPIBaseModel):
     flags: int = 0
     internal: int = 0  # should these be ints?
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
         row = [
             self.groupid,
@@ -216,7 +216,7 @@ class Template(ZabbixAPIBaseModel):
     Excluded from JSON output, since it's redundant in 99% of cases.
     """
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Name", "Hosts", "Children", "Parents"]
         row = [
             self.templateid,
@@ -295,7 +295,7 @@ class Host(ZabbixAPIBaseModel):
             return f"Unknown (ID: {info.data['hostid']})"
         return v
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = [
             "HostID",
             "Name",
@@ -339,6 +339,7 @@ class MacroBase(ZabbixAPIBaseModel):
     macro: str
     value: Optional[str] = None  # Optional in case secret value
     type: str
+    """Macro type. 0 - text, 1 - secret, 2 - vault secret (>=7.0)"""
     description: str
 
 
@@ -346,10 +347,10 @@ class Macro(MacroBase):
     """Macro object. Known as 'host macro' in the Zabbix API."""
 
     hostid: str
-    """Macro type. 0 - text, 1 - secret, 2 - vault secret (>=7.0)"""
     hostmacroid: str
     automatic: Optional[int] = None  # >= 7.0 only. 0 = user, 1 = discovery rule
     hosts: List[Host] = Field(default_factory=list)
+    templates: List[Template] = Field(default_factory=list)
 
 
 class GlobalMacro(MacroBase):
@@ -397,7 +398,7 @@ class Item(ZabbixAPIBaseModel):
             return self.type_fmt
         return v
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Name", "Key", "Type", "Interval", "History", "Description"]
         rows = [
             [

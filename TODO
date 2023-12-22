@@ -75,12 +75,21 @@ Add some sort of `process_params` method that can be used to process params and 
 * Extract as_table out of the model classes and into a separate function that just takes a TableRenderableProto object.
   * This way we can control the style of the table in a single function instead of trying to modify the style in each model class OR by modifying the table object after it has been created.
 
+* Turn `ColsRowsType` into some sort of BaseModel type that validates that row length matches cols length.
+  * Rewrite `TableRenderable.__cols_rows__` to use this new type.
+  * Convert all existing `__cols_rows__` to separate `__cols__` and `__rows__` methods.
 
 ## Legacy
 
 * Assume legacy JSON format when loading from .conf file.
 * Render some names as legacy names when using legacy JSON format.
   * E.g. `name` instead of `macro` for `show_host_usermacros`
+
+## Serialization
+
+* Always serialize string representations of codes (`Maintenance (0)`)
+  * We do not strive for 1:1 compatibility with the Zabbix API. It's more important that users can read the output.
+  * We need to fix  `Host` to convert to string representations instead of codes.
 
 
 ## Tests

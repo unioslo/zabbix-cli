@@ -24,11 +24,11 @@ class HistoryResult(TableRenderable):
 
     commands: list[HistoryEntry] = []
 
-    def _table_cols_rows(self) -> ColsRowsType:
+    def __cols_rows__(self) -> ColsRowsType:
         cols = ["Command", "Timestamp"]  # type: ColsType
-        rows = []  # type: RowsType
-        for entry in self.commands:
-            rows.append([entry.ctx.command_path, str(entry.timestamp)])
+        rows = [
+            [entry.ctx.command_path, str(entry.timestamp)] for entry in self.commands
+        ]  # type: RowsType
         return cols, rows
 
     @model_serializer
