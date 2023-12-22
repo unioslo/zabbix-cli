@@ -55,13 +55,21 @@ TableRenderableProto = Union["TableRenderable", "TableRenderableDict"]
 class TableRenderable(BaseModel):
     """Base model that can be rendered as a table."""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     def __cols__(self) -> ColsType:
         """Returns the columns for the table representation of the object.
 
         Only override if you want to customize the column headers without
         overriding the rows. Otherwise, override `__cols_rows__`.
         """
-        return list(self.model_fields)
+        cols = []
+        for field_name, field in self.model_fields.items():
+            if field.validation_alias:
+                cols.append(str(field.validation_alias))
+            else:
+                cols.append(field_name.capitalize())
+        return cols
 
     def __rows__(self) -> RowsType:
         """Returns the rows for the table representation of the object.
@@ -69,7 +77,15 @@ class TableRenderable(BaseModel):
         Only override if you want to customize the rows without
         overriding the columns. Otherwise, override `__cols_rows__`.
         """
-        return [[str(getattr(self, field_name)) for field_name in self.model_fields]]
+        row = [getattr(self, field_name) for field_name in self.model_fields]
+        for i, value in enumerate(row):
+            if isinstance(value, BaseModel):
+                row[i] = value.model_dump(mode="json")
+            elif isinstance(value, list):
+                row[i] = "\n".join(str(v) for v in value)
+            else:
+                row[i] = str(value)
+        return [row]
 
     def __cols_rows__(self) -> ColsRowsType:
         """Returns the columns and row for the table representation of the object."""

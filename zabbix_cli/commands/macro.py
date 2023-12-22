@@ -7,6 +7,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 
 import typer
+from pydantic import Field
 from pydantic import model_serializer
 
 from zabbix_cli.app import app
@@ -96,6 +97,16 @@ def define_host_usermacro(
     )
 
 
+class ShowHostUserMacrosResult(TableRenderable):
+    hostmacroid: str = Field(validation_alias="MacroID")
+    macro: str
+    value: Optional[str] = None
+    type: str
+    description: Optional[str] = None
+    hostid: str = Field(validation_alias="HostID")
+    automatic: Optional[int]
+
+
 # @macro_cmd.command(name="list", rich_help_panel=HELP_PANEL)
 @app.command(name="show_host_usermacros", rich_help_panel=HELP_PANEL, hidden=False)
 def show_host_usermacros(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
@@ -104,8 +115,24 @@ def show_host_usermacros(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
         hostname_or_id = str_prompt("Hostname or ID")
     # By getting the macros via the host, we also ensure the host exists.
     host = app.state.client.get_host(hostname_or_id, select_macros=True)
-    # Sort macros by name when rendering
-    render_result(AggregateResult(result=sorted(host.macros, key=lambda m: m.macro)))
+
+    render_result(
+        AggregateResult(
+            result=[
+                ShowHostUserMacrosResult(
+                    hostmacroid=macro.hostmacroid,
+                    macro=macro.macro,
+                    value=macro.value,
+                    type=macro.type,
+                    description=macro.description,
+                    hostid=macro.hostid,
+                    automatic=macro.automatic,
+                )
+                # Sort macros by name when rendering
+                for macro in sorted(host.macros, key=lambda m: m.macro)
+            ]
+        )
+    )
 
 
 class MacroHostListV2(TableRenderable):

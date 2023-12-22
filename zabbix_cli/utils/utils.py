@@ -241,3 +241,13 @@ def convert_int(value: str) -> int:
         return int(value)
     except ValueError as e:
         raise ZabbixCLIError(f"Invalid integer value: {value}") from e
+
+
+def get_macro_type(code: int | None) -> str:
+    """Get macro type from code."""
+    macro_type = {
+        1: "Text",
+        2: "Secret",
+        3: "Vault secret",
+    }
+    return _format_code(code, macro_type)
