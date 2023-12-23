@@ -246,8 +246,8 @@ def convert_int(value: str) -> int:
 def get_macro_type(code: int | None) -> str:
     """Get macro type from code."""
     macro_type = {
-        1: "Text",
-        2: "Secret",
-        3: "Vault secret",
+        0: "Text",
+        1: "Secret",
+        2: "Vault secret",
     }
     return _format_code(code, macro_type)

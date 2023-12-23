@@ -41,6 +41,7 @@ from zabbix_cli.utils.args import ChoiceMixin
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
 from zabbix_cli.utils.utils import get_item_type
+from zabbix_cli.utils.utils import get_macro_type
 from zabbix_cli.utils.utils import get_maintenance_status
 from zabbix_cli.utils.utils import get_monitoring_status
 from zabbix_cli.utils.utils import get_value_type
@@ -338,9 +339,15 @@ class Proxy(ZabbixAPIBaseModel):
 class MacroBase(ZabbixAPIBaseModel):
     macro: str
     value: Optional[str] = None  # Optional in case secret value
-    type: str
+    type: int
     """Macro type. 0 - text, 1 - secret, 2 - vault secret (>=7.0)"""
     description: str
+
+    @computed_field  # type: ignore[misc] # pydantic docs use decorators on top of property (https://docs.pydantic.dev/2.0/usage/computed_fields/)
+    @property
+    def type_fmt(self) -> str:
+        """Returns the macro type as a formatted string."""
+        return get_macro_type(self.type)
 
 
 class Macro(MacroBase):
