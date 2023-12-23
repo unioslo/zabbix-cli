@@ -49,9 +49,6 @@ ColsRowsType = Tuple[List[str], List[List[str]]]
 # and way more complicated than it probably has to be.
 
 
-TableRenderableProto = Union["TableRenderable", "TableRenderableDict"]
-
-
 class TableRenderable(BaseModel):
     """Base model that can be rendered as a table."""
 
@@ -62,6 +59,16 @@ class TableRenderable(BaseModel):
 
         Only override if you want to customize the column headers without
         overriding the rows. Otherwise, override `__cols_rows__`.
+
+        By default, uses the validation alias for each field if available,
+        otherwise uses the field name capitalized. I.e.
+
+        >>> class User(TableRenderable):
+        ...     userid: str = Field(validation_alias="UserID")
+        ...     username: str = ""
+        ...
+        >>> User().__cols__()
+        ["UserID", "Username"]
         """
         cols = []
         for field_name, field in self.model_fields.items():
@@ -76,11 +83,29 @@ class TableRenderable(BaseModel):
 
         Only override if you want to customize the rows without
         overriding the columns. Otherwise, override `__cols_rows__`.
+
+        Render types in the following way:
+            - TableRenderable: render as a table
+            - TableRenderableDict: render as a table
+            - BaseModel: render as JSON string
+            - list: render as newline delimited string
+        Everything else is rendered as a string.
+
+        Example:
+
+        >>> class User(TableRenderable):
+        ...     userid: str = Field(validation_alias="UserID")
+        ...     username: str = ""
+        ...
+        >>> User(userid="1", username="admin").__rows__()
+        [["1", "admin"]]
         """
         row = [getattr(self, field_name) for field_name in self.model_fields]
         for i, value in enumerate(row):
-            if isinstance(value, BaseModel):
-                row[i] = value.model_dump(mode="json")
+            if isinstance(value, (TableRenderable, TableRenderableDict)):
+                row[i] = value.as_table()
+            elif isinstance(value, BaseModel):
+                row[i] = value.model_dump_json(indent=2)
             elif isinstance(value, list):
                 row[i] = "\n".join(str(v) for v in value)
             else:
@@ -88,7 +113,17 @@ class TableRenderable(BaseModel):
         return [row]
 
     def __cols_rows__(self) -> ColsRowsType:
-        """Returns the columns and row for the table representation of the object."""
+        """Returns the columns and row for the table representation of the object.
+
+        Example:
+
+        >>> class User(TableRenderable):
+        ...     userid: str = Field(validation_alias="UserID")
+        ...     username: str = ""
+        ...
+        >>> User(userid="1", username="admin").__cols_rows__()
+        (["UserID", "Username"], [["1", "admin"]])
+        """
         return self.__cols__(), self.__rows__()
 
     def as_table(self) -> Table:
@@ -138,6 +173,7 @@ class Result(ResultBase, Generic[DataT]):
 
 
 TableRenderableT = TypeVar("TableRenderableT", bound=TableRenderable)
+TableRenderableProto = Union["TableRenderable", "TableRenderableDict"]
 
 
 class AggregateResult(ResultBase, Generic[TableRenderableT]):
