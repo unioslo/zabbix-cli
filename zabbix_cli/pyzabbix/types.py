@@ -419,21 +419,3 @@ class Item(ZabbixAPIBaseModel):
             ]
         ]
         return cols, rows
-
-
-# Resolve recursive and/or cyclic references via forward declarations
-#
-# See: https://docs.pydantic.dev/latest/concepts/models/#rebuild-model-schema
-#
-# Certain models refer to each other i.e.:
-#  * Host can have multiple HostGroup
-#  * HostGroup can have multiple Host
-#  * Host can have multiple Template
-#  * Template can have multiple Host
-#  * etc.
-#
-# We must establish forward references by using string annotations,
-# and then resolving them later.
-HostGroup.model_rebuild()
-Host.model_rebuild()
-Template.model_rebuild()
