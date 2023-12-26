@@ -432,8 +432,8 @@ class Item(ZabbixAPIBaseModel):
 #  * Template can have multiple Host
 #  * etc.
 #
-# They refer to each other, thus we must establish a forward reference,
-# by using string annotations, and then resolving them later.
+# We must establish forward references by using string annotations,
+# and then resolving them later.
 HostGroup.model_rebuild()
 Host.model_rebuild()
 Template.model_rebuild()
