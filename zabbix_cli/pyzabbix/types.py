@@ -137,11 +137,12 @@ class ZabbixAPIBaseModel(TableRenderable):
     This is a class variable that can be overridden, which causes all
     subclasses to use the new value when accessed.
 
-    WARNING: Do not access directly from outside this class.
-    Prefer the `version` property instead.
+    This class variable is set by `State.configure` based on the
+    API version of the Zabbix server we're connected to.
     """
     legacy_json_format: ClassVar[bool] = False
     """Whether to use the legacy JSON format for rendering objects.
+
     This class variable is set by `State.configure` based on the
     current configuration. By default, we assume the new JSON format,
     since we eventually want to phase out support for the legacy format."""

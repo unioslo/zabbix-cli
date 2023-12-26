@@ -231,12 +231,14 @@ def define_global_macro(
     if not value:
         value = str_prompt("Macro value")
     name = fmt_macro_name(name)
+
     try:
         macro = app.state.client.get_global_macro(macro_name=name)
     except ZabbixNotFoundError:
         pass
     else:
         exit_err(f"Macro {name!r} already exists with value {macro.value!r}")
+
     macro_id = app.state.client.create_global_macro(macro=name, value=value)
     render_result(
         Result(

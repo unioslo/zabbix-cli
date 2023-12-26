@@ -1,15 +1,27 @@
-"""This State module re-treads all the sins of Harbor CLI's state module.
+"""Defines the global state object for the application.
 
-The lazy-loading, properties with setters/getters, and the singleton pattern
-are all code smells in their own ways. The sad thing is that this works well,
-and it's hard to find a good way to configure the application once, save that state,
-then maintain it for the duration of the application's lifetime. For some reason,
-I am totally blanking on how to do this in a way that doesn't suck.
-
-We have a bunch of state we need to access in order to determine things like
-authentication, logging, default values, etc. So having them all gathered
-in this one place is convenient.
-"""
+The global state object is a singleton that holds the current state of the
+application. It is used to store the current configuration, Zabbix client,
+and other stateful objects."""
+# This module re-treads all the sins of Harbor CLI's state module.
+#
+# The lazy-loading, properties with setters/getters, and the singleton pattern
+# are all code smells in their own ways (lazy-loading maybe less so in a CLI context).
+# The sad thing is that this works well, and it's hard to find a good way to configure
+# the application once, save that state, then maintain it for the duration
+# of the application's lifetime. The only thing we have to be careful about it
+# is to ensure we configure the State object before we use it, and perform
+# all imports from other modules inside functions, so that we don't create
+# circular imports.
+#
+# For some reason, I am totally blanking on how to do this in a way that doesn't
+# suck when using Typer. With Click, it is easy, because we could just use the
+# `@pass_obj` decorator to pass the State object to every command, but Typer
+# doesn't have anything like that.
+#
+# We have a bunch of state we need to access in order to determine things like
+# authentication, logging, default values, etc. So having them all gathered
+# in this one place is convenient.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -19,11 +31,7 @@ from rich.console import Console
 
 # This module should not import from other local modules because it's widely
 # used throughout the application, and we don't want to create circular imports.
-#
-# To work around that, imports from other modules should be done inside
-# functions, or inside the TYPE_CHECKING block below.
-#
-# It's a huge code smell, but it's something we have to live with for now.
+# Imports from other modules should be done inside functions, or in TYPE_CHECKING:
 if TYPE_CHECKING:
     from zabbix_cli.config import Config
     from zabbix_cli.pyzabbix import ZabbixAPI
@@ -155,7 +163,7 @@ class State:
             # State did not finish configuration before termination
             self._config is None
             or self._client is None
-            # We want to keep the session alive
+            # OR We want to keep the session alive
             or self.config.app.use_auth_token_file
         ):
             return
@@ -188,7 +196,3 @@ def get_state() -> State:
 
     Instantiates a new state object with defaults if it doesn't exist."""
     return State()
-
-
-# def init() -> None:
-#     # TODO add client and config and everything here ONCE somehow
