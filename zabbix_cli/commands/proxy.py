@@ -21,8 +21,8 @@ from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import Proxy
+from zabbix_cli.utils.args import parse_int_list_arg
 from zabbix_cli.utils.utils import compile_pattern
-from zabbix_cli.utils.utils import convert_int
 
 
 HELP_PANEL = "Proxy"
@@ -199,7 +199,7 @@ def load_balance_proxy_hosts(
 
     proxy_names = [p.strip() for p in proxies.split(",")]
     if weight:
-        weights = list(map(convert_int, (w.strip() for w in weight.split(","))))
+        weights = parse_int_list_arg(weight)
     else:
         weights = [1] * len(proxy_names)  # default to equal weights
 

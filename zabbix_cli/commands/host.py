@@ -32,6 +32,7 @@ from zabbix_cli.pyzabbix.types import ParamsType
 from zabbix_cli.utils.args import APIStr
 from zabbix_cli.utils.args import APIStrEnum
 from zabbix_cli.utils.args import ChoiceMixin
+from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.commands import ARG_HOSTNAME_OR_ID
 from zabbix_cli.utils.commands import ARG_POSITIONAL
 
@@ -90,8 +91,8 @@ def create_host(
         help=(
             "Hostgroup names or IDs. "
             "One can define several values in a comma separated list. "
-            "Command will fail if both default_hostgroup and hostgroups are empty. "
-            "Will always add host to default host group."
+            "Command will fail if both --hostgroups option and "
+            "[green]default_hostgroup[/] in config are empty. "
         ),
     ),
     proxy: Optional[str] = typer.Option(
@@ -101,8 +102,8 @@ def create_host(
             "Proxy server used to monitor the host. "
             "Supports regular expressions to define a group of proxies, "
             "from which one will be selected randomly. "
-            "If no proxy is set, then a random proxy from the list of available "
-            "proxies will be selected. "
+            "Selects a random proxy from the list of available proxies if "
+            "no proxy is specified. "
         ),
     ),
     status: Optional[str] = typer.Option(
@@ -129,9 +130,7 @@ def create_host(
 ) -> None:
     """Create a host.
 
-    Prefer using options over the positional arguments.
-
-    Always adds the host to the default host group unless `--no-default-hostgroup`
+    Always adds the host to the default host group unless --no-default-hostgroup
     is specified.
     """
     if args:
@@ -185,7 +184,9 @@ def create_host(
             hostgroup_ids.append(app.state.client.get_hostgroup_id(hg))
     # TODO: add some sort of plural prompt so we don't have to split manually
     if hostgroups:
-        for hg in hostgroups.strip().split(","):
+        hostgroup_args = parse_list_arg(hostgroups)
+        # FIXME: this will fail if we pass in a hostgroup ID!
+        for hg in hostgroup_args:
             hostgroup_ids.append(app.state.client.get_hostgroup_id(hg))
     if not hostgroup_ids:
         raise ZabbixCLIError("Unable to create a host without at least one host group.")

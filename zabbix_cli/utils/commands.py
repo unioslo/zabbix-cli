@@ -30,6 +30,7 @@ ARG_POSITIONAL = typer.Argument(
     None,
     help="DEPRECATED: V2-style positional arguments.",
     show_default=False,
+    hidden=True,
 )
 
 

@@ -9,6 +9,8 @@
 - New configuration options:
   - `app.default_format`: Sets the default CLI output format. Defaults to `table`.
   - `app.legacy_json_format`: Enables the old JSON output format. Defaults to `false`.
+- New commands:
+  - `show_user`: Show details for a single user.
 - New command options:
   - `create_host`:
     - `--name`: Host name

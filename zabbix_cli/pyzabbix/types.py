@@ -81,6 +81,11 @@ class ModifyHostItem(TypedDict):
 
 ModifyHostParams = List[ModifyHostItem]
 
+"""A list of host IDs in an API request.
+
+E.g. `[{"hostid": "123"}, {"hostid": "456"}]`
+"""
+
 
 class ModifyGroupItem(TypedDict):
     """Argument for a host ID in an API request."""
@@ -89,6 +94,10 @@ class ModifyGroupItem(TypedDict):
 
 
 ModifyGroupParams = List[ModifyGroupItem]
+"""A list of host/template group IDs in an API request.
+
+E.g. `[{"groupid": "123"}, {"groupid": "456"}]`
+"""
 
 
 class ModifyTemplateItem(TypedDict):
@@ -98,6 +107,10 @@ class ModifyTemplateItem(TypedDict):
 
 
 ModifyTemplateParams = List[ModifyTemplateItem]
+"""A list of template IDs in an API request.
+
+E.g. `[{"templateid": "123"}, {"templateid": "456"}]`
+"""
 
 
 class AgentAvailable(ChoiceMixin[str], APIStrEnum):
@@ -137,15 +150,14 @@ class ZabbixAPIBaseModel(TableRenderable):
     This is a class variable that can be overridden, which causes all
     subclasses to use the new value when accessed.
 
-    This class variable is set by `State.configure` based on the
-    API version of the Zabbix server we're connected to.
+    This class variable is set by `State.configure` based on the connected
+    Zabbix server API version. Assumes latest released version by default.
     """
     legacy_json_format: ClassVar[bool] = False
     """Whether to use the legacy JSON format for rendering objects.
 
     This class variable is set by `State.configure` based on the
-    current configuration. By default, we assume the new JSON format,
-    since we eventually want to phase out support for the legacy format."""
+    current configuration. Assumes new JSON format by default."""
 
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 

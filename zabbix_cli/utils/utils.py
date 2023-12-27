@@ -235,14 +235,6 @@ def compile_pattern(pattern: str) -> re.Pattern[str]:
     return p
 
 
-def convert_int(value: str) -> int:
-    """Convert string to int."""
-    try:
-        return int(value)
-    except ValueError as e:
-        raise ZabbixCLIError(f"Invalid integer value: {value}") from e
-
-
 def get_macro_type(code: int | None) -> str:
     """Get macro type from code."""
     macro_type = {

@@ -48,9 +48,18 @@ Add some sort of `process_params` method that can be used to process params and 
 
 ## Exceptions
 
+### Zabbix API Exceptions
+
 * Store error code and message in ZabbixAPIException, so that we can automatically add it to the error message when we write custom ZabbixAPIExceptions.
   * **VERY VERY IMPORTANT:** If we raise ZabbixAPIException from a ZabbixAPIException, we should be able to extract the data from the original exception (`__cause__`) and add it to whatever we are printing.
 
+### Pydantic Exceptions
+
+* Log all data and API version whenever we get a validation error.
+  * This will help us debug issues with the API.
+  * We should also log the full request and response.
+
+* Add a `--debug` flag that enables debug logging???
 
 ## Hosts
 * Go through all `get_hosts()` calls. Make sure we only search for one term
@@ -78,6 +87,7 @@ Add some sort of `process_params` method that can be used to process params and 
 * Turn `ColsRowsType` into some sort of BaseModel type that validates that row length matches cols length.
   * Rewrite `TableRenderable.__cols_rows__` to use this new type.
   * Convert all existing `__cols_rows__` to separate `__cols__` and `__rows__` methods.
+  * Add some sort of converting of iterable values to newline separated strings in `__rows__`
 
 ## Legacy
 

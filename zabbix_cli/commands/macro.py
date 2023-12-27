@@ -24,9 +24,7 @@ from zabbix_cli.utils.commands import ARG_HOSTNAME_OR_ID
 
 
 if TYPE_CHECKING:
-    from zabbix_cli.models import ColsType  # noqa: F401
     from zabbix_cli.models import ColsRowsType
-    from zabbix_cli.models import RowsType  # noqa: F401
 
 # # `zabbix-cli host macro <cmd>`
 # macro_cmd = StatefulApp(

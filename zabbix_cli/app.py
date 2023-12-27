@@ -4,6 +4,8 @@ app object here, which we share between the different command modules.
 Thus, every command is part of the same command group."""
 from __future__ import annotations
 
+from typing import Iterable
+from typing import Optional
 from typing import Tuple
 
 import typer
@@ -16,18 +18,37 @@ from zabbix_cli.state import State
 class StatefulApp(typer.Typer):
     """A Typer app that provides access to the global state."""
 
+    parent: Optional[StatefulApp]
+
     # NOTE: might be a good idea to add a typing.Unpack definition for the kwargs?
     def __init__(self, *args, **kwargs) -> None:
         StatefulApp.__init__.__doc__ = typer.Typer.__init__.__doc__
+        self.parent = None
         super().__init__(*args, **kwargs)
 
     def add_typer(self, typer_instance: Typer, **kwargs) -> None:
         kwargs.setdefault("no_args_is_help", True)
+        if isinstance(typer_instance, StatefulApp):
+            typer_instance.parent = self
         return super().add_typer(typer_instance, **kwargs)
 
     def add_subcommand(self, app: typer.Typer, *args, **kwargs) -> None:
         kwargs.setdefault("rich_help_panel", "Subcommands")
         self.add_typer(app, **kwargs)
+
+    def parents(self) -> Iterable[StatefulApp]:
+        """Get all parent apps."""
+        app = self
+        while app.parent:
+            yield app.parent
+            app = app.parent
+
+    def find_root(self) -> StatefulApp:
+        """Get the root app."""
+        app = self
+        for parent in self.parents():
+            app = parent
+        return app
 
     @property
     def state(self) -> State:

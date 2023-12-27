@@ -15,7 +15,43 @@ from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.prompts import str_prompt
 
 
-# from strenum import StrEnum
+def parse_int_arg(arg: str) -> int:
+    """Convert string to int."""
+    try:
+        return int(arg.strip())
+    except ValueError as e:
+        raise ZabbixCLIError(f"Invalid integer value: {arg}") from e
+
+
+def parse_list_arg(arg: str, keep_empty: bool = False) -> list[str]:
+    """Convert comma-separated string to list."""
+    try:
+        args = arg.strip().split(",")
+        if not keep_empty:
+            args = [a for a in args if a]
+        return args
+    except ValueError as e:
+        raise ZabbixCLIError(f"Invalid comma-separated string value: {arg}") from e
+
+
+def parse_int_list_arg(arg: str) -> list[int]:
+    """Convert comma-separated string of ints to list of ints."""
+    args = parse_list_arg(
+        arg,
+        keep_empty=False,  # Important that we never try to parse empty strings as ints
+    )
+    try:
+        return list(map(parse_int_arg, args))
+    except ValueError as e:
+        raise ZabbixCLIError(f"Invalid comma-separated string value: {arg}") from e
+
+
+def parse_bool_arg(arg: str) -> bool:
+    """Convert string to bool."""
+    try:
+        return bool(arg.strip())
+    except ValueError as e:
+        raise ZabbixCLIError(f"Invalid boolean value: {arg}") from e
 
 
 T = TypeVar("T")
@@ -164,3 +200,13 @@ class OnOffChoice(ChoiceMixin[str], APIStrEnum):
 
     ON = APIStr("on", "0")  # Yes, 0 is on, 1 is off...
     OFF = APIStr("off", "1")
+
+
+class UserType(ChoiceMixin[str], APIStrEnum):
+    __choice_name__ = "Zabbix user type"
+
+    # Match casing from Zabbix API
+    USER = APIStr("user", "1")
+    ADMIN = APIStr("admin", "2")
+    SUPERADMIN = APIStr("superadmin", "3")
+    GUEST = APIStr("guest", "4")
