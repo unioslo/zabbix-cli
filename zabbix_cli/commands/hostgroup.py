@@ -220,7 +220,7 @@ class HostGroupResult(Result):
     # flags and internal fields to the serialized output.
     @field_validator("flags", mode="before")
     @classmethod
-    def _get_flag_str(cls, v: Any) -> str:
+    def _get_flag_str(cls, v: Any) -> Any:
         if isinstance(v, int):
             return get_hostgroup_flag(v)
         else:
@@ -228,7 +228,7 @@ class HostGroupResult(Result):
 
     @field_validator("internal", mode="before")
     @classmethod
-    def _get_type_str(cls, v: Any) -> str:
+    def _get_type_str(cls, v: Any) -> Any:
         if isinstance(v, int):
             return get_hostgroup_type(v)
         else:
@@ -275,8 +275,8 @@ class HostGroupPermissions(TableRenderable):
         return cols, [row]
 
 
-class HostGroupPermissionsResult(AggregateResult):
-    result: List[HostGroupPermissions] = []  # type: ignore # make generic?
+class HostGroupPermissionsResult(AggregateResult[HostGroupPermissions]):
+    pass
 
 
 @app.command("show_hostgroup_permissions")

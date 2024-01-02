@@ -44,6 +44,7 @@ from zabbix_cli.utils.utils import get_item_type
 from zabbix_cli.utils.utils import get_macro_type
 from zabbix_cli.utils.utils import get_maintenance_status
 from zabbix_cli.utils.utils import get_monitoring_status
+from zabbix_cli.utils.utils import get_user_type
 from zabbix_cli.utils.utils import get_value_type
 from zabbix_cli.utils.utils import get_zabbix_agent_status
 
@@ -170,6 +171,37 @@ class ZabbixRight(TypedDict):
 class User(ZabbixAPIBaseModel):
     userid: str
     username: str = Field(..., validation_alias=AliasChoices("username", "alias"))
+    name: Optional[str] = None
+    surname: Optional[str] = None
+    url: Optional[str] = None
+    autologin: Optional[str] = None
+    autologout: Optional[str] = None
+    roleid: Optional[int] = Field(
+        default=None, validation_alias=AliasChoices("roleid", "type")
+    )
+    # NOTE: Not adding properties we don't use, since Zabbix have a habit of breaking
+    # their own API by changing names and types of properties.
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def role(self) -> Optional[str]:
+        """Returns the role name, if available."""
+        if self.roleid:
+            return get_user_type(self.roleid)
+        return None
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = ["UserID", "Username", "Name", "Surname", "Role"]
+        rows = [
+            [
+                self.userid,
+                self.username,
+                self.name or "",
+                self.surname or "",
+                self.role or "",
+            ]
+        ]
+        return cols, rows
 
 
 class Usergroup(ZabbixAPIBaseModel):
@@ -432,3 +464,10 @@ class Item(ZabbixAPIBaseModel):
             ]
         ]
         return cols, rows
+
+
+class Role(ZabbixAPIBaseModel):
+    roleid: str
+    name: str
+    type: int
+    readonly: int  # 0 = read-write, 1 = read-only

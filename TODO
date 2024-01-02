@@ -18,6 +18,7 @@ Add some sort of `process_params` method that can be used to process params and 
 
 * Add timeout to commands when running in bulk mode in case command prompts for input.
 * Populate cache when in bulk mode.
+* Automatically enable headless mode when running in bulk mode.
 
 ## Cache
 
@@ -41,6 +42,10 @@ Add some sort of `process_params` method that can be used to process params and 
 * Catch when users use deprecated names and warn them. Also warn when we load a .conf config.
 * Add support for .fixed.conf files
 * Add loading config from multiple sources. Each new config adds to the existing config and overrides values, like how it was in v2.
+* Use `ctx.config_map` to set command param defaults from config.
+  * Lets us set defaults for all commands in one place.
+  * https://github.com/tiangolo/typer/issues/86
+  * https://jwodder.github.io/kbits/posts/click-config/
 
 ## Documentation
 
@@ -73,9 +78,10 @@ Add some sort of `process_params` method that can be used to process params and 
 * Either only use root logger OR add a logger for each module.
   * Currently we have a mix of both.
 
-## No prompts in CI/headless
 
-* Add a flag to disable all prompts. Useful for CI and headless environments.
+## Prompts
+
+* Add a `--no-prompt` flag that doesn't prompt for missing values.
 
 ## Rendering
 
@@ -101,6 +107,9 @@ Add some sort of `process_params` method that can be used to process params and 
   * We do not strive for 1:1 compatibility with the Zabbix API. It's more important that users can read the output.
   * We need to fix  `Host` to convert to string representations instead of codes.
 
+## Utils
+
+Use APIStr enums in functions that take in a code and return a string representation. That way we don't create duplicate definitions for the same objects/concepts/choices.
 
 ## Tests
 

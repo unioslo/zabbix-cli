@@ -92,11 +92,10 @@ def init_directories() -> None:
         try:
             directory.path.mkdir(parents=True)
         except Exception as e:
-            if directory.required:
-                func = exit_err
-            else:
-                func = error
-            func(
-                f"Failed to create {directory.name} directory {directory.path}: {e}",
-                exc_info=True,
+            message = (
+                f"Failed to create {directory.name} directory {directory.path}: {e}"
             )
+            if directory.required:
+                exit_err(message, exc_info=True)
+            else:
+                error(message, exc_info=True)

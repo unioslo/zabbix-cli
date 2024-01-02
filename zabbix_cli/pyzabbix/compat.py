@@ -66,6 +66,14 @@ def user_name(version: Version) -> Literal["alias", "username"]:
     return "username"
 
 
+def role_id(version: Version) -> Literal["roleid", "type"]:
+    # https://support.zabbix.com/browse/ZBXNEXT-6148
+    # https://www.zabbix.com/documentation/5.2/en/manual/api/changes_5.0_-_5.2#role
+    if version.release < (5, 2, 0):
+        return "type"
+    return "roleid"
+
+
 ### API params
 # API parameter functions are in the following format:
 # param_<object>_<method>_<param>

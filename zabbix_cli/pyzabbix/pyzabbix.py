@@ -36,10 +36,13 @@ from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import Item
 from zabbix_cli.pyzabbix.types import Macro
 from zabbix_cli.pyzabbix.types import Proxy
+from zabbix_cli.pyzabbix.types import Role
 from zabbix_cli.pyzabbix.types import Template
 from zabbix_cli.pyzabbix.types import TemplateGroup
+from zabbix_cli.pyzabbix.types import User
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import ZabbixRight
+from zabbix_cli.utils.args import UserRole
 
 if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import MaintenanceStatus
@@ -1105,6 +1108,106 @@ class ZabbixAPI:
             raise ZabbixAPIException(
                 f"Failed to unlink and clear templates: {e}"
             ) from e
+
+    def create_user(
+        self,
+        username: str,
+        password: str,
+        first_name: str | None = None,
+        last_name: str | None = None,
+        role: UserRole | None = None,
+        autologin: bool | None = None,
+        autologout: str | int | None = None,
+        usergroups: List[Usergroup] | None = None,
+    ) -> str:
+        # TODO: handle invalid password
+        # TODO: handle invalid type
+        params = {compat.user_name(self.version): username, "passwd": password}  # type: ParamsType
+
+        if first_name:
+            params["name"] = first_name
+        if last_name:
+            params["surname"] = last_name
+
+        if role:
+            params[compat.role_id(self.version)] = role.as_api_value()
+
+        if usergroups:
+            params["usrgrps"] = [{"usrgrpid": ug.usrgrpid} for ug in usergroups]
+
+        if autologin is not None:
+            params["autologin"] = int(autologin)
+
+        if autologout is not None:
+            params["autologout"] = str(autologout)
+
+        resp = self.user.create(**params)
+        if not resp or not resp.get("userids"):
+            raise ZabbixAPIException(f"Creating user {username!r} returned no user ID.")
+        return resp["userids"][0]
+
+    def get_role(self, name_or_id: str) -> Role:
+        """Fetches a role given its ID or name."""
+        roles = self.get_roles(name_or_id)
+        if not roles:
+            raise ZabbixNotFoundError(f"Role with name or ID {name_or_id!r} not found")
+        return roles[0]
+
+    def get_roles(self, name_or_id: str | None = None) -> List[Role]:
+        params = {"output": "extend"}  # type: ParamsType
+        if name_or_id is not None:
+            if name_or_id.isdigit():
+                params["roleids"] = name_or_id
+            else:
+                params["filter"] = {"name": name_or_id}
+        roles = self.role.get(**params)
+        return [Role(**role) for role in roles]
+
+    def get_user(self, username: str) -> User:
+        """Fetches a user given its username."""
+        users = self.get_users(username)
+        if not users:
+            raise ZabbixNotFoundError(f"User with username {username!r} not found")
+        return users[0]
+
+    def get_users(
+        self,
+        username: str | None = None,
+        role: UserRole | None = None,
+        search: bool = False,
+    ) -> List[User]:
+        params = {"output": "extend"}  # type: ParamsType
+        filter_params = {}  # type: ParamsType
+        if search:
+            params["searchWildcardsEnabled"] = True
+        if username is not None:
+            if search:
+                params["search"] = {compat.user_name(self.version): username}
+            else:
+                filter_params[compat.user_name(self.version)] = username
+        if role:
+            filter_params[compat.role_id(self.version)] = role.as_api_value()
+
+        if filter_params:
+            params["filter"] = filter_params
+
+        users = self.user.get(**params)
+        return [User(**user) for user in users]
+
+    def delete_user(self, username: str) -> str:
+        """Deletes a user given its username.
+
+        Returns ID of deleted user."""
+        user = self.get_user(username)
+        try:
+            resp = self.user.delete(user.userid)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to delete user {username!r}") from e
+        if not resp or not resp.get("userids"):
+            raise ZabbixNotFoundError(
+                f"No user ID returned when deleting user {username!r}"
+            )
+        return resp["userids"][0]
 
     # def _construct_params(
     #     self,

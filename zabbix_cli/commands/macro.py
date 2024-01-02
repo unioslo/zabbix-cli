@@ -96,12 +96,12 @@ def define_host_usermacro(
 
 
 class ShowHostUserMacrosResult(TableRenderable):
-    hostmacroid: str = Field(validation_alias="MacroID")
+    hostmacroid: str = Field(json_schema_extra={"header": "MacroID"})
     macro: str
     value: Optional[str] = None
     type: str
     description: Optional[str] = None
-    hostid: str = Field(validation_alias="HostID")
+    hostid: str = Field(json_schema_extra={"header": "HostID"})
     automatic: Optional[int]
 
 

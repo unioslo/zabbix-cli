@@ -60,11 +60,11 @@ class TableRenderable(BaseModel):
         Only override if you want to customize the column headers without
         overriding the rows. Otherwise, override `__cols_rows__`.
 
-        By default, uses the validation alias for each field if available,
-        otherwise uses the field name capitalized. I.e.
+        By default, uses the name of the fields as the column headers,
+        with the first letter capitalized. This can be overriden with `header` in `json_schema_extra`:
 
         >>> class User(TableRenderable):
-        ...     userid: str = Field(validation_alias="UserID")
+        ...     userid: str = Field(json_schema_extra={"header" : "UserID"})
         ...     username: str = ""
         ...
         >>> User().__cols__()
@@ -72,8 +72,12 @@ class TableRenderable(BaseModel):
         """
         cols = []
         for field_name, field in self.model_fields.items():
-            if field.validation_alias:
-                cols.append(str(field.validation_alias))
+            if (
+                field.json_schema_extra
+                and isinstance(field.json_schema_extra, dict)
+                and field.json_schema_extra.get("header", None)
+            ):
+                cols.append(str(field.json_schema_extra["header"]))
             else:
                 cols.append(field_name.capitalize())
         return cols
@@ -94,7 +98,7 @@ class TableRenderable(BaseModel):
         Example:
 
         >>> class User(TableRenderable):
-        ...     userid: str = Field(validation_alias="UserID")
+        ...     userid: str = Field(json_schema_extra={"header" : "UserID"})
         ...     username: str = ""
         ...
         >>> User(userid="1", username="admin").__rows__()
@@ -118,7 +122,7 @@ class TableRenderable(BaseModel):
         Example:
 
         >>> class User(TableRenderable):
-        ...     userid: str = Field(validation_alias="UserID")
+        ...     userid: str = Field(json_schema_extra={"header" : "UserID"})
         ...     username: str = ""
         ...
         >>> User(userid="1", username="admin").__cols_rows__()

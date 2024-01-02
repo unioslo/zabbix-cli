@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import math
 import os
+from functools import lru_cache
 from functools import wraps
 from pathlib import Path
 from typing import Any
@@ -17,7 +18,7 @@ from rich.prompt import IntPrompt
 from rich.prompt import Prompt
 from typing_extensions import ParamSpec
 
-from .console import console
+from .console import err_console
 from .console import error
 from .console import exit_err
 from .console import exit_ok
@@ -54,13 +55,26 @@ def no_headless(f: Callable[P, T]) -> Callable[P, T]:
     return wrapper
 
 
+HEADLESS_VARS_SET = ["CI", "ZABBIX_CLI_HEADLESS"]
+"""Envvars that indicate headless environ when set (1, true)."""
+HEADLESS_VARS_SET_MAP = {"DEBIAN_FRONTEND": "noninteractive"}
+"""Envvars that indicate headless environ when set to a specific value."""
+
+TRUE_ARGS = ["1", "true"]  # case-insensitive
+
+
+# NOTE: if testing this function, clear cache after each test
+@lru_cache(maxsize=None)
 def is_headless() -> bool:
     """Determines if we are running in a headless environment (e.g. CI, Docker, etc.)"""
-    if os.environ.get("CI", None):
-        return True
-    elif os.environ.get("DEBIAN_FRONTEND", None) == "noninteractive":
-        return True
-    # Probably not safe to test "DISPLAY" here
+    # Truthy values indicate headless
+    for envvar in HEADLESS_VARS_SET:
+        if os.environ.get(envvar, "").lower() in ["1", "true"]:
+            return True
+    # Specific values indicate headless
+    for envvar, value in HEADLESS_VARS_SET_MAP.items():
+        if os.environ.get(envvar, None) == value:
+            return True
     return False
 
 
@@ -120,7 +134,7 @@ def str_prompt(
     while not inp:
         inp = Prompt.ask(
             msg,
-            console=console,
+            console=err_console,
             password=password,
             show_default=show_default,
             default=default,
@@ -243,7 +257,7 @@ def _number_prompt(
     while True:
         val = prompt_type.ask(
             msg,
-            console=console,
+            console=err_console,
             default=default_arg,
             show_default=show_default,
             **kwargs,
@@ -276,7 +290,7 @@ def bool_prompt(
 ) -> bool:
     return Confirm.ask(
         prompt_msg(prompt),
-        console=console,
+        console=err_console,
         show_default=show_default,
         default=default,
         **kwargs,

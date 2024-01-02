@@ -9,10 +9,12 @@ from pydantic import BaseModel
 
 from ..config import OutputFormat
 from .console import console
+from .console import error
 from .console import success
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import Result
 from zabbix_cli.models import ResultBase
+from zabbix_cli.models import ReturnCode
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.models import TableRenderableDict
 from zabbix_cli.models import TableRenderableProto
@@ -94,6 +96,11 @@ def render_json(
     result = wrap_result(result)
     o_json = result.model_dump_json(indent=2, by_alias=True)
     console.print_json(o_json, indent=2, sort_keys=False)
+    if result.message:
+        if result.return_code == ReturnCode.ERROR:
+            error(result.message)
+        else:
+            success(result.message)
 
 
 def render_json_legacy(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from enum import Enum
 from typing import Any
 from typing import Generic
@@ -10,9 +11,22 @@ from typing import Type
 from typing import TypeVar
 from typing import Union
 
+import typer
+from click.core import ParameterSource
+
 from zabbix_cli._types import EllipsisType
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.prompts import str_prompt
+
+
+def is_set(ctx: typer.Context, option: str) -> bool:
+    """Check if option is set in context."""
+    src = ctx.get_parameter_source(option)
+    if not src:
+        logging.warning(f"Parameter {option} not found in context.")
+        return False
+    return src != ParameterSource.DEFAULT
+    # return option in ctx.params and ctx.params[option]
 
 
 def parse_int_arg(arg: str) -> int:
@@ -66,7 +80,7 @@ class APIStr(str, Generic[T]):
 
     def __new__(
         cls,
-        s,
+        s: str,
         api_value: T,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> APIStr[T]:
@@ -142,7 +156,7 @@ class ChoiceMixin(Generic[T]):
             choices=cls.choices(),
             default=default,
         )
-        return cls(choice)  # type: ignore # mixin takes no args...
+        return cls(choice)
 
     @classmethod
     def choices(cls) -> List[str]:
@@ -161,9 +175,7 @@ class ChoiceMixin(Generic[T]):
         Attempts to find the member with 2 strategies:
         1. Search for a member with the given string value (ignoring case)
         2. Search for a member with the given API value
-
-        Attempts to instantiate Enum from Zabbix API value if argument
-        was not found among member string values."""
+        """
         for v in cls:  # type: ignore # again with the cls.__iter__ problem
             if v.value.api_value == value:
                 return v
@@ -179,14 +191,14 @@ class APIStrEnum(Enum):
     # FIXME: should inherit from string somehow!
     # Does not inherit from str now, as it would convert enum member value
     # to string, thereby losing the API associated value.
-    # If we are do that, we need to hijack the object creation and inject
+    # If we are to do that, we need to hijack the object creation and inject
     # the member value somehow?
 
     def __str__(self) -> str:
-        return self.value
+        return str(self.value)
 
     def casefold(self) -> str:
-        return self.value.casefold()
+        return str(self.value).casefold()
 
 
 class OnOffChoice(ChoiceMixin[str], APIStrEnum):
@@ -202,8 +214,8 @@ class OnOffChoice(ChoiceMixin[str], APIStrEnum):
     OFF = APIStr("off", "1")
 
 
-class UserType(ChoiceMixin[str], APIStrEnum):
-    __choice_name__ = "Zabbix user type"
+class UserRole(ChoiceMixin[str], APIStrEnum):
+    __choice_name__ = "User role"
 
     # Match casing from Zabbix API
     USER = APIStr("user", "1")
