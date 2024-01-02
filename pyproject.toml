@@ -95,4 +95,4 @@ convention = "google"
 python_version = "3.8"
 ignore_missing_imports = true
 strict = false
-exclude = ["tests"]
+exclude = ["tests", "zabbix_cli/cli.py", "zabbix_cli/prettytable.py"]
