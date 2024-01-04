@@ -13,7 +13,6 @@ Zabbix versions.
 """
 from __future__ import annotations
 
-from enum import Enum
 from typing import ClassVar
 from typing import List
 from typing import MutableMapping
@@ -52,26 +51,21 @@ SortOrder = Literal["ASC", "DESC"]
 
 PrimitiveType = Union[str, bool, int]
 ParamsType = MutableMapping[
-    str, Union[PrimitiveType, "ParamsType", List[Union["ParamsType", PrimitiveType]]]
+    str,
+    Union[
+        PrimitiveType,
+        "ParamsType",
+        List[Union["ParamsType", PrimitiveType]],
+        # List[PrimitiveType],
+        # List["ParamsType"],
+        # List[str],
+    ],
 ]
 """Type definition for Zabbix API query parameters.
 
 Most Zabbix API parameters are strings, but not _always_.
 They can also be contained in nested dicts or in lists.
 """
-
-
-class UsergroupPermission(Enum):
-    """Usergroup permission levels."""
-
-    DENY = 0
-    READ_ONLY = 2
-    READ_WRITE = 3
-    _UNKNOWN = -1
-
-    @classmethod
-    def _missing_(cls, value: object) -> UsergroupPermission:
-        return cls._UNKNOWN
 
 
 class ModifyHostItem(TypedDict):
@@ -237,10 +231,11 @@ class TemplateGroup(ZabbixAPIBaseModel):
     groupid: str
     name: str
     uuid: str
+    templates: List[Template] = []
 
 
 class Template(ZabbixAPIBaseModel):
-    """A template object. Can contain"""
+    """A template object. Can contain hosts and other templates."""
 
     templateid: str
     host: str
@@ -471,3 +466,21 @@ class Role(ZabbixAPIBaseModel):
     name: str
     type: int
     readonly: int  # 0 = read-write, 1 = read-only
+
+
+class MediaType(ZabbixAPIBaseModel):
+    mediatypeid: str
+    name: str
+    type: int
+    description: Optional[str] = None
+
+
+class UserMedia(ZabbixAPIBaseModel):
+    """Media attached to a user object."""
+
+    # https://www.zabbix.com/documentation/current/en/manual/api/reference/user/object#media
+    mediatypeid: str
+    sendto: str
+    active: int = 0  # 0 = enabled, 1 = disabled (YES REALLY!)
+    severity: int = 63  # all (1111 in binary - all bits set)
+    period: str = "1-7,00:00-24:00"  # 24/7

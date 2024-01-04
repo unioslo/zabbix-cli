@@ -162,13 +162,8 @@ def get_autologin_type(code):
 
 def get_permission(code: int) -> str:
     """Get permission."""
-    permission = {
-        0: "deny",
-        2: "ro",
-        3: "rw",
-    }
-
-    return permission.get(code, "Unknown")
+    permission = {0: "deny", 2: "ro", 3: "rw"}
+    return _format_code(code, permission)
 
 
 def get_permission_code(permission: str) -> int:

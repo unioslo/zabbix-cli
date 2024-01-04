@@ -11,6 +11,8 @@
   - `app.legacy_json_format`: Enables the old JSON output format. Defaults to `false`.
 - New commands:
   - `show_user`: Show details for a single user.
+  - `show_templategroup`: Show a single template group.
+  - `show_templategroups`: Show all template groups.
 - New command options:
   - `create_host`:
     - `--name`: Host name

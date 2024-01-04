@@ -6,7 +6,8 @@
 
 ## API
 
-Add some sort of `process_params` method that can be used to process params and add them to the ParamsType mapping, to reduce code duplication within each method.
+* Add some sort of `process_params` method that can be used to process params and add them to the ParamsType mapping, to reduce code duplication within each method.
+* Add support for both names and IDs in certain API methods. This adds a bunch of complexity, but is required to support some V2 features. Drop them?
 
 ## Args
 
@@ -30,12 +31,17 @@ Add some sort of `process_params` method that can be used to process params and 
 
 * Add command aliases: https://github.com/tiangolo/typer/issues/132
 * Two options:
-  * Add new name `show_host` -> `host show`, hide old name. (easy)
-    * It's legal to have spaces in command names.
+  * Add new name `show_host` -> `host-show`, hide old name. (easy)
     * Need some sort of decorator like @app.old_name("show_host")
       * Registers the command with hidden=True
       * Adds `Old name: show_host` to the bottom of the help text.
       * This lets us traverse all the commands and create a mapping of old to new names, as well as providing it in the help text.
+  * Add new sub-apps a la Harbor CLI: `show_host` -> `host show` (hard)
+    * Requires a bigger refactoring and is semantically different from the current set up.
+
+* Sort command categories by help panel names.
+  * Sorting order seems to be alphabetical BUT BASED ON THE COMMAND NAMES. So if one category has a command that starts with "A" and another category has a command that starts with "B", then the category with the "A" command will be listed first, regardless of the category name. Why...
+
 
 ## Config
 
@@ -82,6 +88,9 @@ Add some sort of `process_params` method that can be used to process params and 
 ## Prompts
 
 * Add a `--no-prompt` flag that doesn't prompt for missing values.
+* Turn some text prompts into arrow key selection prompts:
+  * `create_notification_user`: `mediatype`
+    * Fetch all media types then display them in a list.
 
 ## Rendering
 
@@ -92,8 +101,9 @@ Add some sort of `process_params` method that can be used to process params and 
 
 * Turn `ColsRowsType` into some sort of BaseModel type that validates that row length matches cols length.
   * Rewrite `TableRenderable.__cols_rows__` to use this new type.
-  * Convert all existing `__cols_rows__` to separate `__cols__` and `__rows__` methods.
-  * Add some sort of converting of iterable values to newline separated strings in `__rows__`
+  * Performance implications?
+
+* Add some sort of converting of iterable values to newline separated strings in `__rows__`
 
 ## Legacy
 

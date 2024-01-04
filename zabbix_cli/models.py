@@ -12,6 +12,8 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import RootModel
+from pydantic.fields import ComputedFieldInfo
+from pydantic.fields import FieldInfo
 from rich.table import Table
 from strenum import StrEnum
 
@@ -31,6 +33,11 @@ RowsType = List[List[str]]
 
 ColsRowsType = Tuple[List[str], List[List[str]]]
 """A tuple containing a list of columns and a list of rows, where each row is a list of strings."""
+
+
+def fmt_field_name(field_name: str) -> str:
+    """Formats a field name for display in a table."""
+    return field_name.capitalize().replace("_", " ")
 
 
 # FIXME: this suddenly became a HUGE mess with the introduction of
@@ -54,6 +61,17 @@ class TableRenderable(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+    __title__: Optional[str] = None
+
+    def __all_fields__(self) -> Dict[str, Union[FieldInfo, ComputedFieldInfo]]:
+        """Returns all fields for the model, including computed fields,
+        but excluding fields that have `exclude=True` set."""
+        all_fields = {
+            **self.model_fields,
+            **self.model_computed_fields,
+        }  # type: Dict[str, Union[FieldInfo, ComputedFieldInfo]]
+        return {n: f for n, f in all_fields.items() if not getattr(f, "exclude", False)}
+
     def __cols__(self) -> ColsType:
         """Returns the columns for the table representation of the object.
 
@@ -71,7 +89,10 @@ class TableRenderable(BaseModel):
         ["UserID", "Username"]
         """
         cols = []
-        for field_name, field in self.model_fields.items():
+
+        for field_name, field in self.__all_fields__().items():
+            if getattr(field, "exclude", False):  # computed fields can't be excluded
+                continue
             if (
                 field.json_schema_extra
                 and isinstance(field.json_schema_extra, dict)
@@ -79,7 +100,7 @@ class TableRenderable(BaseModel):
             ):
                 cols.append(str(field.json_schema_extra["header"]))
             else:
-                cols.append(field_name.capitalize())
+                cols.append(fmt_field_name(field_name))
         return cols
 
     def __rows__(self) -> RowsType:
@@ -104,7 +125,7 @@ class TableRenderable(BaseModel):
         >>> User(userid="1", username="admin").__rows__()
         [["1", "admin"]]
         """
-        row = [getattr(self, field_name) for field_name in self.model_fields]
+        row = [getattr(self, field_name, "") for field_name in self.__all_fields__()]
         for i, value in enumerate(row):
             if isinstance(value, (TableRenderable, TableRenderableDict)):
                 row[i] = value.as_table()
@@ -133,7 +154,7 @@ class TableRenderable(BaseModel):
     def as_table(self) -> Table:
         """Renders a Rich table given the rows and cols generated for the object."""
         cols, rows = self.__cols_rows__()
-        return get_table(cols, rows)
+        return get_table(cols=cols, rows=rows, title=self.__title__)
 
     # We should implement the rich renderable protocol...
 

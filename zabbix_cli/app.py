@@ -6,13 +6,35 @@ from __future__ import annotations
 
 from typing import Iterable
 from typing import Optional
+from typing import Protocol
 from typing import Tuple
+from typing import TYPE_CHECKING
 
 import typer
 from typer.main import Typer
 
 from zabbix_cli.state import get_state
 from zabbix_cli.state import State
+
+if TYPE_CHECKING:
+    from rich.status import Status  # noqa: F401
+    from rich.console import RenderableType  # noqa: F401
+    from rich.style import StyleType  # noqa: F401
+
+
+class StatusCallable(Protocol):
+    """Function that returns a Status object."""
+
+    def __call__(
+        self,
+        status: RenderableType,
+        *,
+        spinner: str = "dots",
+        spinner_style: StyleType = "status.spinner",
+        speed: float = 1.0,
+        refresh_per_second: float = 12.5,
+    ) -> Status:
+        ...
 
 
 class StatefulApp(typer.Typer):
@@ -58,6 +80,10 @@ class StatefulApp(typer.Typer):
     def api_version(self) -> Tuple[int, ...]:
         """Get the current API version. Will fail if not connected to the API."""
         return self.state.client.version.release
+
+    @property
+    def status(self) -> StatusCallable:
+        return self.state.console.status
 
 
 app = StatefulApp(

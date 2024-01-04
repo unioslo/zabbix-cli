@@ -48,12 +48,28 @@ def login_user_name(version: Version) -> Literal["user", "username"]:
     return "username"
 
 
+def mediatype_name(version: Version) -> Literal["name", "description"]:
+    # TODO: find out why this was changed and what it signifies
+    # NO URL YET
+    if version.release < (6, 0, 0):
+        return "description"
+    return "name"
+
+
 def proxy_name(version: Version) -> Literal["host", "name"]:
     # https://support.zabbix.com/browse/ZBXNEXT-8500
     # https://www.zabbix.com/documentation/7.0/en/manual/api/changes#proxy
     if version.release < (7, 0, 0):
         return "host"
     return "name"
+
+
+def role_id(version: Version) -> Literal["roleid", "type"]:
+    # https://support.zabbix.com/browse/ZBXNEXT-6148
+    # https://www.zabbix.com/documentation/5.2/en/manual/api/changes_5.0_-_5.2#role
+    if version.release < (5, 2, 0):
+        return "type"
+    return "roleid"
 
 
 def user_name(version: Version) -> Literal["alias", "username"]:
@@ -66,12 +82,34 @@ def user_name(version: Version) -> Literal["alias", "username"]:
     return "username"
 
 
-def role_id(version: Version) -> Literal["roleid", "type"]:
-    # https://support.zabbix.com/browse/ZBXNEXT-6148
-    # https://www.zabbix.com/documentation/5.2/en/manual/api/changes_5.0_-_5.2#role
+def user_medias(version: Version) -> Literal["user_medias", "medias"]:
+    # https://support.zabbix.com/browse/ZBX-17955
+    # Deprecated in 5.2, removed in 6.4
     if version.release < (5, 2, 0):
-        return "type"
-    return "roleid"
+        return "user_medias"
+    return "medias"
+
+
+def usergroup_hostgroup_rights(
+    version: Version,
+) -> Literal["rights", "hostgroup_rights"]:
+    # https://support.zabbix.com/browse/ZBXNEXT-2592
+    # https://www.zabbix.com/documentation/6.2/en/manual/api/changes_6.0_-_6.2
+    # Deprecated in 6.2
+    if version.release < (6, 2, 0):
+        return "rights"
+    return "hostgroup_rights"
+
+
+def usergroup_templategroup_rights(
+    version: Version,
+) -> Literal["rights", "templategroup_rights"]:
+    # https://support.zabbix.com/browse/ZBXNEXT-2592
+    # https://www.zabbix.com/documentation/6.2/en/manual/api/changes_6.0_-_6.2
+    # Deprecated in 6.2
+    if version.release < (6, 2, 0):
+        return "rights"
+    return "templategroup_rights"
 
 
 ### API params

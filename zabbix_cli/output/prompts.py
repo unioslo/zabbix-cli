@@ -118,8 +118,8 @@ def str_prompt(
         Callback function to run on the input before returning it,
         by default None
     """
-    # Don't permit secrets to be shown ever
-    if password:
+    # Don't permit secrets to be shown ever + no empty defaults shown
+    if password or default is ... or not default:
         show_default = False
 
     # Notify user that a default secret will be used,

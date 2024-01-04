@@ -21,6 +21,7 @@ from typing import List
 from typing import Literal
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Union
 
 import requests
 import urllib3
@@ -35,19 +36,23 @@ from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import Item
 from zabbix_cli.pyzabbix.types import Macro
+from zabbix_cli.pyzabbix.types import MediaType
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Role
 from zabbix_cli.pyzabbix.types import Template
 from zabbix_cli.pyzabbix.types import TemplateGroup
 from zabbix_cli.pyzabbix.types import User
 from zabbix_cli.pyzabbix.types import Usergroup
+from zabbix_cli.pyzabbix.types import UserMedia
 from zabbix_cli.pyzabbix.types import ZabbixRight
+from zabbix_cli.utils.args import UsergroupPermission
 from zabbix_cli.utils.args import UserRole
 
 if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import MaintenanceStatus
     from zabbix_cli.pyzabbix.types import MonitoringStatus
     from zabbix_cli.pyzabbix.types import AgentAvailable
+    from zabbix_cli.pyzabbix.types import PrimitiveType  # noqa: F401
     from zabbix_cli.pyzabbix.types import ParamsType  # noqa: F401
     from zabbix_cli.pyzabbix.types import SortOrder  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
@@ -262,14 +267,17 @@ class ZabbixAPI:
             return hostgroup_id
         resp = self.hostgroup.get(filter={"name": hostgroup_name}, output=["name"])
         if not resp:
-            raise ZabbixNotFoundError(
-                f"HostGroup with name {hostgroup_name!r} not found"
-            )
+            raise ZabbixNotFoundError(f"Host group {hostgroup_name!r} not found")
         # TODO add result to cache
         return resp[0]["groupid"]
 
     def get_hostgroup(
-        self, name_or_id: str, search: bool = False, hosts: bool = False, **kwargs
+        self,
+        name_or_id: str,
+        search: bool = False,
+        select_hosts: bool = False,
+        sort_order: SortOrder | None = None,
+        sort_field: str | None = None,
     ) -> HostGroup:
         """Fetches a host group given its name or ID.
 
@@ -290,21 +298,23 @@ class ZabbixAPI:
             HostGroup: The host group object.
         """
         hostgroups = self.get_hostgroups(
-            name_or_id, search=search, hosts=hosts, **kwargs
+            name_or_id,
+            search=search,
+            select_hosts=select_hosts,
+            sort_order=sort_order,
+            sort_field=sort_field,
         )
         if not hostgroups:
-            raise ZabbixNotFoundError(
-                f"HostGroup with name or ID {name_or_id!r} not found"
-            )
+            raise ZabbixNotFoundError(f"Host group {name_or_id!r} not found")
         return hostgroups[0]
 
     def get_hostgroups(
         self,
         *names_or_ids: str,
         search: bool = False,
-        # TODO: change param name to select_hosts
-        hosts: bool = False,
-        **kwargs,
+        select_hosts: bool = False,
+        sort_order: SortOrder | None = None,
+        sort_field: str | None = None,
     ) -> List[HostGroup]:
         """Fetches a list of host groups given its name or ID.
 
@@ -326,13 +336,14 @@ class ZabbixAPI:
         """
         # HACK: don't filter if we have an asterisk (all templates)
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
+        params = {"output": "extend"}  # type: ParamsType
+
         if "*" in names_or_ids:
             names_or_ids = tuple()
 
         if names_or_ids:
             for name_or_id in names_or_ids:
                 norid = name_or_id.strip()
-                params = {"output": "extend"}  # type: ParamsType
                 is_id = norid.isnumeric()
                 norid_key = "groupid" if is_id else "name"
                 if search and not is_id:
@@ -342,18 +353,52 @@ class ZabbixAPI:
                     )
                 else:
                     params["filter"] = {norid_key: name_or_id}
-                if hosts:
-                    params["selectHosts"] = "extend"
-                params.update(kwargs)
+        if select_hosts:
+            params["selectHosts"] = "extend"
+        if sort_order:
+            params["sortorder"] = sort_order
+        if sort_field:
+            params["sortfield"] = sort_field
 
         resp = self.hostgroup.get(**params) or []
         return [HostGroup(**hostgroup) for hostgroup in resp]
+
+    def get_templategroup(
+        self,
+        name_or_id: str,
+        search: bool = False,
+        select_templates: bool = False,
+    ) -> TemplateGroup:
+        """Fetches a template group given its name or ID.
+
+        Name or ID argument is interpeted as an ID if the argument is numeric.
+
+        Uses filtering by default, but can be switched to searching by setting
+        the `search` argument to True.
+
+        Args:
+            name_or_id (str): Name or ID of the template group.
+            search (bool, optional): Search for template groups using the given pattern instead of filtering. Defaults to False.
+            select_templates (bool, optional): Fetch full information for each template in the group. Defaults to False.
+
+        Raises:
+            ZabbixNotFoundError: Group is not found.
+
+        Returns:
+            TemplateGroup: The template group object.
+        """
+        tgroups = self.get_templategroups(
+            name_or_id, search=search, select_templates=select_templates
+        )
+        if not tgroups:
+            raise ZabbixNotFoundError(f"Template group {name_or_id!r} not found")
+        return tgroups[0]
 
     def get_templategroups(
         self,
         *names_or_ids: str,
         search: bool = False,
-        **kwargs,
+        select_templates: bool = False,
     ) -> List[TemplateGroup]:
         """Fetches a list of template groups, optionally filtered by name(s).
 
@@ -364,7 +409,7 @@ class ZabbixAPI:
 
         Args:
             name_or_id (str): Name or ID of the template group.
-            search (bool, optional): Search for host groups using the given pattern instead of filtering. Defaults to False.
+            search (bool, optional): Search for template groups using the given pattern instead of filtering. Defaults to False.
 
         Raises:
             ZabbixNotFoundError: Group is not found.
@@ -372,15 +417,17 @@ class ZabbixAPI:
         Returns:
             List[TemplateGroup]: List of template groups.
         """
+        # FIXME: ensure we use searching correctly here
         # HACK: don't filter if we have an asterisk (all templates)
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
+        params = {"output": "extend"}  # type: ParamsType
+
         if "*" in names_or_ids:
             names_or_ids = tuple()
 
         if names_or_ids:
             for name_or_id in names_or_ids:
                 norid = name_or_id.strip()
-                params = {"output": "extend"}  # type: ParamsType
                 is_id = norid.isnumeric()
                 norid_key = "groupid" if is_id else "name"
                 if search and not is_id:
@@ -390,7 +437,9 @@ class ZabbixAPI:
                     )
                 else:
                     params["filter"] = {norid_key: name_or_id}
-                params.update(kwargs)
+
+        if select_templates:
+            params["selectTemplates"] = "extend"
 
         resp = self.templategroup.get(**params) or []
         return [TemplateGroup(**tgroup) for tgroup in resp]
@@ -427,7 +476,7 @@ class ZabbixAPI:
         )
         if not hosts:
             raise ZabbixNotFoundError(
-                f"Host with name or ID {name_or_id!r} matching filters not found"
+                f"Host {name_or_id!r} not found. Check your search pattern and filters."
             )
         if len(hosts) > 1:
             logger.debug(
@@ -610,9 +659,7 @@ class ZabbixAPI:
         try:
             res = self.usergroup.get(**params)
             if not res:
-                raise ZabbixNotFoundError(
-                    f"Usergroup with name {usergroup_name!r} not found"
-                )
+                raise ZabbixNotFoundError(f"Usergroup {usergroup_name!r} not found")
         except ZabbixNotFoundError:
             raise
         except ZabbixAPIException as e:
@@ -682,11 +729,83 @@ class ZabbixAPI:
 
         return None
 
+    def add_usergroup_users(self, usergroup: Usergroup, users: List[User]) -> None:
+        """Add users to a user group. Ignores users already in the group."""
+        self._update_usergroup_users(usergroup, users, remove=False)
+
+    def remove_usergroup_users(self, usergroup: Usergroup, users: List[User]) -> None:
+        """Remove users from a user group. Ignores users not in the group."""
+        self._update_usergroup_users(usergroup, users, remove=True)
+
+    def _update_usergroup_users(
+        self, usergroup: Usergroup, users: List[User], remove: bool = False
+    ) -> None:
+        """Add/remove users from user group."""
+        params = {"usrgrpid": usergroup.usrgrpid}  # type: ParamsType
+
+        # Add new IDs to existing and remove duplicates
+        current_userids = [user.userid for user in usergroup.users]
+        ids_update = [user.userid for user in users if user.userid]
+        if remove:
+            new_userids = list(set(current_userids) - set(ids_update))
+        else:
+            new_userids = list(set(current_userids + ids_update))
+
+        if self.version.release >= (6, 0, 0):
+            params["users"] = {"userid": uid for uid in new_userids}
+        else:
+            params["userids"] = new_userids  # type: ignore # fix annotations
+        self.usergroup.update(usrgrpid=usergroup.usrgrpid, userids=new_userids)
+
+    def update_usergroup_rights(
+        self,
+        usergroup: Usergroup,
+        groups: Union[List[HostGroup], List[TemplateGroup]],
+        permission: UsergroupPermission,
+        hostgroup: bool,
+    ) -> None:
+        """Update usergroup rights for host or template groups."""
+        params = {"usrgrpid": usergroup.usrgrpid}  # type: ParamsType
+        if hostgroup:
+            if self.version.release >= (6, 2, 0):
+                hg_rights = usergroup.hostgroup_rights
+            else:
+                hg_rights = usergroup.rights
+            new_rights = self._get_updated_rights(hg_rights, permission, groups)
+            params[compat.usergroup_hostgroup_rights(self.version)] = new_rights  # type: ignore
+        else:
+            if self.version.release >= (6, 2, 0):
+                tg_rights = usergroup.templategroup_rights
+            else:
+                tg_rights = usergroup.rights
+            new_rights = self._get_updated_rights(tg_rights, permission, groups)
+            params[compat.usergroup_templategroup_rights(self.version)] = new_rights  # type: ignore
+
+    def _get_updated_rights(
+        self,
+        rights: List[ZabbixRight],
+        permission: UsergroupPermission,
+        groups: Union[List[HostGroup], List[TemplateGroup]],
+    ) -> List[ZabbixRight]:
+        new_rights = []  # List[ZabbixRight] # list of new rights to add
+        rights = list(rights)  # copy rights (don't modify original)
+        for group in groups:
+            for right in rights:
+                if right["id"] == group.groupid:
+                    right["permission"] = permission.as_api_value()
+                    break
+            else:
+                new_rights.append(
+                    ZabbixRight(id=group.groupid, permission=permission.as_api_value())
+                )
+        rights.extend(new_rights)
+        return rights
+
     def get_proxy(self, name: str, select_hosts: bool = False) -> Proxy:
         """Fetches a single proxy matching the given name."""
         proxies = self.get_proxies(name=name, select_hosts=select_hosts)
         if not proxies:
-            raise ZabbixNotFoundError(f"Proxy with name {name!r} not found")
+            raise ZabbixNotFoundError(f"Proxy {name!r} not found")
         return proxies[0]
 
     def get_proxies(
@@ -936,9 +1055,7 @@ class ZabbixAPI:
             select_parent_templates=select_parent_templates,
         )
         if not templates:
-            raise ZabbixNotFoundError(
-                f"Template with name or ID {template_name_or_id!r} not found"
-            )
+            raise ZabbixNotFoundError(f"Template {template_name_or_id!r} not found")
         return templates[0]
 
     def get_templates(
@@ -1119,6 +1236,7 @@ class ZabbixAPI:
         autologin: bool | None = None,
         autologout: str | int | None = None,
         usergroups: List[Usergroup] | None = None,
+        media: List[UserMedia] | None = None,
     ) -> str:
         # TODO: handle invalid password
         # TODO: handle invalid type
@@ -1141,6 +1259,11 @@ class ZabbixAPI:
         if autologout is not None:
             params["autologout"] = str(autologout)
 
+        if media:
+            params[compat.user_medias(self.version)] = [
+                m.model_dump(mode="json") for m in media
+            ]
+
         resp = self.user.create(**params)
         if not resp or not resp.get("userids"):
             raise ZabbixAPIException(f"Creating user {username!r} returned no user ID.")
@@ -1150,7 +1273,7 @@ class ZabbixAPI:
         """Fetches a role given its ID or name."""
         roles = self.get_roles(name_or_id)
         if not roles:
-            raise ZabbixNotFoundError(f"Role with name or ID {name_or_id!r} not found")
+            raise ZabbixNotFoundError(f"Role {name_or_id!r} not found")
         return roles[0]
 
     def get_roles(self, name_or_id: str | None = None) -> List[Role]:
@@ -1208,6 +1331,30 @@ class ZabbixAPI:
                 f"No user ID returned when deleting user {username!r}"
             )
         return resp["userids"][0]
+
+    def get_mediatype(self, name: str) -> MediaType:
+        mts = self.get_mediatypes(name=name)
+        if not mts:
+            raise ZabbixNotFoundError(f"Media type {name!r} not found")
+        return mts[0]
+
+    def get_mediatypes(
+        self, name: str | None = None, search: bool = False
+    ) -> List[MediaType]:
+        params = {"output": "extend"}  # type: ParamsType
+        filter_params = {}  # type: ParamsType
+        if search:
+            params["searchWildcardsEnabled"] = True
+        if name is not None:
+            param = compat.mediatype_name(self.version)
+            if search:
+                params["search"] = {param: name}
+            else:
+                filter_params[param] = name
+        if filter_params:
+            params["filter"] = filter_params
+        resp = self.mediatype.get(**params)
+        return [MediaType(**mt) for mt in resp]
 
     # def _construct_params(
     #     self,

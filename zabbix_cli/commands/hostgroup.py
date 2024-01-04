@@ -22,7 +22,7 @@ from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
-from zabbix_cli.pyzabbix.types import UsergroupPermission
+from zabbix_cli.utils.args import UsergroupPermission
 from zabbix_cli.utils.commands import ARG_POSITIONAL
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
@@ -144,7 +144,7 @@ def create_hostgroup(
                 rights=[
                     {
                         "id": hostgroup_id,
-                        "permission": UsergroupPermission.READ_WRITE.value,
+                        "permission": UsergroupPermission.READ_WRITE.as_api_value(),
                     }
                 ],
             )
@@ -156,7 +156,7 @@ def create_hostgroup(
                 rights=[
                     {
                         "id": hostgroup_id,
-                        "permission": UsergroupPermission.READ_ONLY.value,
+                        "permission": UsergroupPermission.READ_ONLY.as_api_value(),
                     }
                 ],
             )
@@ -204,7 +204,7 @@ class HostGroupHostResult(TypedDict):
     host: str
 
 
-class HostGroupResult(Result):
+class HostGroupResult(Result):  # FIXME: inherit from TableRenderable instead
     """Result type for hostgroup."""
 
     groupid: str
@@ -255,7 +255,7 @@ def show_hostgroup(
         hostgroup = str_prompt("Host group name")
 
     try:
-        hg = app.state.client.get_hostgroup(hostgroup, hosts=True)
+        hg = app.state.client.get_hostgroup(hostgroup, select_hosts=True)
     except Exception as e:
         exit_err(f"Failed to get host group {hostgroup!r}: {e}")
 
@@ -303,9 +303,9 @@ def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostGroupPermissions]
     usergroups = app.state.client.get_usergroups()
     hostgroups = app.state.client.get_hostgroups(
         hostgroup_arg,
-        sortfield="name",
+        sort_field="name",
         sortorder="ASC",
-        hosts=False,
+        select_hosts=False,
         search=True,
     )
 
@@ -342,7 +342,9 @@ class HostGroupsResult(AggregateResult):
 def show_hostgroups() -> None:
     """Show details for all host groups."""
     try:
-        hostgroups = app.state.client.get_hostgroups("*", hosts=True, search=True)
+        hostgroups = app.state.client.get_hostgroups(
+            "*", select_hosts=True, search=True, sort_field="name", sort_order="ASC"
+        )
     except Exception as e:
         exit_err(f"Failed to get all host groups: {e}")
 

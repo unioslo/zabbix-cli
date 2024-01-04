@@ -37,10 +37,10 @@ def parse_int_arg(arg: str) -> int:
         raise ZabbixCLIError(f"Invalid integer value: {arg}") from e
 
 
-def parse_list_arg(arg: str, keep_empty: bool = False) -> list[str]:
+def parse_list_arg(arg: Optional[str], keep_empty: bool = False) -> list[str]:
     """Convert comma-separated string to list."""
     try:
-        args = arg.strip().split(",")
+        args = arg.strip().split(",") if arg else []
         if not keep_empty:
             args = [a for a in args if a]
         return args
@@ -222,3 +222,11 @@ class UserRole(ChoiceMixin[str], APIStrEnum):
     ADMIN = APIStr("admin", "2")
     SUPERADMIN = APIStr("superadmin", "3")
     GUEST = APIStr("guest", "4")
+
+
+class UsergroupPermission(ChoiceMixin[int], APIStrEnum):
+    """Usergroup permission levels."""
+
+    DENY = APIStr("deny", 0)
+    READ_ONLY = APIStr("ro", 2)
+    READ_WRITE = APIStr("rw", 3)
