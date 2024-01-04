@@ -14,6 +14,7 @@ from pydantic import Field
 from pydantic import RootModel
 from pydantic.fields import ComputedFieldInfo
 from pydantic.fields import FieldInfo
+from rich.console import RenderableType
 from rich.table import Table
 from strenum import StrEnum
 
@@ -28,10 +29,13 @@ class ReturnCode(StrEnum):
 ColsType = List[str]
 """A list of column headers."""
 
-RowsType = List[List[str]]
+RowContent = List[RenderableType]
+"""A list of renderables representing the content of a row."""
+
+RowsType = List[List[RenderableType]]
 """A list of rows, where each row is a list of strings."""
 
-ColsRowsType = Tuple[List[str], List[List[str]]]
+ColsRowsType = Tuple[List[str], List[List[RenderableType]]]
 """A tuple containing a list of columns and a list of rows, where each row is a list of strings."""
 
 
@@ -170,7 +174,7 @@ class TableRenderableDict(RootModel[Dict[str, str]]):
     def __cols_rows__(self) -> ColsRowsType:
         # only returns the keys that have a value
         cols = ["Key", "Value"]
-        rows = [[k, str(v)] for k, v in self.root.items() if v]
+        rows = [[k, str(v)] for k, v in self.root.items() if v]  # type: RowsType
         return cols, rows
 
     def as_table(self) -> Table:

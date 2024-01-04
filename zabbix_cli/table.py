@@ -23,6 +23,9 @@ def get_table(
     for col in cols:
         table.add_column(col, overflow="fold")
     for row in rows:
+        # We might have subtables in the rows.
+        # If they have no rows, we don't want to render them.
+        row = [cell if not isinstance(cell, Table) or cell.rows else "" for cell in row]
         table.add_row(*row)
         table.add_section()
     return table

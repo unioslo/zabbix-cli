@@ -32,6 +32,7 @@ from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
 from zabbix_cli.pyzabbix.types import GlobalMacro
+from zabbix_cli.pyzabbix.types import GUIAccess
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import Item
@@ -640,47 +641,62 @@ class ZabbixAPI:
         else:
             return True
 
-    # TODO: refactor usergroup fetching, combine methods for fetching a single group
-    # and fetching all groups
-    def get_usergroup(self, usergroup_name: str) -> Usergroup:
+    # FIXME: refactor to achieve parity with other get_* methods
+    def get_usergroup(
+        self,
+        name: str,
+        select_users: bool = False,
+        select_rights: bool = False,
+        search: bool = False,
+    ) -> Usergroup:
         """Fetches a user group by name. Always fetches the full contents of the group."""
-        params = {
-            "filter": {"name": usergroup_name},
-            "output": "extend",
-            "selectUsers": "extend",  # TODO: profile performance for large groups
-        }  # type: ParamsType
-        # Rights were split into host and template group rights in 6.2.0
-        if self.version.release >= (6, 2, 0):
-            params["selectHostGroupRights"] = "extend"
-            params["selectTemplateGroupRights"] = "extend"
-        else:
-            params["selectRights"] = "extend"
+        groups = self.get_usergroups(
+            name,
+            select_users=select_users,
+            select_rights=select_rights,
+            search=search,
+        )
+        if not groups:
+            raise ZabbixNotFoundError(f"User group {name!r} not found")
+        return groups[0]
 
-        try:
-            res = self.usergroup.get(**params)
-            if not res:
-                raise ZabbixNotFoundError(f"Usergroup {usergroup_name!r} not found")
-        except ZabbixNotFoundError:
-            raise
-        except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Unknown error when fetching user group {usergroup_name}: {e}"
-            )
-        else:
-            return Usergroup(**res[0])
-
-    def get_usergroups(self) -> List[Usergroup]:
-        """Fetches all user groups. Always fetches the full contents of the groups."""
+    def get_usergroups(
+        self,
+        *names: str,
+        # See get_usergroup for why these are set to True by default
+        select_users: bool = True,
+        select_rights: bool = True,
+        search: bool = False,
+    ) -> List[Usergroup]:
+        """Fetches all user groups. Optionally includes users and rights."""
         params = {
             "output": "extend",
-            "selectUsers": "extend",  # TODO: profile performance for large groups
         }  # type: ParamsType
+        if "*" in names:
+            names = tuple()
+        if search:
+            params["searchByAny"] = True  # Union search (default is intersection)
+            params["searchWildcardsEnabled"] = True
+
+        if names:
+            for name in names:
+                name = name.strip()
+                if search:
+                    params.setdefault("search", {}).setdefault("name", []).append(  # type: ignore # bad annotation
+                        name
+                    )
+                else:
+                    params["filter"] = {"name": name}
+
         # Rights were split into host and template group rights in 6.2.0
-        if self.version.release >= (6, 2, 0):
-            params["selectHostGroupRights"] = "extend"
-            params["selectTemplateGroupRights"] = "extend"
-        else:
-            params["selectRights"] = "extend"
+        if select_rights:
+            if self.version.release >= (6, 2, 0):
+                params["selectHostGroupRights"] = "extend"
+                params["selectTemplateGroupRights"] = "extend"
+            else:
+                params["selectRights"] = "extend"
+        if select_users:
+            params["selectUsers"] = "extend"
 
         try:
             res = self.usergroup.get(**params)
@@ -688,6 +704,29 @@ class ZabbixAPI:
             raise ZabbixAPIException(f"Unknown error when fetching user groups: {e}")
         else:
             return [Usergroup(**usergroup) for usergroup in res]
+
+    def create_usergroup(
+        self,
+        usergroup_name: str,
+        disabled: bool = False,
+        gui_access: GUIAccess = GUIAccess.DEFAULT,
+    ) -> str:
+        """Creates a user group with the given name."""
+        try:
+            resp = self.usergroup.create(
+                name=usergroup_name,
+                users_status=int(disabled),
+                gui_access=gui_access.as_api_value(),
+            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to create user group {usergroup_name!r}: {e}"
+            ) from e
+        if not resp or not resp.get("usrgrpids"):
+            raise ZabbixAPIException(
+                "User group creation returned no data. Unable to determine if group was created."
+            )
+        return str(resp["usrgrpids"][0])
 
     # TODO: do any commands update both rights and users?
     # Can we split this into two methods?
@@ -729,18 +768,24 @@ class ZabbixAPI:
 
         return None
 
-    def add_usergroup_users(self, usergroup: Usergroup, users: List[User]) -> None:
+    def add_usergroup_users(self, usergroup_name: str, users: List[User]) -> None:
         """Add users to a user group. Ignores users already in the group."""
-        self._update_usergroup_users(usergroup, users, remove=False)
+        self._update_usergroup_users(usergroup_name, users, remove=False)
 
-    def remove_usergroup_users(self, usergroup: Usergroup, users: List[User]) -> None:
+    def remove_usergroup_users(self, usergroup_name: str, users: List[User]) -> None:
         """Remove users from a user group. Ignores users not in the group."""
-        self._update_usergroup_users(usergroup, users, remove=True)
+        self._update_usergroup_users(usergroup_name, users, remove=True)
 
     def _update_usergroup_users(
-        self, usergroup: Usergroup, users: List[User], remove: bool = False
+        self, usergroup_name: str, users: List[User], remove: bool = False
     ) -> None:
-        """Add/remove users from user group."""
+        """Add/remove users from user group.
+
+        Takes in the name of a user group instead of a `UserGroup` object
+        to ensure the user group is fetched with `select_users=True`.
+        """
+        usergroup = self.get_usergroup(usergroup_name, select_users=True)
+
         params = {"usrgrpid": usergroup.usrgrpid}  # type: ParamsType
 
         # Add new IDs to existing and remove duplicates
@@ -759,13 +804,16 @@ class ZabbixAPI:
 
     def update_usergroup_rights(
         self,
-        usergroup: Usergroup,
+        usergroup_name: str,
         groups: Union[List[HostGroup], List[TemplateGroup]],
         permission: UsergroupPermission,
         hostgroup: bool,
     ) -> None:
         """Update usergroup rights for host or template groups."""
+        usergroup = self.get_usergroup(usergroup_name, select_rights=True)
+
         params = {"usrgrpid": usergroup.usrgrpid}  # type: ParamsType
+
         if hostgroup:
             if self.version.release >= (6, 2, 0):
                 hg_rights = usergroup.hostgroup_rights

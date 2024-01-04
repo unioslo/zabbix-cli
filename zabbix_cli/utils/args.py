@@ -154,7 +154,7 @@ class ChoiceMixin(Generic[T]):
         choice = str_prompt(
             prompt,
             choices=cls.choices(),
-            default=default,
+            default=str(default),
         )
         return cls(choice)
 

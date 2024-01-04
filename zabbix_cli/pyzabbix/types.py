@@ -134,6 +134,17 @@ class MaintenanceStatus(ChoiceMixin[str], APIStrEnum):
     OFF = APIStr("off", "0")
 
 
+class GUIAccess(ChoiceMixin[str], APIStrEnum):
+    """GUI Access for a user group."""
+
+    __choice_name__ = "GUI Access"
+
+    DEFAULT = APIStr("default", "0")
+    INTERNAL = APIStr("internal", "1")
+    LDAP = APIStr("ldap", "2")
+    DISABLE = APIStr("disable", "3")
+
+
 class ZabbixAPIBaseModel(TableRenderable):
     """Base model for Zabbix API objects.
 
@@ -158,6 +169,7 @@ class ZabbixAPIBaseModel(TableRenderable):
 
 
 class ZabbixRight(TypedDict):
+    # TODO: convert to BaseModel instead of TypedDict
     permission: int
     id: str
 

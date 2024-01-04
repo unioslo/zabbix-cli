@@ -304,7 +304,7 @@ def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostGroupPermissions]
     hostgroups = app.state.client.get_hostgroups(
         hostgroup_arg,
         sort_field="name",
-        sortorder="ASC",
+        sort_order="ASC",
         select_hosts=False,
         search=True,
     )
