@@ -17,6 +17,7 @@ from typing import ClassVar
 from typing import List
 from typing import MutableMapping
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
 from packaging.version import Version
@@ -31,12 +32,12 @@ from pydantic import ValidationInfo
 from typing_extensions import Literal
 from typing_extensions import TypedDict
 
-from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.models import TableRenderableDict
 from zabbix_cli.utils.args import APIStr
 from zabbix_cli.utils.args import APIStrEnum
 from zabbix_cli.utils.args import ChoiceMixin
+from zabbix_cli.utils.utils import get_gui_access
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
 from zabbix_cli.utils.utils import get_item_type
@@ -44,8 +45,15 @@ from zabbix_cli.utils.utils import get_macro_type
 from zabbix_cli.utils.utils import get_maintenance_status
 from zabbix_cli.utils.utils import get_monitoring_status
 from zabbix_cli.utils.utils import get_user_type
+from zabbix_cli.utils.utils import get_usergroup_status
 from zabbix_cli.utils.utils import get_value_type
 from zabbix_cli.utils.utils import get_zabbix_agent_status
+
+
+if TYPE_CHECKING:
+    from zabbix_cli.models import ColsType  # noqa: F401
+    from zabbix_cli.models import ColsRowsType
+    from zabbix_cli.models import RowsType  # noqa: F401
 
 SortOrder = Literal["ASC", "DESC"]
 
@@ -197,7 +205,7 @@ class User(ZabbixAPIBaseModel):
         return None
 
     def __cols_rows__(self) -> ColsRowsType:
-        cols = ["UserID", "Username", "Name", "Surname", "Role"]
+        cols = ["UserID", "Username", "Name", "Surname", "Role"]  # type: ColsType
         rows = [
             [
                 self.userid,
@@ -206,17 +214,45 @@ class User(ZabbixAPIBaseModel):
                 self.surname or "",
                 self.role or "",
             ]
-        ]
+        ]  # type: RowsType
         return cols, rows
 
 
 class Usergroup(ZabbixAPIBaseModel):
     name: str
-    usrgrpid: str  # technically not required, but we always fetch it
+    usrgrpid: str
+    gui_access: int
+    users_status: int
     rights: List[ZabbixRight] = []
     hostgroup_rights: List[ZabbixRight] = []
     templategroup_rights: List[ZabbixRight] = []
     users: List[User] = []
+
+    @computed_field  # type: ignore[misc] # pydantic docs use decorators on top of property (https://docs.pydantic.dev/2.0/usage/computed_fields/)
+    @property
+    def gui_access_fmt(self) -> str:
+        """GUI access code as a formatted string."""
+        return get_gui_access(self.gui_access)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def users_status_fmt(self) -> str:
+        """User status as a formatted string."""
+        return get_usergroup_status(self.users_status)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def status(self) -> str:
+        """LEGACY COMPATIBILITY: 'users_status' is called 'status' in V2.
+        Ensures serialized output contains the field."""
+        return self.users_status_fmt
+
+    @field_serializer("gui_access")
+    def _LEGACY_type_serializer(self, v: Optional[int], _info) -> Union[str, int, None]:
+        """Serializes the GUI access status as a formatted string in legacy JSON mode"""
+        if self.legacy_json_format:
+            return self.gui_access
+        return v
 
 
 class HostGroup(ZabbixAPIBaseModel):

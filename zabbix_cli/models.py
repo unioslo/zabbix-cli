@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import cast
 from typing import Dict
 from typing import Generic
 from typing import List
@@ -11,6 +12,7 @@ from typing import Union
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import JsonValue
 from pydantic import RootModel
 from pydantic.fields import ComputedFieldInfo
 from pydantic.fields import FieldInfo
@@ -38,6 +40,15 @@ RowsType = List[List[RenderableType]]
 ColsRowsType = Tuple[List[str], List[List[RenderableType]]]
 """A tuple containing a list of columns and a list of rows, where each row is a list of strings."""
 
+# Values used in the `json_schema_extra` dict for fields
+# to customize how they are rendered as a table.
+
+FIELD_KEY_JOIN_CHAR = "join_char"
+"""Overrides join character when converting iterables to strings."""
+
+FIELD_KEY_HEADER = "header"
+"""Overrides the default header for a table column."""
+
 
 def fmt_field_name(field_name: str) -> str:
     """Formats a field name for display in a table."""
@@ -60,12 +71,29 @@ def fmt_field_name(field_name: str) -> str:
 # and way more complicated than it probably has to be.
 
 
+T = TypeVar("T", bound=JsonValue)
+
+
 class TableRenderable(BaseModel):
     """Base model that can be rendered as a table."""
 
     model_config = ConfigDict(populate_by_name=True)
 
     __title__: Optional[str] = None
+
+    def _get_extra(self, field: str, key: str, default: T) -> T:
+        f = self.model_fields.get(field, None)
+        if not f:
+            raise ValueError(f"Field {field!r} does not exist.")
+        if not f.json_schema_extra or not isinstance(f.json_schema_extra, dict):
+            return default
+        # NOTE: this cast isn't super type safe, but we are expected to call this
+        # method with the extra key constants defined above.
+        #
+        # If need be, we can add some sort of model validator that ensures
+        # all JSON schema extra keys have the correct type.
+        # But that will only happen once we have a problem with this.
+        return cast(T, f.json_schema_extra.get(key, default))
 
     def __all_fields__(self) -> Dict[str, Union[FieldInfo, ComputedFieldInfo]]:
         """Returns all fields for the model, including computed fields,
@@ -129,17 +157,22 @@ class TableRenderable(BaseModel):
         >>> User(userid="1", username="admin").__rows__()
         [["1", "admin"]]
         """
-        row = [getattr(self, field_name, "") for field_name in self.__all_fields__()]
-        for i, value in enumerate(row):
+        fields = {
+            field_name: getattr(self, field_name, "")
+            for field_name in self.__all_fields__()
+        }
+        for field_name, value in fields.items():
             if isinstance(value, (TableRenderable, TableRenderableDict)):
-                row[i] = value.as_table()
+                fields[field_name] = value.as_table()
             elif isinstance(value, BaseModel):
-                row[i] = value.model_dump_json(indent=2)
+                fields[field_name] = value.model_dump_json(indent=2)
             elif isinstance(value, list):
-                row[i] = "\n".join(str(v) for v in value)
+                join_char = self._get_extra(field_name, FIELD_KEY_JOIN_CHAR, "\n")
+                fields[field_name] = join_char.join(str(v) for v in value)
             else:
-                row[i] = str(value)
-        return [row]
+                fields[field_name] = str(value)
+        # return [[v for v in fields.values()]]  # must be a list of lists
+        return [list(fields.values())]  # must be a list of lists
 
     def __cols_rows__(self) -> ColsRowsType:
         """Returns the columns and row for the table representation of the object.

@@ -80,24 +80,16 @@ def get_zabbix_agent_status(code: Optional[str]) -> str:
     return _format_code(code, zabbix_agent_status)
 
 
-def get_gui_access(code):
+def get_gui_access(code: int) -> str:
     """Get GUI access from code."""
-    gui_access = {0: "System default", 1: "Internal", 2: "Disable"}
-
-    if code in gui_access:
-        return gui_access[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
+    gui_access = {0: "System default", 1: "Internal", 2: "LDAP", 3: "Disable"}
+    return _format_code(code, gui_access)
 
 
-def get_usergroup_status(code):
+def get_usergroup_status(code: int) -> str:
     """Get usergroup status from code."""
     usergroup_status = {0: "Enable", 1: "Disable"}
-
-    if code in usergroup_status:
-        return usergroup_status[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
+    return _format_code(code, usergroup_status)
 
 
 def get_hostgroup_flag(code: int) -> str:

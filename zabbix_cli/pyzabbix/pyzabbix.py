@@ -641,7 +641,6 @@ class ZabbixAPI:
         else:
             return True
 
-    # FIXME: refactor to achieve parity with other get_* methods
     def get_usergroup(
         self,
         name: str,

@@ -13,11 +13,13 @@ from typing import Union
 import typer
 from pydantic import computed_field
 from pydantic import Field
+from pydantic import field_validator
 
 from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.models import AggregateResult
+from zabbix_cli.models import FIELD_KEY_JOIN_CHAR
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
@@ -38,13 +40,16 @@ from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.args import UsergroupPermission
 from zabbix_cli.utils.args import UserRole
 from zabbix_cli.utils.commands import ARG_POSITIONAL
+from zabbix_cli.utils.utils import get_gui_access
 from zabbix_cli.utils.utils import get_permission
+from zabbix_cli.utils.utils import get_usergroup_status
 
 
 if TYPE_CHECKING:
     from typing import Any  # noqa: F401
     from zabbix_cli.models import ColsRowsType  # noqa: F401
     from zabbix_cli.models import RowContent  # noqa: F401
+    from zabbix_cli.models import RowsType  # noqa: F401
 
 # # `zabbix-cli host user <cmd>`
 # user_cmd = StatefulApp(
@@ -483,6 +488,225 @@ def remove_user_from_usergroup(
     success("Removed users from user groups.")
 
 
+@app.command("create_usergroup", rich_help_panel=HELP_PANEL)
+def create_usergroup(
+    ctx: typer.Context,
+    usergroup: Optional[str] = typer.Argument(
+        None, help="Name of the user group to create."
+    ),
+    gui_access: Optional[GUIAccess] = typer.Argument(
+        None, help="GUI access for the group.."
+    ),
+    disabled: bool = typer.Option(
+        False,
+        "--disabled",
+        is_flag=True,
+        help="Create the user group in a disabled state.",
+    ),
+    # V2 legacy args
+    args: Optional[List[str]] = ARG_POSITIONAL,
+) -> None:
+    # We already have name and GUI access, so we expect 1 more arg at most
+    if args:
+        if len(args) != 1:
+            exit_err(
+                "Invalid number of positional arguments. Please use options instead."
+            )
+        disabled = parse_bool_arg(args[0])
+
+    if not usergroup:
+        usergroup = str_prompt("User group")
+
+    if not gui_access:
+        gui_access = GUIAccess.from_prompt(default=GUIAccess.DEFAULT)
+
+    # Check if group exists already
+    with suppress(ZabbixNotFoundError):
+        app.state.client.get_usergroup(usergroup)
+        exit_err(f"User group {usergroup!r} already exists.")
+
+    # Create group
+    with app.status("Creating user group"):
+        usergroupid = app.state.client.create_usergroup(
+            usergroup, gui_access=gui_access, disabled=disabled
+        )
+    success(f"Created user group {usergroup!r} ({usergroupid}).")
+
+
+# def rights_as_table(rights: List[ZabbixRight]) -> Table:
+#     """Converts a list of ZabbixRight objects to a table."""
+#     # cols = ["ID", "Permission"]
+#     rows = [[right["id"], str(right["permission"])] for right in rights]
+#     table = Table("ID", "Permission")
+#     for row in rows:
+#         table.add_row(*row)
+#     return table
+
+
+class GroupRights(TableRenderable):
+    groups: Union[Dict[str, HostGroup], Dict[str, TemplateGroup]] = Field(
+        default_factory=dict,
+    )
+
+    rights: List[ZabbixRight] = Field(
+        default_factory=list,
+        description="Group rights for the user group.",
+    )
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = ["Name", "Permission"]
+        rows = []  # type: RowsType
+        for right in self.rights:
+            group = self.groups.get(right["id"], None)
+            if group:
+                group_name = group.name
+            else:
+                group_name = "Unknown"
+            rows.append([group_name, str(UsergroupPermission(right["permission"]))])
+        return cols, rows
+
+
+class ShowUsergroupResult(TableRenderable):
+    usrgrpid: str
+    name: str
+    gui_access: str = Field(..., json_schema_extra={"header": "GUI Access"})
+    status: str
+    users: List[str] = Field(
+        default_factory=list, json_schema_extra={FIELD_KEY_JOIN_CHAR: ", "}
+    )
+
+    @classmethod
+    def from_usergroup(cls, usergroup: Usergroup) -> ShowUsergroupResult:
+        return cls(
+            name=usergroup.name,
+            usrgrpid=usergroup.usrgrpid,
+            gui_access=usergroup.gui_access_fmt,
+            status=usergroup.users_status_fmt,
+            users=[user.username for user in usergroup.users],
+        )
+
+    @field_validator("gui_access")
+    @classmethod
+    def _validate_gui_access(cls, v: Any) -> str:
+        if isinstance(v, int):
+            return get_gui_access(v)
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def _validate_status(cls, v: Any) -> str:
+        if isinstance(v, int):
+            return get_usergroup_status(v)
+        return v
+
+
+class ShowUsergroupPermissionsResult(Usergroup):
+    hostgroups: Dict[str, HostGroup] = Field(
+        default_factory=dict,
+        exclude=True,
+        description="Host groups the user group has access to. Used to render host group rights.",
+    )
+    templategroups: Dict[str, TemplateGroup] = Field(
+        default_factory=dict,
+        exclude=True,
+        description="Mapping of all template groups. Used to render template group rights.",
+    )
+
+    @classmethod
+    def from_usergroup(
+        cls,
+        usergroup: Usergroup,
+        hostgroups: list[HostGroup],
+        templategroups: list[TemplateGroup],
+    ) -> ShowUsergroupPermissionsResult:
+        ug = cls.model_validate(usergroup, from_attributes=True)
+        if hostgroups:
+            ug.hostgroups = {hg.groupid: hg for hg in hostgroups}
+        if templategroups:
+            ug.templategroups = {tg.groupid: tg for tg in templategroups}
+        return ug
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = ["ID", "Name", "Host Group Rights"]
+        row = [self.usrgrpid, self.name]  # type: RowContent
+
+        # Host group rights table
+        row.append(
+            GroupRights(groups=self.hostgroups, rights=self.hostgroup_rights).as_table()
+        )
+
+        # Template group rights table
+        if self.version.release >= (6, 2, 0):
+            cols.append("Template Group Rights")
+            row.append(
+                GroupRights(
+                    groups=self.templategroups, rights=self.templategroup_rights
+                ).as_table()
+            )
+        return cols, [row]
+
+
+@app.command("show_usergroup", rich_help_panel=HELP_PANEL)
+def show_usergroup(
+    ctx: typer.Context,
+    usergroup: List[str] = typer.Argument(
+        None, help="Name of the user group to show. Supports wildcards. Can be repeated"
+    ),
+) -> None:
+    """Show details for one or more user groups."""
+    if not usergroup:
+        usergroup = parse_list_arg(str_prompt("User group"))
+    usergroups = app.state.client.get_usergroups(
+        *usergroup, select_users=True, select_rights=True, search=True
+    )
+    res = []
+    for ugroup in usergroups:
+        res.append(ShowUsergroupResult.from_usergroup(ugroup))
+    render_result(AggregateResult(result=res))
+
+
+@app.command("show_usergroups", rich_help_panel=HELP_PANEL)
+def show_usergroups(ctx: typer.Context) -> None:
+    usergroups = app.state.client.get_usergroups(select_users=True, search=True)
+    res = []
+    for ugroup in usergroups:
+        res.append(ShowUsergroupResult.from_usergroup(ugroup))
+    render_result(AggregateResult(result=res))
+
+
+@app.command("show_usergroup_permissions", rich_help_panel=HELP_PANEL)
+def show_usergroup_permissions(
+    ctx: typer.Context,
+    usergroup: List[str] = typer.Argument(
+        ..., help="Name of user group to show permissions for. Supports wildcards."
+    ),
+) -> None:
+    # NOTE: this command breaks JSON output compatibility with V2
+    # In V2, rights were serialized as a string in the format of "<NAME> (<RO/RW/DENY>)"
+    # under the key "permissions".
+    # In V3, we follow the API and serialize it as a list of dicts under the key
+    # "rights" in <6.2.0 and "hostgroup_rights" and "templategroup_rights" in >=6.2.0
+    if not usergroup:
+        usergroup = parse_list_arg(str_prompt("User group"))
+    usergroups = app.state.client.get_usergroups(
+        *usergroup, select_rights=True, search=True
+    )
+
+    hostgroups = app.state.client.get_hostgroups()
+    if app.state.client.version.release >= (6, 2, 0):
+        templategroups = app.state.client.get_templategroups()
+    else:
+        templategroups = []
+    res = []
+    for ugroup in usergroups:
+        res.append(
+            ShowUsergroupPermissionsResult.from_usergroup(
+                ugroup, hostgroups=hostgroups, templategroups=templategroups
+            )
+        )
+    render_result(AggregateResult(result=res))
+
+
 class AddUsergroupPermissionsResult(TableRenderable):
     usergroup: str
     hostgroups: list[str]
@@ -513,7 +737,9 @@ class AddUsergroupPermissionsResult(TableRenderable):
         )
 
 
+# NOTE: {add,update}_usergroup_permissions seem to be the exact same command in V2. Keeping that here.
 @app.command("add_usergroup_permissions", rich_help_panel=HELP_PANEL)
+@app.command("update_usergroup_permissions", rich_help_panel=HELP_PANEL)
 def add_usergroup_permissions(
     ctx: typer.Context,
     usergroup: Optional[str] = typer.Argument(
@@ -607,186 +833,3 @@ def add_usergroup_permissions(
             permission=permission,
         ),
     )
-
-
-@app.command("create_usergroup", rich_help_panel=HELP_PANEL)
-def create_usergroup(
-    ctx: typer.Context,
-    usergroup: Optional[str] = typer.Argument(
-        None, help="Name of the user group to create."
-    ),
-    gui_access: Optional[GUIAccess] = typer.Argument(
-        None, help="GUI access for the group.."
-    ),
-    disabled: bool = typer.Option(
-        False,
-        "--disabled",
-        is_flag=True,
-        help="Create the user group in a disabled state.",
-    ),
-    # V2 legacy args
-    args: Optional[List[str]] = ARG_POSITIONAL,
-) -> None:
-    # We already have name and GUI access, so we expect 1 more arg at most
-    if args:
-        if len(args) != 1:
-            exit_err(
-                "Invalid number of positional arguments. Please use options instead."
-            )
-        disabled = parse_bool_arg(args[0])
-
-    if not usergroup:
-        usergroup = str_prompt("User group")
-
-    if not gui_access:
-        gui_access = GUIAccess.from_prompt(default=GUIAccess.DEFAULT)
-
-    # Check if group exists already
-    with suppress(ZabbixNotFoundError):
-        app.state.client.get_usergroup(usergroup)
-        exit_err(f"User group {usergroup!r} already exists.")
-
-    # Create group
-    with app.status("Creating user group"):
-        usergroupid = app.state.client.create_usergroup(
-            usergroup, gui_access=gui_access, disabled=disabled
-        )
-    success(f"Created user group {usergroup!r} ({usergroupid}).")
-
-
-# def rights_as_table(rights: List[ZabbixRight]) -> Table:
-#     """Converts a list of ZabbixRight objects to a table."""
-#     # cols = ["ID", "Permission"]
-#     rows = [[right["id"], str(right["permission"])] for right in rights]
-#     table = Table("ID", "Permission")
-#     for row in rows:
-#         table.add_row(*row)
-#     return table
-
-
-class GroupRights(TableRenderable):
-    groups: Union[Dict[str, HostGroup], Dict[str, TemplateGroup]] = Field(
-        default_factory=dict,
-    )
-
-    rights: List[ZabbixRight] = Field(
-        default_factory=list,
-        description="Group rights for the user group.",
-    )
-
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["Name", "Permission"]
-        rows = []
-        for right in self.rights:
-            group = self.groups.get(right["id"], None)
-            if group:
-                group_name = group.name
-            else:
-                group_name = "Unknown"
-            rows.append([group_name, str(UsergroupPermission(right["permission"]))])
-        return cols, rows
-
-
-class ShowUsergroupResult(Usergroup):
-    hostgroups: Dict[str, HostGroup] = Field(
-        default_factory=dict,
-        exclude=True,
-        description="Host groups the user group has access to. Used to render host group rights.",
-    )
-    templategroups: Dict[str, TemplateGroup] = Field(
-        default_factory=dict,
-        exclude=True,
-        description="Mapping of all template groups. Used to render template group rights.",
-    )
-
-    @classmethod
-    def from_usergroup(
-        cls,
-        usergroup: Usergroup,
-        hostgroups: list[HostGroup],
-        templategroups: list[TemplateGroup],
-    ) -> ShowUsergroupResult:
-        ug = cls.model_validate(usergroup, from_attributes=True)
-        if hostgroups:
-            ug.hostgroups = {hg.groupid: hg for hg in hostgroups}
-        if templategroups:
-            ug.templategroups = {tg.groupid: tg for tg in templategroups}
-        return ug
-
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["ID", "Name", "Host Group Rights"]
-        row = [self.usrgrpid, self.name]  # type: RowContent
-
-        # Host group rights table
-        row.append(
-            GroupRights(groups=self.hostgroups, rights=self.hostgroup_rights).as_table()
-        )
-
-        # Template group rights table
-        if self.version.release >= (6, 2, 0):
-            cols.append("Template Group Rights")
-            row.append(
-                GroupRights(
-                    groups=self.templategroups, rights=self.templategroup_rights
-                ).as_table()
-            )
-
-        cols.append("Users")
-        row.append(", ".join([user.username for user in self.users]))
-        return cols, [row]
-
-
-@app.command("show_usergroup", rich_help_panel=HELP_PANEL)
-def show_usergroup(
-    ctx: typer.Context,
-    usergroup: Optional[str] = typer.Argument(
-        None, help="Name of the user group to show. Supports wildcards"
-    ),
-) -> None:
-    if not usergroup:
-        usergroup = str_prompt("User group")
-    ugroup = app.state.client.get_usergroup(
-        usergroup, select_users=True, select_rights=True, search=True
-    )
-
-    hostgroups = app.state.client.get_hostgroups()
-    if app.state.client.version.release >= (6, 2, 0):
-        templategroups = app.state.client.get_templategroups()
-    else:
-        templategroups = []
-    result = ShowUsergroupResult.from_usergroup(
-        ugroup, hostgroups=hostgroups, templategroups=templategroups
-    )
-
-    render_result(result)
-
-
-@app.command("show_usergroups", rich_help_panel=HELP_PANEL)
-def show_usergroups(ctx: typer.Context) -> None:
-    usergroups = app.state.client.get_usergroups(
-        select_users=True, select_rights=True, search=True
-    )
-
-    hostgroups = app.state.client.get_hostgroups()
-    if app.state.client.version.release >= (6, 2, 0):
-        templategroups = app.state.client.get_templategroups()
-    else:
-        templategroups = []
-    res = []
-    for ugroup in usergroups:
-        res.append(
-            ShowUsergroupResult.from_usergroup(
-                ugroup, hostgroups=hostgroups, templategroups=templategroups
-            )
-        )
-    render_result(AggregateResult(result=res))
-
-
-@app.command("show_usergroup_permissions", rich_help_panel=HELP_PANEL)
-def show_usergroup_permissions(ctx: typer.Context) -> None:
-    pass
-
-
-@app.command("update_usergroup_permissions", rich_help_panel=HELP_PANEL)
-def update_usergroup_permissions(ctx: typer.Context) -> None:
-    pass
