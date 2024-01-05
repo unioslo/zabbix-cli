@@ -42,11 +42,15 @@ def test_is_headless_set_false(envvar: str, value: str):
     ],
 )
 def test_is_headless_map(envvar: str, value: str, expected: bool) -> None:
-    """Returns True when the envvar is unset."""
+    """Returns True when the envvar is set to a specific value."""
     _do_test_is_headless(envvar, value, expected)
 
 
 def _do_test_is_headless(envvar: str, value: str | None, expected: bool):
+    """Helper function for testing is_headless.
+
+    Sets/clears envvar before testing, then clears cache and envvar after test.
+    """
     try:
         if value is None:
             os.environ.pop(envvar, None)
@@ -54,4 +58,6 @@ def _do_test_is_headless(envvar: str, value: str | None, expected: bool):
             os.environ[envvar] = value
         assert is_headless() == expected
     finally:
+        # IMPORTANT: Remove envvar and clear cache after each test
         os.environ.pop(envvar, None)
+        is_headless.cache_clear()
