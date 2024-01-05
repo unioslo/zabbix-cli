@@ -709,8 +709,8 @@ def show_usergroup_permissions(
 
 class AddUsergroupPermissionsResult(TableRenderable):
     usergroup: str
-    hostgroups: list[str]
-    templategroups: list[str]
+    hostgroups: List[str]
+    templategroups: List[str]
     permission: UsergroupPermission
 
     @computed_field  # type: ignore # computed field on @property

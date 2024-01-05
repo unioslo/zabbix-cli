@@ -265,14 +265,16 @@ class HostGroup(ZabbixAPIBaseModel):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
-        row = [
-            self.groupid,
-            self.name,
-            get_hostgroup_flag(self.flags),
-            get_hostgroup_type(self.internal),
-            ", ".join([host.host for host in self.hosts]),
-        ]
-        return cols, [row]
+        rows = [
+            [
+                self.groupid,
+                self.name,
+                get_hostgroup_flag(self.flags),
+                get_hostgroup_type(self.internal),
+                ", ".join([host.host for host in self.hosts]),
+            ]
+        ]  # type: RowsType
+        return cols, rows
 
 
 class TemplateGroup(ZabbixAPIBaseModel):
@@ -307,14 +309,16 @@ class Template(ZabbixAPIBaseModel):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Name", "Hosts", "Children", "Parents"]
-        row = [
-            self.templateid,
-            self.host,
-            "\n".join([host.host for host in self.hosts]),
-            "\n".join([template.host for template in self.templates]),
-            "\n".join([parent.host for parent in self.parent_templates]),
-        ]
-        return cols, [row]
+        rows = [
+            [
+                self.templateid,
+                self.host,
+                "\n".join([host.host for host in self.hosts]),
+                "\n".join([template.host for template in self.templates]),
+                "\n".join([parent.host for parent in self.parent_templates]),
+            ]
+        ]  # type: RowsType
+        return cols, rows
 
 
 class Inventory(TableRenderableDict):
@@ -406,7 +410,7 @@ class Host(ZabbixAPIBaseModel):
                 get_monitoring_status(self.status),
                 self.proxy_address or "",
             ]
-        ]
+        ]  # type: RowsType
         return cols, rows
 
 
@@ -505,7 +509,7 @@ class Item(ZabbixAPIBaseModel):
                 str(self.history),
                 str(self.description),
             ]
-        ]
+        ]  # type: RowsType
         return cols, rows
 
 

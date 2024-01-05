@@ -4,6 +4,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 
 import typer
 from pydantic import computed_field
@@ -19,6 +20,10 @@ from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.types import Template
 
 
+if TYPE_CHECKING:
+    from zabbix_cli.models import RowsType
+
+
 HELP_PANEL = "Template Group"
 
 
@@ -30,7 +35,7 @@ class TemplateGroupResult(TableRenderable):
     templates: List[Template] = []
     show_templates: bool = Field(True, exclude=True)
 
-    @computed_field()
+    @computed_field()  # type: ignore # mypy bug
     @property
     def template_count(self) -> int:
         return len(self.templates)
@@ -41,7 +46,7 @@ class TemplateGroupResult(TableRenderable):
             return [t.model_dump(mode="json") for t in value]
         return []
 
-    def __rows__(self) -> list[list[str]]:
+    def __rows__(self) -> RowsType:
         tpls = self.templates if self.show_templates else []
         return [
             [

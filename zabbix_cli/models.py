@@ -34,10 +34,10 @@ ColsType = List[str]
 RowContent = List[RenderableType]
 """A list of renderables representing the content of a row."""
 
-RowsType = List[List[RenderableType]]
+RowsType = List[RowContent]
 """A list of rows, where each row is a list of strings."""
 
-ColsRowsType = Tuple[List[str], List[List[RenderableType]]]
+ColsRowsType = Tuple[ColsType, RowsType]
 """A tuple containing a list of columns and a list of rows, where each row is a list of strings."""
 
 # Values used in the `json_schema_extra` dict for fields
@@ -111,14 +111,15 @@ class TableRenderable(BaseModel):
         overriding the rows. Otherwise, override `__cols_rows__`.
 
         By default, uses the name of the fields as the column headers,
-        with the first letter capitalized. This can be overriden with `header` in `json_schema_extra`:
+        with the first letter capitalized.
+        This can be overriden with `header` in `json_schema_extra`:
 
         >>> class User(TableRenderable):
-        ...     userid: str = Field(json_schema_extra={"header" : "UserID"})
+        ...     userid: str = Field(json_schema_extra={"header" : "User ID"})
         ...     username: str = ""
         ...
         >>> User().__cols__()
-        ["UserID", "Username"]
+        ["User ID", "Username"]
         """
         cols = []
 
@@ -151,11 +152,12 @@ class TableRenderable(BaseModel):
         Example:
 
         >>> class User(TableRenderable):
-        ...     userid: str = Field(json_schema_extra={"header" : "UserID"})
-        ...     username: str = ""
+        ...     userid: str
+        ...     username: str
+        ...     groups: List[str] = []
         ...
-        >>> User(userid="1", username="admin").__rows__()
-        [["1", "admin"]]
+        >>> User(userid="1", username="admin", groups=["foo", "bar", "baz"]).__rows__()
+        [["1", "admin", "foo\nbar\nbaz"]]
         """
         fields = {
             field_name: getattr(self, field_name, "")
@@ -171,7 +173,6 @@ class TableRenderable(BaseModel):
                 fields[field_name] = join_char.join(str(v) for v in value)
             else:
                 fields[field_name] = str(value)
-        # return [[v for v in fields.values()]]  # must be a list of lists
         return [list(fields.values())]  # must be a list of lists
 
     def __cols_rows__(self) -> ColsRowsType:
@@ -180,7 +181,7 @@ class TableRenderable(BaseModel):
         Example:
 
         >>> class User(TableRenderable):
-        ...     userid: str = Field(json_schema_extra={"header" : "UserID"})
+        ...     userid: str = Field(json_schema_extra={"header" : "User ID"})
         ...     username: str = ""
         ...
         >>> User(userid="1", username="admin").__cols_rows__()

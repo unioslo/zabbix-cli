@@ -1,6 +1,8 @@
 """Commands that interact with the application itself."""
 from __future__ import annotations
 
+from typing import Dict
+from typing import List
 from typing import TYPE_CHECKING
 
 import typer
@@ -22,7 +24,7 @@ if TYPE_CHECKING:
 class HistoryResult(TableRenderable):
     """Result type for `show_history` command."""
 
-    commands: list[HistoryEntry] = []
+    commands: List[HistoryEntry] = []
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["Command", "Timestamp"]  # type: ColsType
@@ -32,7 +34,7 @@ class HistoryResult(TableRenderable):
         return cols, rows
 
     @model_serializer
-    def ser_model(self) -> list[dict[str, str]]:
+    def ser_model(self) -> List[Dict[str, str]]:
         return [
             {
                 "command": entry.ctx.command_path,
