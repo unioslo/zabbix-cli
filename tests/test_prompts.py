@@ -51,6 +51,8 @@ def _do_test_is_headless(envvar: str, value: str | None, expected: bool):
 
     Sets/clears envvar before testing, then clears cache and envvar after test.
     """
+    _orig_environ = os.environ.copy()
+    os.environ.clear()
     try:
         if value is None:
             os.environ.pop(envvar, None)
@@ -59,5 +61,5 @@ def _do_test_is_headless(envvar: str, value: str | None, expected: bool):
         assert is_headless() == expected
     finally:
         # IMPORTANT: Remove envvar and clear cache after each test
-        os.environ.pop(envvar, None)
+        os.environ = _orig_environ  # type: ignore
         is_headless.cache_clear()
