@@ -163,6 +163,11 @@ class ChoiceMixin(Generic[T]):
         """Return list of string values of the enum members."""
         return [str(e) for e in cls]  # type: ignore # how do we stipulate that the class requires __iter__?
 
+    @classmethod
+    def all_choices(cls) -> List[str]:
+        """Choices including API values."""
+        return [str(e) for e in cls] + [str(e.as_api_value()) for e in cls]  # type: ignore # how do we stipulate that the class requires __iter__?
+
     def as_api_value(self) -> T:
         """Return the equivalent Zabbix API value."""
         return self.value.api_value
@@ -177,12 +182,35 @@ class ChoiceMixin(Generic[T]):
         2. Search for a member with the given API value
         """
         for v in cls:  # type: ignore # again with the cls.__iter__ problem
-            if v.value.api_value == value:
+            if v.value == value:
                 return v
             # kinda hacky. Should make sure we are dealing with strings here:
             elif str(v.value).lower() == str(value).lower():
                 return v
+            elif str(v.as_api_value()) == str(value):
+                return v
         raise ZabbixCLIError(f"Invalid {cls.__fmt_name__()}: {value!r}.")
+
+
+# class EnumChoice(NamedTuple):
+#     """Enum choice."""
+
+#     name: str
+#     value: str
+
+
+# class ChoiceMeta(EnumMeta):
+#     """Metaclass for APIStrEnum Enums."""
+
+#     # HACK: doing something very illegal with the iterator here
+#     def __iter__(cls) -> Iterator[EnumChoice]:
+#         """Iterate over the enum members."""
+#         items = []
+#         for name, member in cls._member_map_.items():
+#             items.append(member)
+#             member_api_value = copy(member)
+#             items.append(EnumChoice(name=str(name), value=str(member.as_api_value())))  # type: ignore
+#         return iter(items)
 
 
 class APIStrEnum(Enum):
