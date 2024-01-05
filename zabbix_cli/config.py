@@ -228,6 +228,7 @@ class LoggingConfig(BaseModel):
 class Config(BaseModel):
     api: APIConfig = Field(
         # Changed in V3: zabbix_api -> api
+        default_factory=APIConfig,
         validation_alias=AliasChoices("api", "zabbix_api"),
     )
     app: AppConfig = Field(
