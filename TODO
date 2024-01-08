@@ -7,7 +7,15 @@
 ## API
 
 * Add some sort of `process_params` method that can be used to process params and add them to the ParamsType mapping, to reduce code duplication within each method.
+
 * Add support for both names and IDs in certain API methods. This adds a bunch of complexity, but is required to support some V2 features. Drop them?
+
+* Move all APIStrEnum classes into pyzabbix. Add `enums` module to pyzabbix?
+
+### Utils
+
+Use APIStr enums in functions that take in a code and return a string representation. That way we don't create duplicate definitions for the same objects/concepts/choices.
+
 
 ## Args
 
@@ -117,9 +125,6 @@
   * We do not strive for 1:1 compatibility with the Zabbix API. It's more important that users can read the output.
   * We need to fix  `Host` to convert to string representations instead of codes.
 
-## Utils
-
-Use APIStr enums in functions that take in a code and return a string representation. That way we don't create duplicate definitions for the same objects/concepts/choices.
 
 ## Tests
 
