@@ -13,9 +13,11 @@ Zabbix versions.
 """
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Any
 from typing import ClassVar
+from typing import Dict
 from typing import List
-from typing import MutableMapping
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
@@ -58,22 +60,23 @@ if TYPE_CHECKING:
 SortOrder = Literal["ASC", "DESC"]
 
 PrimitiveType = Union[str, bool, int]
-ParamsType = MutableMapping[
-    str,
-    Union[
-        PrimitiveType,
-        "ParamsType",
-        List[Union["ParamsType", PrimitiveType]],
-        # List[PrimitiveType],
-        # List["ParamsType"],
-        # List[str],
-    ],
-]
+ParamsType = Dict[str, Any]
 """Type definition for Zabbix API query parameters.
-
 Most Zabbix API parameters are strings, but not _always_.
 They can also be contained in nested dicts or in lists.
 """
+
+# JsonValue: TypeAlias = Union[
+#     List["JsonValue"],
+#     Dict[str, "JsonValue"],
+#     Dict[str, Any],
+#     str,
+#     bool,
+#     int,
+#     float,
+#     None,
+# ]
+# ParamsType: TypeAlias = Dict[str, JsonValue]
 
 
 class ModifyHostItem(TypedDict):
@@ -536,3 +539,36 @@ class UserMedia(ZabbixAPIBaseModel):
     active: int = 0  # 0 = enabled, 1 = disabled (YES REALLY!)
     severity: int = 63  # all (1111 in binary - all bits set)
     period: str = "1-7,00:00-24:00"  # 24/7
+
+
+class TimePeriod(ZabbixAPIBaseModel):
+    period: int
+    timeperiod_type: int
+    start_date: Optional[datetime] = None
+    start_time: Optional[int] = None
+    every: Optional[int] = None
+    dayofweek: Optional[int] = None
+    day: Optional[int] = None
+    month: Optional[int] = None
+
+
+class ProblemTag(ZabbixAPIBaseModel):
+    tag: str
+    operator: Optional[int]
+    value: Optional[str]
+
+
+class Maintenance(ZabbixAPIBaseModel):
+    maintenanceid: str
+    name: str
+    active_since: Optional[datetime] = None
+    active_till: Optional[datetime] = None
+    description: Optional[str] = None
+    maintenance_type: Optional[int] = None
+    tags_evaltype: Optional[int] = None
+    timeperiods: List[TimePeriod] = []
+    tags: List[ProblemTag] = []
+    hosts: List[Host] = []
+    hostgroups: List[HostGroup] = Field(
+        default_factory=list, validation_alias=AliasChoices("groups", "hostgroups")
+    )

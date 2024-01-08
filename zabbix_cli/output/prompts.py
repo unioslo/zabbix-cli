@@ -154,6 +154,29 @@ def str_prompt(
 
 
 @no_headless
+def str_prompt_optional(
+    prompt: str,
+    default: str = "",
+    password: bool = False,
+    show_default: bool = False,
+    choices: list[str] | None = None,
+    strip: bool = True,
+    **kwargs: Any,
+) -> str:
+    prompt = f"{prompt} [i](optional)[/]"
+    return str_prompt(
+        prompt,
+        default=default,
+        password=password,
+        show_default=show_default,
+        choices=choices,
+        empty_ok=True,
+        strip=strip,
+        **kwargs,
+    )
+
+
+@no_headless
 def int_prompt(
     prompt: str,
     default: int | None = None,

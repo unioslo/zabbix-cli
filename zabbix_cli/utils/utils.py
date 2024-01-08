@@ -118,14 +118,10 @@ def get_user_type(code: int | None) -> str:
     return _format_code(code, user_type)
 
 
-def get_maintenance_type(code):
+def get_maintenance_type(code: int | None) -> str:
     """Get maintenance type from code."""
     maintenance_type = {0: "With DC", 1: "Without DC"}
-
-    if code in maintenance_type:
-        return maintenance_type[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
+    return _format_code(code, maintenance_type)
 
 
 def get_maintenance_period_type(code):
@@ -226,3 +222,26 @@ def get_macro_type(code: int | None) -> str:
         2: "Vault secret",
     }
     return _format_code(code, macro_type)
+
+
+def convert_time_to_seconds(time: str) -> int:
+    """Convert time to seconds."""
+    time = time.lower()
+    seconds = 0
+
+    if time.endswith("s"):
+        seconds = int(time[:-1])
+    elif time.endswith("m"):
+        seconds = int(time[:-1]) * 60
+    elif time.endswith("h"):
+        seconds = int(time[:-1]) * 60 * 60
+    elif time.endswith("d"):
+        seconds = int(time[:-1]) * 60 * 60 * 24
+    elif time.endswith("w"):
+        seconds = int(time[:-1]) * 60 * 60 * 24 * 7
+    elif time.endswith("y"):
+        seconds = int(time[:-1]) * 60 * 60 * 24 * 365
+    else:
+        seconds = int(time)
+
+    return seconds

@@ -37,6 +37,7 @@ from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import Item
 from zabbix_cli.pyzabbix.types import Macro
+from zabbix_cli.pyzabbix.types import Maintenance
 from zabbix_cli.pyzabbix.types import MediaType
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Role
@@ -53,7 +54,6 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import MaintenanceStatus
     from zabbix_cli.pyzabbix.types import MonitoringStatus
     from zabbix_cli.pyzabbix.types import AgentAvailable
-    from zabbix_cli.pyzabbix.types import PrimitiveType  # noqa: F401
     from zabbix_cli.pyzabbix.types import ParamsType  # noqa: F401
     from zabbix_cli.pyzabbix.types import SortOrder  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
@@ -1402,6 +1402,27 @@ class ZabbixAPI:
             params["filter"] = filter_params
         resp = self.mediatype.get(**params)
         return [MediaType(**mt) for mt in resp]
+
+    ## Maintenance
+    def get_maintenances(
+        self,
+        maintenance_ids: Optional[List[str]] = None,
+        hostgroups: Optional[List[HostGroup]] = None,
+        hosts: Optional[List[Host]] = None,
+    ) -> List[Maintenance]:
+        params = {
+            "output": "extend",
+            "selectHosts": "extend",
+            compat.param_host_get_groups(self.version): "extend",
+        }  # type: ParamsType
+        if maintenance_ids:
+            params["maintenanceids"] = maintenance_ids
+        if hostgroups:
+            params["groupids"] = [hg.groupid for hg in hostgroups]
+        if hosts:
+            params["hostids"] = [h.hostid for h in hosts]
+        resp = self.maintenance.get(**params)
+        return [Maintenance(**mt) for mt in resp]
 
     # def _construct_params(
     #     self,

@@ -151,10 +151,11 @@ class ChoiceMixin(Generic[T]):
             # Uppercase first letter without mangling the rest of the string
             if prompt and prompt[0].islower():
                 prompt = prompt[0].upper() + prompt[1:]
+        default = default if default is ... else str(default)
         choice = str_prompt(
             prompt,
             choices=cls.choices(),
-            default=str(default),
+            default=default,
         )
         return cls(choice)
 
