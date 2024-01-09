@@ -10,9 +10,11 @@ from pydantic import Field
 from pydantic import field_validator
 from pydantic import ValidationInfo
 from pydantic_core import PydanticUndefined
+from typing_extensions import Literal
 
 from zabbix_cli.app import app
 from zabbix_cli.models import AggregateResult
+from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
@@ -140,7 +142,7 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
 
     @computed_field()  # type: ignore # mypy bug
     @property
-    def state(self) -> str:
+    def state(self) -> Literal["Active", "Expired"]:
         now_time = datetime.now(tz=self.active_till.tzinfo)
         if self.active_till > now_time:
             return "Active"
@@ -161,6 +163,45 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
             elif field.default != PydanticUndefined:
                 v = field.default
         return v
+
+    @property
+    def state_fmt(self) -> str:
+        if self.state == "Active":
+            return f"[green]{self.state}[/]"
+        return f"[red]{self.state}[/]"
+
+    @property
+    def maintenance_type_fmt(self) -> str:
+        # NOTE: This is very brittle!
+        if self.maintenance_type == "With DC":
+            return f"[green]{self.maintenance_type}[/]"
+        return f"[red]{self.maintenance_type}[/]"
+
+    def __cols_rows__(self) -> ColsRowsType:
+        return (
+            [
+                "ID",
+                "Name",
+                "Type",
+                "Active till",
+                "Hosts",
+                "Host groups",
+                "State",
+                "Description",
+            ],
+            [
+                [
+                    self.maintenanceid,
+                    self.name,
+                    self.maintenance_type_fmt,
+                    self.active_till.isoformat(),
+                    ", ".join(self.hosts),
+                    ", ".join(self.groups),
+                    self.state_fmt,
+                    self.description or "",
+                ]
+            ],
+        )
 
 
 @app.command(name="show_maintenance_definitions", rich_help_panel=HELP_PANEL)
