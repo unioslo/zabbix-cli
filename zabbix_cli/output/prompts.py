@@ -47,8 +47,12 @@ def no_headless(f: Callable[P, T]) -> Callable[P, T]:
                     "Returning default value from %s(%s, %s)", f, args, kwargs
                 )
                 return default  # type: ignore # bit of a hack
+            # Assume first arg is the prompt:
+            prompt = args[0] if args else kwargs.get("prompt", "")
             exit_err(
-                f"Headless session detected; user input required. Arguments: {args}, {kwargs}."
+                f"Cannot proceed! User input required for {prompt!r}. Exiting...",
+                args=args,
+                kwargs=kwargs,
             )
         return f(*args, **kwargs)
 

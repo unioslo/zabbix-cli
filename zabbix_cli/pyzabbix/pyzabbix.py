@@ -1416,6 +1416,7 @@ class ZabbixAPI:
             "output": "extend",
             "selectHosts": "extend",
             compat.param_host_get_groups(self.version): "extend",
+            "selectTimeperiods": "extend",
         }  # type: ParamsType
         if maintenance_ids:
             params["maintenanceids"] = maintenance_ids

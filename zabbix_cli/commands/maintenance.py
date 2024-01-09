@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 from typing import List
 from typing import Optional
 
 import typer
 from pydantic import computed_field
-from pydantic import Field
 from pydantic import field_validator
-from pydantic import ValidationInfo
-from pydantic_core import PydanticUndefined
 from typing_extensions import Literal
 
 from zabbix_cli.app import app
@@ -22,6 +20,7 @@ from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.prompts import str_prompt_optional
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.types import DataCollectionMode
+from zabbix_cli.pyzabbix.types import TimePeriod
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.utils import convert_time_to_interval
 from zabbix_cli.utils.utils import get_maintenance_type
@@ -130,15 +129,13 @@ def remove_maintenance_definition(ctx: typer.Context) -> None:
 class ShowMaintenanceDefinitionsResult(TableRenderable):
     """Result type for `show_maintenance_definitions` command."""
 
-    maintenanceid: str = Field(..., json_schema_extra={"header": "ID"})
+    maintenanceid: str
     name: str
-    type: Optional[int] = Field(..., exclude=True)
-    active_till: datetime = Field(
-        default_factory=datetime.now, json_schema_extra={"header": "Active till"}
-    )
+    type: Optional[int]
+    active_till: datetime
     description: Optional[str]
-    hosts: List[str] = Field(..., json_schema_extra={"header": "Host names"})
-    groups: List[str] = Field(..., json_schema_extra={"header": "Host groups"})
+    hosts: List[str]
+    groups: List[str]
 
     @computed_field()  # type: ignore # mypy bug
     @property
@@ -155,27 +152,27 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
 
     @field_validator("active_till", mode="before")
     @classmethod
-    def validate_active_till(cls, v: datetime, info: ValidationInfo) -> datetime:
+    def validate_active_till(cls, v: Any) -> datetime:
         if v is None:
-            field = cls.model_fields[info.field_name]
-            if field.default_factory != PydanticUndefined:
-                v = field.default_factory()
-            elif field.default != PydanticUndefined:
-                v = field.default
+            return datetime.now()
         return v
 
     @property
     def state_fmt(self) -> str:
         if self.state == "Active":
-            return f"[green]{self.state}[/]"
-        return f"[red]{self.state}[/]"
+            color = "green"
+        else:
+            color = "red"
+        return f"[{color}]{self.state}[/]"
 
     @property
     def maintenance_type_fmt(self) -> str:
-        # NOTE: This is very brittle!
+        # NOTE: This is very brittle! We are beholden to self.maintenance_type...
         if self.maintenance_type == "With DC":
-            return f"[green]{self.maintenance_type}[/]"
-        return f"[red]{self.maintenance_type}[/]"
+            color = "green"
+        else:
+            color = "red"
+        return f"[{color}]{self.maintenance_type}[/]"
 
     def __cols_rows__(self) -> ColsRowsType:
         return (
@@ -262,6 +259,38 @@ def show_maintenance_definitions(
     )
 
 
+class ShowMaintenancePeriodsResult(TableRenderable):
+    maintenanceid: str
+    name: str
+    timeperiods: List[TimePeriod]
+    hosts: List[str]
+    groups: List[str]
+
+
 @app.command(name="show_maintenance_periods", rich_help_panel=HELP_PANEL)
-def show_maintenance_periods(ctx: typer.Context) -> None:
-    pass
+def show_maintenance_periods(
+    ctx: typer.Context,
+    maintenance_id: Optional[str] = typer.Argument(
+        None,
+        help="Comma-separated list of maintenance IDs. Wildcards supported. Defaults to all maintenances.",
+    ),
+) -> None:
+    """Show maintenance periods for one or more maintenance definitions."""
+    # Don't prompt so that we show all by default.
+    # In general, prompting for missing values is kind of awkward...
+    mids = parse_list_arg(maintenance_id)
+    maintenances = app.state.client.get_maintenances(maintenance_ids=mids)
+    render_result(
+        AggregateResult(
+            result=[
+                ShowMaintenancePeriodsResult(
+                    maintenanceid=m.maintenanceid,
+                    name=m.name,
+                    timeperiods=m.timeperiods,
+                    hosts=[h.host for h in m.hosts],
+                    groups=[hg.name for hg in m.hostgroups],
+                )
+                for m in maintenances
+            ]
+        )
+    )

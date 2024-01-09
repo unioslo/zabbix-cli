@@ -27,34 +27,59 @@ err_console = Console(
 )
 
 
+RESERVED_EXTRA_KEYS = (
+    "name",
+    "level",
+    "pathname",
+    "lineno",
+    "msg",
+    "args",
+    "exc_info",
+    "func",
+    "sinfo",
+)
+
+
+def get_extra_dict(**kwargs: Any) -> dict[str, Any]:
+    """Format the extra dict for logging. Renames some keys to avoid
+    collisions with the default keys.
+
+    See: https://docs.python.org/3.11/library/logging.html#logging.LogRecord"""
+    for k, v in list(kwargs.items()):  # must be list to change while iterating
+        if k in RESERVED_EXTRA_KEYS:
+            kwargs[f"{k}_"] = v  # add trailing underscore to avoid collision
+            del kwargs[k]
+    return kwargs
+
+
 def debug_kv(key: str, value: Any) -> None:
     """Print and log a key value pair."""
     msg = f"[bold]{key:<20}:[/bold] {value}"
-    logger.debug(msg, extra=dict(key=key, value=value))
-    debug(msg, key=key, value=value)
+    logger.debug(msg, extra=get_extra_dict(key=key, value=value))
+    err_console.print(msg)
 
 
 def debug(message: str, icon: str = "", *args, **kwargs) -> None:
     """Log with INFO level and print an informational message."""
-    logger.debug(message, extra=dict(**kwargs))
+    logger.debug(message, extra=get_extra_dict(**kwargs))
     err_console.print(message)
 
 
 def info(message: str, icon: str = Icon.INFO, *args, **kwargs) -> None:
     """Log with INFO level and print an informational message."""
-    logger.info(message, extra=dict(**kwargs))
+    logger.info(message, extra=get_extra_dict(**kwargs))
     err_console.print(f"{green(icon)} {message}")
 
 
 def success(message: str, icon: str = Icon.OK, **kwargs) -> None:
     """Log with INFO level and print a success message."""
-    logger.info(message, extra=dict(**kwargs))
+    logger.info(message, extra=get_extra_dict(**kwargs))
     err_console.print(f"{green(icon)} {message}")
 
 
 def warning(message: str, icon: str = Icon.WARNING, **kwargs) -> None:
     """Log with WARNING level and optionally print a warning message."""
-    logger.warning(message, extra=dict(**kwargs))
+    logger.warning(message, extra=get_extra_dict(**kwargs))
     err_console.print(bold(f"{yellow(icon)} {message}"))
 
 
@@ -62,7 +87,7 @@ def error(
     message: str, icon: str = Icon.ERROR, exc_info: bool = False, **kwargs
 ) -> None:
     """Log with ERROR level and print an error message."""
-    logger.error(message, extra=dict(**kwargs), exc_info=exc_info)
+    logger.error(message, extra=get_extra_dict(**kwargs), exc_info=exc_info)
     err_console.print(bold(red(f"{icon} ERROR: {message}")))
 
 
