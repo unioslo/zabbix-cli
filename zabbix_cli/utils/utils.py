@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime
+from datetime import timedelta
 from typing import Any
+from typing import Iterable
+from typing import NamedTuple
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 from zabbix_cli.exceptions import ZabbixCLIError
@@ -224,24 +229,142 @@ def get_macro_type(code: int | None) -> str:
     return _format_code(code, macro_type)
 
 
-def convert_time_to_seconds(time: str) -> int:
-    """Convert time to seconds."""
-    time = time.lower()
-    seconds = 0
+class TimeUnit(NamedTuple):
+    """Time value."""
 
-    if time.endswith("s"):
-        seconds = int(time[:-1])
-    elif time.endswith("m"):
-        seconds = int(time[:-1]) * 60
-    elif time.endswith("h"):
-        seconds = int(time[:-1]) * 60 * 60
-    elif time.endswith("d"):
-        seconds = int(time[:-1]) * 60 * 60 * 24
-    elif time.endswith("w"):
-        seconds = int(time[:-1]) * 60 * 60 * 24 * 7
-    elif time.endswith("y"):
-        seconds = int(time[:-1]) * 60 * 60 * 24 * 365
-    else:
-        seconds = int(time)
+    unit: str
+    tokens: Iterable[str]
+    value: int
 
-    return seconds
+
+# NOTE: PLURAL TOKEN MUST BE LISTED FIRST
+TIME_VALUE_DAY = TimeUnit("D", ["days", "day"], value=60 * 60 * 24)
+TIME_VALUE_HOUR = TimeUnit("H", ["hours", "hour"], value=60 * 60)
+TIME_VALUE_MINUTE = TimeUnit("M", ["minutes", "minute"], value=60)
+TIME_VALUE_SECOND = TimeUnit("S", ["seconds", "second"], value=1)
+TIME_VALUES = [
+    TIME_VALUE_DAY,
+    TIME_VALUE_HOUR,
+    TIME_VALUE_MINUTE,
+    TIME_VALUE_SECOND,
+]
+
+
+def convert_time_to_interval(time: str) -> Tuple[datetime, datetime]:
+    """Convert time to an interval of datetimes.
+
+    `time` is a string that specifies a duration of time in
+    one of the following formats:
+
+    - `1d1h30m30s`
+    - `1 day 1 hour 30 minutes 30 seconds`
+
+    Any combination of the above is also valid, e.g.:
+
+    - `1d1h30m`
+    - `2 days 30 minutes`
+    - `1 hour`
+
+    The `time` string can also be a timestamp interval in the following format:
+
+    - `2016-11-21T22:00 to 2016-11-21T23:00`
+
+    """
+    # Use a very simple heuristic to to determine if we have an interval:
+    if " to " in time:
+        return convert_timestamp_interval(time)
+    # Fall back on parsing duration beginning from now:
+    duration = convert_duration(time)
+    start = datetime.now()
+    end = start + duration
+    return start, end
+
+
+def convert_timestamp(ts: str) -> datetime:
+    try:
+        return datetime.fromisoformat(ts)
+    except ValueError:
+        pass
+
+    formats = [
+        "%Y-%m-%dT%H:%M",  # Legacy format (no seconds)
+        "%Y-%m-%dT%H:%M:%S",  # with T separator
+        "%Y-%m-%d %H:%M:%S",  # without T separator
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(ts, fmt)
+        except ValueError:
+            pass
+    raise ZabbixCLIError(f"Invalid timestamp: {ts}")
+
+
+def convert_timestamp_interval(time: str) -> Tuple[datetime, datetime]:
+    """Convert timestamp interval to seconds.
+
+    `time` is a string that specifies a timestamp interval in
+    the following format:
+
+    - `2016-11-21T22:00 to 2016-11-21T23:00`
+
+    """
+    start, sep, end = time.partition(" to ")
+    if not sep:
+        raise ZabbixCLIError(f"Invalid timestamp interval: {time}")
+    return convert_timestamp(start), convert_timestamp(end)
+
+
+def convert_duration(time: str) -> timedelta:
+    """Convert duration to timedelta.
+
+    `time` is a string that specifies a duration of time in
+    one of the following formats:
+
+    - `1d1h30m30s`
+    - `1 day 1 hour 30 minutes 30 seconds`
+
+    Any combination of the above is also valid, e.g.:
+
+    - `1d1h30m`
+    - `2 days 30 minutes`
+    - `1 hour`
+    """
+
+    def try_convert_int(s: str) -> int:
+        if not s:
+            return 0
+        try:
+            return int(s)
+        except ValueError:
+            raise ZabbixCLIError(f"Invalid time value: {s}")
+
+    time = time.replace(" ", "")
+    for time_value in TIME_VALUES:
+        # First replace full words (days, hours, minutes, seconds)
+        for token in time_value.tokens:
+            time = time.replace(token, time_value.unit)
+        # Then replace abbreviations (d, h, m, s) with uppercase
+    time = time.upper()
+
+    # NOTE: this is very inelegant. The swapping of variables when
+    # partitioning is particularly ugly.
+    days, sep, rest = time.partition(TIME_VALUE_DAY.unit)
+    if not sep:
+        days, rest = rest, days
+    hours, sep, rest = rest.partition(TIME_VALUE_HOUR.unit)
+    if not sep:
+        hours, rest = rest, hours
+    minutes, sep, rest = rest.partition(TIME_VALUE_MINUTE.unit)
+    if not sep:
+        minutes, rest = rest, minutes
+    seconds, sep, rest = rest.partition(TIME_VALUE_SECOND.unit)
+    if rest:
+        raise ZabbixCLIError(f"Invalid time value: {time}")
+
+    td = timedelta(
+        days=try_convert_int(days),
+        hours=try_convert_int(hours),
+        minutes=try_convert_int(minutes),
+        seconds=try_convert_int(seconds),
+    )
+    return td

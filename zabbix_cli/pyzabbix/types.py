@@ -156,6 +156,13 @@ class GUIAccess(ChoiceMixin[str], APIStrEnum):
     DISABLE = APIStr("disable", "3")
 
 
+class DataCollectionMode(ChoiceMixin[str], APIStrEnum):
+    """Maintenance type."""
+
+    ON = APIStr("on", "0")
+    OFF = APIStr("off", "1")
+
+
 class ZabbixAPIBaseModel(TableRenderable):
     """Base model for Zabbix API objects.
 

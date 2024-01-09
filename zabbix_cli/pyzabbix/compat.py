@@ -127,3 +127,13 @@ def param_host_get_groups(
     if version.release < (6, 2, 0):
         return "selectGroups"
     return "selectHostGroups"
+
+
+def param_maintenance_create_groupids(
+    version: Version,
+) -> Literal["groupids", "groups"]:
+    # https://support.zabbix.com/browse/ZBXNEXT-2592
+    # https://www.zabbix.com/documentation/6.2/en/manual/api/changes_6.0_-_6.2#host
+    if version.release < (6, 2, 0):
+        return "groups"
+    return "groupids"

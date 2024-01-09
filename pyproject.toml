@@ -55,7 +55,7 @@ zabbix-cli-init = "zabbix_cli.scripts.init:run"
 zabbix-cli-bulk-execution = "zabbix_cli.scripts.bulk_execution:main"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov"]
+test = ["pytest", "pytest-cov", "freezegun"]
 
 [tool.hatch.version]
 path = "zabbix_cli/__about__.py"

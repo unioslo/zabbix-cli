@@ -15,6 +15,7 @@ import json
 import logging
 import random
 import re
+from datetime import datetime
 from typing import Any
 from typing import Dict
 from typing import List
@@ -54,6 +55,7 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import MaintenanceStatus
     from zabbix_cli.pyzabbix.types import MonitoringStatus
     from zabbix_cli.pyzabbix.types import AgentAvailable
+    from zabbix_cli.pyzabbix.types import DataCollectionMode
     from zabbix_cli.pyzabbix.types import ParamsType  # noqa: F401
     from zabbix_cli.pyzabbix.types import SortOrder  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
@@ -1423,6 +1425,48 @@ class ZabbixAPI:
             params["hostids"] = [h.hostid for h in hosts]
         resp = self.maintenance.get(**params)
         return [Maintenance(**mt) for mt in resp]
+
+    def create_maintenance(
+        self,
+        name: str,
+        active_since: datetime,
+        active_till: datetime,
+        description: Optional[str] = None,
+        hosts: Optional[List[Host]] = None,
+        hostgroups: Optional[List[HostGroup]] = None,
+        data_collection: Optional[DataCollectionMode] = None,
+    ) -> str:
+        """Create a one-time maintenance definition."""
+        if not hosts and not hostgroups:
+            raise ZabbixAPIException("At least one host or hostgroup is required")
+        params = {
+            "name": name,
+            "active_since": int(active_since.timestamp()),
+            "active_till": int(active_till.timestamp()),
+            "timeperiods": {
+                "timeperiod_type": 0,
+                "start_date": int(active_since.timestamp()),
+                "period": int((active_till - active_since).total_seconds()),
+            },
+        }  # type: ParamsType
+        if description:
+            params["description"] = description
+        if hosts:
+            if self.version.release >= (6, 0, 0):
+                params["hosts"] = [{"hostid": h.hostid} for h in hosts]
+            else:
+                params["hostids"] = [h.hostid for h in hosts]
+        if hostgroups:
+            if self.version.release >= (6, 0, 0):
+                params["groups"] = {"groupid": hg.groupid for hg in hostgroups}
+            else:
+                params["groupids"] = [hg.groupid for hg in hostgroups]
+        if data_collection:
+            params["maintenance_type"] = data_collection.as_api_value()
+        resp = self.maintenance.create(**params)
+        if not resp or not resp.get("maintenanceids"):
+            raise ZabbixAPIException(f"Creating maintenance {name!r} returned no ID.")
+        return resp["maintenanceids"][0]
 
     # def _construct_params(
     #     self,

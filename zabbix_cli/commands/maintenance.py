@@ -7,35 +7,31 @@ from typing import Optional
 import typer
 from pydantic import computed_field
 from pydantic import Field
+from pydantic import field_validator
+from pydantic import ValidationInfo
+from pydantic_core import PydanticUndefined
 
 from zabbix_cli.app import app
 from zabbix_cli.models import AggregateResult
+from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.prompts import str_prompt_optional
 from zabbix_cli.output.render import render_result
-from zabbix_cli.utils.args import APIStr
-from zabbix_cli.utils.args import APIStrEnum
-from zabbix_cli.utils.args import ChoiceMixin
+from zabbix_cli.pyzabbix.types import DataCollectionMode
 from zabbix_cli.utils.args import parse_list_arg
+from zabbix_cli.utils.utils import convert_time_to_interval
 from zabbix_cli.utils.utils import get_maintenance_type
 
 
 HELP_PANEL = "Maintenance"
 
 
-class SomeResult(TableRenderable):
-    """Result type for `load_balance_proxy_hosts` command."""
+class CreateMaintenanceDefinitionResult(TableRenderable):
+    """Result type for `create_maintenance_definition` command."""
 
-    pass
-
-
-class DataCollectionMode(ChoiceMixin[str], APIStrEnum):
-    """Maintenance type."""
-
-    ON = APIStr("on", "0")
-    OFF = APIStr("off", "1")
+    maintenance_id: str
 
 
 @app.command(name="create_maintenance_definition", rich_help_panel=HELP_PANEL)
@@ -48,10 +44,10 @@ def create_maintenance_definition(
         None, "--description", help="Description"
     ),
     hosts: Optional[str] = typer.Option(
-        None, "--hosts", help="Comma-separated list of hosts."
+        None, "--host", help="Comma-separated list of hosts."
     ),
     hostgroups: Optional[str] = typer.Option(
-        None, "--hostgroups", help="Comma-separated list of host groups."
+        None, "--hostgroup", help="Comma-separated list of host groups."
     ),
     period: Optional[str] = typer.Option(
         None,
@@ -63,7 +59,7 @@ def create_maintenance_definition(
     ),
 ) -> None:
     """
-    Create a new maintenance definition.
+    Create a new one-time maintenance definition.
 
     One can define an interval between two timestamps in ISO format
     or a time period in minutes, hours or days from the moment the
@@ -88,20 +84,40 @@ def create_maintenance_definition(
         description = str_prompt_optional("Description")
     if not hosts:
         hosts = str_prompt_optional("Hosts")
-    hostlist = parse_list_arg(hosts)  # noqa: F841
+    hosts_arg = parse_list_arg(hosts)
 
     if not hostgroups:
         hostgroups = str_prompt_optional("Host groups")
-    hostgrouplist = parse_list_arg(hostgroups)  # noqa: F841
-
-    if not hosts and not hostgroups:
-        exit_err("Must specify at least one host or host group.")
+    hgs_arg = parse_list_arg(hostgroups)
 
     if not period:
         period = str_prompt("Period", default="1 hour")
 
     if not data_collection:
-        data_collection = DataCollectionMode.from_prompt("Data collection")
+        data_collection = DataCollectionMode.from_prompt(
+            "Data collection", default=DataCollectionMode.ON
+        )
+
+    start, end = convert_time_to_interval(period)
+    hostlist = app.state.client.get_hosts(*hosts_arg) if hosts_arg else []
+    hglist = app.state.client.get_hostgroups(*hgs_arg) if hgs_arg else []
+
+    with app.status("Creating maintenance definition..."):
+        maintenance_id = app.state.client.create_maintenance(
+            name=name,
+            description=description,
+            active_since=start,
+            active_till=end,
+            hosts=hostlist,
+            hostgroups=hglist,
+            data_collection=data_collection,
+        )
+    render_result(
+        Result(
+            message=f"Created maintenance definition ({maintenance_id}).",
+            result=CreateMaintenanceDefinitionResult(maintenance_id=maintenance_id),
+        )
+    )
 
 
 @app.command(name="remove_maintenance_definition", rich_help_panel=HELP_PANEL)
@@ -122,12 +138,10 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
     hosts: List[str] = Field(..., json_schema_extra={"header": "Host names"})
     groups: List[str] = Field(..., json_schema_extra={"header": "Host groups"})
 
-    @computed_field()
+    @computed_field()  # type: ignore # mypy bug
     @property
     def state(self) -> str:
-        now_time = datetime.now()
-        if self.active_till.tzinfo:
-            now_time = now_time.replace(tzinfo=self.active_till.tzinfo)
+        now_time = datetime.now(tz=self.active_till.tzinfo)
         if self.active_till > now_time:
             return "Active"
         return "Expired"
@@ -136,6 +150,17 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
     @property
     def maintenance_type(self) -> str:
         return get_maintenance_type(self.type)
+
+    @field_validator("active_till", mode="before")
+    @classmethod
+    def validate_active_till(cls, v: datetime, info: ValidationInfo) -> datetime:
+        if v is None:
+            field = cls.model_fields[info.field_name]
+            if field.default_factory != PydanticUndefined:
+                v = field.default_factory()
+            elif field.default != PydanticUndefined:
+                v = field.default
+        return v
 
 
 @app.command(name="show_maintenance_definitions", rich_help_panel=HELP_PANEL)
@@ -185,7 +210,7 @@ def show_maintenance_definitions(
                     maintenanceid=m.maintenanceid,
                     name=m.name,
                     type=m.maintenance_type,
-                    active_till=m.active_till,  # type: ignore # default factory
+                    active_till=m.active_till,  # type: ignore # validator handles None
                     hosts=[h.host for h in m.hosts],
                     groups=[hg.name for hg in m.hostgroups],
                     description=m.description,
