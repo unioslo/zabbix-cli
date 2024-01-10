@@ -122,9 +122,31 @@ def create_maintenance_definition(
     )
 
 
+# TODO: remove maintenances affecting certain hosts or host groups
+# Either by removing the maintenance definition itself or by removing the hosts
+# or host groups from the maintenance definition...
+# TODO: Add remove maintenance by name
 @app.command(name="remove_maintenance_definition", rich_help_panel=HELP_PANEL)
-def remove_maintenance_definition(ctx: typer.Context) -> None:
-    pass
+def remove_maintenance_definition(
+    ctx: typer.Context,
+    maintenance_id: Optional[str] = typer.Argument(
+        None, help="ID of maintenance to remove"
+    ),
+) -> None:
+    if not maintenance_id:
+        maintenance_id = str_prompt("Maintenance ID(s)")
+
+    maintenance_ids = parse_list_arg(maintenance_id)
+    if not maintenance_ids:
+        exit_err("Must specify at least one maintenance ID.")
+
+    for mid in maintenance_ids:  # Check that each ID exists
+        app.state.client.get_maintenance(mid)
+
+    with app.status("Removing maintenance definition..."):
+        app.state.client.delete_maintenance(*maintenance_ids)
+
+    render_result(Result(message="Removed maintenance definition(s)."))
 
 
 class ShowMaintenanceDefinitionsResult(TableRenderable):

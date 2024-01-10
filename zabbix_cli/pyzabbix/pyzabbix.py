@@ -1406,11 +1406,19 @@ class ZabbixAPI:
         return [MediaType(**mt) for mt in resp]
 
     ## Maintenance
+    def get_maintenance(self, maintenance_id: str) -> Maintenance:
+        """Fetches a maintenance given its ID."""
+        maintenances = self.get_maintenances(maintenance_ids=[maintenance_id])
+        if not maintenances:
+            raise ZabbixNotFoundError(f"Maintenance {maintenance_id!r} not found")
+        return maintenances[0]
+
     def get_maintenances(
         self,
         maintenance_ids: Optional[List[str]] = None,
         hostgroups: Optional[List[HostGroup]] = None,
         hosts: Optional[List[Host]] = None,
+        name: Optional[str] = None,
     ) -> List[Maintenance]:
         params = {
             "output": "extend",
@@ -1418,12 +1426,17 @@ class ZabbixAPI:
             compat.param_host_get_groups(self.version): "extend",
             "selectTimeperiods": "extend",
         }  # type: ParamsType
+        filter_params = {}  # type: ParamsType
         if maintenance_ids:
             params["maintenanceids"] = maintenance_ids
         if hostgroups:
             params["groupids"] = [hg.groupid for hg in hostgroups]
         if hosts:
             params["hostids"] = [h.hostid for h in hosts]
+        if name:
+            filter_params["name"] = name
+        if filter_params:
+            params["filter"] = filter_params
         resp = self.maintenance.get(**params)
         return [Maintenance(**mt) for mt in resp]
 
@@ -1468,6 +1481,22 @@ class ZabbixAPI:
         if not resp or not resp.get("maintenanceids"):
             raise ZabbixAPIException(f"Creating maintenance {name!r} returned no ID.")
         return resp["maintenanceids"][0]
+
+    def delete_maintenance(self, *maintenance_ids: str) -> List[str]:
+        """Deletes one or more maintenances given their IDs
+
+        Returns IDs of deleted maintenances."""
+        try:
+            resp = self.maintenance.delete(*maintenance_ids)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to delete maintenances {maintenance_ids}"
+            ) from e
+        if not resp or not resp.get("maintenanceids"):
+            raise ZabbixNotFoundError(
+                f"No maintenance IDs returned when deleting maintenance {maintenance_ids}"
+            )
+        return resp["maintenanceids"]
 
     # def _construct_params(
     #     self,
