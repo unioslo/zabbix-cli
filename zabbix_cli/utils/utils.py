@@ -7,6 +7,7 @@ from datetime import datetime
 from datetime import timedelta
 from typing import Any
 from typing import Iterable
+from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
@@ -15,9 +16,15 @@ from typing import Union
 from zabbix_cli.exceptions import ZabbixCLIError
 
 
-def _format_code(code: Union[str, int, None], status_map: dict[Any, str]) -> str:
-    status = status_map.get(code, "Unknown")  # type: ignore # passing in None to dict.get() is fine
-    return f"{status} ({code})" if code else status
+# NOTE: consider setting with_code to True by default...
+# The only downside is possibly breaking backwards compatibility
+def _format_code(
+    code: Union[str, int, None], status_map: dict[Any, str], with_code: bool = True
+) -> str:
+    status = status_map.get(code, "Unknown")
+    if with_code and code is not None:
+        status += f" ({code})"
+    return status
 
 
 def get_ack_status(code):
@@ -69,6 +76,7 @@ def get_trigger_status(code):
 
 def get_maintenance_status(code: Optional[str]) -> str:
     """Get maintenance status from code."""
+    # TODO: can we change the type of the code to int?
     maintenance_status = {"0": "No maintenance", "1": "In progress"}
     return _format_code(code, maintenance_status)
 
@@ -126,17 +134,74 @@ def get_user_type(code: int | None) -> str:
 def get_maintenance_type(code: int | None) -> str:
     """Get maintenance type from code."""
     maintenance_type = {0: "With DC", 1: "Without DC"}
-    return _format_code(code, maintenance_type)
+    return _format_code(code, maintenance_type, with_code=False)
 
 
-def get_maintenance_period_type(code):
+def get_maintenance_period_type(code: int | None) -> str:
     """Get maintenance period type from code."""
     maintenance_period_type = {0: "One time", 2: "Daily", 3: "Weekly", 4: "Monthly"}
+    return _format_code(code, maintenance_period_type, with_code=False)
 
-    if code in maintenance_period_type:
-        return maintenance_period_type[code] + " (" + str(code) + ")"
 
-    return f"Unknown ({str(code)})"
+def get_maintenance_every_type(code: int | None) -> str:
+    """Get maintenance every week type from code."""
+    maintenance_every_type = {
+        1: "First week",
+        2: "Second week",
+        3: "Third week",
+        4: "Fourth week",
+        5: "Last week",
+    }
+    return _format_code(code, maintenance_every_type, with_code=False)
+
+
+def get_maintenance_active_days(schedule: int | None) -> List[str]:
+    """Get maintenance day of week from code."""
+    if schedule is None:
+        return []
+    days = {
+        0b0000001: "Monday",
+        0b0000010: "Tuesday",
+        0b0000100: "Wednesday",
+        0b0001000: "Thursday",
+        0b0010000: "Friday",
+        0b0100000: "Saturday",
+        0b1000000: "Sunday",
+    }
+    # Bitwise AND schedule with each DoW's bit mask
+    # If the result is non-zero, the DoW is active
+    active_days = []
+    for n, dow in days.items():
+        if schedule & n:
+            active_days.append(dow)
+    return active_days
+
+
+def get_maintenance_active_months(schedule: int | None) -> List[str]:
+    if schedule is None:
+        return []
+    months = {
+        0b000000000001: "January",
+        0b000000000010: "February",
+        0b000000000100: "March",
+        0b000000001000: "April",
+        0b000000010000: "May",
+        0b000000100000: "June",
+        0b000001000000: "July",
+        0b000010000000: "August",
+        0b000100000000: "September",
+        0b001000000000: "October",
+        0b010000000000: "November",
+        0b100000000000: "December",
+    }
+
+    # Bitwise AND schedule with each month's bit mask
+    # If the result is non-zero, the month is active
+    active_months = []
+    for n, month in months.items():
+        if schedule & n:
+            active_months.append(month)
+    return active_months
 
 
 def get_autologin_type(code):
@@ -368,3 +433,22 @@ def convert_duration(time: str) -> timedelta:
         seconds=try_convert_int(seconds),
     )
     return td
+
+
+def convert_seconds_to_duration(seconds: int) -> str:
+    """Convert seconds to duration string."""
+    days, seconds = divmod(seconds, 60 * 60 * 24)
+    hours, seconds = divmod(seconds, 60 * 60)
+    minutes, seconds = divmod(seconds, 60)
+
+    duration = ""
+    if days:
+        duration += f"{days}d"
+    if hours:
+        duration += f"{hours}h"
+    if minutes:
+        duration += f"{minutes}m"
+    if seconds:
+        duration += f"{seconds}s"
+
+    return duration

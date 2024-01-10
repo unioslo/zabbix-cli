@@ -7,6 +7,7 @@ from typing import Optional
 
 import typer
 from pydantic import computed_field
+from pydantic import Field
 from pydantic import field_validator
 from typing_extensions import Literal
 
@@ -167,8 +168,8 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
 
     @property
     def maintenance_type_fmt(self) -> str:
-        # NOTE: This is very brittle! We are beholden to self.maintenance_type...
-        if self.maintenance_type == "With DC":
+        # FIXME: This is very brittle! We are beholden to self.maintenance_type...
+        if "With DC" in self.maintenance_type:
             color = "green"
         else:
             color = "red"
@@ -191,7 +192,7 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
                     self.maintenanceid,
                     self.name,
                     self.maintenance_type_fmt,
-                    self.active_till.isoformat(),
+                    self.active_till.strftime("%Y-%m-%d %H:%M"),
                     ", ".join(self.hosts),
                     ", ".join(self.groups),
                     self.state_fmt,
@@ -260,7 +261,7 @@ def show_maintenance_definitions(
 
 
 class ShowMaintenancePeriodsResult(TableRenderable):
-    maintenanceid: str
+    maintenanceid: str = Field(title="Maintenance ID")
     name: str
     timeperiods: List[TimePeriod]
     hosts: List[str]

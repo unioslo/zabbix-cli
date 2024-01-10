@@ -169,8 +169,24 @@ class TableRenderable(BaseModel):
             elif isinstance(value, BaseModel):
                 fields[field_name] = value.model_dump_json(indent=2)
             elif isinstance(value, list):
-                join_char = self._get_extra(field_name, FIELD_KEY_JOIN_CHAR, "\n")
-                fields[field_name] = join_char.join(str(v) for v in value)
+                # A list either contains TableRenderable objects or stringable objects
+                if value and all(
+                    # Aggregating TableRenderableDict is not yet supported
+                    isinstance(v, TableRenderable)
+                    for v in value
+                ):
+                    # TableRenderables are wrapped in an AggregateResult to render them
+                    # as a single table instead of a table per item.
+                    # NOTE: we assume list contains items of the same type
+                    # Rendering an aggregate result with mixed types is not supported
+                    # and will probably break.
+                    fields[field_name] = AggregateResult(result=value).as_table()
+                else:
+                    # Other lists are rendered as newline delimited strings.
+                    # The delimiter can be modified with the `join_char` key in
+                    # the field's `json_schema_extra`.
+                    join_char = self._get_extra(field_name, FIELD_KEY_JOIN_CHAR, "\n")
+                    fields[field_name] = join_char.join(str(v) for v in value)
             else:
                 fields[field_name] = str(value)
         return [list(fields.values())]  # must be a list of lists

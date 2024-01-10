@@ -14,6 +14,7 @@ Zabbix versions.
 from __future__ import annotations
 
 from datetime import datetime
+from datetime import timedelta
 from typing import Any
 from typing import ClassVar
 from typing import Dict
@@ -44,6 +45,10 @@ from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
 from zabbix_cli.utils.utils import get_item_type
 from zabbix_cli.utils.utils import get_macro_type
+from zabbix_cli.utils.utils import get_maintenance_active_days
+from zabbix_cli.utils.utils import get_maintenance_active_months
+from zabbix_cli.utils.utils import get_maintenance_every_type
+from zabbix_cli.utils.utils import get_maintenance_period_type
 from zabbix_cli.utils.utils import get_maintenance_status
 from zabbix_cli.utils.utils import get_monitoring_status
 from zabbix_cli.utils.utils import get_user_type
@@ -558,6 +563,75 @@ class TimePeriod(ZabbixAPIBaseModel):
     day: Optional[int] = None
     month: Optional[int] = None
 
+    @computed_field  # type: ignore[misc]
+    @property
+    def timeperiod_type_fmt(self) -> str:
+        """Returns the time period type as a formatted string."""
+        return get_maintenance_period_type(self.timeperiod_type)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def period_fmt(self) -> str:
+        return str(timedelta(seconds=self.period))
+
+    @property
+    def start_time_fmt(self) -> str:
+        return str(timedelta(seconds=self.start_time or 0))
+
+    @property
+    def start_date_fmt(self) -> str:
+        if self.start_date and self.start_date.year > 1970:  # hack to avoid 1970-01-01
+            return self.start_date.strftime("%Y-%m-%d %H:%M")
+        return ""
+
+    def __cols_rows__(self) -> ColsRowsType:
+        # TODO: Use enum to define these values
+        # and then re-use them in the get_maintenance_period_type function
+        if self.timeperiod_type == 0:
+            return self._get_cols_rows_one_time()
+        # TODO: add __cols_rows__ method for each timeperiod type
+        # other timeperiod types here...
+        else:
+            return self._get_cols_rows_default()
+
+    def _get_cols_rows_default(self) -> ColsRowsType:
+        """Fallback for when we don't know the time period type."""
+        cols = [
+            "Type",
+            "Duration",
+            "Start date",
+            "Start time",
+            "Every",
+            "Day of week",
+            "Day",
+            "Months",
+        ]  # type: ColsType
+        rows = [
+            [
+                self.timeperiod_type_fmt,
+                self.period_fmt,
+                self.start_date_fmt,
+                self.start_time_fmt,
+                get_maintenance_every_type(self.every),
+                "\n".join(get_maintenance_active_days(self.dayofweek)),
+                str(self.day),
+                "\n".join(get_maintenance_active_months(self.month)),
+            ]
+        ]  # type: RowsType
+        return cols, rows
+
+    def _get_cols_rows_one_time(self) -> ColsRowsType:
+        """Get the cols and rows for a one time schedule."""
+        cols = ["Type", "Duration", "Start date"]  # type: ColsType
+        rows = [
+            [
+                self.timeperiod_type_fmt,
+                self.period_fmt,
+                self.start_date_fmt,
+            ]
+        ]  # type: RowsType
+        return cols, rows
+
 
 class ProblemTag(ZabbixAPIBaseModel):
     tag: str
@@ -579,3 +653,19 @@ class Maintenance(ZabbixAPIBaseModel):
     hostgroups: List[HostGroup] = Field(
         default_factory=list, validation_alias=AliasChoices("groups", "hostgroups")
     )
+
+    @field_validator("timeperiods", mode="after")
+    @classmethod
+    def _sort_time_periods(cls, v: List[TimePeriod]) -> List[TimePeriod]:
+        """Cheeky hack to consistently render mixed time period types.
+
+        This ensures the time periods are sorted by complexity, so that the
+        most complex ones are rendered first, thus adding all the necessary
+        columns to the table.
+
+        See: TimePeriod.__cols_rows__
+        See: AggregateResult.__cols_rows__
+
+        """
+        # 0 = one time. We want those last.
+        return sorted(v, key=lambda tp: tp.timeperiod_type, reverse=True)
