@@ -1211,10 +1211,6 @@ class ZabbixAPI:
         else:
             logger.debug("Unlink and clear templates response: %s", resp)
 
-    # The reason we require a list of the actual objects instead of just names or
-    # IDs, is that we need access to those objects in the command in order to render
-    # the results properly, thus it's easier to just fetch them all there, and
-    # then pass them in here. It does make the API a bit more cumbersome though.
     def link_templates_to_groups(
         self,
         templates: list[Template],
