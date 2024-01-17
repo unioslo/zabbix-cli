@@ -1577,6 +1577,8 @@ class ZabbixAPI:
     def get_events(
         self,
         event_ids: Union[str, List[str], None] = None,
+        # Why are we taking in strings here instead of objects?
+        # Should we instead take in objects and then extract the IDs?
         group_ids: Union[str, List[str], None] = None,
         host_ids: Union[str, List[str], None] = None,
         object_ids: Union[str, List[str], None] = None,

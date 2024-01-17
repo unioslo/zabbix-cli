@@ -49,7 +49,7 @@ def create_maintenance_definition(
         None, "--host", help="Comma-separated list of hosts."
     ),
     hostgroups: Optional[str] = typer.Option(
-        None, "--hostgroup", help="Comma-separated list of host groups."
+        None, "--hostgroups", help="Comma-separated list of host groups."
     ),
     period: Optional[str] = typer.Option(
         None,

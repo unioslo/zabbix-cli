@@ -10,6 +10,7 @@ from zabbix_cli.app import app
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
+from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
@@ -143,7 +144,24 @@ def acknowledge_trigger_last_event(
 @app.command(name="show_trigger_events", rich_help_panel=HELP_PANEL)
 def show_trigger_events(
     ctx: typer.Context,
-    trigger_id: str = typer.Argument(..., help="ID of trigger to show events for."),
+    trigger_id: Optional[str] = typer.Option(
+        None,
+        "--trigger-id",
+        help="ID of trigger(s) to show events for.",
+    ),
+    hostgroups: Optional[str] = typer.Option(
+        None,
+        # FIXME: decide between singular and plural option names
+        "--hostgroup",
+        "--hostgroups",
+        help="Host group(s) to show events for.",
+    ),
+    hosts: Optional[str] = typer.Option(
+        None,
+        "--host",
+        "--hosts",
+        help="Host(s) to show events for.",
+    ),
     limit: int = typer.Option(
         10,
         "--limit",
@@ -152,12 +170,31 @@ def show_trigger_events(
     ),
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
+    """Show the latest events for the given trigger(s), host(s), and/or host group(s).
+
+    At least one trigger ID, host or host group must be specified."""
     if args:
         if len(args) != 2:
             exit_err("Invalid number of positional arguments.")
-        limit = parse_int_arg(args[0])
+        trigger_id = args[0]
+        limit = parse_int_arg(args[1])
+
+    # Parse commma-separated args
+    trigger_ids = parse_list_arg(trigger_id)
+    hostgroups_args = parse_list_arg(hostgroups)
+    hosts_args = parse_list_arg(hosts)
+    if not trigger_ids and not hostgroups_args and not hosts_args:
+        err_console.print(ctx.get_help())
+        exit_err("At least one trigger ID, host or host group must be specified.")
+
+    # Fetch the host(group)s if specified
+    hostgroups_list = [app.state.client.get_hostgroup(hg) for hg in hostgroups_args]
+    hosts_list = [app.state.client.get_host(host) for host in hosts_args]
+
     events = app.state.client.get_events(
-        object_ids=trigger_id,
+        object_ids=trigger_ids,
+        group_ids=[hg.groupid for hg in hostgroups_list],
+        host_ids=[host.hostid for host in hosts_list],
         sort_field="clock",
         sort_order="DESC",
         limit=limit,

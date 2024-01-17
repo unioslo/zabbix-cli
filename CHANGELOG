@@ -28,8 +28,12 @@
   - `show_hosts`:
     - Same as `show_host`
   - `show_trigger_events`
+    - `--trigger-id`: Trigger ID(s) to get events for.
+      - Corresponds to old positional argument 1.
+    - `--host`: Host(s) to get events for.
+    - `--hostgroup`: Host group(s) to get events for.
     - `--limit`: Limit number of events to show
-      - Corresponds to old positional argument.
+      - Corresponds to old positional argument 2.
       - Defaults to 10 (was 1).
 
 
