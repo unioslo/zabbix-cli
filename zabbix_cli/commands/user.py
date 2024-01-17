@@ -15,6 +15,7 @@ from pydantic import computed_field
 from pydantic import Field
 from pydantic import field_validator
 
+from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
@@ -39,7 +40,6 @@ from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.args import UsergroupPermission
 from zabbix_cli.utils.args import UserRole
-from zabbix_cli.utils.commands import ARG_POSITIONAL
 from zabbix_cli.utils.utils import get_gui_access
 from zabbix_cli.utils.utils import get_permission
 from zabbix_cli.utils.utils import get_usergroup_status
@@ -83,7 +83,6 @@ def create_user(
     username: Optional[str] = typer.Argument(
         None, help="Username of the user to create."
     ),
-    args: Optional[str] = ARG_POSITIONAL,  # legacy
     first_name: Optional[str] = typer.Option(
         None, help="First name of the user to create."
     ),
@@ -110,6 +109,8 @@ def create_user(
     groups: Optional[str] = typer.Option(
         None, help="Comma-separated list of group IDs to add the user to."
     ),
+    # Legacy V2 positional args
+    args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Create a user.
 
@@ -276,7 +277,7 @@ def create_notification_user(
         help="Override generated username. Ignores --remarks.",
     ),
     # Legacy V2 args
-    args: Optional[str] = ARG_POSITIONAL,
+    args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Create a notification user.
 
@@ -504,7 +505,7 @@ def create_usergroup(
         help="Create the user group in a disabled state.",
     ),
     # V2 legacy args
-    args: Optional[List[str]] = ARG_POSITIONAL,
+    args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     # We already have name and GUI access, so we expect 1 more arg at most
     if args:
@@ -580,8 +581,8 @@ class ShowUsergroupResult(TableRenderable):
         return cls(
             name=usergroup.name,
             usrgrpid=usergroup.usrgrpid,
-            gui_access=usergroup.gui_access_fmt,
-            status=usergroup.users_status_fmt,
+            gui_access=usergroup.gui_access_str,
+            status=usergroup.users_status_str,
             users=[user.username for user in usergroup.users],
         )
 
@@ -715,7 +716,7 @@ class AddUsergroupPermissionsResult(TableRenderable):
 
     @computed_field  # type: ignore # computed field on @property
     @property
-    def permission_fmt(self) -> str:
+    def permission_str(self) -> str:
         return get_permission(self.permission.as_api_value())
 
     def __cols_rows__(self) -> ColsRowsType:
@@ -731,7 +732,7 @@ class AddUsergroupPermissionsResult(TableRenderable):
                     self.usergroup,
                     ", ".join(self.hostgroups),
                     ", ".join(self.templategroups),
-                    self.permission_fmt,
+                    self.permission_str,
                 ],
             ],
         )
@@ -764,7 +765,7 @@ def add_usergroup_permissions(
         case_sensitive=False,
     ),
     # Legacy V2 args
-    args: Optional[List[str]] = ARG_POSITIONAL,
+    args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Gives a user group permissions to host groups and template groups.
 

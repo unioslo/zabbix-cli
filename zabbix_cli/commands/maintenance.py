@@ -181,7 +181,7 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
         return v
 
     @property
-    def state_fmt(self) -> str:
+    def state_str(self) -> str:
         if self.state == "Active":
             color = "green"
         else:
@@ -189,7 +189,7 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
         return f"[{color}]{self.state}[/]"
 
     @property
-    def maintenance_type_fmt(self) -> str:
+    def maintenance_type_str(self) -> str:
         # FIXME: This is very brittle! We are beholden to self.maintenance_type...
         if "With DC" in self.maintenance_type:
             color = "green"
@@ -213,11 +213,11 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
                 [
                     self.maintenanceid,
                     self.name,
-                    self.maintenance_type_fmt,
+                    self.maintenance_type_str,
                     self.active_till.strftime("%Y-%m-%d %H:%M"),
                     ", ".join(self.hosts),
                     ", ".join(self.groups),
-                    self.state_fmt,
+                    self.state_str,
                     self.description or "",
                 ]
             ],

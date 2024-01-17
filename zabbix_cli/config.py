@@ -227,8 +227,8 @@ class LoggingConfig(BaseModel):
 
 class Config(BaseModel):
     api: APIConfig = Field(
-        # Changed in V3: zabbix_api -> api
         default_factory=APIConfig,
+        # Changed in V3: zabbix_api -> api
         validation_alias=AliasChoices("api", "zabbix_api"),
     )
     app: AppConfig = Field(
@@ -247,16 +247,24 @@ class Config(BaseModel):
     @classmethod
     def from_file(cls, filename: Optional[Path] = None) -> Config:
         """Load configuration from a file.
+
         Attempts to find a config file to load if none is specified.
-        Prioritizes newer .toml files over legacy .conf files.
+
+        Prioritizes new-style .toml config files, but falls back
+        to legacy .conf config files if no .toml config file can be found.
         """
         fp = find_config(filename)
-        if not fp:  # support legacy .conf files
+        if not fp:  # We didn't find a .toml file, so try to find a legacy .conf file
             fp = find_config(filename, CONFIG_PRIORITY_LEGACY)
             if fp:
                 logger.warning("Using legacy config file %r", fp)
                 conf = _load_config_conf(fp)
+                # Use legacy JSON format if we find a legacy config file
+                conf.setdefault("zabbix_config", {}).setdefault(
+                    "legacy_json_format", True
+                )
             else:
+                # Failed to find both .toml and .conf files
                 raise FileNotFoundError("No configuration file found.")
         else:
             conf = _load_config_toml(fp)

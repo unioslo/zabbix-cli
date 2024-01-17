@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 
+from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
 from zabbix_cli.app import StatefulApp
 from zabbix_cli.exceptions import ZabbixAPIException
@@ -34,7 +35,6 @@ from zabbix_cli.utils.args import APIStrEnum
 from zabbix_cli.utils.args import ChoiceMixin
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.commands import ARG_HOSTNAME_OR_ID
-from zabbix_cli.utils.commands import ARG_POSITIONAL
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsType  # noqa: F401
@@ -78,7 +78,8 @@ host_cmd.add_subcommand(interface_cmd)
 @app.command(name="create_host", rich_help_panel=HELP_PANEL, hidden=False)
 def create_host(
     ctx: typer.Context,
-    args: List[str] = ARG_POSITIONAL,
+    args: Optional[List[str]] = ARGS_POSITIONAL,
+    # FIXME: specify hostname as only positional arg!
     hostname_or_ip: Optional[str] = typer.Option(
         None,
         "--host",
@@ -313,7 +314,7 @@ class CreateHostInterfaceV2Args(NamedTuple):
 def create_host_interface(
     ctx: typer.Context,
     # Typer does not yet support NamedTuple arguments, so we use a list of
-    args: List[str] = ARG_POSITIONAL,
+    args: Optional[List[str]] = ARGS_POSITIONAL,
     hostname: Optional[str] = typer.Option(
         None,
         "--hostname",

@@ -80,7 +80,7 @@ def success(message: str, icon: str = Icon.OK, **kwargs) -> None:
 def warning(message: str, icon: str = Icon.WARNING, **kwargs) -> None:
     """Log with WARNING level and optionally print a warning message."""
     logger.warning(message, extra=get_extra_dict(**kwargs))
-    err_console.print(bold(f"{yellow(icon)} {message}"))
+    err_console.print(bold(yellow(f"{icon} {message}")))
 
 
 def error(

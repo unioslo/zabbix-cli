@@ -5,7 +5,7 @@ Manages the following:
 - Loading and saving auth files (file containing username and password)
 - Loading username and password from environment variables
 - Prompting for username and password
-- Updating the Config object with the authentication information
+- Updating the Config object with the loaded authentication information
 """
 from __future__ import annotations
 
@@ -172,7 +172,7 @@ def _get_username_password_env(config: Config) -> Tuple[Optional[str], Optional[
 
 # TODO: refactor. Support other auth file locations(?)
 def _get_username_password_auth_file(
-    config: Config
+    config: Config,
 ) -> Tuple[Optional[str], Optional[str]]:
     """Get username and password from environment variables."""
     contents = load_auth_file(config)
@@ -180,7 +180,7 @@ def _get_username_password_auth_file(
 
 
 def _parse_auth_file_contents(
-    contents: Optional[str]
+    contents: Optional[str],
 ) -> Tuple[Optional[str], Optional[str]]:
     if contents:
         lines = contents.splitlines()

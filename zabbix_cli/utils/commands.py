@@ -26,14 +26,6 @@ def get_command_help(command: typer.models.CommandInfo) -> str:
     return ""
 
 
-ARG_POSITIONAL = typer.Argument(
-    None,
-    help="DEPRECATED: V2-style positional arguments.",
-    show_default=False,
-    hidden=True,
-)
-
-
 # NOTE: This arg should probably get a custom parser or callback to prompt for missing value
 # But parsers dont fire on defaults, and callbacks don't carry the value in a typesafe way;
 # we have to access it via the ctx object...

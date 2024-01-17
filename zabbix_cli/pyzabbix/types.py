@@ -40,6 +40,8 @@ from zabbix_cli.models import TableRenderableDict
 from zabbix_cli.utils.args import APIStr
 from zabbix_cli.utils.args import APIStrEnum
 from zabbix_cli.utils.args import ChoiceMixin
+from zabbix_cli.utils.utils import get_ack_status
+from zabbix_cli.utils.utils import get_event_status
 from zabbix_cli.utils.utils import get_gui_access
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
@@ -245,13 +247,13 @@ class Usergroup(ZabbixAPIBaseModel):
 
     @computed_field  # type: ignore[misc] # pydantic docs use decorators on top of property (https://docs.pydantic.dev/2.0/usage/computed_fields/)
     @property
-    def gui_access_fmt(self) -> str:
+    def gui_access_str(self) -> str:
         """GUI access code as a formatted string."""
         return get_gui_access(self.gui_access)
 
     @computed_field  # type: ignore[misc]
     @property
-    def users_status_fmt(self) -> str:
+    def users_status_str(self) -> str:
         """User status as a formatted string."""
         return get_usergroup_status(self.users_status)
 
@@ -260,7 +262,7 @@ class Usergroup(ZabbixAPIBaseModel):
     def status(self) -> str:
         """LEGACY COMPATIBILITY: 'users_status' is called 'status' in V2.
         Ensures serialized output contains the field."""
-        return self.users_status_fmt
+        return self.users_status_str
 
     @field_serializer("gui_access")
     def _LEGACY_type_serializer(self, v: Optional[int], _info) -> Union[str, int, None]:
@@ -452,7 +454,7 @@ class MacroBase(ZabbixAPIBaseModel):
 
     @computed_field  # type: ignore[misc] # pydantic docs use decorators on top of property (https://docs.pydantic.dev/2.0/usage/computed_fields/)
     @property
-    def type_fmt(self) -> str:
+    def type_str(self) -> str:
         """Returns the macro type as a formatted string."""
         return get_macro_type(self.type)
 
@@ -486,13 +488,13 @@ class Item(ZabbixAPIBaseModel):
 
     @computed_field  # type: ignore[misc] # pydantic docs use decorators on top of property (https://docs.pydantic.dev/2.0/usage/computed_fields/)
     @property
-    def type_fmt(self) -> str:
+    def type_str(self) -> str:
         """Returns the item type as a formatted string."""
         return get_item_type(self.type)
 
     @computed_field  # type: ignore[misc]
     @property
-    def value_type_fmt(self) -> str:
+    def value_type_str(self) -> str:
         """Returns the item type as a formatted string."""
         return get_value_type(self.value_type)
 
@@ -500,7 +502,7 @@ class Item(ZabbixAPIBaseModel):
     def _LEGACY_type_serializer(self, v: Optional[int], _info) -> Union[str, int, None]:
         """Serializes the item type as a formatted string in legacy JSON mode"""
         if self.legacy_json_format:
-            return self.type_fmt
+            return self.type_str
         return v
 
     @field_serializer("value_type")
@@ -509,7 +511,7 @@ class Item(ZabbixAPIBaseModel):
     ) -> Union[str, int, None]:
         """Serializes the item type as a formatted string in legacy JSON mode"""
         if self.legacy_json_format:
-            return self.type_fmt
+            return self.type_str
         return v
 
     def __cols_rows__(self) -> ColsRowsType:
@@ -519,7 +521,7 @@ class Item(ZabbixAPIBaseModel):
                 self.itemid,
                 str(self.name),
                 str(self.key),
-                str(self.type_fmt),
+                str(self.type_str),
                 str(self.delay),
                 str(self.history),
                 str(self.description),
@@ -565,21 +567,21 @@ class TimePeriod(ZabbixAPIBaseModel):
 
     @computed_field  # type: ignore[misc]
     @property
-    def timeperiod_type_fmt(self) -> str:
+    def timeperiod_type_str(self) -> str:
         """Returns the time period type as a formatted string."""
         return get_maintenance_period_type(self.timeperiod_type)
 
     @computed_field  # type: ignore[misc]
     @property
-    def period_fmt(self) -> str:
+    def period_str(self) -> str:
         return str(timedelta(seconds=self.period))
 
     @property
-    def start_time_fmt(self) -> str:
+    def start_time_str(self) -> str:
         return str(timedelta(seconds=self.start_time or 0))
 
     @property
-    def start_date_fmt(self) -> str:
+    def start_date_str(self) -> str:
         if self.start_date and self.start_date.year > 1970:  # hack to avoid 1970-01-01
             return self.start_date.strftime("%Y-%m-%d %H:%M")
         return ""
@@ -608,10 +610,10 @@ class TimePeriod(ZabbixAPIBaseModel):
         ]  # type: ColsType
         rows = [
             [
-                self.timeperiod_type_fmt,
-                self.period_fmt,
-                self.start_date_fmt,
-                self.start_time_fmt,
+                self.timeperiod_type_str,
+                self.period_str,
+                self.start_date_str,
+                self.start_time_str,
                 get_maintenance_every_type(self.every),
                 "\n".join(get_maintenance_active_days(self.dayofweek)),
                 str(self.day),
@@ -625,9 +627,9 @@ class TimePeriod(ZabbixAPIBaseModel):
         cols = ["Type", "Duration", "Start date"]  # type: ColsType
         rows = [
             [
-                self.timeperiod_type_fmt,
-                self.period_fmt,
-                self.start_date_fmt,
+                self.timeperiod_type_str,
+                self.period_str,
+                self.start_date_str,
             ]
         ]  # type: RowsType
         return cols, rows
@@ -669,3 +671,100 @@ class Maintenance(ZabbixAPIBaseModel):
         """
         # 0 = one time. We want those last.
         return sorted(v, key=lambda tp: tp.timeperiod_type, reverse=True)
+
+
+class Event(ZabbixAPIBaseModel):
+    eventid: str
+    source: int
+    object: int
+    objectid: str
+    acknowledged: int
+    clock: datetime
+    name: str
+    value: Optional[int] = None  # docs seem to imply this is optional
+    severity: int
+    # NYI:
+    # r_eventid
+    # c_eventid
+    # cause_eventid
+    # correlationid
+    # userid
+    # suppressed
+    # opdata
+    # urls
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def age(self) -> str:
+        """Returns the age of the event as a formatted string."""
+        n = datetime.now(tz=self.clock.tzinfo)
+        age = n - self.clock
+        # strip microseconds
+        return str(age - timedelta(microseconds=age.microseconds))
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def status_str(self) -> str:
+        return get_event_status(self.value)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def acknowledged_str(self) -> str:
+        return get_ack_status(self.acknowledged)
+
+    @property
+    def status_str_cell(self) -> str:
+        """Formatted and styled status string for use in a table cell."""
+        if self.status_str == "OK":
+            color = "green"
+        else:
+            color = "red"
+        return f"[{color}]{self.status_str}[/]"
+
+    @property
+    def acknowledged_str_cell(self) -> str:
+        """Formatted and styled state string for use in a table cell."""
+        if self.acknowledged_str == "Yes":
+            color = "green"
+        else:
+            color = "red"
+        return f"[{color}]{self.acknowledged_str}[/]"
+
+    @field_serializer("value")
+    def _LEGACY_value_serializer(
+        self, v: Optional[int], _info
+    ) -> Union[str, int, None]:
+        """Serializes the value field as a formatted string in legacy JSON mode"""
+        if self.legacy_json_format:
+            return self.status_str
+        return v
+
+    @field_serializer("acknowledged")
+    def _LEGACY_acknowledged_serializer(self, v: int, _info) -> Union[str, int]:
+        """Serializes the acknowledged field as a formatted string in legacy JSON mode"""
+        if self.legacy_json_format:
+            return self.acknowledged_str
+        return v
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = [
+            "Event ID",
+            "Trigger ID",
+            "Name",
+            "Last change",
+            "Age",
+            "Acknowledged",
+            "Status",
+        ]
+        rows = [
+            [
+                self.eventid,
+                self.objectid,
+                self.name,
+                self.clock.strftime("%Y-%m-%d %H:%M:%S"),
+                self.age,
+                self.acknowledged_str_cell,
+                self.status_str_cell,
+            ]
+        ]
+        return cols, rows

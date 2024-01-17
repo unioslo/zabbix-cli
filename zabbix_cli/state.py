@@ -61,6 +61,9 @@ class State:
     _config = None  # type: Config | None
     """Current configuration object."""
 
+    _config_repl_original = None  # type: Config | None
+    """The config object when the REPL was first launched."""
+
     _console = None  # type: Console | None
     """Lazy-loaded Rich console object."""
 
@@ -149,6 +152,30 @@ class State:
 
             # TODO: only write if we updated the token
             write_auth_token_file(ca.username, self.token)
+
+    def revert_config_overrides(self) -> None:
+        """Revert config overrides from CLI args applied in REPL.
+
+        This method ensures that overrides only apply to a single command invocation,
+        and are reset afterwards.
+
+        In REPL mode, we have to ensure overrides don't persist between commands:
+        i.e.:
+
+        ```
+        > show_trigger_events 123 # table
+        > -o json show_trigger_events 123 # json (override applied to config)
+        > show_trigger_events 123 # table (override reverted)
+        ```
+
+        This method ensures that the override is reset after the command is executed.
+        """
+        if not self.repl or not self.is_config_loaded:
+            return
+        if not self._config_repl_original:
+            self._config_repl_original = self.config.model_copy(deep=True)
+        else:
+            self.config = self._config_repl_original.model_copy(deep=True)
 
     def logout(self):
         """Ends the current user's API session if the client is logged in

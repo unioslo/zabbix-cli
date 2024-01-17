@@ -22,32 +22,28 @@ from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
+from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.args import UsergroupPermission
-from zabbix_cli.utils.commands import ARG_POSITIONAL
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
 from zabbix_cli.utils.utils import get_permission
 
 
-V2_HNHG_METAVAR = "<hostnames> <hostgroups>"
-
-
-@app.command("add_host_to_hostgroup", options_metavar=V2_HNHG_METAVAR)
+@app.command("add_host_to_hostgroup")
 def add_host_to_hostgroup(
     ctx: typer.Context,
-    args: List[str] = ARG_POSITIONAL,
     hostnames: Optional[str] = typer.Option(
-        None, "--hostnames", help="Hostnames or IDs. Separate values with commas."
+        None, help="Hostnames or IDs. Separate values with commas."
     ),
     hostgroups: Optional[str] = typer.Option(
-        None, "--hostnames", help="Hostnames or IDs. Separate values with commas."
+        None, help="Hostnames or IDs. Separate values with commas."
     ),
 ) -> None:
     """Adds one or more hosts to one or more host groups.
 
     Host{name,group} arguments are interpreted as IDs if they are numeric.
     """
-    hosts, hgs = _parse_hostname_hostgroup_args(args, hostnames, hostgroups)
+    hosts, hgs = _parse_hostname_hostgroup_args(hostnames, hostgroups)
     query = {
         "hosts": [{"hostid": host.hostid} for host in hosts],
         "groups": [{"groupid": hg.groupid} for hg in hgs],
@@ -62,38 +58,24 @@ def add_host_to_hostgroup(
 
 
 def _parse_hostname_hostgroup_args(
-    args: List[str], hostnames: Optional[str], hostgroups: Optional[str]
+    hostnames: Optional[str], hostgroups: Optional[str]
 ) -> Tuple[List[Host], List[HostGroup]]:
-    """Helper function for parsing hostnames and hostgroups from args.
-    Args take presedence over options.
-
-    Processes V2 style positional args as well as the named options
-    `--hostnames` and `--hostgroups`.
-    """
-    if args and len(args) != 2:
-        exit_err("Command takes two positional arguments <hostnames> <hostgroups>.")
-    elif not args and not (hostnames and hostgroups):
-        exit_err("Command requires both hostname(s) and hostgroup(s).")
-
-    # FIXME: should args take precedence over options?
-    # Is there a legitimate use case for mixing args (deprecated) and options?
-    if args:  # guaranteed to be len 2
-        hostnames, hostgroups = args
-
+    """Helper function for parsing hostnames and hostgroups args."""
     # Prompt for missing arguments
     if not hostnames:
         hostnames = str_prompt("Host name(s)")
+    hostname_args = parse_list_arg(hostnames)
+    if not hostname_args:
+        exit_err("No host names specified.")
+
     if not hostgroups:
         hostgroups = str_prompt("Host group(s)")
+    hostgroup_args = parse_list_arg(hostgroups)
+    if not hostgroup_args:
+        exit_err("No host groups specified.")
 
-    host_models = []  # type: list[Host]
-    hg_models = []  # type: list[HostGroup]
-
-    for hostname in hostnames.strip().split(","):
-        host_models.append(app.state.client.get_host(hostname))
-
-    for hostgroup in hostgroups.strip().split(","):
-        hg_models.append(app.state.client.get_hostgroup(hostgroup))
+    host_models = [app.state.client.get_host(hn) for hn in hostname_args]
+    hg_models = [app.state.client.get_hostgroup(hg) for hg in hostgroup_args]
 
     return host_models, hg_models
 
@@ -170,19 +152,18 @@ def create_hostgroup(
     )
 
 
-@app.command("remove_host_from_hostgroup", options_metavar=V2_HNHG_METAVAR)
+@app.command("remove_host_from_hostgroup")
 def remove_host_from_hostgroup(
-    args: List[str] = ARG_POSITIONAL,
-    hostnames: Optional[str] = typer.Option(
-        None, "--hostnames", help="Hostnames or IDs. Separate values with commas."
-    ),
-    hostgroups: Optional[str] = typer.Option(
+    hostnames: Optional[str] = typer.Argument(
         None,
-        "--hostgroups",
+        help="Hostnames or IDs. Separate values with commas.",
+    ),
+    hostgroups: Optional[str] = typer.Argument(
+        None,
         help="Host group names or IDs. Separate values with commas.",
     ),
 ) -> None:
-    hosts, hgs = _parse_hostname_hostgroup_args(args, hostnames, hostgroups)
+    hosts, hgs = _parse_hostname_hostgroup_args(hostnames, hostgroups)
     query = {
         "hostids": [host.hostid for host in hosts],
         "groupids": [hg.groupid for hg in hgs],

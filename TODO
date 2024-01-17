@@ -1,5 +1,14 @@
 * Configure file logging for scripts as well???
 
+
+# IMPORTANT
+
+* add_host_to_hostgroup & remove_host_from_hostgroup should probably take 2 positional arguments as opposed to 2 options. The current implementation is over-complicated.
+
+
+----------------
+
+
 ## scripts
 
 * Some sort of shared callback function between all scripts and the main CLI. This way we can pass in config etc, and have a common way of handling errors etc.
@@ -11,6 +20,22 @@
 * Add support for both names and IDs in certain API methods. This adds a bunch of complexity, but is required to support some V2 features. Drop them?
 
 * Move all APIStrEnum classes into pyzabbix. Add `enums` module to pyzabbix?
+
+* Wrap most POST/UPDATE/DELETEs in a try/except block that catches ZabbixAPIExceptions and re-raises it with a more understandable error message.
+  * Some methods already do this, but not all.
+
+* Wrap GETs in try/except as well. About half of the methods do this... Very inconsistent.
+
+* Some sort of type checking of API results.
+  * If we expect a list, we should have a function that does the appropriate isinstance checks, and possibly also converts each item in the list to the correct type.
+  * Similarly, each response is likely a dict of some sort, but we should ensure it actually is a dict before we try to access it.
+
+* Log all API calls and responses.
+  * Successful calls should be logged at INFO level.
+    * I.e. `logger.info("Acknowledged event: %s. Closed: %s", event_id, close)`
+  * Failures that raise exceptions don't need to log anything (they are logged by the exception handler).
+  * In debug mode, we can also log the request and response.
+  * This will help us debug issues with the API.
 
 ### Utils
 

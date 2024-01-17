@@ -29,6 +29,8 @@ from typing import Optional
 
 import typer
 from click_repl import repl as start_repl
+from rich.console import Group
+from rich.panel import Panel
 
 from zabbix_cli.__about__ import __version__
 from zabbix_cli._v2_compat import run_command_from_option
@@ -45,9 +47,11 @@ from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.history import History
 from zabbix_cli.logs import configure_logging
 from zabbix_cli.logs import LogContext
+from zabbix_cli.output.console import console
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import info
 from zabbix_cli.output.formatting.path import path_link
+from zabbix_cli.output.style.color import green
 from zabbix_cli.state import get_state
 
 logger = logging.getLogger("zabbix-cli")
@@ -96,23 +100,29 @@ def configure_state(config: Config) -> None:
 def run_repl(ctx: typer.Context) -> None:
     state = get_state()
 
-    intro = f"""
-#############################################################
-Welcome to the Zabbix command-line interface (v{__version__})
-Connected to server {state.config.api.url} (v{state.client.version})
-#############################################################
-Type --help for a list of commands, :h for a list of REPL commands, :q to exit.
-"""
-
-    # TODO: find a better way to print a message ONCE at the start of the REPL
     def print_intro() -> None:
-        state = get_state()
+        info_text = (
+            f"[bold]Welcome to the Zabbix command-line interface (v{__version__})[/]\n"
+            f"[bold]Connected to server {state.config.api.url} (v{state.client.version})[/]"
+        )
+        info_panel = Panel(
+            green(info_text),
+            expand=False,
+            padding=(0, 1),
+        )
+        help_text = "Type --help to list commands, :h for REPL help, :q to exit."
+        intro = Group(info_panel, help_text)
+        console.print(intro)
+
+    def pre_run() -> None:
+        # TODO: find a better way to print a message ONCE at the start of the REPL
         if not state.repl:
-            print(intro)
+            print_intro()
             state.repl = True
+        state.revert_config_overrides()
 
     # TODO: add history file support
-    prompt_kwargs = {"pre_run": print_intro}
+    prompt_kwargs = {"pre_run": pre_run}
     try:
         start_repl(ctx, prompt_kwargs=prompt_kwargs)
     finally:
@@ -148,7 +158,6 @@ def main_callback(
         case_sensitive=False,
     ),
 ) -> None:
-    logger.debug("Zabbix-CLI started.")
     history.add(ctx)
 
     state = get_state()
@@ -157,13 +166,14 @@ def main_callback(
     else:
         conf = get_config(config_file)
 
-    # Overrides for config options can be (re-)applied here
+    # Config overrides are always applied
     if output_format is not None:
         conf.app.output_format = output_format
 
-    # If we are already inside the REPL, we don't need re-run configuration
     if state.repl:
-        return
+        return  # In REPL already; no need to re-configure.
+
+    logger.debug("Zabbix-CLI started.")
 
     configure_logging(conf.logging)
     configure_auth(conf)  # NOTE: move into State.configure?
@@ -174,9 +184,6 @@ def main_callback(
         # TODO: look at order of evaluation here. What takes precedence?
         # Should passing both --input-file and --command be an error? probably
         if zabbix_command:
-            # run command here.
-            # Kept for backwards compatibility
-            # prefer to just invoke the command directly
             run_command_from_option(ctx, zabbix_command)
             return
         elif input_file:

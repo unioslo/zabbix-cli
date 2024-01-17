@@ -27,6 +27,10 @@
     - Old positional filter argument syntax is deprecated.
   - `show_hosts`:
     - Same as `show_host`
+  - `show_trigger_events`
+    - `--limit`: Limit number of events to show
+      - Corresponds to old positional argument.
+      - Defaults to 10 (was 1).
 
 
 - **REPOSITORY:** Pre-commit configuration for linting and formatting.

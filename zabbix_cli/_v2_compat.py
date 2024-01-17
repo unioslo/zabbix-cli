@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import List
+from typing import Optional
 
 import typer
 from click.core import CommandCollection
@@ -45,7 +47,7 @@ def run_command_from_option(ctx: typer.Context, command: str) -> None:
     from zabbix_cli.output.console import exit_err
 
     warning(
-        "The --command/-C option is deprecated and will be removed in a future release. "
+        "The [i]--command/-C[/] option is deprecated and will be removed in a future release. "
         "Invoke command directly instead."
     )
     if not isinstance(ctx.command, (CommandCollection, Group)):
@@ -65,3 +67,26 @@ def run_command_from_option(ctx: typer.Context, command: str) -> None:
         error(
             f"Command {command!r} failed with error: {e}. Try re-running without --command."
         )
+
+
+def args_callback(
+    ctx: typer.Context, value: Optional[List[str]]
+) -> Optional[List[str]]:
+    if ctx.resilient_parsing:
+        return  # type: ignore # for auto-completion
+    if value:
+        from zabbix_cli.output.console import warning
+
+        warning(
+            f"Detected deprecated positional arguments {value}. Use options instead."
+        )
+    return value
+
+
+ARGS_POSITIONAL = typer.Argument(
+    None,
+    help="DEPRECATED: V2-style positional arguments.",
+    show_default=False,
+    hidden=True,
+    callback=args_callback,
+)

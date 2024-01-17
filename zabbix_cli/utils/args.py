@@ -60,12 +60,19 @@ def parse_int_list_arg(arg: str) -> list[int]:
         raise ZabbixCLIError(f"Invalid comma-separated string value: {arg}") from e
 
 
+TRUE_CHOICES = ["true", "yes", "1", "on"]
+FALSE_CHOICES = ["false", "no", "0", "off"]
+
+
 def parse_bool_arg(arg: str) -> bool:
     """Convert string to bool."""
-    try:
-        return bool(arg.strip())
-    except ValueError as e:
-        raise ZabbixCLIError(f"Invalid boolean value: {arg}") from e
+    arg = arg.strip().lower()
+    if arg in TRUE_CHOICES:
+        return True
+    elif arg in FALSE_CHOICES:
+        return False
+    else:
+        raise ZabbixCLIError(f"Invalid boolean value: {arg}")
 
 
 T = TypeVar("T")

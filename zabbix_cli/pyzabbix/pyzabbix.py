@@ -32,6 +32,7 @@ from zabbix_cli.cache import ZabbixCache
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
+from zabbix_cli.pyzabbix.types import Event
 from zabbix_cli.pyzabbix.types import GlobalMacro
 from zabbix_cli.pyzabbix.types import GUIAccess
 from zabbix_cli.pyzabbix.types import Host
@@ -50,6 +51,7 @@ from zabbix_cli.pyzabbix.types import UserMedia
 from zabbix_cli.pyzabbix.types import ZabbixRight
 from zabbix_cli.utils.args import UsergroupPermission
 from zabbix_cli.utils.args import UserRole
+from zabbix_cli.utils.utils import get_acknowledge_action_value
 
 if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import MaintenanceStatus
@@ -1494,20 +1496,114 @@ class ZabbixAPI:
             )
         return resp["maintenanceids"]
 
-    # def _construct_params(
-    #     self,
-    #     hostname_or_id: Optional[str] = None,
-    #     macro_name: Optional[str] = None,
-    #     search: bool = False,
-    #     sort_field: Optional[str] = None,
-    #     sort_order: Optional[SortOrder] = None,
-    #     select_groups: bool = False,
-    #     select_templates: bool = False,
-    #     select_inventory: bool = False,
-    #     select_macros: bool = False,
-    #     **filter_kwargs,
-    # ) -> ParamsType:
-    #     pass
+    def acknowledge_event(
+        self,
+        *event_ids: str,
+        message: Optional[str] = None,
+        close: bool = False,
+        acknowledge: bool = False,
+        change_severity: bool = False,
+        unacknowledge: bool = False,
+        suppress: bool = False,
+        unsuppress: bool = False,
+        change_to_cause: bool = False,
+        change_to_symptom: bool = False,
+    ) -> List[str]:
+        # The action is an integer that is created based on
+        # the combination of the parameters passed in.
+        action = get_acknowledge_action_value(
+            close=close,
+            message=bool(message),
+            acknowledge=acknowledge,
+            change_severity=change_severity,
+            unacknowledge=unacknowledge,
+            suppress=suppress,
+            unsuppress=unsuppress,
+            change_to_cause=change_to_cause,
+            change_to_symptom=change_to_symptom,
+        )
+        params = {"eventids": event_ids, "action": action}  # type: ParamsType
+        if message:
+            params["message"] = message
+        try:
+            resp = self.event.acknowledge(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to acknowledge events {event_ids}") from e
+        if not resp or not resp.get("eventids"):
+            raise ZabbixNotFoundError(
+                f"No event IDs returned when acknowledging events {event_ids}"
+            )
+        # For some reason this API method returns a list of ints instead of strings
+        # even though the API docs specify that it should be a list of strings.
+        return [str(eventid) for eventid in resp["eventids"]]
+
+    def get_event(
+        self,
+        # NOTE: Does this API make sense?
+        # Should we just expose event_id instead, and then
+        # use `get_events()` for everything else?
+        event_id: Optional[str] = None,
+        group_id: Optional[str] = None,
+        host_id: Optional[str] = None,
+        object_id: Optional[str] = None,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[SortOrder] = None,
+    ) -> Event:
+        """Fetches an event given its ID."""
+        events = self.get_events(
+            event_ids=event_id,
+            group_ids=group_id,
+            host_ids=host_id,
+            object_ids=object_id,
+            sort_field=sort_field,
+            sort_order=sort_order,
+        )
+        if not events:
+            reasons = []
+            if event_id:
+                reasons.append(f"event ID {event_id!r}")
+            if group_id:
+                reasons.append(f"group ID {group_id!r}")
+            if host_id:
+                reasons.append(f"host ID {host_id!r}")
+            if object_id:
+                reasons.append(f"object ID {object_id!r}")
+            r = " and ".join(reasons)
+            raise ZabbixNotFoundError(
+                f"Event {'with' if reasons else ''} {r} not found".replace("  ", " ")
+            )
+        return events[0]
+
+    def get_events(
+        self,
+        event_ids: Union[str, List[str], None] = None,
+        group_ids: Union[str, List[str], None] = None,
+        host_ids: Union[str, List[str], None] = None,
+        object_ids: Union[str, List[str], None] = None,
+        sort_field: Union[str, List[str], None] = None,
+        sort_order: Optional[SortOrder] = None,
+        limit: Optional[int] = None,
+    ) -> List[Event]:
+        params = {"output": "extend"}  # type: ParamsType
+        if event_ids:
+            params["eventids"] = event_ids
+        if group_ids:
+            params["groupids"] = group_ids
+        if host_ids:
+            params["hostids"] = host_ids
+        if object_ids:
+            params["objectids"] = object_ids
+        if sort_field:
+            params["sortfield"] = sort_field
+        if sort_order:
+            params["sortorder"] = sort_order
+        if limit:
+            params["limit"] = limit
+        try:
+            resp = self.event.get(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException("Failed to fetch events") from e
+        return [Event(**event) for event in resp]
 
     def __getattr__(self, attr: str):
         """Dynamically create an object class (ie: host)"""

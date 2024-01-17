@@ -8,15 +8,16 @@ from functools import wraps
 from pathlib import Path
 from typing import Any
 from typing import Callable
+from typing import List
 from typing import overload
 from typing import Type
-from typing import TypeVar
 
 from rich.prompt import Confirm
 from rich.prompt import FloatPrompt
 from rich.prompt import IntPrompt
 from rich.prompt import Prompt
 from typing_extensions import ParamSpec
+from typing_extensions import TypeVar
 
 from .console import err_console
 from .console import error
@@ -27,7 +28,9 @@ from .style import Icon
 from .style.color import green
 from .style.color import yellow
 from zabbix_cli._types import EllipsisType
+from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.state import get_state
+# from typing import TypeVar
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -178,6 +181,33 @@ def str_prompt_optional(
         strip=strip,
         **kwargs,
     )
+
+
+TypeConstructor = Callable[[object], T]
+
+
+@no_headless
+def list_prompt(
+    prompt: str,
+    empty_ok: bool = True,
+    strip: bool = True,
+    keep_empty: bool = False,
+    # https://github.com/python/mypy/issues/3737
+    # https://github.com/python/mypy/issues/3737#issuecomment-1446769973
+    # Using this weird TypeConstructor type seems very hacky
+    type: TypeConstructor = str,
+) -> List[T]:
+    """Prompt user for a comma-separated list of values."""
+    from zabbix_cli.utils.args import parse_list_arg
+
+    inp = str_prompt(prompt, empty_ok=empty_ok, strip=strip)
+    arglist = parse_list_arg(inp, keep_empty=keep_empty)
+    try:
+        # NOTE: type() in this context is the constructor for the type
+        # we passed in, not the built-in type() function (shadowed in this scope)
+        return [type(arg) for arg in arglist]
+    except Exception as e:
+        raise ZabbixCLIError(f"Invalid value: {e}") from e
 
 
 @no_headless

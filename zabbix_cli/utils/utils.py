@@ -6,6 +6,8 @@ import re
 from datetime import datetime
 from datetime import timedelta
 from typing import Any
+from typing import Dict
+from typing import Final
 from typing import Iterable
 from typing import List
 from typing import NamedTuple
@@ -27,24 +29,16 @@ def _format_code(
     return status
 
 
-def get_ack_status(code):
+def get_ack_status(code: Optional[int]) -> str:
     """Get ack status from code."""
     ack_status = {0: "No", 1: "Yes"}
-
-    if code in ack_status:
-        return ack_status[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
+    return _format_code(code, ack_status, with_code=False)
 
 
-def get_event_status(code):
+def get_event_status(code: Optional[int]) -> str:
     """Get event status from code."""
     event_status = {0: "OK", 1: "Problem"}
-
-    if code in event_status:
-        return event_status[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
+    return _format_code(code, event_status, with_code=False)
 
 
 def get_trigger_severity(code):
@@ -202,6 +196,70 @@ def get_maintenance_active_months(schedule: int | None) -> List[str]:
         if schedule & n:
             active_months.append(month)
     return active_months
+
+
+# NOTE: we could turn these into str Enums or Literals,
+# so that it's easier to type check the values
+ACKNOWLEDGE_ACTION_BITMASK: Final[Dict[str, int]] = {
+    "close": 0b000000001,
+    "acknowledge": 0b000000010,
+    "message": 0b000000100,
+    "change_severity": 0b000001000,
+    "unacknowledge": 0b000010000,
+    "suppress": 0b000100000,
+    "unsuppress": 0b001000000,
+    "change_to_cause": 0b010000000,
+    "change_to_symptom": 0b100000000,
+}
+ACKNOWLEDGE_ACTION_BITMASK_REVERSE: Final[Dict[int, str]] = {
+    v: k for k, v in ACKNOWLEDGE_ACTION_BITMASK.items()
+}
+
+
+def get_acknowledge_action_value(
+    close: bool = False,
+    acknowledge: bool = False,
+    message: bool = False,
+    change_severity: bool = False,
+    unacknowledge: bool = False,
+    suppress: bool = False,
+    unsuppress: bool = False,
+    change_to_cause: bool = False,
+    change_to_symptom: bool = False,
+) -> int:
+    value = 0
+    if close:
+        value += ACKNOWLEDGE_ACTION_BITMASK["close"]
+    if acknowledge:
+        value += ACKNOWLEDGE_ACTION_BITMASK["acknowledge"]
+    if message:
+        value += ACKNOWLEDGE_ACTION_BITMASK["message"]
+    if change_severity:
+        value += ACKNOWLEDGE_ACTION_BITMASK["change_severity"]
+    if unacknowledge:
+        value += ACKNOWLEDGE_ACTION_BITMASK["unacknowledge"]
+    if suppress:
+        value += ACKNOWLEDGE_ACTION_BITMASK["suppress"]
+    if unsuppress:
+        value += ACKNOWLEDGE_ACTION_BITMASK["unsuppress"]
+    if change_to_cause:
+        value += ACKNOWLEDGE_ACTION_BITMASK["change_to_cause"]
+    if change_to_symptom:
+        value += ACKNOWLEDGE_ACTION_BITMASK["change_to_symptom"]
+    return value
+
+
+def get_acknowledge_actions(code: int) -> List[str]:
+    """Get acknowledge actions from code.
+
+    See: https://www.zabbix.com/documentation/current/en/manual/api/reference/event/acknowledge (action parameter)"""
+    # Create reverse lookup for action bitmask
+    acknowledge_actions = {v: k for k, v in ACKNOWLEDGE_ACTION_BITMASK.items()}
+    active_action = []
+    for n, action in acknowledge_actions.items():
+        if code & n:
+            active_action.append(action)
+    return active_action
 
 
 def get_autologin_type(code):
