@@ -19,7 +19,7 @@ from zabbix_cli.exceptions import ZabbixCLIError
 logger = logging.getLogger(__name__)
 
 
-# All these exception inherit from the base ZabbixCLIError type, which means
+# All these exceptions inherit from the base ZabbixCLIError type, which means
 # they are caught by the default exception handler. But we define more
 # granular exception types here, so that we can test errors more accurately.
 
@@ -71,25 +71,33 @@ class BulkCommand(BaseModel):
                 kwargs[next_kwarg] = arg
                 next_is_kwarg = False
                 next_kwarg = None
-            # NOTE: when we encounter a dash its len must be >= 1 so that
-            # FIXME: Potential bug here with regads to parsing negative numbers
-            # passed in as arguments. `-1` will be parsed as a kwarg, but then followed
-            # by no arguments.
+            # NOTE: when we encounter a dash its len must be >= 1
             elif arg.startswith("-") and len(arg) > 1:
-                kwarg = arg.lstrip("-")
+                kwarg = arg.lstrip("-").strip()
                 if not kwarg:
                     raise LineParseError(f"Invalid keyword argument {arg}")
+                elif kwarg[0].isdigit():
+                    raise LineParseError(f"Invalid keyword argument {arg}")
                 elif len(kwarg) == 1:
+                    # FIXME: why dont we support this? what is the reason for this?
                     raise LineParseError(f"Short-form options are not supported: {arg}")
+
+                # Support flags in the form of --no-<option>
+                is_negated_flag = kwarg.startswith("no-")
+                if is_negated_flag:
+                    kwarg = kwarg.lstrip("no-")
+
                 next_kwarg = kwarg
                 next_is_kwarg = True
                 # TODO: support kwargs that can be specified multiple times
                 # by appending to a list
                 # Alternatively, always use a list?
 
-                # Assume option is flag.
-                # This value is overwritten if an argument follows next.
-                kwargs[next_kwarg] = not kwarg.startswith("no-")
+                # Always assume option is flag.
+                # If not, it's overwritten in the next iteration of the loop.
+                # We use the presence of a `no-` prefix to determine if we should
+                # set this default value to True or False.
+                kwargs[next_kwarg] = not is_negated_flag
             else:
                 args.append(arg)
 

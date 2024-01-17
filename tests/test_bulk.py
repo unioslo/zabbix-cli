@@ -117,8 +117,11 @@ create_user username name surname passwd type autologin autologout groups
 create_user username name surname --passwd mypass --type 1  --autologin 0 --autologout 86400 --groups '1,2'
 # comment explaining the next command
 create_user username --name myname surname --passwd mypass # trailing comment
+# Command with flag
+acknowledge_event 123,456,789 --message "foo message" --close
+# Command with negative flag
+show_templategroup mygroup --no-templates
 # we will end with a blank line
-
 """
     )
 
@@ -163,6 +166,25 @@ create_user username --name myname surname --passwd mypass # trailing comment
             kwargs={
                 "name": "myname",
                 "passwd": "mypass",
+            },
+        ),
+        BulkCommand(
+            command="acknowledge_event",
+            args=[
+                "123,456,789",
+            ],
+            kwargs={
+                "message": "foo message",
+                "close": True,
+            },
+        ),
+        BulkCommand(
+            command="show_templategroup",
+            args=[
+                "mygroup",
+            ],
+            kwargs={
+                "templates": False,
             },
         ),
     ]
