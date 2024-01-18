@@ -159,6 +159,16 @@ Use APIStr enums in functions that take in a code and return a string representa
 
 --------------------
 
+## Repo
+
+
+### Run pyupgrade on all files not referenced by Typer
+
+We only need runtime typing on the functions that typer use for type inference. Modules such as Pyzabbix can be upgraded to use modern typing features such as built-in generics (3.9) and | (3.10).
+
+
+--------------------
+
 ## Optimization
 
 * Define result models inside commands
@@ -168,6 +178,9 @@ Use APIStr enums in functions that take in a code and return a string representa
     * Where n is the number of commands/result models.
 * Reduce number of cross-imports
 * Perform more cached lazy imports
+
+
+--------------------
 
 ## New command ideas
 
