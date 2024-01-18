@@ -20,6 +20,7 @@ from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import Result
+from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import bool_prompt
 from zabbix_cli.output.prompts import int_prompt
 from zabbix_cli.output.prompts import str_prompt
@@ -136,25 +137,23 @@ def create_host(
     """
     if args:
         if len(args) != 4:
-            raise ZabbixCLIError("create_host takes exactly 4 positional arguments.")
-        else:
-            hostname_or_ip = args[0]
-            hostgroups = args[1]
-            proxy = args[2]
-            status = args[3]
-    if not (hostname_or_ip and hostgroups and proxy and status):
-        if not hostname_or_ip:
-            hostname_or_ip = str_prompt("Hostname or IP")
-        if not hostgroups:
-            hostgroups = str_prompt(
-                "Hostgroup(s)", default="", show_default=False, empty_ok=True
-            )
-        if not proxy:
-            proxy = str_prompt("Proxy", default=DEFAULT_PROXY)
-        if not status:
-            status = str_prompt(
-                "Status", default=DEFAULT_HOST_STATUS
-            )  # TODO: don't hardcode this
+            exit_err("create_host takes exactly 4 positional arguments.")
+        hostname_or_ip = args[0]
+        hostgroups = args[1]
+        proxy = args[2]
+        status = args[3]
+    if not hostname_or_ip:
+        hostname_or_ip = str_prompt("Hostname or IP")
+    if not hostgroups:
+        hostgroups = str_prompt(
+            "Hostgroup(s)", default="", show_default=False, empty_ok=True
+        )
+    if not proxy:
+        proxy = str_prompt("Proxy", default=DEFAULT_PROXY)
+    if not status:
+        status = str_prompt(
+            "Status", default=DEFAULT_HOST_STATUS
+        )  # TODO: don't hardcode this
 
     # Check if we are using a hostname or IP
     try:

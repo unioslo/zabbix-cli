@@ -14,6 +14,7 @@ from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
+from zabbix_cli.pyzabbix.types import TriggerPriority
 from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_int_arg
 from zabbix_cli.utils.args import parse_list_arg
@@ -200,3 +201,56 @@ def show_trigger_events(
         limit=limit,
     )
     render_result(AggregateResult(result=events))
+
+
+@app.command(name="show_alarms", rich_help_panel=HELP_PANEL)
+def show_alarms(
+    ctx: typer.Context,
+    description: Optional[str] = typer.Option(
+        None,
+        "--description",
+        help="Description of alarm(s) to show.",
+    ),
+    # Could this be a list of priorities in V2?
+    priority: Optional[TriggerPriority] = typer.Option(
+        None,
+        "--priority",
+        help="Priority of alarm(s) to show.",
+    ),
+    hostgroups: Optional[str] = typer.Option(
+        None,
+        "--hostgroups",
+        help="Host group(s) to show alarms for. Comma-separated.",
+    ),
+    unacknowledged: bool = typer.Option(
+        True,
+        "--unack/--ack",
+        help="Show only alarms whose last event is unacknowledged.",
+    ),
+    args: Optional[List[str]] = ARGS_POSITIONAL,
+) -> None:
+    """Show the latest events for the given trigger(s), host(s), and/or host group(s).
+
+    At least one trigger ID, host or host group must be specified."""
+    if args:
+        if len(args) != 4:
+            exit_err("Invalid number of positional arguments.")
+        description = args[0]
+        priority = TriggerPriority(args[1])
+        hostgroups = args[2]
+        # in V2, "*" was used to indicate "false"
+        if args[3] == "*":
+            unacknowledged = False
+        else:
+            unacknowledged = parse_bool_arg(args[3])
+
+    hostgroups_args = parse_list_arg(hostgroups)
+    hgs = [app.state.client.get_hostgroup(hg) for hg in hostgroups_args]
+    triggers = app.state.client.get_triggers(
+        hostgroups=hgs,
+        description=description,
+        priority=priority,
+        unacknowledged=unacknowledged,
+        select_hosts=True,
+    )
+    render_result(AggregateResult(result=triggers))

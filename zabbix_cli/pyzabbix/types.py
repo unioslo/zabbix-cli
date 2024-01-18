@@ -53,6 +53,7 @@ from zabbix_cli.utils.utils import get_maintenance_every_type
 from zabbix_cli.utils.utils import get_maintenance_period_type
 from zabbix_cli.utils.utils import get_maintenance_status
 from zabbix_cli.utils.utils import get_monitoring_status
+from zabbix_cli.utils.utils import get_trigger_severity
 from zabbix_cli.utils.utils import get_user_type
 from zabbix_cli.utils.utils import get_usergroup_status
 from zabbix_cli.utils.utils import get_value_type
@@ -168,6 +169,15 @@ class DataCollectionMode(ChoiceMixin[str], APIStrEnum):
 
     ON = APIStr("on", "0")
     OFF = APIStr("off", "1")
+
+
+class TriggerPriority(ChoiceMixin[str], APIStrEnum):
+    UNCLASSIFIED = APIStr("unclassified", "0")
+    INFORMATION = APIStr("information", "1")
+    WARNING = APIStr("warning", "2")
+    AVERAGE = APIStr("average", "3")
+    HIGH = APIStr("high", "4")
+    DISASTER = APIStr("disaster", "5")
 
 
 class ZabbixAPIBaseModel(TableRenderable):
@@ -765,6 +775,84 @@ class Event(ZabbixAPIBaseModel):
                 self.age,
                 self.acknowledged_str_cell,
                 self.status_str_cell,
+            ]
+        ]
+        return cols, rows
+
+
+class Trigger(ZabbixAPIBaseModel):
+    triggerid: str
+    description: Optional[str]
+    expression: Optional[str]
+    event_name: str
+    opdata: str
+    comments: str
+    error: str
+    flags: int
+    lastchange: datetime
+    priority: int
+    state: int
+    templateid: Optional[str]
+    type: int
+    url: str
+    url_name: str
+    value: int
+    recovery_mode: int
+    recovery_expression: str
+    correlation_mode: int
+    correlation_tag: str
+    manual_close: int
+    uuid: str
+    hosts: List[Host] = []
+    # NYI:
+    # groups: List[HostGroup] = Field(
+    #     default_factory=list, validation_alias=AliasChoices("groups", "hostgroups")
+    # )
+    # items
+    # functions
+    # dependencies
+    # discoveryRule
+    # lastEvent
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def age(self) -> str:
+        """Returns the age of the event as a formatted string."""
+        n = datetime.now(tz=self.lastchange.tzinfo)
+        age = n - self.lastchange
+        # strip microseconds
+        return str(age - timedelta(microseconds=age.microseconds))
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def hostname(self) -> Optional[str]:
+        """Returns the hostname of the trigger."""
+        if self.hosts:
+            return self.hosts[0].host
+        return None
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def severity(self) -> str:
+        return get_trigger_severity(self.priority)
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = [
+            "Trigger ID",
+            "Host",
+            "Description",
+            "Severity",
+            "Last Change",
+            "Age",
+        ]
+        rows = [
+            [
+                self.triggerid,
+                self.hostname or "",
+                self.description or "",
+                self.severity,
+                self.lastchange.strftime("%Y-%m-%d %H:%M:%S"),
+                self.age,
             ]
         ]
         return cols, rows

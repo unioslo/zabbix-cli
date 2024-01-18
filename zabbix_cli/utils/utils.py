@@ -41,7 +41,7 @@ def get_event_status(code: Optional[int]) -> str:
     return _format_code(code, event_status, with_code=False)
 
 
-def get_trigger_severity(code):
+def get_trigger_severity(code: int | None) -> str:
     """Get trigger severity from code."""
     trigger_severity = {
         0: "Not classified",
@@ -51,11 +51,7 @@ def get_trigger_severity(code):
         4: "High",
         5: "Disaster",
     }
-
-    if code in trigger_severity:
-        return trigger_severity[code]
-
-    return f"Unknown ({str(code)})"
+    return _format_code(code, trigger_severity, with_code=False)
 
 
 def get_trigger_status(code):

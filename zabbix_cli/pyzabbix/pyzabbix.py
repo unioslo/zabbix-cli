@@ -45,6 +45,8 @@ from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Role
 from zabbix_cli.pyzabbix.types import Template
 from zabbix_cli.pyzabbix.types import TemplateGroup
+from zabbix_cli.pyzabbix.types import Trigger
+from zabbix_cli.pyzabbix.types import TriggerPriority
 from zabbix_cli.pyzabbix.types import User
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import UserMedia
@@ -1606,6 +1608,50 @@ class ZabbixAPI:
         except ZabbixAPIException as e:
             raise ZabbixAPIException("Failed to fetch events") from e
         return [Event(**event) for event in resp]
+
+    def get_triggers(
+        self,
+        trigger_ids: Union[str, List[str], None] = None,
+        hostgroups: Optional[List[HostGroup]] = None,
+        description: Optional[str] = None,
+        priority: Optional[TriggerPriority] = None,
+        unacknowledged: bool = False,
+        skip_dependent: bool = True,
+        monitored: bool = True,
+        active: bool = True,
+        expand_description: bool = True,
+        select_hosts: bool = False,
+        sort_field: Optional[str] = "lastchange",
+        sort_order: SortOrder = "DESC",
+    ) -> List[Trigger]:
+        params = {
+            "output": "extend",
+            "search": {"description": description or ""},
+            "skipDependent": int(skip_dependent),
+            "monitored": int(monitored),
+            "active": int(active),
+            "expandDescription": int(expand_description),
+            "filter": {"value": 1},  # why?
+        }  # type: ParamsType
+        if trigger_ids:
+            params["triggerids"] = trigger_ids
+        if hostgroups:
+            params["groupids"] = [hg.groupid for hg in hostgroups]
+        if priority:
+            params["filter"]["priority"] = priority.as_api_value()
+        if unacknowledged:
+            params["withLastEventUnacknowledged"] = True
+        if select_hosts:
+            params["selectHosts"] = "extend"
+        if sort_field:
+            params["sortfield"] = sort_field
+        if sort_order:
+            params["sortorder"] = sort_order
+        try:
+            resp = self.trigger.get(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException("Failed to fetch triggers") from e
+        return [Trigger(**trigger) for trigger in resp]
 
     def __getattr__(self, attr: str):
         """Dynamically create an object class (ie: host)"""
