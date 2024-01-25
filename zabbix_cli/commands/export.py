@@ -9,6 +9,7 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Protocol
+from typing import TYPE_CHECKING
 from typing import Union
 
 import typer
@@ -22,8 +23,8 @@ from zabbix_cli.config import ExportFormat
 from zabbix_cli.config import OutputFormat
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.logs import logger
-from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import Result
+from zabbix_cli.models import ReturnCode
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import console
 from zabbix_cli.output.console import err_console
@@ -45,6 +46,11 @@ from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.args import parse_path_arg
 from zabbix_cli.utils.utils import sanitize_filename
+
+
+if TYPE_CHECKING:
+    from zabbix_cli.models import RowsType  # noqa: F401
+    from zabbix_cli.models import ColsRowsType
 
 
 HELP_PANEL = "Import/Export"
@@ -429,8 +435,10 @@ class ZabbixImporter:
         self.failed = []  # type: List[Path]
 
     def run(self) -> None:
-        for file in self.files:
-            with err_console.status(f"Importing {file}..."):
+        total_files = len(self.files)
+        with err_console.status("") as status:
+            for i, file in enumerate(self.files, start=1):
+                status.update(f"Importing files ({i}/{total_files})...")
                 self.import_file(file)
 
     def import_file(self, file: Path) -> None:
@@ -440,7 +448,7 @@ class ZabbixImporter:
             self.client.import_configuration(file, create_missing=self.create_missing)
         except Exception as e:
             self.failed.append(file)
-            msg = f"Failed to import file {file}."
+            msg = f"Failed to import {file}"
             if self.ignore_errors:
                 error(msg, exc_info=True)
             else:
@@ -513,8 +521,8 @@ def import_configuration(
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Import Zabbix configuration from file, directory or glob pattern.
-    Imports all files in all subdirectories if a directory is specified.
 
+    Imports all files in all subdirectories if a directory is specified.
     Uses default export directory if no argument is specified.
 
     Determines format to import based on file extensions.
@@ -576,13 +584,28 @@ def import_configuration(
         update_existing=update_existing,
         ignore_errors=ignore_errors,
     )
-    importer.run()
 
-    msg = f"Imported {len(importer.imported)} files"
-    if importer.failed:
-        msg += f", failed to import {len(importer.failed)} files"
-    render_result(
-        Result(
+    # We run the importer in a try/except block so we can print a summary
+    # regardless of import success or failure. Important to show how far we got
+    # in the import process, even if it failed.
+    try:
+        importer.run()
+    except Exception as e:
+        res = Result(
+            message=f"{e}. See log for further details.",
+            return_code=ReturnCode.ERROR,
+            result=ZabbixImportResult(
+                success=False,
+                dryrun=False,
+                imported=importer.imported,
+                failed=importer.failed,
+            ),
+        )
+    else:
+        msg = f"Imported {len(importer.imported)} files"
+        if importer.failed:
+            msg += f", failed to import {len(importer.failed)} files"
+        res = Result(
             message=msg,
             result=ZabbixImportResult(
                 success=len(importer.failed) == 0,
@@ -590,4 +613,5 @@ def import_configuration(
                 failed=importer.failed,
             ),
         )
-    )
+
+    render_result(res)
