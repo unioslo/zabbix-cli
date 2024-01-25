@@ -16,6 +16,7 @@ import logging
 import random
 import re
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
@@ -33,13 +34,17 @@ from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
 from zabbix_cli.pyzabbix.types import Event
+from zabbix_cli.pyzabbix.types import ExportFormat
 from zabbix_cli.pyzabbix.types import GlobalMacro
 from zabbix_cli.pyzabbix.types import GUIAccess
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
+from zabbix_cli.pyzabbix.types import Image
+from zabbix_cli.pyzabbix.types import ImportRules
 from zabbix_cli.pyzabbix.types import Item
 from zabbix_cli.pyzabbix.types import Macro
 from zabbix_cli.pyzabbix.types import Maintenance
+from zabbix_cli.pyzabbix.types import Map
 from zabbix_cli.pyzabbix.types import MediaType
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Role
@@ -144,13 +149,17 @@ class ZabbixAPI:
             self.api_version()  # NOTE: useless? can we remove this?
         return self.auth
 
-    def confimport(self, format="", source="", rules=""):
+    def confimport(self, format: ExportFormat, source: str, rules: ImportRules):
         """Alias for configuration.import because it clashes with
         Python's import reserved keyword"""
 
         return self.do_request(
             method="configuration.import",
-            params={"format": format, "source": source, "rules": rules},
+            params={
+                "format": format,
+                "source": source,
+                "rules": rules.dump_params(),
+            },
         )["result"]
 
     # TODO (pederhan): Use functools.cachedproperty when we drop 3.7 support
@@ -1652,6 +1661,115 @@ class ZabbixAPI:
         except ZabbixAPIException as e:
             raise ZabbixAPIException("Failed to fetch triggers") from e
         return [Trigger(**trigger) for trigger in resp]
+
+    def get_images(self, *image_names: str, select_image: bool = True) -> List[Image]:
+        """Fetches images, optionally filtered by name(s)."""
+        params = {"output": "extend"}  # type: ParamsType
+        if image_names:
+            params["searchByAny"] = True
+            params["search"] = {"name": image_names}
+        if select_image:
+            params["selectImage"] = True
+
+        try:
+            resp = self.image.get(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException("Failed to fetch images") from e
+        return [Image(**image) for image in resp]
+
+    def get_maps(self, *map_names: str) -> List[Map]:
+        """Fetches maps, optionally filtered by name(s)."""
+        params = {"output": "extend"}  # type: ParamsType
+        if map_names:
+            params["searchByAny"] = True
+            params["search"] = {"name": map_names}
+
+        try:
+            resp = self.map.get(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException("Failed to fetch maps") from e
+        return [Map(**m) for m in resp]
+
+    def get_media_types(self, *names: str) -> List[MediaType]:
+        """Fetches media types, optionally filtered by name(s)."""
+        params = {"output": "extend"}  # type: ParamsType
+        if names:
+            params["searchByAny"] = True
+            params["search"] = {"name": names}
+
+        try:
+            resp = self.mediatype.get(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException("Failed to fetch maps") from e
+        return [MediaType(**m) for m in resp]
+
+    def export_configuration(
+        self,
+        host_groups: Optional[List[HostGroup]] = None,
+        template_groups: Optional[List[TemplateGroup]] = None,
+        hosts: Optional[List[Host]] = None,
+        images: Optional[List[Image]] = None,
+        maps: Optional[List[Map]] = None,
+        templates: Optional[List[Template]] = None,
+        media_types: Optional[List[MediaType]] = None,
+        format: ExportFormat = ExportFormat.JSON,
+        pretty: bool = True,
+    ) -> str:
+        """Exports a configuration to a JSON or XML file."""
+        params = {"format": str(format)}  # type: ParamsType
+        options = {}  # type: ParamsType
+        if host_groups:
+            options["host_groups"] = [hg.groupid for hg in host_groups]
+        if template_groups:
+            options["template_groups"] = [tg.groupid for tg in template_groups]
+        if hosts:
+            options["hosts"] = [h.hostid for h in hosts]
+        if images:
+            options["images"] = [i.imageid for i in images]
+        if maps:
+            options["maps"] = [m.sysmapid for m in maps]
+        if templates:
+            options["templates"] = [t.templateid for t in templates]
+        if media_types:
+            options["mediaTypes"] = [mt.mediatypeid for mt in media_types]
+        if pretty:
+            if self.version.release >= (5, 4, 0):
+                if format == ExportFormat.XML:
+                    logger.warning("Pretty printing is not supported for XML")
+                else:
+                    params["prettyprint"] = True
+            else:
+                logger.warning(
+                    "Pretty printing is not supported in Zabbix versions < 5.4.0"
+                )
+        if options:
+            params["options"] = options
+
+        try:
+            resp = self.configuration.export(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException("Failed to export configuration") from e
+        # TODO: validate response
+        return str(resp)
+
+    def import_configuration(
+        self, to_import: Path, create_missing: bool = True, update_existing: bool = True
+    ) -> bool:
+        """Imports a configuration from a file.
+
+        The format to import is determined by the file extension.
+        """
+
+        try:
+            conf = to_import.read_text()
+            fmt = ExportFormat(to_import.suffix.strip("."))
+            rules = ImportRules.get(
+                create_missing=create_missing, update_existing=update_existing
+            )
+            return self.confimport(format=fmt, source=conf, rules=rules)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException("Failed to import configuration") from e
+        return True
 
     def __getattr__(self, attr: str):
         """Dynamically create an object class (ie: host)"""

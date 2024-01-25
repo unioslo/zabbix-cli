@@ -506,3 +506,8 @@ def convert_seconds_to_duration(seconds: int) -> str:
         duration += f"{seconds}s"
 
     return duration
+
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitize a filename. Very naive implementation."""
+    return re.sub(r"[^\w\-.]", "_", filename)

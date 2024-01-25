@@ -20,7 +20,7 @@ from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import FIELD_KEY_JOIN_CHAR
+from zabbix_cli.models import META_KEY_JOIN_CHAR
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
@@ -128,7 +128,6 @@ def create_user(
         pass
 
     if args:
-        warning("Positional arguments are deprecated. Please use options instead.")
         # Old args format: <username>  <first_name> <last_name> <password> <type> <autologin> <autologout> <usergroups>
         # We already have username, so we are left with 7 args.
         # In V2, we either expected NO positional args or ALL of them.
@@ -298,7 +297,6 @@ def create_notification_user(
     must be configured if [green]--usergroups[/green] is not specified.
     """
     if args:
-        warning("Positional arguments are deprecated. Please use options instead.")
         # Old args format: <sendto> <mediatype> <remarks>
         # We already have sendto and mediatype, so we are left with 1 arg.
         if len(args) != 1:
@@ -573,7 +571,7 @@ class ShowUsergroupResult(TableRenderable):
     gui_access: str = Field(..., json_schema_extra={"header": "GUI Access"})
     status: str
     users: List[str] = Field(
-        default_factory=list, json_schema_extra={FIELD_KEY_JOIN_CHAR: ", "}
+        default_factory=list, json_schema_extra={META_KEY_JOIN_CHAR: ", "}
     )
 
     @classmethod

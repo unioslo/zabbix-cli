@@ -25,6 +25,7 @@ from typing import Union
 
 from packaging.version import Version
 from pydantic import AliasChoices
+from pydantic import BaseModel
 from pydantic import computed_field
 from pydantic import ConfigDict
 from pydantic import Field
@@ -32,6 +33,7 @@ from pydantic import field_serializer
 from pydantic import field_validator
 from pydantic import model_validator
 from pydantic import ValidationInfo
+from strenum import StrEnum
 from typing_extensions import Literal
 from typing_extensions import TypedDict
 
@@ -178,6 +180,29 @@ class TriggerPriority(ChoiceMixin[str], APIStrEnum):
     AVERAGE = APIStr("average", "3")
     HIGH = APIStr("high", "4")
     DISASTER = APIStr("disaster", "5")
+
+
+class ExportFormat(StrEnum):
+    XML = "xml"
+    JSON = "json"
+    YAML = "yaml"
+    PHP = "php"
+
+    @classmethod
+    def _missing_(cls, v: object) -> ExportFormat:
+        """Return default export format if invalid value."""
+        if not isinstance(v, str):
+            raise TypeError(f"Invalid format: {v!r}. Must be a string.")
+        v = v.lower()
+        for e in cls:
+            if e.value.lower() == v:
+                return e
+        raise ValueError(f"Invalid format: {v!r}.")
+
+    @classmethod
+    def get_importables(cls) -> List[ExportFormat]:
+        """Return list of formats that can be imported."""
+        return [cls.JSON, cls.YAML, cls.XML]
 
 
 class ZabbixAPIBaseModel(TableRenderable):
@@ -856,3 +881,90 @@ class Trigger(ZabbixAPIBaseModel):
             ]
         ]
         return cols, rows
+
+
+class Image(ZabbixAPIBaseModel):
+    imageid: str
+    name: str
+    imagetype: int
+    # NOTE: Optional so we can fetch an image without its data
+    # This lets us get the IDs of all images without keeping the data in memory
+    image: Optional[str] = None
+
+
+class Map(ZabbixAPIBaseModel):
+    sysmapid: str
+    name: str
+    height: int
+    width: int
+    backgroundid: Optional[str] = None  # will this be an empty string instead?
+    # Other fields are omitted. We only use this for export and import.
+
+
+# class ExportResult(ZabbixAPIBaseModel):
+#     data: str
+#     format: ExportFormat
+
+
+class ImportRule(BaseModel):
+    createMissing: bool
+    updateExisting: Optional[bool] = None
+
+
+class ImportRules(ZabbixAPIBaseModel):
+    discoveryRules: ImportRule
+    graphs: ImportRule
+    groups: Optional[ImportRule] = None  # < 6.2
+    host_groups: Optional[ImportRule] = None  # >= 6.2
+    template_groups: Optional[ImportRule] = None  # >= 6.2
+    hosts: ImportRule
+    images: ImportRule
+    items: ImportRule
+    maps: ImportRule
+    templateLinkage: ImportRule
+    templates: ImportRule
+    triggers: ImportRule
+    valueMaps: ImportRule
+    mediaTypes: ImportRule
+    applications: Optional[ImportRule] = None
+    screens: Optional[ImportRule] = None
+    templateScreens: Optional[ImportRule] = None
+
+    model_config = ConfigDict(validate_assignment=True)
+
+    @classmethod
+    def get(
+        cls, create_missing: bool = False, update_existing: bool = False
+    ) -> ImportRules:
+        create = ImportRule(createMissing=create_missing)
+        create_update = ImportRule(
+            createMissing=create_missing, updateExisting=update_existing
+        )
+        rules = ImportRules(
+            discoveryRules=create_update,
+            graphs=create_update,
+            hosts=create_update,
+            images=create_update,
+            items=create_update,
+            maps=create_update,
+            templateLinkage=create,
+            templates=create_update,
+            triggers=create_update,
+            valueMaps=create_update,
+            mediaTypes=create_update,
+        )
+        if cls.version.release >= (6, 2, 0):
+            rules.host_groups = create_update
+            rules.template_groups = create_update
+        else:
+            rules.groups = create_update
+
+        if cls.version.major < 6:
+            rules.applications = create
+            rules.screens = create_update
+            rules.templateScreens = create_update
+
+        return rules
+
+    def dump_params(self) -> ParamsType:
+        return self.model_dump(mode="json", exclude_none=True)

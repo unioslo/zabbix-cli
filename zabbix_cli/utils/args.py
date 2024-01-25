@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
+from pathlib import Path
 from typing import Any
 from typing import Generic
 from typing import List
@@ -73,6 +74,18 @@ def parse_bool_arg(arg: str) -> bool:
         return False
     else:
         raise ZabbixCLIError(f"Invalid boolean value: {arg}")
+
+
+def parse_path_arg(arg: str, must_exist: bool = False) -> Path:
+    """Convert string to Path."""
+    try:
+        p = Path(arg)
+    except ValueError as e:
+        raise ZabbixCLIError(f"Invalid path value: {arg}") from e
+    else:
+        if must_exist and not p.exists():
+            raise ZabbixCLIError(f"Path does not exist: {arg}")
+        return p
 
 
 T = TypeVar("T")

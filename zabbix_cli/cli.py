@@ -7218,7 +7218,7 @@ class zabbixcli(cmd.Cmd):
         if self.zabbix_version.major >= 6:
             object_type_list.remove("screens")
             object_type_list.append("mediatypes")
-        if self.zabbix_version.major >= 6.2:
+        if self.zabbix_version.release >= (6, 2, 0):
             object_type_list.remove("groups")
             object_type_list.append("host_groups")
             object_type_list.append("template_groups")

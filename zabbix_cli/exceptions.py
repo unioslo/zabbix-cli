@@ -8,6 +8,8 @@ from typing import Protocol
 from typing import runtime_checkable
 from typing import Type
 
+from pydantic import ValidationError
+
 
 class ZabbixCLIError(Exception):
     """Base exception class for ZabbixCLI exceptions."""
@@ -80,6 +82,13 @@ def handle_notraceback(e: Exception) -> NoReturn:
     get_exit_err()(str(e), exception=e, exc_info=True)
 
 
+def handle_validation_error(e: ValidationError) -> NoReturn:
+    """Handles a Pydantic validation error."""
+    # Use some very primitive heuristics to determine whether or not
+    # the error is from an API response or somewhere else
+    get_exit_err()(str(e), exception=e, exc_info=True)
+
+
 def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
     """Handles a ZabbixAPIException."""
     from zabbix_cli.auth import clear_auth_token_file
@@ -108,6 +117,7 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
 EXC_HANDLERS = {
     ZabbixCLIError: handle_notraceback,
     ZabbixAPIException: handle_zabbix_api_exception,  # NOTE: use different strategy for this?
+    ValidationError: handle_validation_error,
 }  # type: dict[type[Exception], HandleFunc]
 """Mapping of exception types to exception handling strategies."""
 

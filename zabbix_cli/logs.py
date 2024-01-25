@@ -23,8 +23,10 @@ from __future__ import annotations
 import collections
 import logging
 import sys
+from typing import TYPE_CHECKING
 
-from zabbix_cli.config import LoggingConfig
+if TYPE_CHECKING:
+    from zabbix_cli.config import LoggingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -91,14 +93,13 @@ def get_log_level(level: str) -> int:
         return logging.NOTSET
 
 
-def configure_logging(
-    config: LoggingConfig = LoggingConfig(
-        # enabled=True,
-        # log_file=None,
-        # log_level="DEBUG",
-    ),
-):
+def configure_logging(config: LoggingConfig | None = None):
     """Configure the root logger."""
+    if not config:
+        from zabbix_cli.config import LoggingConfig
+
+        config = LoggingConfig()
+
     level = get_log_level(config.log_level)
     filename = config.log_file
 

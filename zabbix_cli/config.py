@@ -49,6 +49,7 @@ from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
 from zabbix_cli.dirs import SITE_CONFIG_DIR
 from zabbix_cli.exceptions import ConfigError
+from zabbix_cli.pyzabbix.types import ExportFormat
 
 
 # Config file basename
@@ -60,6 +61,9 @@ CONFIG_PRIORITY = (
     DEFAULT_CONFIG_FILE,  # local config directory
     SITE_CONFIG_DIR / CONFIG_FILENAME,  # system config directory
 )
+
+
+# ExportFormat = Literal["XML", "JSON", "YAML", "PHP"]
 
 
 logger = logging.getLogger(__name__)
@@ -141,9 +145,27 @@ class AppConfig(BaseModel):
             "default_notification_users_usergroup",
         ),
     )
-    default_directory_exports: Path = EXPORT_DIR
-    default_export_format: Literal["XML", "JSON", "YAML", "PHP"] = "XML"
-    include_timestamp_export_filename: bool = True
+    export_directory: Path = Field(
+        default=EXPORT_DIR,
+        # Changed in V3: default_directory_exports -> export_directory
+        validation_alias=AliasChoices("default_directory_exports", "export_directory"),
+    )
+    export_format: ExportFormat = Field(
+        # Changed in V3: Config options are now lower-case by default,
+        #                but we also allow upper-case for backwards-compatibility
+        #                i.e. both "json" and "JSON" are valid
+        # Changed in V3: Default format is now JSON
+        default=ExportFormat.JSON,
+        # Changed in V3: default_export_format -> export_format
+        validation_alias=AliasChoices("default_export_format", "export_format"),
+    )
+    export_timestamps: bool = Field(
+        default=True,
+        # Changed in V3: include_timestamp_export_filename -> export_timestamps
+        validation_alias=AliasChoices(
+            "include_timestamp_export_filename", "export_timestamps"
+        ),
+    )
     use_colors: bool = True
     use_auth_token_file: bool = False
     use_paging: bool = False

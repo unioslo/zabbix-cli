@@ -43,10 +43,10 @@ ColsRowsType = Tuple[ColsType, RowsType]
 # Values used in the `json_schema_extra` dict for fields
 # to customize how they are rendered as a table.
 
-FIELD_KEY_JOIN_CHAR = "join_char"
+META_KEY_JOIN_CHAR = "join_char"
 """Overrides join character when converting iterables to strings."""
 
-FIELD_KEY_HEADER = "header"
+META_KEY_HEADER = "header"
 """Overrides the default header for a table column."""
 
 
@@ -129,9 +129,9 @@ class TableRenderable(BaseModel):
             if (
                 field.json_schema_extra
                 and isinstance(field.json_schema_extra, dict)
-                and field.json_schema_extra.get("header", None)
+                and field.json_schema_extra.get(META_KEY_HEADER, None)
             ):
-                cols.append(str(field.json_schema_extra["header"]))
+                cols.append(str(field.json_schema_extra[META_KEY_HEADER]))
             else:
                 cols.append(fmt_field_name(field_name))
         return cols
@@ -185,7 +185,7 @@ class TableRenderable(BaseModel):
                     # Other lists are rendered as newline delimited strings.
                     # The delimiter can be modified with the `join_char` key in
                     # the field's `json_schema_extra`.
-                    join_char = self._get_extra(field_name, FIELD_KEY_JOIN_CHAR, "\n")
+                    join_char = self._get_extra(field_name, META_KEY_JOIN_CHAR, "\n")
                     fields[field_name] = join_char.join(str(v) for v in value)
             else:
                 fields[field_name] = str(value)

@@ -31,13 +31,10 @@ class AcknowledgeEventResult(TableRenderable):
     message: Optional[str] = None
 
 
-class AcknowledgeTriggerLastEventResult(TableRenderable):
+class AcknowledgeTriggerLastEventResult(AcknowledgeEventResult):
     """Result type for `acknowledge_trigger_last_event` command."""
 
     trigger_ids: List[str] = []
-    event_ids: List[str] = []
-    close: bool = False
-    message: Optional[str] = None
 
 
 @app.command(name="acknowledge_event", rich_help_panel=HELP_PANEL)
