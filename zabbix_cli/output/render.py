@@ -77,8 +77,13 @@ def render_table(
     """Render the result of a command as a table if possible.
     If result contains a message, print success message instead.
     """
+    # TODO: be able to print message _AND_ table
+    # The Result/TableRenderable dichotomy is a bit of a mess
     if isinstance(result, Result) and result.message:
-        success(result.message)
+        if result.return_code == ReturnCode.ERROR:
+            error(result.message)
+        else:
+            success(result.message)
     else:
         tbl = result.as_table()
         if not tbl.rows:
