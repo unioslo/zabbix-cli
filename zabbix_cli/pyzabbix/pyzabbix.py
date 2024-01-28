@@ -1161,17 +1161,28 @@ class ZabbixAPI:
 
     def get_items(
         self,
-        item_names_or_ids: Optional[List[str]] = None,  # NYI
+        *names: str,
         templates: Optional[List[Template]] = None,
         hosts: Optional[List[Template]] = None,  # NYI
         proxies: Optional[List[Proxy]] = None,  # NYI
+        search: bool = True,
+        monitored: bool = False,
+        select_hosts: bool = False,
         # TODO: implement interfaces
         # TODO: implement graphs
         # TODO: implement triggers
     ) -> List[Item]:
         params = {"output": "extend"}  # type: ParamsType
+        if names:
+            params["search"] = {"name": names}
+            if search:
+                params["searchWildcardsEnabled"] = True
         if templates:
             params = {"templateids": [template.templateid for template in templates]}
+        if monitored:
+            params["monitored"] = monitored  # false by default in API
+        if select_hosts:
+            params["selectHosts"] = "extend"
         try:
             items = self.item.get(**params)
         except ZabbixAPIException as e:

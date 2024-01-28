@@ -513,13 +513,17 @@ class Item(ZabbixAPIBaseModel):
     delay: Optional[str] = None
     hostid: Optional[str] = None
     interfaceid: Optional[str] = None
-    key: Optional[str] = None
+    key: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("key_", "key")
+    )
     name: Optional[str] = None
     type: Optional[int] = None
     url: Optional[str] = None
     value_type: Optional[int] = None
     description: Optional[str] = None
     history: Optional[str] = None
+    lastvalue: Optional[str] = None
+    hosts: List[Host] = []
 
     @computed_field  # type: ignore[misc] # pydantic docs use decorators on top of property (https://docs.pydantic.dev/2.0/usage/computed_fields/)
     @property
