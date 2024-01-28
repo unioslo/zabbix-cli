@@ -54,6 +54,9 @@
     - `cert_verify` → `verify_ssl`
   - Table [zabbix_config] → [app]
     - `system_id` → `username`
+    - `default_directory_exports` → `export_directory`
+    - `default_export_format` → `export_format`
+    - `include_timestamp_export_filename` → `export_timestamps`
   - `logging.logging` → `logging.enabled`
   - The original names are still usable, but are deprecated and slated for removal in a future version.
 - Application now creates a config file on launch if it doesn't exist.
