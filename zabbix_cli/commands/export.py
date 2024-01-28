@@ -14,6 +14,12 @@ from typing import Union
 
 import typer
 from pydantic import field_serializer
+from rich.progress import BarColumn
+from rich.progress import Progress
+from rich.progress import SpinnerColumn
+from rich.progress import TaskProgressColumn
+from rich.progress import TextColumn
+from rich.progress import TimeElapsedColumn
 from strenum import StrEnum
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
@@ -45,6 +51,7 @@ from zabbix_cli.pyzabbix.types import TemplateGroup
 from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.args import parse_path_arg
+from zabbix_cli.utils.utils import convert_seconds_to_duration
 from zabbix_cli.utils.utils import sanitize_filename
 
 
@@ -64,8 +71,6 @@ class AcknowledgeEventResult(TableRenderable):
     message: Optional[str] = None
 
 
-# NOTE: ideally we do some sort of magic here to add/remove members
-# based on Zabbix version, but for now we just add all members
 class ExportType(StrEnum):
     HOST_GROUPS = "host_groups"  # >=6.2
     TEMPLATE_GROUPS = "template_groups"  # >=6.2
@@ -320,7 +325,7 @@ class ZabbixExporter:
 
 
 @app.command(name="export_configuration", rich_help_panel=HELP_PANEL)
-def acknowledge_event(
+def export_configuration(
     ctx: typer.Context,
     directory: Optional[str] = typer.Option(
         None,
@@ -434,12 +439,24 @@ class ZabbixImporter:
         self.imported = []  # type: List[Path]
         self.failed = []  # type: List[Path]
 
-    def run(self) -> None:
-        total_files = len(self.files)
-        with err_console.status("") as status:
-            for i, file in enumerate(self.files, start=1):
-                status.update(f"Importing files ({i}/{total_files})...")
+    def run(self) -> float:
+        """Runs the importer. Returns execution time in seconds."""
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TimeElapsedColumn(),
+            transient=True,
+            console=err_console,
+        )
+        start = progress.get_time()
+        with progress:
+            task = progress.add_task("Importing files...", total=len(self.files))
+            for file in self.files:
                 self.import_file(file)
+                progress.update(task, advance=1)
+        return progress.get_time() - start
 
     def import_file(self, file: Path) -> None:
         # Method will return true if successful, but does failure return false
@@ -465,6 +482,8 @@ class ZabbixImportResult(TableRenderable):
     dryrun: bool = False
     imported: List[Path] = []
     failed: List[Path] = []
+    elapsed: Optional[float] = None
+    """Duration it took to import files in seconds. Is None if import failed."""
 
     @field_serializer("imported", "failed", when_used="json")
     def _serialize_files(self, files: List[Path]) -> List[str]:
@@ -589,7 +608,7 @@ def import_configuration(
     # regardless of import success or failure. Important to show how far we got
     # in the import process, even if it failed.
     try:
-        importer.run()
+        elapsed = importer.run()
     except Exception as e:
         res = Result(
             message=f"{e}. See log for further details.",
@@ -602,7 +621,7 @@ def import_configuration(
             ),
         )
     else:
-        msg = f"Imported {len(importer.imported)} files"
+        msg = f"Imported {len(importer.imported)} files in {convert_seconds_to_duration(int(elapsed))}"
         if importer.failed:
             msg += f", failed to import {len(importer.failed)} files"
         res = Result(
@@ -611,6 +630,7 @@ def import_configuration(
                 success=len(importer.failed) == 0,
                 imported=importer.imported,
                 failed=importer.failed,
+                elapsed=elapsed,
             ),
         )
 
