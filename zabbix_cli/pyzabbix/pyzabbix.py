@@ -1141,7 +1141,7 @@ class ZabbixAPI:
             if is_id:
                 params.setdefault("templateids", []).append(name_or_id)  # type: ignore # bad annotation
             else:
-                params.setdefault("filter", {}).setdefault("host", []).append(  # type: ignore # bad annotation
+                params.setdefault("search", {}).setdefault("host", []).append(  # type: ignore # bad annotation
                     name_or_id
                 )
                 params.setdefault("searchWildcardsEnabled", True)

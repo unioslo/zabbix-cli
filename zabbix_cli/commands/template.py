@@ -23,6 +23,7 @@ from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import Template
 from zabbix_cli.pyzabbix.types import TemplateGroup
+from zabbix_cli.utils.args import parse_list_arg
 
 
 if TYPE_CHECKING:
@@ -363,15 +364,23 @@ def show_template(
 @app.command("show_templates", rich_help_panel=HELP_PANEL)
 def show_templates(
     ctx: typer.Context,
-) -> None:
-    """Show all templates."""
-    templates = app.state.client.get_templates(
+    templates: str = typer.Argument(
         "*",
+        help="Template name(s) or ID(s). Comma-separated.",
+    ),
+) -> None:
+    """Show one or more templates.
+
+    Shows all templates by default. The template name can be a pattern containing wildcards.
+    Names and IDs cannot be mixed."""
+    args = parse_list_arg(templates)
+    tmpls = app.state.client.get_templates(
+        *args,
         select_hosts=True,
         select_templates=True,
         select_parent_templates=True,
     )
-    render_result(AggregateResult(result=templates))
+    render_result(AggregateResult(result=tmpls))
 
 
 @app.command("show_items", rich_help_panel=HELP_PANEL)

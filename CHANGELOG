@@ -13,6 +13,8 @@
   - `show_user`: Show details for a single user.
   - `show_templategroup`: Show a single template group.
   - `show_templategroups`: Show all template groups.
+  - `open_config_dir`: Open the configuration directory in the system's file manager. Prints its path to stderr if no window server is detected.
+  - `open_export_dir`: Open the export directory in the system's file manager. Prints its path to stderr if no window server is detected.
 - New command options:
   - `create_host`:
     - `--name`: Host name
@@ -35,6 +37,9 @@
     - `--limit`: Limit number of events to show
       - Corresponds to old positional argument 2.
       - Defaults to 10 (was 1).
+- New command arguments:
+  - `show_templates`:
+    - `template_names`: Template name(s) to filter by. Shows all templates by default. Supports wildcards.
 
 
 - **REPOSITORY:** Pre-commit configuration for linting and formatting.

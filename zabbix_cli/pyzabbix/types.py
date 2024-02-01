@@ -352,19 +352,15 @@ class Template(ZabbixAPIBaseModel):
     )
     """Parent templates (templates this template inherits from)."""
 
-    name: Optional[str] = Field(None, exclude=True)
-    """The visible name of the template.
-
-    In most cases it will be the same as `host`.
-    Excluded from JSON output, since it's redundant in 99% of cases.
-    """
+    name: Optional[str] = None
+    """The visible name of the template."""
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Name", "Hosts", "Children", "Parents"]
         rows = [
             [
                 self.templateid,
-                self.host,
+                self.name or self.host,  # prefer name, fall back on host
                 "\n".join([host.host for host in self.hosts]),
                 "\n".join([template.host for template in self.templates]),
                 "\n".join([parent.host for parent in self.parent_templates]),
@@ -615,17 +611,37 @@ class TimePeriod(ZabbixAPIBaseModel):
     def period_str(self) -> str:
         return str(timedelta(seconds=self.period))
 
+    @computed_field  # type: ignore[misc]
     @property
     def start_time_str(self) -> str:
         return str(timedelta(seconds=self.start_time or 0))
 
+    @computed_field  # type: ignore[misc]
     @property
     def start_date_str(self) -> str:
         if self.start_date and self.start_date.year > 1970:  # hack to avoid 1970-01-01
             return self.start_date.strftime("%Y-%m-%d %H:%M")
         return ""
 
+    @computed_field  # type: ignore[misc]
+    @property
+    def month_str(self) -> List[str]:
+        return get_maintenance_active_months(self.month)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def dayofweek_str(self) -> List[str]:
+        return get_maintenance_active_days(self.dayofweek)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def every_str(self) -> str:
+        return get_maintenance_every_type(self.every)
+
     def __cols_rows__(self) -> ColsRowsType:
+        """Renders the table based on the time period type.
+
+        Fields are added/removed based on the time period type."""
         # TODO: Use enum to define these values
         # and then re-use them in the get_maintenance_period_type function
         if self.timeperiod_type == 0:
@@ -653,10 +669,10 @@ class TimePeriod(ZabbixAPIBaseModel):
                 self.period_str,
                 self.start_date_str,
                 self.start_time_str,
-                get_maintenance_every_type(self.every),
-                "\n".join(get_maintenance_active_days(self.dayofweek)),
+                self.every_str,
+                "\n".join(self.dayofweek_str),
                 str(self.day),
-                "\n".join(get_maintenance_active_months(self.month)),
+                "\n".join(self.month_str),
             ]
         ]  # type: RowsType
         return cols, rows
@@ -700,9 +716,9 @@ class Maintenance(ZabbixAPIBaseModel):
     def _sort_time_periods(cls, v: List[TimePeriod]) -> List[TimePeriod]:
         """Cheeky hack to consistently render mixed time period types.
 
-        This ensures the time periods are sorted by complexity, so that the
+        This validator ensures time periods are sorted by complexity, so that the
         most complex ones are rendered first, thus adding all the necessary
-        columns to the table.
+        columns to the table when multiple time periods are rendered in aggregate.
 
         See: TimePeriod.__cols_rows__
         See: AggregateResult.__cols_rows__
@@ -940,6 +956,7 @@ class ImportRules(ZabbixAPIBaseModel):
     def get(
         cls, create_missing: bool = False, update_existing: bool = False
     ) -> ImportRules:
+        """Create import rules given directives and Zabbix API version."""
         create = ImportRule(createMissing=create_missing)
         create_update = ImportRule(
             createMissing=create_missing, updateExisting=update_existing

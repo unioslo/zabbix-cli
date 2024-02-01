@@ -91,6 +91,30 @@ class ItemResult(Item):
 
 
 def group_items(items: List[Item]) -> List[ItemResult]:
+    """Group items by key+lastvalue.
+
+    Keeps first item for each key+lastvalue pair, and adds hosts from
+    duplicate items to the first item.
+
+
+    Example:
+
+    ```py
+        # Given the following items:
+        >>> items = [
+            Item(itemid="1", key="foo", lastvalue="bar", hosts=[Host(hostid="1")]),
+            Item(itemid="2", key="foo", lastvalue="bar", hosts=[Host(hostid="2")]),
+            Item(itemid="3", key="baz", lastvalue="baz", hosts=[Host(hostid="3")]),
+            Item(itemid="4", key="baz", lastvalue="baz", hosts=[Host(hostid="4")]),
+        ]
+        >>> group_items(items)
+        [
+            Item(itemid="1", key="foo", lastvalue="bar", hosts=[Host(hostid="1"), Host(hostid="2")]),
+            Item(itemid="3", key="baz", lastvalue="baz", hosts=[Host(hostid="3"), Host(hostid="4")]),
+        ]
+        # Hosts from items 2 and 4 were added to item 1 and 3, respectively.
+    ```
+    """
     item_map = {}  # type: dict[str, ItemResult]
 
     for item in items:

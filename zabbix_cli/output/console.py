@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 from typing import NoReturn
 from typing import Optional
@@ -8,6 +9,7 @@ import typer
 from rich.console import Console
 
 from zabbix_cli.logs import logger
+from zabbix_cli.output.formatting.path import path_link
 from zabbix_cli.output.style import Icon
 from zabbix_cli.output.style.color import bold
 from zabbix_cli.output.style.color import green
@@ -144,3 +146,21 @@ def exit_err(
     else:
         error(message, **kwargs)
     raise SystemExit(code)
+
+
+def print_toml(toml_str: str) -> None:
+    """Prints TOML to stdout using the default console."""
+    console.print(
+        toml_str,
+        markup=False,  # TOML tables could be interpreted as rich markup
+        no_wrap=True,  # prevents mangling whitespace
+    )
+
+
+def print_path(path: Path) -> None:
+    """Prints a path to stdout using the default console."""
+    console.print(
+        path_link(path),
+        highlight=False,
+        soft_wrap=True,
+    )

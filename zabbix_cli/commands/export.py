@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import glob
+import time
 from datetime import datetime
 from functools import partial
 from pathlib import Path
 from typing import Any
+from typing import Iterator
 from typing import List
 from typing import NamedTuple
 from typing import Optional
@@ -52,6 +54,7 @@ from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.args import parse_path_arg
 from zabbix_cli.utils.utils import convert_seconds_to_duration
+from zabbix_cli.utils.utils import open_directory
 from zabbix_cli.utils.utils import sanitize_filename
 
 
@@ -61,14 +64,6 @@ if TYPE_CHECKING:
 
 
 HELP_PANEL = "Import/Export"
-
-
-class AcknowledgeEventResult(TableRenderable):
-    """Result type for `acknowledge_event` command."""
-
-    event_ids: List[str] = []
-    close: bool = False
-    message: Optional[str] = None
 
 
 class ExportType(StrEnum):
@@ -93,7 +88,7 @@ class ExportType(StrEnum):
 
 
 class ExporterFunc(Protocol):
-    def __call__(self) -> None:
+    def __call__(self) -> Iterator[Path]:
         ...
 
 
@@ -156,11 +151,14 @@ class ZabbixExporter:
             self.client.export_configuration, pretty=self.pretty, format=self.format
         )
 
-    def run(self) -> None:
+    def run(self) -> List[Path]:
         """Run exporters."""
+        files = []  # type: List[Path]
         for exporter in self.get_exporters():
             with err_console.status(f"Exporting {exporter.type.human_readable()}..."):
-                exporter.func()
+                exported = exporter.func()
+                files.extend(exported)
+        return files
 
     def parse_export_types(self, objects: List[str]) -> List[ExportType]:
         """Parses list of object export type names.
@@ -265,51 +263,51 @@ class ZabbixExporter:
     # so we can't just wrap the call of the export method in a try/except
     # Each method needs to guard the export call of each object in a try/except
     # and that will be extremely verbose and repetitive.
-    def export_host_groups(self) -> None:
+    def export_host_groups(self) -> Iterator[Path]:
         # FIXME URGRENT WHATVER: check if we should use search=True or False
         hostgroups = self.client.get_hostgroups(*self.names, search=True)
         for hg in hostgroups:
             exported = self.do_export(host_groups=[hg])
-            self.write_exported(exported, hg)
+            yield self.write_exported(exported, hg)
 
-    def export_template_groups(self) -> None:
+    def export_template_groups(self) -> Iterator[Path]:
         template_groups = self.client.get_templategroups(*self.names, search=True)
         for tg in template_groups:
             exported = self.do_export(template_groups=[tg])
-            self.write_exported(exported, tg)
+            yield self.write_exported(exported, tg)
 
-    def export_hosts(self) -> None:
+    def export_hosts(self) -> Iterator[Path]:
         hosts = self.client.get_hosts(*self.names)
         for host in hosts:
             exported = self.do_export(hosts=[host])
-            self.write_exported(exported, host)
+            yield self.write_exported(exported, host)
 
-    def export_images(self) -> None:
+    def export_images(self) -> Iterator[Path]:
         images = self.client.get_images(*self.names, select_image=False)
         for image in images:
             exported = self.do_export(images=[image])
-            self.write_exported(exported, image)
+            yield self.write_exported(exported, image)
 
-    def export_maps(self) -> None:
+    def export_maps(self) -> Iterator[Path]:
         maps = self.client.get_maps(*self.names)
         for m in maps:
             exported = self.do_export(maps=[m])
-            self.write_exported(exported, m)
+            yield self.write_exported(exported, m)
 
-    def export_media_types(self) -> None:
+    def export_media_types(self) -> Iterator[Path]:
         media_types = self.client.get_media_types(*self.names)
         for mt in media_types:
             exported = self.do_export(media_types=[mt])
-            self.write_exported(exported, mt)
+            yield self.write_exported(exported, mt)
 
-    def export_templates(self) -> None:
+    def export_templates(self) -> Iterator[Path]:
         templates = self.client.get_templates(*self.names)
         for template in templates:
             exported = self.do_export(templates=[template])
-            self.write_exported(exported, template)
+            yield self.write_exported(exported, template)
 
-    def write_exported(self, exported: str, obj: Exportable) -> None:
-        """Writes an exported object to a file."""
+    def write_exported(self, exported: str, obj: Exportable) -> Path:
+        """Writes an exported object to a file. Returns path to file."""
         # TODO: add some logging here to show progress
         # run some callback that updates a progress bar or something
         filename = self.generate_filename(obj)
@@ -322,6 +320,7 @@ class ZabbixExporter:
                 ) from e
         with open(filename, "w") as f:
             f.write(exported)
+        return filename
 
 
 @app.command(name="export_configuration", rich_help_panel=HELP_PANEL)
@@ -332,10 +331,10 @@ def export_configuration(
         help="Directory to export configuration to. Overrides directory in config.",
     ),
     objects: Optional[str] = typer.Option(
-        None, "--objects", help="Type(s) of objects to export. Comma-separated list."
+        None, "--object", help="Type(s) of objects to export. Comma-separated list."
     ),
     names: Optional[str] = typer.Option(
-        None, "--names", help="Name(s) of objects to export. Comma-separated list."
+        None, "--name", help="Name(s) of objects to export. Comma-separated list."
     ),
     format: Optional[ExportFormat] = typer.Option(
         None,
@@ -354,6 +353,12 @@ def export_configuration(
         "--pretty",
         is_flag=True,
         help="Pretty-print output. Not supported for XML.",
+    ),
+    open_dir: bool = typer.Option(
+        False,
+        "--open",
+        is_flag=True,
+        help="Open export directory in file explorer after exporting.",
     ),
     # TODO: add --ignore-errors option
     # Legacy positional args
@@ -404,6 +409,7 @@ def export_configuration(
     if not format:
         format = app.state.config.app.export_format
 
+    # TODO: guard this in try/except and render useful error if it fails
     exporter = ZabbixExporter(
         client=app.state.client,
         config=app.state.config,
@@ -414,9 +420,11 @@ def export_configuration(
         legacy_filenames=legacy_filenames,
         pretty=pretty,
     )
-    exporter.run()
+    exported = exporter.run()
+    info(f"Exported {len(exported)} files to {path_link(exportdir)}")
 
-    info(f"Exported configuration to {path_link(exportdir)}")
+    if open_dir:
+        open_directory(exportdir)
 
 
 class ZabbixImporter:
@@ -439,8 +447,8 @@ class ZabbixImporter:
         self.imported = []  # type: List[Path]
         self.failed = []  # type: List[Path]
 
-    def run(self) -> float:
-        """Runs the importer. Returns execution time in seconds."""
+    def run(self) -> None:
+        """Runs the importer."""
         progress = Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -450,16 +458,14 @@ class ZabbixImporter:
             transient=True,
             console=err_console,
         )
-        start = progress.get_time()
         with progress:
             task = progress.add_task("Importing files...", total=len(self.files))
             for file in self.files:
                 self.import_file(file)
                 progress.update(task, advance=1)
-        return progress.get_time() - start
 
     def import_file(self, file: Path) -> None:
-        # Method will return true if successful, but does failure return false
+        # API method will return true if successful, but does failure return false
         # or does it raise an exception?
         try:
             self.client.import_configuration(file, create_missing=self.create_missing)
@@ -482,7 +488,7 @@ class ZabbixImportResult(TableRenderable):
     dryrun: bool = False
     imported: List[Path] = []
     failed: List[Path] = []
-    elapsed: Optional[float] = None
+    duration: Optional[float] = None
     """Duration it took to import files in seconds. Is None if import failed."""
 
     @field_serializer("imported", "failed", when_used="json")
@@ -604,11 +610,9 @@ def import_configuration(
         ignore_errors=ignore_errors,
     )
 
-    # We run the importer in a try/except block so we can print a summary
-    # regardless of import success or failure. Important to show how far we got
-    # in the import process, even if it failed.
     try:
-        elapsed = importer.run()
+        start_time = time.monotonic()
+        importer.run()
     except Exception as e:
         res = Result(
             message=f"{e}. See log for further details.",
@@ -621,7 +625,8 @@ def import_configuration(
             ),
         )
     else:
-        msg = f"Imported {len(importer.imported)} files in {convert_seconds_to_duration(int(elapsed))}"
+        duration = time.monotonic() - start_time
+        msg = f"Imported {len(importer.imported)} files in {convert_seconds_to_duration(int(duration))}"
         if importer.failed:
             msg += f", failed to import {len(importer.failed)} files"
         res = Result(
@@ -630,7 +635,7 @@ def import_configuration(
                 success=len(importer.failed) == 0,
                 imported=importer.imported,
                 failed=importer.failed,
-                elapsed=elapsed,
+                duration=duration,
             ),
         )
 

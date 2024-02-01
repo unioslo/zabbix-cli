@@ -2,9 +2,13 @@
 """Utility functions."""
 from __future__ import annotations
 
+import os
 import re
+import subprocess
+import sys
 from datetime import datetime
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import Final
@@ -18,7 +22,7 @@ from typing import Union
 from zabbix_cli.exceptions import ZabbixCLIError
 
 
-# NOTE: consider setting with_code to True by default...
+# NOTE: consider setting with_code to False by default...
 # The only downside is possibly breaking backwards compatibility
 def _format_code(
     code: Union[str, int, None], status_map: dict[Any, str], with_code: bool = True
@@ -184,7 +188,6 @@ def get_maintenance_active_months(schedule: int | None) -> List[str]:
         0b010000000000: "November",
         0b100000000000: "December",
     }
-
     # Bitwise AND schedule with each month's bit mask
     # If the result is non-zero, the month is active
     active_months = []
@@ -206,9 +209,6 @@ ACKNOWLEDGE_ACTION_BITMASK: Final[Dict[str, int]] = {
     "unsuppress": 0b001000000,
     "change_to_cause": 0b010000000,
     "change_to_symptom": 0b100000000,
-}
-ACKNOWLEDGE_ACTION_BITMASK_REVERSE: Final[Dict[int, str]] = {
-    v: k for k, v in ACKNOWLEDGE_ACTION_BITMASK.items()
 }
 
 
@@ -354,6 +354,7 @@ class TimeUnit(NamedTuple):
     unit: str
     tokens: Iterable[str]
     value: int
+    """The value of the time unit in seconds."""
 
 
 # NOTE: PLURAL TOKEN MUST BE LISTED FIRST
@@ -509,5 +510,47 @@ def convert_seconds_to_duration(seconds: int) -> str:
 
 
 def sanitize_filename(filename: str) -> str:
-    """Sanitize a filename. Very naive implementation."""
+    """Make a filename safe(r) for use in filesystems.
+
+    Very naive implementation that removes illegal characters.
+    Does not check for reserved names or path length."""
     return re.sub(r"[^\w\-.]", "_", filename)
+
+
+def open_directory(
+    directory: Path, command: Optional[str] = None, force: bool = False
+) -> None:
+    """Open directory in file explorer.
+
+    Prints the path to the directory to stderr if no window server is detected.
+    The path must be a directory, otherwise a ZabbixCLIError is raised.
+
+    Args:
+        directory (Path): The directory to open.
+        command (str, optional): The command to use to open the directory. If `None`, the command is determined based on the platform.
+        force (bool, optional): If `True`, open the directory even if no window server is detected. Defaults to `False`.
+    """
+    try:
+        if not directory.exists():
+            raise FileNotFoundError
+        directory = directory.resolve(strict=True)
+    except FileNotFoundError:
+        raise ZabbixCLIError(f"Directory {directory} does not exist")
+    except RuntimeError:
+        raise ZabbixCLIError(f"Unable to resolve symlinks for {directory}")
+    if not directory.is_dir():
+        raise ZabbixCLIError(f"{directory} is not a directory")
+
+    spath = str(directory)
+    if sys.platform == "win32":
+        subprocess.run([command or "explorer", spath])
+    elif sys.platform == "darwin":
+        subprocess.run([command or "open", spath])
+    else:  # Linux and Unix
+        if not os.environ.get("DISPLAY"):
+            from zabbix_cli.output.console import print_path
+
+            print_path(directory)
+            if not force:
+                return
+        subprocess.run([command or "xdg-open", spath])

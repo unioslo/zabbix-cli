@@ -27,6 +27,9 @@ from zabbix_cli.utils.args import APIStrEnum
 
 
 class patch:
+    """Context manager that logs and prints diagnostic info if an exception
+    occurs."""
+
     def __init__(self, description: str) -> None:
         self.description = description
 
@@ -172,6 +175,14 @@ def patch_generate_enum_convertor() -> None:
 
 
 def patch_get_click_type() -> None:
+    """Adds support for our custom `APIStrEnum` type.
+
+    Used in conjunction with our custom generate_enum_convertor to support
+    instantiating `APIStrEnum` with both the human-readable value and the API value
+    (e.g. `"Enabled"` and `0`).
+
+    Uses the `APIStrEnum.all_choices()` method to get the list of choices."""
+
     def get_click_type(
         *, annotation: Any, parameter_info: ParameterInfo
     ) -> click.ParamType:

@@ -51,15 +51,6 @@ DIRS = [
     Directory("Exports", EXPORT_DIR, create=False),
 ]
 
-DIR_MAP = {
-    "Config": CONFIG_DIR,
-    "Data": DATA_DIR,
-    "Logs": LOGS_DIR,
-    "Site Config": SITE_CONFIG_DIR,
-    "Exports": EXPORT_DIR,
-}
-"""Map of directory types to their default paths."""
-
 
 def mkdir_if_not_exists(path: Path) -> None:
     """Create a directory if it does not exist.
