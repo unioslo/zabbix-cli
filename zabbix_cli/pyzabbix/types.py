@@ -190,7 +190,9 @@ class ExportFormat(StrEnum):
 
     @classmethod
     def _missing_(cls, v: object) -> ExportFormat:
-        """Return default export format if invalid value."""
+        """Case-insensitive missing lookup.
+
+        Allows for both `ExportFormat("JSON")` and `ExportFormat("json")`, etc."""
         if not isinstance(v, str):
             raise TypeError(f"Invalid format: {v!r}. Must be a string.")
         v = v.lower()
@@ -919,11 +921,6 @@ class Map(ZabbixAPIBaseModel):
     width: int
     backgroundid: Optional[str] = None  # will this be an empty string instead?
     # Other fields are omitted. We only use this for export and import.
-
-
-# class ExportResult(ZabbixAPIBaseModel):
-#     data: str
-#     format: ExportFormat
 
 
 class ImportRule(BaseModel):
