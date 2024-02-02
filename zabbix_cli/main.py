@@ -123,10 +123,7 @@ def run_repl(ctx: typer.Context) -> None:
 
     # TODO: add history file support
     prompt_kwargs = {"pre_run": pre_run}
-    try:
-        start_repl(ctx, prompt_kwargs=prompt_kwargs)
-    finally:
-        state.logout()
+    start_repl(ctx, prompt_kwargs=prompt_kwargs)
 
 
 @app.callback(invoke_without_command=True)

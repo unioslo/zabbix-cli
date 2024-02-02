@@ -8,12 +8,10 @@ import inspect
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from types import TracebackType
 from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Iterable
-from typing import Optional
 from typing import Type
 from typing import Union
 from uuid import UUID
@@ -23,38 +21,44 @@ import typer
 from typer.main import lenient_issubclass
 from typer.models import ParameterInfo
 
+from zabbix_cli._patches.common import get_patcher
 from zabbix_cli.utils.args import APIStrEnum
 
+patcher = get_patcher(f"Typer version: {typer.__version__}")
 
-class patch:
-    """Context manager that logs and prints diagnostic info if an exception
-    occurs."""
 
-    def __init__(self, description: str) -> None:
-        self.description = description
+# class patch(BasePatcher):
+#     """Context manager that logs and prints diagnostic info if an exception
+#     occurs."""
 
-    def __enter__(self) -> patch:
-        return self
+#     def __package_info__(self) -> str:
+#         return f"Typer version: {typer.__version__}"
 
-    def __exit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
-    ) -> bool:
-        if not exc_type:
-            return True
-        import rich
-        import sys
+# def __init__(self, description: str) -> None:
+#     self.description = description
 
-        # Rudimentary, but provides enough info to debug and fix the issue
-        console = rich.console.Console(stderr=True)
-        console.print_exception()
-        console.print(f"[bold red]Failed to patch [i]{self.description}[/][/]")
-        console.print(f"Typer version: {typer.__version__}")
-        console.print(f"Python version: {sys.version}")
+# def __enter__(self) -> patch:
+#     return self
 
-        return True
+# def __exit__(
+#     self,
+#     exc_type: Optional[Type[BaseException]],
+#     exc_val: Optional[BaseException],
+#     exc_tb: Optional[TracebackType],
+# ) -> bool:
+#     if not exc_type:
+#         return True
+#     import rich
+#     import sys
+
+#     # Rudimentary, but provides enough info to debug and fix the issue
+#     console = rich.console.Console(stderr=True)
+#     console.print_exception()
+#     console.print(f"[bold red]Failed to patch [i]{self.description}[/][/]")
+#     console.print(f"Typer version: {typer.__version__}")
+#     console.print(f"Python version: {sys.version}")
+
+#     return True
 
 
 def patch_help_text_style() -> None:
@@ -62,7 +66,7 @@ def patch_help_text_style() -> None:
 
     https://github.com/tiangolo/typer/issues/437#issuecomment-1224149402
     """
-    with patch("typer.rich_utils.STYLE_HELPTEXT"):
+    with patcher("typer.rich_utils.STYLE_HELPTEXT"):
         typer.rich_utils.STYLE_HELPTEXT = ""
 
 
@@ -145,7 +149,7 @@ def patch_help_text_spacing() -> None:
                 markup_mode=markup_mode,
             )
 
-    with patch("typer.rich_utils._get_help_text"):
+    with patcher("typer.rich_utils._get_help_text"):
         typer.rich_utils._get_help_text = _get_help_text
 
 
@@ -170,7 +174,7 @@ def patch_generate_enum_convertor() -> None:
 
         return convertor
 
-    with patch("typer.main.generate_enum_convertor"):
+    with patcher("typer.main.generate_enum_convertor"):
         typer.main.generate_enum_convertor = generate_enum_convertor
 
 
@@ -283,12 +287,12 @@ def patch_get_click_type() -> None:
         raise RuntimeError(f"Type not yet supported: {annotation}")  # pragma no cover
 
     """Patch typer's get_click_type to support more types."""
-    with patch("typer.main.get_click_type"):
+    with patcher("typer.main.get_click_type"):
         typer.main.get_click_type = get_click_type
 
 
-def patch_all() -> None:
-    """Patch all typer issues."""
+def patch() -> None:
+    """Apply all patches."""
     patch_help_text_style()
     patch_help_text_spacing()
     patch_generate_enum_convertor()
