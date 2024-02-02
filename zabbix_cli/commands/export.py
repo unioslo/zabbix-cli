@@ -264,7 +264,6 @@ class ZabbixExporter:
     # Each method needs to guard the export call of each object in a try/except
     # and that will be extremely verbose and repetitive.
     def export_host_groups(self) -> Iterator[Path]:
-        # FIXME URGRENT WHATVER: check if we should use search=True or False
         hostgroups = self.client.get_hostgroups(*self.names, search=True)
         for hg in hostgroups:
             exported = self.do_export(host_groups=[hg])
@@ -321,6 +320,16 @@ class ZabbixExporter:
         with open(filename, "w") as f:
             f.write(exported)
         return filename
+
+
+class ExportResult(TableRenderable):
+    """Result type for `export_configuration` command."""
+
+    exported: List[Path] = []
+    """List of paths to exported files."""
+    objects: List[str] = []
+    names: List[str] = []
+    format: ExportFormat
 
 
 @app.command(name="export_configuration", rich_help_panel=HELP_PANEL)
@@ -421,7 +430,15 @@ def export_configuration(
         pretty=pretty,
     )
     exported = exporter.run()
-    info(f"Exported {len(exported)} files to {path_link(exportdir)}")
+    # NOTE: record duration similar to import_configuration?
+    render_result(
+        Result(
+            message=f"Exported {len(exported)} files to {exportdir}",
+            result=ExportResult(
+                exported=exported, objects=objs, names=obj_names, format=format
+            ),
+        )
+    )
 
     if open_dir:
         open_directory(exportdir)
