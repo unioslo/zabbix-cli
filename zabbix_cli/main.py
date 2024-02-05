@@ -29,6 +29,7 @@ from typing import Optional
 
 import typer
 from click_repl import repl as start_repl
+from prompt_toolkit.history import FileHistory
 from rich.console import Group
 from rich.panel import Panel
 
@@ -123,6 +124,10 @@ def run_repl(ctx: typer.Context) -> None:
 
     # TODO: add history file support
     prompt_kwargs = {"pre_run": pre_run}
+    if state.config.app.history:
+        prompt_kwargs["history"] = prompt_kwargs["history"] = FileHistory(
+            str(state.config.app.history_file)
+        )
     start_repl(ctx, prompt_kwargs=prompt_kwargs)
 
 

@@ -39,12 +39,14 @@ from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
+from pydantic import model_validator
 from pydantic import SecretStr
 from pydantic import ValidationInfo
 from strenum import StrEnum
 
 from zabbix_cli._v2_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
 from zabbix_cli.dirs import CONFIG_DIR
+from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
 from zabbix_cli.dirs import SITE_CONFIG_DIR
@@ -170,6 +172,10 @@ class AppConfig(BaseModel):
     use_auth_token_file: bool = False
     use_paging: bool = False
     output_format: OutputFormat = OutputFormat.TABLE
+    history: bool = True
+    history_file: Path = DATA_DIR / "history"
+
+    # Legacy options
     allow_insecure_authfile: bool = True  # mimick old behavior
     legacy_json_format: bool = False
     """Mimicks V2 behavior where the JSON output was ALWAYS a dict, where
@@ -203,6 +209,21 @@ class AppConfig(BaseModel):
         if isinstance(v, str):
             return v.lower()
         return v
+
+    @model_validator(mode="after")
+    def ensure_history_file(self) -> AppConfig:
+        if not self.history or self.history_file.exists():
+            return self
+        # If user passes in path to non-existent directory, we have to create that too
+        # TODO: add some abstraction for creating files & directories and raising exceptions
+        try:
+            self.history_file.parent.mkdir(parents=True, exist_ok=True)
+            self.history_file.touch(exist_ok=True)
+        except OSError as e:
+            raise ConfigError(
+                f"Unable to create history file {self.history_file}. Disable history or specify a different file."
+            ) from e
+        return self
 
 
 class LoggingConfig(BaseModel):
