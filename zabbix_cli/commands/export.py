@@ -11,6 +11,7 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Protocol
+from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -19,6 +20,7 @@ from pydantic import field_serializer
 from rich.progress import BarColumn
 from rich.progress import Progress
 from rich.progress import SpinnerColumn
+from rich.progress import TaskID
 from rich.progress import TaskProgressColumn
 from rich.progress import TextColumn
 from rich.progress import TimeElapsedColumn
@@ -61,7 +63,27 @@ from zabbix_cli.utils.utils import sanitize_filename
 if TYPE_CHECKING:
     from zabbix_cli.models import RowsType  # noqa: F401
     from zabbix_cli.models import ColsRowsType
+    from typing_extensions import TypedDict
+    from typing_extensions import Unpack
 
+    class ExportKwargs(TypedDict, total=False):
+        hosts: List[Host]
+        host_groups: List[HostGroup]
+        images: List[Image]
+        maps: List[Map]
+        media_types: List[MediaType]
+        templates: List[Template]
+        template_groups: List[TemplateGroup]
+
+    Exportable = Union[
+        HostGroup,
+        TemplateGroup,
+        Host,
+        Image,
+        Map,
+        Template,
+        MediaType,
+    ]
 
 HELP_PANEL = "Import/Export"
 
@@ -88,24 +110,13 @@ class ExportType(StrEnum):
 
 
 class ExporterFunc(Protocol):
-    def __call__(self) -> Iterator[Path]:
+    def __call__(self) -> Iterator[Optional[Path]]:
         ...
 
 
 class Exporter(NamedTuple):
     func: ExporterFunc
     type: ExportType
-
-
-Exportable = Union[
-    HostGroup,
-    TemplateGroup,
-    Host,
-    Image,
-    Map,
-    Template,
-    MediaType,
-]
 
 
 class ZabbixExporter:
@@ -115,21 +126,23 @@ class ZabbixExporter:
         self,
         client: ZabbixAPI,
         config: Config,
-        objects: List[str],
+        types: List[ExportType],
         names: List[str],
         directory: Path,
         format: ExportFormat,
         legacy_filenames: bool,
         pretty: bool,
+        ignore_errors: bool,
     ) -> None:
         self.client = client
         self.config = config
-        self.export_types = self.parse_export_types(objects)
+        self.export_types = types
         self.names = names
         self.directory = directory
         self.format = format
         self.legacy_filenames = legacy_filenames
         self.pretty = pretty
+        self.ignore_errors = ignore_errors
 
         # Ideally, we fetch and write at the same time, so we keep memory usage low,
         # while utilizing I/O and CPU as much as possible.
@@ -146,42 +159,25 @@ class ZabbixExporter:
             ExportType.MEDIA_TYPES: self.export_media_types,
         }  # type: dict[ExportType, ExporterFunc]
 
-        # Curry the export method with the appropriate arguments
-        self.do_export = partial(
+        self.check_export_types()
+        self._export = partial(
             self.client.export_configuration, pretty=self.pretty, format=self.format
         )
 
     def run(self) -> List[Path]:
         """Run exporters."""
-        files = []  # type: List[Path]
+        files = []  # type: List[Optional[Path]]
         for exporter in self.get_exporters():
-            with err_console.status(f"Exporting {exporter.type.human_readable()}..."):
-                exported = exporter.func()
-                files.extend(exported)
-        return files
+            # with err_console.status(f"Exporting {exporter.type.human_readable()}..."):
+            exported = exporter.func()
+            files.extend(exported)
+        return [f for f in files if f]
 
-    def parse_export_types(self, objects: List[str]) -> List[ExportType]:
-        """Parses list of object export type names.
-
-        In V2, this was called "objects", which isn't very descriptive...
-        """
+    def check_export_types(self) -> None:
+        """Check export types for compatibility."""
         # If we have no specific exports, export all object types
-        if not objects:
-            objects = list(ExportType)
-        objs = []  # type: List[ExportType]
-        for obj in objects:
-            try:
-                export_type = ExportType(obj)
-                self._check_export_type_compat(export_type)
-                objs.append(export_type)
-            except ZabbixCLIError as e:
-                raise e  # should this be exit_err instead?
-            except Exception as e:
-                raise ZabbixCLIError(f"Invalid export type: {obj}") from e
-        # dedupe
-        # TODO: test that StrEnum is hashable on all Python versions
-        # FIXME: this deduplication makes the order non-deterministic!
-        return list(set(objs))
+        for export_type in self.export_types:
+            self._check_export_type_compat(export_type)
 
     def _check_export_type_compat(self, export_type: ExportType) -> None:
         if export_type == ExportType.TEMPLATE_GROUPS:
@@ -202,40 +198,10 @@ class ZabbixExporter:
             exporters.append(Exporter(exporter, export_type))
         return exporters
 
-    def generate_filename(self, obj: Exportable) -> Path:
-        """Generate filename for exported object."""
-        name = "unknown"
-        id_ = "unknown"
-        directory = self.directory
-        if isinstance(obj, HostGroup):
-            name = obj.name
-            id_ = obj.groupid
-            directory /= ExportType.HOST_GROUPS.value
-        elif isinstance(obj, TemplateGroup):
-            name = obj.name
-            id_ = obj.groupid
-            directory /= ExportType.TEMPLATE_GROUPS.value
-        elif isinstance(obj, Host):
-            name = obj.host
-            id_ = obj.hostid
-            directory /= ExportType.HOSTS.value
-        elif isinstance(obj, Image):
-            name = obj.name
-            id_ = obj.imageid
-            directory /= ExportType.IMAGES.value
-        elif isinstance(obj, Map):
-            name = obj.name
-            id_ = obj.sysmapid
-            directory /= ExportType.MAPS.value
-        elif isinstance(obj, Template):
-            name = obj.host
-            id_ = obj.templateid
-            directory /= ExportType.TEMPLATES.value
-        elif isinstance(obj, MediaType):
-            name = obj.name
-            id_ = obj.mediatypeid
-            directory /= ExportType.MEDIA_TYPES.value
-        stem = self.get_filename_stem(name, id_)
+    def get_filename(self, name: str, id: str, export_type: ExportType) -> Path:
+        """Get path to export file given a ."""
+        stem = self.get_filename_stem(name, id)
+        directory = self.directory / export_type.value
         return directory / f"{stem}.{self.format.value}"
 
     def get_filename_stem(self, name: str, id: str) -> str:
@@ -256,6 +222,20 @@ class ZabbixExporter:
         """Format filename."""
         return f"{name}_{id}"
 
+    def get_progress(
+        self, export_type: ExportType, to_export: List[Any]
+    ) -> Tuple[Progress, TaskID]:
+        """Get a progress bar for exporting."""
+        progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            transient=True,
+        )
+        taskid = progress.add_task(f"Exporting {export_type}", total=len(to_export))
+        return progress, taskid
+
     # TODO: refactor export methods if we want to add --ignore-errors
     # We have to find a way to generalize the export process while keeping
     # type safety intact.
@@ -263,53 +243,83 @@ class ZabbixExporter:
     # so we can't just wrap the call of the export method in a try/except
     # Each method needs to guard the export call of each object in a try/except
     # and that will be extremely verbose and repetitive.
-    def export_host_groups(self) -> Iterator[Path]:
+    def export_host_groups(self) -> Iterator[Optional[Path]]:
         hostgroups = self.client.get_hostgroups(*self.names, search=True)
         for hg in hostgroups:
-            exported = self.do_export(host_groups=[hg])
-            yield self.write_exported(exported, hg)
+            filename = self.get_filename(hg.name, hg.groupid, ExportType.HOST_GROUPS)
+            yield self.do_run_export(filename, host_groups=[hg])
 
-    def export_template_groups(self) -> Iterator[Path]:
+    def export_template_groups(self) -> Iterator[Optional[Path]]:
         template_groups = self.client.get_templategroups(*self.names, search=True)
         for tg in template_groups:
-            exported = self.do_export(template_groups=[tg])
-            yield self.write_exported(exported, tg)
+            filename = self.get_filename(
+                tg.name, tg.groupid, ExportType.TEMPLATE_GROUPS
+            )
+            yield self.do_run_export(filename, template_groups=[tg])
 
-    def export_hosts(self) -> Iterator[Path]:
+    def export_hosts(self) -> Iterator[Optional[Path]]:
         hosts = self.client.get_hosts(*self.names)
         for host in hosts:
-            exported = self.do_export(hosts=[host])
-            yield self.write_exported(exported, host)
+            filename = self.get_filename(host.host, host.hostid, ExportType.HOSTS)
+            yield self.do_run_export(filename, hosts=[host])
 
-    def export_images(self) -> Iterator[Path]:
+    def export_images(self) -> Iterator[Optional[Path]]:
         images = self.client.get_images(*self.names, select_image=False)
         for image in images:
-            exported = self.do_export(images=[image])
-            yield self.write_exported(exported, image)
+            filename = self.get_filename(image.name, image.imageid, ExportType.IMAGES)
+            yield self.do_run_export(filename, images=[image])
 
-    def export_maps(self) -> Iterator[Path]:
+    def export_maps(self) -> Iterator[Optional[Path]]:
         maps = self.client.get_maps(*self.names)
         for m in maps:
-            exported = self.do_export(maps=[m])
-            yield self.write_exported(exported, m)
+            filename = self.get_filename(m.name, m.sysmapid, ExportType.MAPS)
+            yield self.do_run_export(filename, maps=[m])
 
-    def export_media_types(self) -> Iterator[Path]:
+    def export_media_types(self) -> Iterator[Optional[Path]]:
         media_types = self.client.get_media_types(*self.names)
         for mt in media_types:
-            exported = self.do_export(media_types=[mt])
-            yield self.write_exported(exported, mt)
+            filename = self.get_filename(
+                mt.name, mt.mediatypeid, ExportType.MEDIA_TYPES
+            )
+            yield self.do_run_export(filename, media_types=[mt])
 
-    def export_templates(self) -> Iterator[Path]:
+    def export_templates(self) -> Iterator[Optional[Path]]:
         templates = self.client.get_templates(*self.names)
         for template in templates:
-            exported = self.do_export(templates=[template])
-            yield self.write_exported(exported, template)
+            filename = self.get_filename(
+                template.host, template.templateid, ExportType.TEMPLATES
+            )
+            yield self.do_run_export(filename, templates=[template])
 
-    def write_exported(self, exported: str, obj: Exportable) -> Path:
+    def do_run_export(
+        self, filename: Path, **kwargs: Unpack[ExportKwargs]
+    ) -> Optional[Path]:
+        """Runs the export process."""
+
+        try:
+            exported = self.client.export_configuration(
+                pretty=self.pretty,
+                format=self.format,
+                **kwargs,
+            )
+            return self.write_exported(exported, filename)
+        except Exception as e:
+            # HACKY: since we do some ugly metaprogramming to generalize the export process,
+            # we don't have the actual object on hand to print a useful representation of it.
+            # If every object had a __pretty__ or similar, we could use `next(iter(kwargs.values()))`
+            # then get the firsty entry of that list and call __pretty__ on it. But as it stands,
+            # it's prettier to just print the expected filename than to leak the entire object repr
+            msg = f"Failed to export {filename}: {e}"
+            if self.ignore_errors:
+                error(msg, exc_info=True)
+                return None
+            else:
+                raise ZabbixCLIError(msg) from e
+
+    def write_exported(self, exported: str, filename: Path) -> Path:
         """Writes an exported object to a file. Returns path to file."""
         # TODO: add some logging here to show progress
         # run some callback that updates a progress bar or something
-        filename = self.generate_filename(obj)
         if not filename.parent.exists():
             try:
                 filename.parent.mkdir(parents=True)
@@ -327,9 +337,50 @@ class ExportResult(TableRenderable):
 
     exported: List[Path] = []
     """List of paths to exported files."""
-    objects: List[str] = []
+    types: List[ExportType] = []
     names: List[str] = []
     format: ExportFormat
+
+
+# def parse_objects_callback(
+#     ctx: typer.Context, param: typer.CallbackParam, value: str
+# ) -> List[ExportType]:
+#     pass
+
+
+def parse_export_types(value: List[str]) -> List[ExportType]:
+    # If we have no specific exports, export all object types
+    if not value:
+        value = list(ExportType)
+    elif "#all#" in value:
+        warning("#all# is a deprecated value and will be removed in a future version.")
+        value = list(ExportType)
+    objs = []  # type: List[ExportType]
+    for obj in value:
+        try:
+            export_type = ExportType(obj)
+            # self._check_export_type_compat(export_type)
+            objs.append(export_type)
+        except ZabbixCLIError as e:
+            raise e  # should this be exit_err instead?
+        except Exception as e:
+            raise ZabbixCLIError(f"Invalid export type: {obj}") from e
+    # dedupe
+    # TODO: test that StrEnum is hashable on all Python versions
+    # FIXME: this deduplication makes the order non-deterministic!
+    return list(set(objs))
+
+
+def parse_export_types_callback(
+    ctx: typer.Context, param: typer.CallbackParam, value: List[str]
+) -> List[ExportType]:
+    """Parses list of object export type names.
+
+    In V2, this was called "objects", which isn't very descriptive...
+    """
+    if ctx.resilient_parsing:
+        return []  # pragma: no cover
+    return parse_export_types(value)
 
 
 @app.command(name="export_configuration", rich_help_panel=HELP_PANEL)
@@ -339,8 +390,15 @@ def export_configuration(
         None,
         help="Directory to export configuration to. Overrides directory in config.",
     ),
-    objects: Optional[str] = typer.Option(
-        None, "--object", help="Type(s) of objects to export. Comma-separated list."
+    # NOTE: We can't accept comma-separated values AND multiple values when using enums!
+    # Typer performs its parsing before callbacks are run, sadly.
+    # This was called
+    types: List[ExportType] = typer.Option(
+        [],
+        "-T",
+        "--type",
+        help="Type(s) of objects to export. Can be specified multiple times.",
+        callback=parse_export_types_callback,
     ),
     names: Optional[str] = typer.Option(
         None, "--name", help="Name(s) of objects to export. Comma-separated list."
@@ -369,6 +427,12 @@ def export_configuration(
         is_flag=True,
         help="Open export directory in file explorer after exporting.",
     ),
+    ignore_errors: bool = typer.Option(
+        False,
+        "--ignore-errors",
+        is_flag=True,
+        help="Enable best-effort exporting. Print errors but continue exporting.",
+    ),
     # TODO: add --ignore-errors option
     # Legacy positional args
     args: Optional[List[str]] = ARGS_POSITIONAL,
@@ -377,19 +441,38 @@ def export_configuration(
 
     Uses defaults from Zabbix-CLI configuration file if not specified.
 
+
+    [bold]Examples[/bold]
+
+    * Export everything:
+
+        [green]export_configuration[/]
+
+    * Export all host groups:
+
+        [green]export_configuration --object host_groups[/]
+
+    * Export all host groups containing "Linux":
+
+        [green]export_configuration --object host_groups --name "*Linux*"[/]
+
+    * Export all template groups and templates containing "Linux" or "Windows":
+
+        [green]export_configuration --object template_groups --object templates --name "*Linux*,*Windows*"[/]
+
     Filename scheme is as follows:
 
-    [i]<directory>/<object_type>/<name>_<id>.<format>[/]
+        [i]<directory>/<object_type>/<name>_<id>.<format>[/]
 
     But it can be changed to the legacy scheme with --legacy-filenames:
 
-    [i]<directory>/<object_type>/zabbix_export_<object_type>_<name>_<id>_timestamp>.<format>[/]
+        [i]<directory>/<object_type>/zabbix_export_<object_type>_<name>_<id>_timestamp>.<format>[/]
     """
     if args:
         if not len(args) == 3:
             exit_err("Invalid number of arguments. Use options instead.")
         directory = args[0]
-        objects = args[1]
+        types = parse_export_types(parse_list_arg(args[1]))
         names = args[2]
         # No format arg in V2...
 
@@ -402,12 +485,6 @@ def export_configuration(
         exportdir = parse_path_arg(directory)
     else:
         exportdir = app.state.config.app.export_directory
-
-    # V2 compat: passing in #all# exports all objects (default)
-    if objects == "#all#":
-        objs = []
-    else:
-        objs = parse_list_arg(objects)
 
     # V2 compat: passing in #all# exports all names
     if names == "#all#":
@@ -422,12 +499,13 @@ def export_configuration(
     exporter = ZabbixExporter(
         client=app.state.client,
         config=app.state.config,
-        objects=objs,
+        types=types,
         names=obj_names,
         directory=exportdir,
         format=format,
         legacy_filenames=legacy_filenames,
         pretty=pretty,
+        ignore_errors=ignore_errors,
     )
     exported = exporter.run()
     # NOTE: record duration similar to import_configuration?
@@ -435,7 +513,7 @@ def export_configuration(
         Result(
             message=f"Exported {len(exported)} files to {exportdir}",
             result=ExportResult(
-                exported=exported, objects=objs, names=obj_names, format=format
+                exported=exported, types=types, names=obj_names, format=format
             ),
         )
     )
@@ -525,7 +603,7 @@ class ZabbixImportResult(TableRenderable):
 
 
 def filter_valid_imports(files: List[Path]) -> List[Path]:
-    """Filter list of files to only those that are valid for import."""
+    """Filter list of files to include only valid imports."""
     importables = [i.casefold() for i in ExportFormat.get_importables()]
     valid = []  # type: List[Path]
     for f in files:
