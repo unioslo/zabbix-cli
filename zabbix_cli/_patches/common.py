@@ -4,6 +4,8 @@ from abc import ABC
 from abc import abstractmethod
 from typing import TYPE_CHECKING
 
+from rich.table import Table
+
 if TYPE_CHECKING:
     from types import TracebackType
     from typing import Optional, Type
@@ -33,19 +35,40 @@ class BasePatcher(ABC):
             return True
         import rich
         import sys
+        from zabbix_cli.__about__ import __version__
 
         # Rudimentary, but provides enough info to debug and fix the issue
         console = rich.console.Console(stderr=True)
         console.print_exception()
-        console.print(f"[bold red]Failed to patch [i]{self.description}[/][/]")
-        console.print(self.__package_info__())
-        console.print(f"Python version: {sys.version}")
-
-        return True
+        console.print()
+        table = Table(
+            title="Diagnostics",
+            show_header=False,
+            show_lines=False,
+        )
+        table.add_row(
+            "[b]Package [/]",
+            self.__package_info__(),
+        )
+        table.add_row(
+            "[b]zabbix-cli [/]",
+            __version__,
+        )
+        table.add_row(
+            "[b]Python [/]",
+            sys.version,
+        )
+        table.add_row(
+            "[b]Platform [/]",
+            sys.platform,
+        )
+        console.print(table)
+        console.print(f"[bold red]ERROR: Failed to patch {self.description}[/]")
+        raise SystemExit(1)
 
 
 def get_patcher(info: str) -> Type[BasePatcher]:
-    """Returns a patcher instance."""
+    """Returns a patcher for a given package."""
 
     class Patcher(BasePatcher):
         def __package_info__(self) -> str:
