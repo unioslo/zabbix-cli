@@ -162,7 +162,7 @@ class AppConfig(BaseModel):
         validation_alias=AliasChoices("default_export_format", "export_format"),
     )
     export_timestamps: bool = Field(
-        default=True,
+        default=False,
         # Changed in V3: include_timestamp_export_filename -> export_timestamps
         validation_alias=AliasChoices(
             "include_timestamp_export_filename", "export_timestamps"
