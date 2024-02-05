@@ -86,10 +86,15 @@ def warning(message: str, icon: str = Icon.WARNING, **kwargs) -> None:
 
 
 def error(
-    message: str, icon: str = Icon.ERROR, exc_info: bool = False, **kwargs
+    message: str,
+    icon: str = Icon.ERROR,
+    exc_info: bool = False,
+    log: bool = True,
+    **kwargs,
 ) -> None:
     """Log with ERROR level and print an error message."""
-    logger.error(message, extra=get_extra_dict(**kwargs), exc_info=exc_info)
+    if log:  # we can disable logging when the logger isn't set up yet
+        logger.error(message, extra=get_extra_dict(**kwargs), exc_info=exc_info)
     err_console.print(bold(red(f"{icon} ERROR: {message}")))
 
 
@@ -131,6 +136,11 @@ def exit_err(
         Additional keyword arguments to pass to the extra dict.
     """
     state = get_state()
+    if not state.is_config_loaded:
+        # HACK: prevents unconfigured logger from printing to stderr
+        kwargs["log"] = False
+
+    # Render JSON-formatted error message if output format is JSON
     if state.is_config_loaded and state.config.app.output_format == "json":
         from zabbix_cli.output.render import render_json
         from zabbix_cli.models import Result, ReturnCode

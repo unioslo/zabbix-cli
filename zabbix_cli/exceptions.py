@@ -135,6 +135,7 @@ EXC_HANDLERS = {
     ZabbixAPIException: handle_zabbix_api_exception,  # NOTE: use different strategy for this?
     ValidationError: handle_validation_error,
     ConnectionError: handle_connection_error,
+    ConfigError: handle_notraceback,
 }  # type: dict[type[Exception], HandleFunc]
 """Mapping of exception types to exception handling strategies."""
 
