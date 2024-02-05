@@ -53,7 +53,7 @@
   - The old format can be enabled with the new option `app.legacy_json_format` in the new TOML configuration file format.
   - When loading configuration from a legacy `.conf`-file, the old format is assumed.
 - Default configuration file location is now `~/.config/zabbix-cli/config.toml`
-- Changes to TOML configuration file options:
+- Changes to TOML configuration file option names:
   - Table [zabbix_api] → [api]
     - `zabbix_url` → `url`
     - `cert_verify` → `verify_ssl`
@@ -64,9 +64,10 @@
     - `include_timestamp_export_filename` → `export_timestamps`
   - `logging.logging` → `logging.enabled`
   - The original names are still usable, but are deprecated and slated for removal in a future version.
+- Changes to configuration defaults:
+  - `app.export_timestamps` defaults to `false`
+    - Exports are automatically overwritten if the file already exists.
 - Application now creates a config file on launch if it doesn't exist.
-- Use Hatch for building and publishing
-- Switch from setup.py to pyproject.toml
 - Command changes:
   - `create_host_interface`
     - Default port number is now determined by interface type.
@@ -77,6 +78,8 @@
   - `show_host_inventory`
     - Now shows shows any inventory field that is set in the table.
     - Includes _all_ inventory fields in JSON output.
+- Use Hatch for building and publishing
+- Switch from setup.py to pyproject.toml
 
 ### Deprecated
 
