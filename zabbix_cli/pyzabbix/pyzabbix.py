@@ -328,6 +328,7 @@ class ZabbixAPI:
         self,
         *names_or_ids: str,
         search: bool = False,
+        search_union: bool = True,
         select_hosts: bool = False,
         sort_order: SortOrder | None = None,
         sort_field: str | None = None,
@@ -342,7 +343,10 @@ class ZabbixAPI:
         Args:
             name_or_id (str): Name or ID of the host group.
             search (bool, optional): Search for host groups using the given pattern instead of filtering. Defaults to False.
-            hosts (bool, optional): Fetch full information for each host in the group. Defaults to False.
+            search_union (bool, optional): Union searching. Has no effect if `search` is False. Defaults to True.
+            select_hosts (bool, optional): Fetch hosts in host groups. Defaults to False.
+            sort_order (SortOrder, optional): Sort order. Defaults to None.
+            sort_field (str, optional): Sort field. Defaults to None.
 
         Raises:
             ZabbixNotFoundError: Group is not found.
@@ -364,6 +368,7 @@ class ZabbixAPI:
                 norid_key = "groupid" if is_id else "name"
                 if search and not is_id:
                     params["searchWildcardsEnabled"] = True
+                    params["searchByAny"] = search_union
                     params.setdefault("search", {}).setdefault("name", []).append(  # type: ignore # bad annotation
                         name_or_id
                     )
