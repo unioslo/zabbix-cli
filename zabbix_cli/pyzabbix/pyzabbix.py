@@ -419,6 +419,7 @@ class ZabbixAPI:
         self,
         *names_or_ids: str,
         search: bool = False,
+        search_union: bool = True,
         select_templates: bool = False,
     ) -> List[TemplateGroup]:
         """Fetches a list of template groups, optionally filtered by name(s).
@@ -431,6 +432,7 @@ class ZabbixAPI:
         Args:
             name_or_id (str): Name or ID of the template group.
             search (bool, optional): Search for template groups using the given pattern instead of filtering. Defaults to False.
+            search (bool, optional): Union searching. Has no effect if `search` is False. Defaults to True.
 
         Raises:
             ZabbixNotFoundError: Group is not found.
@@ -453,6 +455,7 @@ class ZabbixAPI:
                 norid_key = "groupid" if is_id else "name"
                 if search and not is_id:
                     params["searchWildcardsEnabled"] = True
+                    params["searchByAny"] = search_union
                     params.setdefault("search", {}).setdefault("name", []).append(  # type: ignore # bad annotation
                         name_or_id
                     )
