@@ -11,7 +11,6 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Protocol
-from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -20,7 +19,6 @@ from pydantic import field_serializer
 from rich.progress import BarColumn
 from rich.progress import Progress
 from rich.progress import SpinnerColumn
-from rich.progress import TaskID
 from rich.progress import TaskProgressColumn
 from rich.progress import TextColumn
 from rich.progress import TimeElapsedColumn
@@ -166,12 +164,14 @@ class ZabbixExporter:
 
     def run(self) -> List[Path]:
         """Run exporters."""
-        files = []  # type: List[Optional[Path]]
-        for exporter in self.get_exporters():
-            # with err_console.status(f"Exporting {exporter.type.human_readable()}..."):
-            exported = exporter.func()
-            files.extend(exported)
-        return [f for f in files if f]
+        files = []  # type: List[Path]
+        with err_console.status("") as status:
+            for exporter in self.get_exporters():
+                status.update(f"Exporting {exporter.type.human_readable()}...")
+                for file in exporter.func():
+                    if file:
+                        files.append(file)
+        return files
 
     def check_export_types(self) -> None:
         """Check export types for compatibility."""
@@ -221,20 +221,6 @@ class ZabbixExporter:
     def _get_filename_stem(self, name: str, id: str) -> str:
         """Format filename."""
         return f"{name}_{id}"
-
-    def get_progress(
-        self, export_type: ExportType, to_export: List[Any]
-    ) -> Tuple[Progress, TaskID]:
-        """Get a progress bar for exporting."""
-        progress = Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            transient=True,
-        )
-        taskid = progress.add_task(f"Exporting {export_type}", total=len(to_export))
-        return progress, taskid
 
     # TODO: refactor export methods if we want to add --ignore-errors
     # We have to find a way to generalize the export process while keeping
@@ -395,9 +381,8 @@ def export_configuration(
     # This was called
     types: List[ExportType] = typer.Option(
         [],
-        "-T",
         "--type",
-        help="Type(s) of objects to export. Can be specified multiple times.",
+        help="Type(s) of objects to export. Can be specified multiple times. Defaults to all object types.",
         callback=parse_export_types_callback,
     ),
     names: Optional[str] = typer.Option(
@@ -406,7 +391,6 @@ def export_configuration(
     format: Optional[ExportFormat] = typer.Option(
         None,
         "--format",
-        "-f",
         help="Format to export to. Overrides export format in config.",
     ),
     # TODO: move/add this option to config
