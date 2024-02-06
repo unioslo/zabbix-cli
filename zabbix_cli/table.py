@@ -9,17 +9,14 @@ if TYPE_CHECKING:
     from zabbix_cli.models import ColsType, RowsType
 
 
-def get_default_table(title: str | None = None, **kwargs) -> Table:
-    """Returns Rich table with default settings for the application."""
-    kwargs.setdefault("box", box.ROUNDED)
-    return Table(title=title, **kwargs)
-
-
 def get_table(
-    cols: ColsType, rows: RowsType, title: str | None = None, **kwargs
+    cols: ColsType,
+    rows: RowsType,
+    title: str | None = None,
+    show_lines: bool = True,
 ) -> Table:
     """Returns a Rich table given a list of columns and rows."""
-    table = get_default_table(title=title, **kwargs)
+    table = Table(title=title, box=box.ROUNDED, show_lines=show_lines)
     for col in cols:
         table.add_column(col, overflow="fold")
     for row in rows:
@@ -27,5 +24,4 @@ def get_table(
         # If they have no rows, we don't want to render them.
         row = [cell if not isinstance(cell, Table) or cell.rows else "" for cell in row]
         table.add_row(*row)
-        table.add_section()
     return table

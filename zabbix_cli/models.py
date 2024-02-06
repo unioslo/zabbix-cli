@@ -80,6 +80,7 @@ class TableRenderable(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     __title__: Optional[str] = None
+    __show_lines__: bool = True
 
     def _get_extra(self, field: str, key: str, default: T) -> T:
         f = self.model_fields.get(field, None)
@@ -208,7 +209,9 @@ class TableRenderable(BaseModel):
     def as_table(self) -> Table:
         """Renders a Rich table given the rows and cols generated for the object."""
         cols, rows = self.__cols_rows__()
-        return get_table(cols=cols, rows=rows, title=self.__title__)
+        return get_table(
+            cols=cols, rows=rows, title=self.__title__, show_lines=self.__show_lines__
+        )
 
     # We should implement the rich renderable protocol...
 
