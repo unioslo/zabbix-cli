@@ -322,13 +322,9 @@ class HostGroupsResult(AggregateResult):
 @app.command("show_hostgroups")
 def show_hostgroups() -> None:
     """Show details for all host groups."""
-    try:
-        hostgroups = app.state.client.get_hostgroups(
-            "*", select_hosts=True, search=True, sort_field="name", sort_order="ASC"
-        )
-    except Exception as e:
-        exit_err(f"Failed to get all host groups: {e}")
-
+    hostgroups = app.state.client.get_hostgroups(
+        "*", select_hosts=True, search=True, sort_field="name", sort_order="ASC"
+    )
     render_result(
         HostGroupsResult(
             result=[HostGroupResult(**hg.model_dump()) for hg in hostgroups]
