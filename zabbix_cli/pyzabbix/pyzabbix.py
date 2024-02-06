@@ -387,6 +387,29 @@ class ZabbixAPI:
         resp = self.hostgroup.get(**params) or []
         return [HostGroup(**hostgroup) for hostgroup in resp]
 
+    def create_hostgroup(self, name: str) -> str:
+        """Creates a host group with the given name."""
+        try:
+            resp = self.hostgroup.create(name=name)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to create host group {name!r}: {e}"
+            ) from e
+        if not resp or not resp.get("groupids"):
+            raise ZabbixAPIException(
+                "Host group creation returned no data. Unable to determine if group was created."
+            )
+        return str(resp["groupids"][0])
+
+    def delete_hostgroup(self, hostgroup_id: str) -> None:
+        """Deletes a host group given its ID."""
+        try:
+            self.hostgroup.delete(hostgroup_id)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to delete host group(s) with ID {hostgroup_id}: {e}"
+            ) from e
+
     def get_templategroup(
         self,
         name_or_id: str,
@@ -470,6 +493,29 @@ class ZabbixAPI:
 
         resp = self.templategroup.get(**params) or []
         return [TemplateGroup(**tgroup) for tgroup in resp]
+
+    def create_templategroup(self, name: str) -> str:
+        """Creates a template group with the given name."""
+        try:
+            resp = self.templategroup.create(name=name)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to create template group {name!r}: {e}"
+            ) from e
+        if not resp or not resp.get("groupids"):
+            raise ZabbixAPIException(
+                "Template group creation returned no data. Unable to determine if group was created."
+            )
+        return str(resp["groupids"][0])
+
+    def delete_templategroup(self, templategroup_id: str) -> None:
+        """Deletes a template group given its ID."""
+        try:
+            self.templategroup.delete(templategroup_id)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to delete template group(s) with ID {templategroup_id}: {e}"
+            ) from e
 
     def get_host(
         self,
@@ -657,7 +703,7 @@ class ZabbixAPI:
 
     def hostgroup_exists(self, hostgroup_name: str) -> bool:
         try:
-            self.get_hostgroup_id(hostgroup_name)
+            self.get_hostgroup(hostgroup_name)
         except ZabbixNotFoundError:
             return False
         except Exception as e:
@@ -830,7 +876,7 @@ class ZabbixAPI:
     def update_usergroup_rights(
         self,
         usergroup_name: str,
-        groups: Union[List[HostGroup], List[TemplateGroup]],
+        groups: List[str],
         permission: UsergroupPermission,
         hostgroup: bool,
     ) -> None:
@@ -840,19 +886,28 @@ class ZabbixAPI:
         params = {"usrgrpid": usergroup.usrgrpid}  # type: ParamsType
 
         if hostgroup:
+            hostgroups = [self.get_hostgroup(hg) for hg in groups]
             if self.version.release >= (6, 2, 0):
                 hg_rights = usergroup.hostgroup_rights
             else:
                 hg_rights = usergroup.rights
-            new_rights = self._get_updated_rights(hg_rights, permission, groups)
-            params[compat.usergroup_hostgroup_rights(self.version)] = new_rights  # type: ignore
+            new_rights = self._get_updated_rights(hg_rights, permission, hostgroups)
+            params[compat.usergroup_hostgroup_rights(self.version)] = new_rights
         else:
-            if self.version.release >= (6, 2, 0):
-                tg_rights = usergroup.templategroup_rights
-            else:
-                tg_rights = usergroup.rights
-            new_rights = self._get_updated_rights(tg_rights, permission, groups)
-            params[compat.usergroup_templategroup_rights(self.version)] = new_rights  # type: ignore
+            if self.version.release < (6, 2, 0):
+                raise ZabbixAPIException(
+                    "Template group rights are only supported in Zabbix 6.2.0 and later"
+                )
+            templategroups = [self.get_templategroup(tg) for tg in groups]
+            tg_rights = usergroup.templategroup_rights
+            new_rights = self._get_updated_rights(tg_rights, permission, templategroups)
+            params[compat.usergroup_templategroup_rights(self.version)] = new_rights
+        try:
+            self.usergroup.update(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to update usergroup rights for {usergroup_name!r}: {e}"
+            ) from e
 
     def _get_updated_rights(
         self,

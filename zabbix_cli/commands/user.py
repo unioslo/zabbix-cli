@@ -746,13 +746,11 @@ def add_usergroup_permissions(
     ),
     hostgroups: Optional[str] = typer.Option(
         None,
-        "--hgroups",
         "--hostgroups",
         help="Comma-separated list of host group names. [yellow]WARNING: Case sensitive![/yellow]]",
     ),
     templategroups: Optional[str] = typer.Option(
         None,
-        "--tgroups",
         "--templategroups",
         help="Comma-separated list of template group names. [yellow]WARNING: Case sensitive![/yellow]]",
     ),
@@ -787,16 +785,14 @@ def add_usergroup_permissions(
     # Only prompt if no group options
     if not hostgroups and not templategroups:
         hostgroups = str_prompt("Host groups", empty_ok=True, default="")
-    hgroupnames = parse_list_arg(hostgroups)
-    hgroups = [app.state.client.get_hostgroup(h) for h in hgroupnames]
+    hgroups = parse_list_arg(hostgroups)
 
     # Ditto
     if not templategroups and not hostgroups:
         templategroups = str_prompt("Template groups", empty_ok=True, default="")
-    tgroupnames = parse_list_arg(templategroups)
-    tgroups = [app.state.client.get_templategroup(t) for t in tgroupnames]
+    tgroups = parse_list_arg(templategroups)
 
-    if not hgroupnames and not tgroupnames:
+    if not hgroups and not tgroups:
         exit_err("At least one host group or template group must be specified.")
 
     if not permission:
@@ -810,8 +806,7 @@ def add_usergroup_permissions(
                 )
             except ZabbixAPIException as e:
                 exit_err(f"Failed to add host group permissions: {e}")
-            else:
-                success("Added host group permissions.")
+        success("Added host group permissions.")
 
     if tgroups:
         with app.status("Adding template group permissions"):
@@ -821,14 +816,13 @@ def add_usergroup_permissions(
                 )
             except ZabbixAPIException as e:
                 exit_err(f"Failed to add template group permissions: {e}")
-            else:
-                success("Added template group permissions.")
+        success("Added template group permissions.")
 
     render_result(
         AddUsergroupPermissionsResult(
             usergroup=usergroup,
-            hostgroups=hgroupnames,
-            templategroups=tgroupnames,
+            hostgroups=hgroups,
+            templategroups=tgroups,
             permission=permission,
         ),
     )

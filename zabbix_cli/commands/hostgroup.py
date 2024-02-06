@@ -11,11 +11,11 @@ from pydantic import field_validator
 from typing_extensions import TypedDict
 
 from zabbix_cli.app import app
-from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
+from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.prompts import str_prompt
@@ -83,10 +83,41 @@ def _parse_hostname_hostgroup_args(
 @app.command("create_hostgroup")
 def create_hostgroup(
     hostgroup: str = typer.Argument(None, help="Name of host group."),
-    # TODO: add option to re-run to fix permissions?
-    # TODO: add option to specify permissions?
+    rw_groups: Optional[str] = typer.Option(
+        None,
+        help="User group(s) to give read/write permissions. Comma-separated.",
+    ),
+    ro_groups: Optional[str] = typer.Option(
+        None,
+        help="User group(s) to give read-only permissions. Comma-separated.",
+    ),
+    no_usergroup_permissions: bool = typer.Option(
+        False,
+        "--no-usergroup-permissions",
+        help="Do not assign user group permissions.",
+    ),
 ) -> None:
-    """Create a new host group."""
+    """Create a new host group.
+
+    Assigns permissions for user groups defined in configuration file
+    unless --no-usergroup-permissions is specified.
+
+    The user groups can be overridden with the --rw-groups and --ro-groups.
+
+    [b]Examples[/b]:
+
+    [i]Create a host group with default user group permissions[/i]
+
+        [green]zabbix-cli create_hostgroup "My Host Group"[/]
+
+    [i]Create a host group with specific RO and RW groups[/i]
+
+        [green]zabbix-cli create_hostgroup "My Host Group" --ro-groups users --rw-groups admins[/]
+
+    [i]Create a host group with no user group permissions[/i]
+
+        [green]zabbix-cli create_hostgroup "My Host Group" --no-usergroup-permissions[/]
+    """
     if not hostgroup:
         hostgroup = str_prompt("Host group name")
 
@@ -94,61 +125,62 @@ def create_hostgroup(
         exit_err(f"Host group {hostgroup!r} already exists.")
 
     # Create the host group
-    try:
-        res = app.state.client.hostgroup.create(name=hostgroup)
-        if not res or not res.get("groupids", []):
-            raise ZabbixCLIError(
-                "Host group creation returned no data. Cannot assign permissions."
-            )
-        hostgroup_id = res["groupids"][0]
-    except Exception as e:
-        exit_err(f"Failed to create host group {hostgroup}: {e}")
-    else:
-        info(f"Created host group {hostgroup}.")
+    hostgroup_id = app.state.client.create_hostgroup(hostgroup)
+    info(f"Creating host group {hostgroup} ({hostgroup_id}).")
 
-    # Give host group rights to default user groups
-    # FIXME: extract this logic and perform this in ZabbixAPI
-    # We really want to handle all this inside ZabbixAPI since it handles
-    # errors and logs them, so that we can debug issues more easily.
-    #
-    # It should be trivial to add a method to ZabbixAPI that takes a usergroup
-    # and a list of hostgroups+permissions.
-    # The only question is whether to allow different permissions in the same
-    # method call, or one method call per permission, i.e.:
-    # ZabbixAPI.update_usergroup("ugroup", ["hgroup1", "hgroup2", "hgroup3"], "rw")
-    # or
-    # ZabbixAPI.update_usergroup("ugroup", [("hgroup1", "rw"), ("hgroup2", "ro")])
+    app_config = app.state.config.app
+
+    rw_grps = []  # type: list[str]
+    ro_grps = []  # type: list[str]
+    if not no_usergroup_permissions:
+        rw_grps = parse_list_arg(rw_groups) or app_config.default_admin_usergroups
+        ro_grps = parse_list_arg(ro_groups) or app_config.default_create_user_usergroups
+
     try:
         # Admin group(s) gets Read/Write
-        for usergroup in app.state.config.app.default_admin_usergroups:
-            app.state.client.update_usergroup(
-                usergroup,
-                rights=[
-                    {
-                        "id": hostgroup_id,
-                        "permission": UsergroupPermission.READ_WRITE.as_api_value(),
-                    }
-                ],
+        for usergroup in rw_grps:
+            app.state.client.update_usergroup_rights(
+                usergroup, [hostgroup], UsergroupPermission.READ_WRITE, hostgroup=True
             )
             info(f"Assigned Read/Write permission for user group {usergroup!r}")
         # Default group(s) gets Read
-        for usergroup in app.state.config.app.default_create_user_usergroups:
-            app.state.client.update_usergroup(
-                usergroup,
-                rights=[
-                    {
-                        "id": hostgroup_id,
-                        "permission": UsergroupPermission.READ_ONLY.as_api_value(),
-                    }
-                ],
+        for usergroup in ro_grps:
+            app.state.client.update_usergroup_rights(
+                usergroup, [hostgroup], UsergroupPermission.READ_ONLY, hostgroup=True
             )
             info(f"Assigned Read-only permission for user group {usergroup!r}")
-
     except Exception as e:
-        exit_err(f"Failed to assign permissions to host group {hostgroup!r}: {e}")
+        # All or nothing. Delete group if we fail to assign permissions.
+        error(f"Failed to assign permissions to host group {hostgroup!r}: {e}")
+        info("Deleting host group...")
+        app.state.client.delete_hostgroup(hostgroup_id)
+
+    render_result(Result(message=f"Created host group {hostgroup} ({hostgroup_id})."))
+
+
+class HostGroupDeleteResult(TableRenderable):
+    groups: List[str]
+
+
+@app.command("remove_hostgroup")
+def delete_hostgroup(
+    hostgroup: str = typer.Argument(
+        ..., help="Name of host group(s) to delete. Comma-separated."
+    ),
+) -> None:
+    """Delete a host group."""
+    hostgroup_names = parse_list_arg(hostgroup)
+
+    hostgroups = [app.state.client.get_hostgroup(hg) for hg in hostgroup_names]
+
+    for hg in hostgroups:
+        app.state.client.delete_hostgroup(hg.groupid)
 
     render_result(
-        Result(message=f"Host group ({hostgroup}) with ID: {hostgroup_id} created.")
+        Result(
+            message=f"Host group {hostgroup!r} deleted.",
+            result=HostGroupDeleteResult(groups=hostgroup_names),
+        ),
     )
 
 
@@ -156,7 +188,7 @@ def create_hostgroup(
 def remove_host_from_hostgroup(
     hostnames: Optional[str] = typer.Argument(
         None,
-        help="Hostnames or IDs. Separate values with commas.",
+        help="Host names or IDs. Separate values with commas.",
     ),
     hostgroups: Optional[str] = typer.Argument(
         None,
@@ -185,7 +217,7 @@ class HostGroupHostResult(TypedDict):
     host: str
 
 
-class HostGroupResult(Result):  # FIXME: inherit from TableRenderable instead
+class HostGroupResult(TableRenderable):  # FIXME: inherit from TableRenderable instead
     """Result type for hostgroup."""
 
     groupid: str
@@ -196,6 +228,19 @@ class HostGroupResult(Result):  # FIXME: inherit from TableRenderable instead
         get_hostgroup_type(0),
         serialization_alias="type",  # Dumped as "type" to mimick V2 behavior
     )
+
+    @classmethod
+    def from_hostgroup(cls, hostgroup: HostGroup) -> HostGroupResult:
+        return cls(
+            groupid=hostgroup.groupid,
+            name=hostgroup.name,
+            flags=hostgroup.flags,  # type: ignore # validator
+            internal=hostgroup.internal,  # type: ignore # validator
+            hosts=[
+                HostGroupHostResult(hostid=host.hostid, host=host.host)
+                for host in hostgroup.hosts
+            ],
+        )
 
     # Mimicks old behavior by also writing the string representation of the
     # flags and internal fields to the serialized output.
@@ -234,13 +279,8 @@ def show_hostgroup(
     """Show details of a host group."""
     if not hostgroup:
         hostgroup = str_prompt("Host group name")
-
-    try:
-        hg = app.state.client.get_hostgroup(hostgroup, select_hosts=True)
-    except Exception as e:
-        exit_err(f"Failed to get host group {hostgroup!r}: {e}")
-
-    render_result(HostGroupResult(**hg.model_dump()))
+    hg = app.state.client.get_hostgroup(hostgroup, select_hosts=True)
+    render_result(HostGroupResult.from_hostgroup(hg))
 
 
 class HostGroupPermissions(TableRenderable):
@@ -263,7 +303,7 @@ class HostGroupPermissionsResult(AggregateResult[HostGroupPermissions]):
 @app.command("show_hostgroup_permissions")
 def show_hostgroup_permissions(
     hostgroup_arg: Optional[str] = typer.Argument(
-        None, help="HostGroup name. Supports wildcards."
+        None, help="Host group name. Supports wildcards."
     ),
 ) -> None:
     """Show usergroups with permissions for the given hostgroup. Supports wildcards.
@@ -314,10 +354,6 @@ def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostGroupPermissions]
     return hg_results
 
 
-class HostGroupsResult(AggregateResult):
-    result: List[HostGroupResult] = []  # type: ignore # make generic?
-
-
 # TODO: match V2 behavior
 @app.command("show_hostgroups")
 def show_hostgroups() -> None:
@@ -326,7 +362,7 @@ def show_hostgroups() -> None:
         "*", select_hosts=True, search=True, sort_field="name", sort_order="ASC"
     )
     render_result(
-        HostGroupsResult(
-            result=[HostGroupResult(**hg.model_dump()) for hg in hostgroups]
+        AggregateResult(
+            result=[HostGroupResult.from_hostgroup(hg) for hg in hostgroups]
         )
     )

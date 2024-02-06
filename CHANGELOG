@@ -10,16 +10,22 @@
   - `app.default_format`: Sets the default CLI output format. Defaults to `table`.
   - `app.legacy_json_format`: Enables the old JSON output format. Defaults to `false`.
 - New commands:
+  - `create_templategroup`: Create a template group.
+  - `remove_hostgroup`: Delete a host group.
+  - `remove_templategroup`: Delete a template group.
   - `show_user`: Show details for a single user.
   - `show_templategroup`: Show a single template group.
   - `show_templategroups`: Show all template groups.
-  - `open_config_dir`: Open the configuration directory in the system's file manager. Prints its path to stderr if no window server is detected.
-  - `open_export_dir`: Open the export directory in the system's file manager. Prints its path to stderr if no window server is detected.
+  - `open`: Open a CLI directory in the system's file manager.
 - New command options:
   - `create_host`:
     - `--name`: Host name
       - Host name still defaults to host DNS name or IP address if not specified.
     - `--description`: Host description
+  - `create_hostgroup`:
+    - `--rw-groups`: User groups to give RW permissions to the host group.
+    - `--ro-groups`: User groups to give RO permissions to the host group. Uses groups from config file if not specified.
+    - `--no-usergroup-permissions`: Do not set user group permissions. Defaults to `false`.
   - `create_host_interface`:
     - `--snmp...` TODO
   - `show_host`:

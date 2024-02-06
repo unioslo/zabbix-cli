@@ -105,6 +105,8 @@ def usergroup_hostgroup_rights(
     return "hostgroup_rights"
 
 
+# NOTE: can we remove this function? Or are we planning on using it to
+# assign rights for templates?
 def usergroup_templategroup_rights(
     version: Version,
 ) -> Literal["rights", "templategroup_rights"]:
