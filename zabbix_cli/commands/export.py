@@ -421,7 +421,7 @@ def export_configuration(
     # Legacy positional args
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
-    """Export Zabbix configuration for one or more components.
+    r"""Export Zabbix configuration for one or more components.
 
     Uses defaults from Zabbix-CLI configuration file if not specified.
 
@@ -434,23 +434,28 @@ def export_configuration(
 
     * Export all host groups:
 
-        [green]export_configuration --object host_groups[/]
+        [green]export_configuration --type host_groups[/]
 
     * Export all host groups containing "Linux":
 
-        [green]export_configuration --object host_groups --name "*Linux*"[/]
+        [green]export_configuration --type host_groups --name "*Linux*"[/]
 
     * Export all template groups and templates containing "Linux" or "Windows":
 
-        [green]export_configuration --object template_groups --object templates --name "*Linux*,*Windows*"[/]
+        [green]export_configuration --type template_groups --type templates --name "*Linux*,*Windows*"[/]
+
+    [b]NOTE:[/] --name arguments are not regex-patterns, but more akin to glob-patterns.
 
     Filename scheme is as follows:
 
-        [i]<directory>/<object_type>/<name>_<id>.<format>[/]
+        [i]<directory>/<object_type>/<name>_<id>_\[timestamp].<format>[/]
 
     But it can be changed to the legacy scheme with --legacy-filenames:
 
-        [i]<directory>/<object_type>/zabbix_export_<object_type>_<name>_<id>_timestamp>.<format>[/]
+        [i]<directory>/<object_type>/zabbix_export_<object_type>_<name>_<id>_\[timestamp].<format>[/]
+
+    Timestamps are disabled by default, but can be enabled with the [green i]app.export_timestamps[/]
+    configuration option.
     """
     if args:
         if not len(args) == 3:
