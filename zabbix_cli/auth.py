@@ -16,6 +16,7 @@ from typing import Callable
 from typing import Final
 from typing import Optional
 from typing import Tuple
+from typing import TYPE_CHECKING
 
 from pydantic import SecretStr
 
@@ -31,6 +32,10 @@ from zabbix_cli.output.console import error
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.prompts import str_prompt
 
+
+if TYPE_CHECKING:
+    from zabbix_cli.pyzabbix.pyzabbix import ZabbixAPI
+
 logger = logging.getLogger(__name__)
 
 AuthFunc = Callable[[Config], Tuple[Optional[str], Optional[str]]]
@@ -44,10 +49,44 @@ SECURE_PERMISSIONS: Final[int] = 0o600
 SECURE_PERMISSIONS_STR = format(SECURE_PERMISSIONS, "o")
 
 
+def login(client: ZabbixAPI, config: Config) -> None:
+    """Log the client in to the Zabbix API using the configured credentials
+    and stores the API session token in an auth token file if configured."""
+
+    configure_auth(config)  # must bootstrap config first
+
+    ca = config.app
+    username = ca.username
+    config_token = None
+    password = None
+    if ca.use_auth_token_file and ca.auth_token:
+        config_token = ca.auth_token.get_secret_value()
+    elif ca.password:
+        password = ca.password.get_secret_value()
+    else:
+        # Should never happen due to running configure_auth() first
+        raise ZabbixCLIError("No password or auth token configured.")
+
+    if config.api.verify_ssl:
+        client.session.verify = True
+    else:
+        client.disable_ssl_verification()
+
+    token = client.login(user=username, password=password, auth_token=config_token)
+    # Write the token file if it's new and we are configured to save it
+    if (
+        ca.use_auth_token_file
+        and ca.username  # we need a username in the token file
+        and token  # must be not None and not empty
+        and token != config_token  # must be a new token
+    ):
+        write_auth_token_file(ca.username, token)
+
+
 def configure_auth(config: Config) -> None:
     """Configure Zabbix API authentication.
 
-    The different authentication functions modify the Config object in-place.
+    Bootstraps the config object with the configured authentication info.
     """
     # Use token file if enabled
     if config.app.use_auth_token_file:
@@ -132,13 +171,15 @@ def write_auth_token_file(
                 "Change permissions manually or delete the file."
             ) from e
     file.write_text(contents)
-    logger.debug(f"Wrote auth token file {file}")
+    logger.info(f"Wrote auth token file {file}")
     return file
 
 
-def clear_auth_token_file() -> None:
+def clear_auth_token_file(config: Optional[Config] = None) -> None:
     """Clear the contents of the auth token file.
     Attempts to clear both the new and the old auth token file locations.
+
+    Optionally also clears the loaded auth token from the config object.
     """
     for file in (AUTH_TOKEN_FILE, AUTH_TOKEN_FILE_LEGACY):
         try:
@@ -146,6 +187,8 @@ def clear_auth_token_file() -> None:
         except OSError as e:
             # Only happens if file exists and we fail to write to it.
             error(f"Unable to clear auth token file {file}: {e}")
+    if config:
+        config.app.auth_token = None
 
 
 def _do_clear_auth_token_file(file: Path) -> None:

@@ -115,64 +115,46 @@ class State:
         # fmt: on
 
     def configure(self, config: Config) -> None:
-        """Sets the config and client objects.
-        Logs into the Zabbix API with the configured credentials.
+        """Bootstrap the state object with the config and Zabbix API
+        client objects. Also bootstraps ZabbixAPIBaseModel class vars.
+
+        Should be called once at the beginning of the application's lifetime.
+
+        Assigns the loaded config to the global state, as well as instantiating
+        the Zabbix API client object. Uses the authentication info from the config
+        to log into the Zabbix API.
+
+        Finally, the API version is set on the ZabbixAPIBaseModel class, so that
+        we know how to render the results for the given version of the API.
         """
         from zabbix_cli.pyzabbix import ZabbixAPI
         from zabbix_cli.pyzabbix.types import ZabbixAPIBaseModel
+        from zabbix_cli.auth import login  # circular import
 
         self.config = config
-        if not self.config.app.auth_token and not self.config.app.password:
-            raise RuntimeError(
-                "FATAL ERROR: No authentication credentials configured when loading config"
-            )
+
         self.client = ZabbixAPI(self.config.api.url)
         self.client.session.verify = self.config.api.verify_ssl
-        # TODO: handle expired auth tokens by prompting for username/password
+        login(self.client, self.config)
 
-        # alias for brevity
-        ca = config.app
-        config_token = ca.auth_token.get_secret_value() if ca.auth_token else None
-
-        self.token = self.client.login(
-            user=ca.username,
-            password=ca.password.get_secret_value() if ca.password else None,
-            auth_token=config_token,
-        )
-
-        # Set the API version on the ZabbixAPIBaseModel class, so that we know
-        # how to render the results for the given version of the API.
         ZabbixAPIBaseModel.version = self.client.version
-        ZabbixAPIBaseModel.legacy_json_format = ca.legacy_json_format
-
-        # Write the token file if it's new and we are configured to save it
-        if (
-            ca.use_auth_token_file
-            and ca.username  # we need a username in the token file
-            and self.token  # must be not None and not empty
-            and self.token != config_token  # must be a new token
-        ):
-            from zabbix_cli.auth import write_auth_token_file  # circular import
-
-            # TODO: only write if we updated the token
-            write_auth_token_file(ca.username, self.token)
+        ZabbixAPIBaseModel.legacy_json_format = config.app.legacy_json_format
 
     def revert_config_overrides(self) -> None:
         """Revert config overrides from CLI args applied in REPL.
 
-        This method ensures that overrides only apply to a single command invocation,
+        Ensures that overrides only apply to a single command invocation,
         and are reset afterwards.
 
         In REPL mode, we have to ensure overrides don't persist between commands:
-        i.e.:
 
         ```
-        > show_trigger_events 123 # table
-        > -o json show_trigger_events 123 # json (override applied to config)
-        > show_trigger_events 123 # table (override reverted)
+        > show_trigger_events 123 # renders table
+        > -o json show_trigger_events 123 # renders json (override applied to config)
+        > show_trigger_events 123 # renders table (override reverted)
         ```
 
-        This method ensures that the override is reset after the command is executed.
+        The override is reset after the command is executed.
         """
         if not self.repl or not self.is_config_loaded:
             return
@@ -217,9 +199,9 @@ class State:
             # Seems like a contrived use-case...
             clear_auth_token_file()
         except Exception as e:
-            from zabbix_cli.output.console import error
+            from zabbix_cli.output.console import exit_err
 
-            error(f"Failed to log out of Zabbix API session: {e}")
+            exit_err(f"Failed to log out of Zabbix API session: {e}")
 
 
 def get_state() -> State:

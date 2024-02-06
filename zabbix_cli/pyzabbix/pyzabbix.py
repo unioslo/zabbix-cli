@@ -141,12 +141,15 @@ class ZabbixAPI:
         # This sets the correct kwarg for the version of Zabbix we're using.
         user_kwarg = {compat.login_user_name(self.version): user}
 
+        self.auth = ""  # clear auth before trying to (re-)login
+
         if not auth_token:
-            self.auth = self.user.login(**user_kwarg, password=password)
+            auth = self.user.login(**user_kwarg, password=password)
         else:
-            self.auth = auth_token
+            auth = auth_token
             # TODO: confirm we are logged in here
             self.api_version()  # NOTE: useless? can we remove this?
+        self.auth = str(auth) if auth else ""  # ensure str
         return self.auth
 
     def confimport(self, format: ExportFormat, source: str, rules: ImportRules):

@@ -107,8 +107,8 @@ def handle_connection_error(e: ConnectionError) -> NoReturn:
 
 def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
     """Handles a ZabbixAPIException."""
-    from zabbix_cli.auth import clear_auth_token_file
     from zabbix_cli.state import get_state
+    from zabbix_cli.output.console import error
 
     state = get_state()
 
@@ -118,10 +118,15 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
         and state.config.app.use_auth_token_file
         and "re-login" in e.args[0]
     ):
+        from zabbix_cli.auth import clear_auth_token_file
+
+        error("Your auth token has expired. Please re-authenticate.")
         clear_auth_token_file()
-        get_exit_err()(
-            "Your auth token has expired. Please re-run the command to login."
-        )
+        if state.repl:  # kinda hacky
+            state.configure(state.config)
+        # NOTE: ideally we automatically re-run the command here, but that's
+        # VERY hacky and could lead to unexpected behavior.
+        get_exit_err()("Auth token expired. Re-run the command.")
     else:
         # TODO: extract the reason for the error from the exception here
         # and add it to the message.
@@ -131,8 +136,8 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
 
 
 EXC_HANDLERS = {
-    ZabbixCLIError: handle_notraceback,
     ZabbixAPIException: handle_zabbix_api_exception,  # NOTE: use different strategy for this?
+    ZabbixCLIError: handle_notraceback,
     ValidationError: handle_validation_error,
     ConnectionError: handle_connection_error,
     ConfigError: handle_notraceback,
