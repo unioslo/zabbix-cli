@@ -232,6 +232,10 @@ class ZabbixAPIBaseModel(TableRenderable):
 
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
+    def model_dump_api(self) -> Dict[str, Any]:
+        """Dump the model with fields used as parameters in API requests."""
+        return self.model_dump(mode="json")
+
 
 class ZabbixRight(ZabbixAPIBaseModel):
     permission: int
@@ -243,6 +247,9 @@ class ZabbixRight(ZabbixAPIBaseModel):
     def permission_str(self) -> str:
         """Returns the permission as a formatted string."""
         return get_permission(self.permission)
+
+    def model_dump_api(self) -> Dict[str, Any]:
+        return self.model_dump(mode="json", include={"permission", "id"})
 
 
 class User(ZabbixAPIBaseModel):

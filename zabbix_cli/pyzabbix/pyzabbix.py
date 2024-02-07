@@ -892,7 +892,9 @@ class ZabbixAPI:
             else:
                 hg_rights = usergroup.rights
             new_rights = self._get_updated_rights(hg_rights, permission, hostgroups)
-            params[compat.usergroup_hostgroup_rights(self.version)] = new_rights
+            params[compat.usergroup_hostgroup_rights(self.version)] = [
+                r.model_dump_api() for r in new_rights
+            ]
         else:
             if self.version.release < (6, 2, 0):
                 raise ZabbixAPIException(
@@ -901,7 +903,9 @@ class ZabbixAPI:
             templategroups = [self.get_templategroup(tg) for tg in groups]
             tg_rights = usergroup.templategroup_rights
             new_rights = self._get_updated_rights(tg_rights, permission, templategroups)
-            params[compat.usergroup_templategroup_rights(self.version)] = new_rights
+            params[compat.usergroup_templategroup_rights(self.version)] = [
+                r.model_dump_api() for r in new_rights
+            ]
         try:
             self.usergroup.update(**params)
         except ZabbixAPIException as e:
