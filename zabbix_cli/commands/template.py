@@ -69,14 +69,14 @@ class LinkTemplateHostResult(LinkTemplateResult):
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["Template", "Hosts"]
         hostnames = ", ".join([h.host for h in self.hosts])
-        rows = [[template.host, hostnames] for template in self.templates]
+        rows = [[template.host, hostnames] for template in self.templates]  # type: RowsType
         return cols, rows
 
 
 class LinkTemplateGroupResult(LinkTemplateResult):
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["Groups", "Templates"]
-        rows = []
+        rows = []  # type: RowsType
         tmp_names = "\n".join([t.host for t in self.templates])
         for group in self.groups:
             rows.append([group.name, tmp_names])

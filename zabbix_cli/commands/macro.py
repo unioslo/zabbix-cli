@@ -25,6 +25,8 @@ from zabbix_cli.utils.commands import ARG_HOSTNAME_OR_ID
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
+    from zabbix_cli.models import RowsType  # noqa: F401
+
 
 # # `zabbix-cli host macro <cmd>`
 # macro_cmd = StatefulApp(
@@ -140,7 +142,7 @@ class MacroHostListV2(TableRenderable):
         rows = [
             [self.macro.macro, str(self.macro.value), host.hostid, host.host]
             for host in self.macro.hosts
-        ]
+        ]  # type: RowsType
         return ["Macro", "Value", "HostID", "Host"], rows
 
     @model_serializer()
@@ -162,7 +164,7 @@ class MacroHostListV3(TableRenderable):
         rows = [
             [host.hostid, host.host, self.macro.macro, str(self.macro.value)]
             for host in self.macro.hosts
-        ]
+        ]  # type: RowsType
         return ["Host ID", "Host", "Macro", "Value"], rows
 
 

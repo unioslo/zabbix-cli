@@ -5,6 +5,7 @@ import logging
 import random
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 
 import typer
 from pydantic import BaseModel
@@ -12,7 +13,6 @@ from pydantic import model_serializer
 
 from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixCLIError
-from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
@@ -23,6 +23,10 @@ from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.utils.args import parse_int_list_arg
 from zabbix_cli.utils.utils import compile_pattern
+
+if TYPE_CHECKING:
+    from zabbix_cli.models import ColsRowsType
+    from zabbix_cli.models import RowsType  # noqa: F401
 
 
 HELP_PANEL = "Proxy"
@@ -153,7 +157,7 @@ class LBProxyResult(TableRenderable):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["Proxy", "Weight", "Hosts"]
-        rows = []
+        rows = []  # type: RowsType
         for proxy in self.proxies:
             rows.append([proxy.proxy.name, str(proxy.weight), str(len(proxy.hosts))])
         return cols, rows

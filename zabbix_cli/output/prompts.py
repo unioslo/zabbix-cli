@@ -22,15 +22,12 @@ from typing_extensions import TypeVar
 from .console import err_console
 from .console import error
 from .console import exit_err
-from .console import exit_ok
 from .formatting.path import path_link
 from .style import Icon
 from .style.color import green
 from .style.color import yellow
 from zabbix_cli._types import EllipsisType
 from zabbix_cli.exceptions import ZabbixCLIError
-from zabbix_cli.state import get_state
-# from typing import TypeVar
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -385,25 +382,3 @@ def path_prompt(
             error(f"Path already exists: {path_link(path)}")
         else:
             return path
-
-
-@no_headless
-def delete_prompt(
-    force: bool,
-    dry_run: bool = False,
-    resource: str | None = None,
-    name: str | None = None,
-) -> None:
-    """Prompt user to confirm deletion of a resource."""
-    if dry_run:
-        return
-    if force:
-        return
-    config = get_state().config
-    if config.general.confirm_deletion:
-        resource = resource or "resource(s)"
-        name = f" {name!r}" if name else ""
-        message = f"Are you sure you want to delete the {resource}{name}?"
-        if not bool_prompt(message, default=False):
-            exit_ok("Deletion aborted.")
-    return

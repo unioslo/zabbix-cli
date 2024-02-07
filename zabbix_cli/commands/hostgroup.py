@@ -4,6 +4,7 @@ from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import TYPE_CHECKING
 
 import typer
 from pydantic import Field
@@ -12,7 +13,6 @@ from typing_extensions import TypedDict
 
 from zabbix_cli.app import app
 from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import error
@@ -27,6 +27,10 @@ from zabbix_cli.utils.args import UsergroupPermission
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
 from zabbix_cli.utils.utils import get_permission
+
+if TYPE_CHECKING:
+    from zabbix_cli.models import ColsRowsType
+    from zabbix_cli.models import RowsType  # noqa: F401
 
 
 @app.command("add_host_to_hostgroup")
@@ -262,14 +266,16 @@ class HostGroupResult(TableRenderable):  # FIXME: inherit from TableRenderable i
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
-        row = [
-            self.groupid,
-            self.name,
-            self.flags,
-            self.internal,
-            ", ".join([host["host"] for host in self.hosts]),
-        ]
-        return cols, [row]
+        rows = [
+            [
+                self.groupid,
+                self.name,
+                self.flags,
+                self.internal,
+                ", ".join([host["host"] for host in self.hosts]),
+            ]
+        ]  # type: RowsType
+        return cols, rows
 
 
 @app.command("show_hostgroup")
@@ -292,8 +298,8 @@ class HostGroupPermissions(TableRenderable):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["GroupID", "Name", "Permissions"]
-        row = [self.groupid, self.name, "\n".join(self.permissions)]
-        return cols, [row]
+        rows = [[self.groupid, self.name, "\n".join(self.permissions)]]  # type: RowsType
+        return cols, rows
 
 
 class HostGroupPermissionsResult(AggregateResult[HostGroupPermissions]):

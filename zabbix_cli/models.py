@@ -4,6 +4,7 @@ from typing import cast
 from typing import Dict
 from typing import Generic
 from typing import List
+from typing import MutableSequence
 from typing import Optional
 from typing import Tuple
 from typing import TypeVar
@@ -32,10 +33,10 @@ class ReturnCode(StrEnum):
 ColsType = List[str]
 """A list of column headers."""
 
-RowContent = List[RenderableType]
+RowContent = MutableSequence[RenderableType]
 """A list of renderables representing the content of a row."""
 
-RowsType = List[RowContent]
+RowsType = MutableSequence[RowContent]
 """A list of rows, where each row is a list of strings."""
 
 ColsRowsType = Tuple[ColsType, RowsType]
