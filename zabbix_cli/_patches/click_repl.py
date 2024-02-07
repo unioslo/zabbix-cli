@@ -111,11 +111,21 @@ def patch_exception_handling() -> None:
                 pass
             except ExitReplException:
                 break
+            # XXX: Patched to handle zabbix-cli exceptions
             except Exception as e:
                 try:
                     handle_exception(e)  # this could be dangerous? Infinite looping?
                 except SystemExit:
                     pass
+            # XXX: Patched to continue on keyboard interrupt
+            except KeyboardInterrupt:
+                from zabbix_cli.output.console import err_console
+
+                # User likely pressed Ctrl+C during a prompt or when a spinner
+                # was active. Ensure message is printed on a new line.
+                # TODO: determine if last char in terminal was newline somehow! Can we?
+                err_console.print("\n[red]Aborted.[/]")
+                pass
 
     with patcher("click_repl.repl"):
         click_repl.repl = repl
