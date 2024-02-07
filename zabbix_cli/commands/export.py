@@ -699,7 +699,7 @@ def import_configuration(
         importer.run()
     except Exception as e:
         res = Result(
-            message=f"{e}. See log for further details.",
+            message=f"{e}. See log for further details. Use [cyan]--ignore-errors[/] to ignore failed files.",
             return_code=ReturnCode.ERROR,
             result=ZabbixImportResult(
                 success=False,
