@@ -671,20 +671,21 @@ def show_usergroups(ctx: typer.Context) -> None:
 @app.command("show_usergroup_permissions", rich_help_panel=HELP_PANEL)
 def show_usergroup_permissions(
     ctx: typer.Context,
-    usergroup: List[str] = typer.Argument(
-        ..., help="Name of user group to show permissions for. Supports wildcards."
+    usergroup: str = typer.Argument(
+        ..., help="Name of user group. Comma-separated. Supports wildcards."
     ),
 ) -> None:
+    """Show permissions for one or more user groups."""
     # NOTE: this command breaks JSON output compatibility with V2
     # In V2, rights were serialized as a string in the format of "<NAME> (<RO/RW/DENY>)"
     # under the key "permissions".
     # In V3, we follow the API and serialize it as a list of dicts under the key
     # "rights" in <6.2.0 and "hostgroup_rights" and "templategroup_rights" in >=6.2.0
-    if not usergroup:
-        usergroup = parse_list_arg(str_prompt("User group"))
-    usergroups = app.state.client.get_usergroups(
-        *usergroup, select_rights=True, search=True
-    )
+    ugs = parse_list_arg(usergroup)
+    usergroups = app.state.client.get_usergroups(*ugs, select_rights=True, search=True)
+
+    if not usergroups:
+        exit_err("No user groups found.")
 
     hostgroups = app.state.client.get_hostgroups()
     if app.state.client.version.release >= (6, 2, 0):
