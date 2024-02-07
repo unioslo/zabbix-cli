@@ -9,6 +9,7 @@ from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
+import rich.box
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
@@ -81,6 +82,7 @@ class TableRenderable(BaseModel):
 
     __title__: Optional[str] = None
     __show_lines__: bool = True
+    __box__: rich.box.Box = rich.box.ROUNDED
 
     def _get_extra(self, field: str, key: str, default: T) -> T:
         f = self.model_fields.get(field, None)
@@ -210,7 +212,11 @@ class TableRenderable(BaseModel):
         """Renders a Rich table given the rows and cols generated for the object."""
         cols, rows = self.__cols_rows__()
         return get_table(
-            cols=cols, rows=rows, title=self.__title__, show_lines=self.__show_lines__
+            cols=cols,
+            rows=rows,
+            title=self.__title__,
+            show_lines=self.__show_lines__,
+            box=self.__box__,
         )
 
     # We should implement the rich renderable protocol...

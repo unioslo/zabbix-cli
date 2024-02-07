@@ -14,9 +14,10 @@ def get_table(
     rows: RowsType,
     title: str | None = None,
     show_lines: bool = True,
+    box: box.Box = box.ROUNDED,
 ) -> Table:
     """Returns a Rich table given a list of columns and rows."""
-    table = Table(title=title, box=box.ROUNDED, show_lines=show_lines)
+    table = Table(title=title, box=box, show_lines=show_lines)
     for col in cols:
         table.add_column(col, overflow="fold")
     for row in rows:
