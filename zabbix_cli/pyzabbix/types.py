@@ -214,7 +214,9 @@ class ZabbixAPIBaseModel(TableRenderable):
     Implements the `TableRenderable` interface, which allows us to render
     it as a table, JSON, csv, etc."""
 
-    version: ClassVar[Version] = Version("6.4.0")  # assume latest released version
+    zabbix_version: ClassVar[Version] = Version(
+        "6.4.0"
+    )  # assume latest released version
     """Zabbix API version the data stems from.
     This is a class variable that can be overridden, which causes all
     subclasses to use the new value when accessed.
@@ -480,7 +482,11 @@ class Proxy(ZabbixAPIBaseModel):
     def _set_name_field(self) -> Proxy:
         """Ensures the name field is set to the correct value given the current Zabbix API version."""
         # NOTE: should we use compat.proxy_name here to determine attr names?
-        if self.version.release < (7, 0, 0) and hasattr(self, "host") and not self.name:
+        if (
+            self.zabbix_version.release < (7, 0, 0)
+            and hasattr(self, "host")
+            and not self.name
+        ):
             self.name = self.host
         return self
 
@@ -978,13 +984,13 @@ class ImportRules(ZabbixAPIBaseModel):
             valueMaps=create_update,
             mediaTypes=create_update,
         )
-        if cls.version.release >= (6, 2, 0):
+        if cls.zabbix_version.release >= (6, 2, 0):
             rules.host_groups = create_update
             rules.template_groups = create_update
         else:
             rules.groups = create_update
 
-        if cls.version.major < 6:
+        if cls.zabbix_version.major < 6:
             rules.applications = create
             rules.screens = create_update
             rules.templateScreens = create_update

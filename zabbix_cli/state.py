@@ -137,7 +137,7 @@ class State:
         self.client.session.verify = self.config.api.verify_ssl
         login(self.client, self.config)
 
-        ZabbixAPIBaseModel.version = self.client.version
+        ZabbixAPIBaseModel.zabbix_version = self.client.version
         ZabbixAPIBaseModel.legacy_json_format = config.app.legacy_json_format
 
     def revert_config_overrides(self) -> None:

@@ -630,7 +630,7 @@ class ShowUsergroupPermissionsResult(Usergroup):
         )
 
         # Template group rights table
-        if self.version.release >= (6, 2, 0):
+        if self.zabbix_version.release >= (6, 2, 0):
             cols.append("Template Group Rights")
             row.append(
                 GroupRights(
