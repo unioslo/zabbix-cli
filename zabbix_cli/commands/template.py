@@ -203,7 +203,8 @@ def link_template_to_host(
     """
     templates = _handle_template_arg(template_names_or_ids, strict)
     hosts = _handle_hostnames_args(hostnames_or_ids, strict)
-    app.state.client.link_templates_to_hosts(templates, hosts)
+    with app.state.console.status("Linking templates..."):
+        app.state.client.link_templates_to_hosts(templates, hosts)
     render_result(
         LinkTemplateHostResult(
             templates=templates,
@@ -225,7 +226,7 @@ def unlink_template_from_host(
         help="Fail if any hosts or templates aren't found. Should not be used in conjunction with wildcards.",
     ),
 ) -> None:
-    """Unlink template(s) from host(s).
+    """Unlinks and clears template(s) from host(s).
 
 
     \n[bold underline]Examples[/]
@@ -247,10 +248,11 @@ def unlink_template_from_host(
     """
     templates = _handle_template_arg(template_names_or_ids, strict)
     hosts = _handle_hostnames_args(hostnames_or_ids, strict)
-    app.state.client.unlink_templates_from_hosts(templates, hosts)
+    with app.state.console.status("Unlinking templates..."):
+        app.state.client.unlink_templates_from_hosts(templates, hosts)
     # TODO: find out which templates were actually unlinked
     # Right now we just assume all of them were.
-    # And host.massremove does not return anything useful in this regard.
+    # host.massremove does not return anything useful in this regard...
     render_result(
         LinkTemplateHostResult(
             templates=templates,
@@ -279,7 +281,7 @@ def link_template_to_group(
         help="Fail if any host groups or templates aren't found. Should not be used in conjunction with wildcards.",
     ),
 ) -> None:
-    """Link template(s) to host/template group(s).
+    """Link template(s) to group(s).
 
     [bold]NOTE:[/] Group arguments are interpreted as template groups in >= 6.2,
     otherwise as host groups.
@@ -292,7 +294,8 @@ def link_template_to_group(
 
     templates = _handle_template_arg(template_names_or_ids, strict)
 
-    app.state.client.link_templates_to_groups(templates, groups)
+    with app.state.console.status("Linking templates..."):
+        app.state.client.link_templates_to_groups(templates, groups)
     render_result(
         LinkTemplateGroupResult(
             templates=templates,
@@ -331,7 +334,8 @@ def unlink_template_from_group(
 
     templates = _handle_template_arg(template_names_or_ids, strict)
 
-    app.state.client.unlink_templates_from_groups(templates, groups)
+    with app.state.console.status("Unlinking templates..."):
+        app.state.client.unlink_templates_from_groups(templates, groups)
     render_result(
         LinkTemplateGroupResult(
             templates=templates,
