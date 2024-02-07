@@ -824,7 +824,7 @@ class ZabbixAPI:
             new_rights = [
                 current_right
                 for current_right in usergroup.rights
-                if current_right["id"] not in [right["id"] for right in rights]
+                if current_right.id not in [right.id for right in rights]
             ]  # type: list[ZabbixRight]
             new_rights.extend(rights)
             return self.usergroup.update(usrgrpid=usergroup.usrgrpid, rights=new_rights)
@@ -919,8 +919,8 @@ class ZabbixAPI:
         rights = list(rights)  # copy rights (don't modify original)
         for group in groups:
             for right in rights:
-                if right["id"] == group.groupid:
-                    right["permission"] = permission.as_api_value()
+                if right.id == group.groupid:
+                    right.permission = permission.as_api_value()
                     break
             else:
                 new_rights.append(

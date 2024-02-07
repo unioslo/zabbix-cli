@@ -55,6 +55,7 @@ from zabbix_cli.utils.utils import get_maintenance_every_type
 from zabbix_cli.utils.utils import get_maintenance_period_type
 from zabbix_cli.utils.utils import get_maintenance_status
 from zabbix_cli.utils.utils import get_monitoring_status
+from zabbix_cli.utils.utils import get_permission
 from zabbix_cli.utils.utils import get_trigger_severity
 from zabbix_cli.utils.utils import get_user_type
 from zabbix_cli.utils.utils import get_usergroup_status
@@ -230,10 +231,16 @@ class ZabbixAPIBaseModel(TableRenderable):
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
 
-class ZabbixRight(TypedDict):
-    # TODO: convert to BaseModel instead of TypedDict
+class ZabbixRight(ZabbixAPIBaseModel):
     permission: int
     id: str
+    name: Optional[str] = None  # name of group (injected by application)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def permission_str(self) -> str:
+        """Returns the permission as a formatted string."""
+        return get_permission(self.permission)
 
 
 class User(ZabbixAPIBaseModel):
@@ -823,7 +830,7 @@ class Event(ZabbixAPIBaseModel):
                 self.acknowledged_str_cell,
                 self.status_str_cell,
             ]
-        ]
+        ]  # type: RowsType
         return cols, rows
 
 
@@ -901,7 +908,7 @@ class Trigger(ZabbixAPIBaseModel):
                 self.lastchange.strftime("%Y-%m-%d %H:%M:%S"),
                 self.age,
             ]
-        ]
+        ]  # type: RowsType
         return cols, rows
 
 

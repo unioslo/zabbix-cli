@@ -10,6 +10,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
 
+import rich.box
 import typer
 from pydantic import computed_field
 from pydantic import Field
@@ -532,17 +533,9 @@ def create_usergroup(
     success(f"Created user group {usergroup!r} ({usergroupid}).")
 
 
-# def rights_as_table(rights: List[ZabbixRight]) -> Table:
-#     """Converts a list of ZabbixRight objects to a table."""
-#     # cols = ["ID", "Permission"]
-#     rows = [[right["id"], str(right["permission"])] for right in rights]
-#     table = Table("ID", "Permission")
-#     for row in rows:
-#         table.add_row(*row)
-#     return table
-
-
 class GroupRights(TableRenderable):
+    __box__ = rich.box.MINIMAL
+
     groups: Union[Dict[str, HostGroup], Dict[str, TemplateGroup]] = Field(
         default_factory=dict,
     )
@@ -556,12 +549,12 @@ class GroupRights(TableRenderable):
         cols = ["Name", "Permission"]
         rows = []  # type: RowsType
         for right in self.rights:
-            group = self.groups.get(right["id"], None)
+            group = self.groups.get(right.id, None)
             if group:
                 group_name = group.name
             else:
                 group_name = "Unknown"
-            rows.append([group_name, str(UsergroupPermission(right["permission"]))])
+            rows.append([group_name, str(UsergroupPermission(right.permission))])
         return cols, rows
 
 
@@ -573,6 +566,8 @@ class ShowUsergroupResult(TableRenderable):
     users: List[str] = Field(
         default_factory=list, json_schema_extra={META_KEY_JOIN_CHAR: ", "}
     )
+    hostgroup_rights: List[ZabbixRight] = []
+    templategroup_rights: List[ZabbixRight] = []
 
     @classmethod
     def from_usergroup(cls, usergroup: Usergroup) -> ShowUsergroupResult:

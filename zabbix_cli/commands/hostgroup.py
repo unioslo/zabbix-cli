@@ -339,9 +339,9 @@ def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostGroupPermissions]
             else:
                 rights = usergroup.rights
             for right in rights:
-                if right["id"] == hostgroup.groupid:
+                if right.id == hostgroup.groupid:
                     permissions.append(
-                        f"{usergroup.name} ({get_permission(right['permission'])})"
+                        f"{usergroup.name} ({get_permission(right.permission)})"
                     )
                     break
         hg_results.append(
