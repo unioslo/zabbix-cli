@@ -142,18 +142,26 @@ class AgentAvailable(ChoiceMixin[str], APIStrEnum):
 
 # See: zabbix_cli.utils.args.OnOffChoice for why we re-define on/off enum here
 class MonitoringStatus(ChoiceMixin[str], APIStrEnum):
-    """Monitoring status is on/off."""
+    """Host monitoring status."""
 
     ON = APIStr("on", "0")  # Yes, 0 is on, 1 is off...
     OFF = APIStr("off", "1")
 
 
 class MaintenanceStatus(ChoiceMixin[str], APIStrEnum):
-    """Maintenance status is on/off."""
+    """Host maintenance status."""
 
     # API values are inverted here compared to monitoring status...
     ON = APIStr("on", "1")
     OFF = APIStr("off", "0")
+
+
+class InventoryMode(ChoiceMixin[str], APIStrEnum):
+    """Host inventory mode."""
+
+    DISABLED = APIStr("disabled", "-1")
+    MANUAL = APIStr("manual", "0")
+    AUTOMATIC = APIStr("automatic", "1")
 
 
 class GUIAccess(ChoiceMixin[str], APIStrEnum):
@@ -478,6 +486,34 @@ class Host(ZabbixAPIBaseModel):
             ]
         ]  # type: RowsType
         return cols, rows
+
+
+class HostInterface(ZabbixAPIBaseModel):
+    type: int
+    ip: str
+    dns: Optional[str] = None
+    port: str
+    useip: int
+    main: int
+    # Values not required for creation:
+    interfaceid: Optional[str] = None
+    available: Optional[int] = None
+    hostid: Optional[str] = None
+    bulk: Optional[int] = None
+
+
+class HostInterfaceDetails(ZabbixAPIBaseModel):
+    version: int
+    bulk: int
+    community: Optional[str] = None
+    max_repetitions: Optional[int] = None
+    securityname: Optional[str] = None
+    securitylevel: Optional[int] = None
+    authpassphrase: Optional[str] = None
+    privpassphrase: Optional[str] = None
+    authprotocol: Optional[int] = None
+    privprotocol: Optional[int] = None
+    contextname: Optional[str] = None
 
 
 class Proxy(ZabbixAPIBaseModel):

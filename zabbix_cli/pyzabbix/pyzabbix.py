@@ -33,19 +33,25 @@ from zabbix_cli.cache import ZabbixCache
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
+from zabbix_cli.pyzabbix.types import AgentAvailable
+from zabbix_cli.pyzabbix.types import DataCollectionMode
 from zabbix_cli.pyzabbix.types import Event
 from zabbix_cli.pyzabbix.types import ExportFormat
 from zabbix_cli.pyzabbix.types import GlobalMacro
 from zabbix_cli.pyzabbix.types import GUIAccess
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
+from zabbix_cli.pyzabbix.types import HostInterface
 from zabbix_cli.pyzabbix.types import Image
 from zabbix_cli.pyzabbix.types import ImportRules
+from zabbix_cli.pyzabbix.types import InventoryMode
 from zabbix_cli.pyzabbix.types import Item
 from zabbix_cli.pyzabbix.types import Macro
 from zabbix_cli.pyzabbix.types import Maintenance
+from zabbix_cli.pyzabbix.types import MaintenanceStatus
 from zabbix_cli.pyzabbix.types import Map
 from zabbix_cli.pyzabbix.types import MediaType
+from zabbix_cli.pyzabbix.types import MonitoringStatus
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Role
 from zabbix_cli.pyzabbix.types import Template
@@ -61,10 +67,6 @@ from zabbix_cli.utils.args import UserRole
 from zabbix_cli.utils.utils import get_acknowledge_action_value
 
 if TYPE_CHECKING:
-    from zabbix_cli.pyzabbix.types import MaintenanceStatus
-    from zabbix_cli.pyzabbix.types import MonitoringStatus
-    from zabbix_cli.pyzabbix.types import AgentAvailable
-    from zabbix_cli.pyzabbix.types import DataCollectionMode
     from zabbix_cli.pyzabbix.types import ParamsType  # noqa: F401
     from zabbix_cli.pyzabbix.types import SortOrder  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
@@ -679,6 +681,49 @@ class ZabbixAPI:
         resp = self.host.get(**params) or []
         # TODO add result to cache
         return [Host(**resp) for resp in resp]
+
+    def create_host(
+        self,
+        host: str,
+        groups: List[HostGroup],
+        proxy: Optional[Proxy] = None,
+        status: MonitoringStatus = MonitoringStatus.ON,
+        interfaces: Optional[List[HostInterface]] = None,
+        inventory_mode: InventoryMode = InventoryMode.AUTOMATIC,
+        inventory: Optional[Dict[str, Any]] = None,
+        description: Optional[str] = None,
+    ) -> str:
+        params = {
+            "host": host,
+            "status": status.as_api_value(),
+            "inventory_mode": inventory_mode.as_api_value(),
+        }  # type: ParamsType
+
+        # dedup group IDs
+        groupids = list({group.groupid for group in groups})
+        params["groups"] = [{"groupid": groupid} for groupid in groupids]
+
+        if proxy:
+            params[compat.host_proxyid(self.version)] = proxy.proxyid
+
+        if interfaces:
+            params["interfaces"] = [iface.model_dump_api() for iface in interfaces]
+
+        if inventory:
+            params["inventory"] = inventory
+
+        if description:
+            params["description"] = description
+
+        try:
+            resp = self.host.create(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to create host {host!r}: {e}") from e
+        if not resp or not resp.get("hostids"):
+            raise ZabbixAPIException(
+                "Host creation returned no data. Unable to determine if host was created."
+            )
+        return str(resp["hostids"][0])
 
     def host_exists(self, name_or_id: str) -> bool:
         """Checks if a host exists given its name or ID."""

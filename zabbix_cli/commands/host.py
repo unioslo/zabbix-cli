@@ -13,7 +13,6 @@ from pydantic import Field
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
-from zabbix_cli.app import StatefulApp
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixNotFoundError
@@ -25,9 +24,10 @@ from zabbix_cli.output.prompts import bool_prompt
 from zabbix_cli.output.prompts import int_prompt
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix import compat
 from zabbix_cli.pyzabbix.types import AgentAvailable
 from zabbix_cli.pyzabbix.types import Host
+from zabbix_cli.pyzabbix.types import HostInterface
+from zabbix_cli.pyzabbix.types import InventoryMode
 from zabbix_cli.pyzabbix.types import MaintenanceStatus
 from zabbix_cli.pyzabbix.types import MonitoringStatus
 from zabbix_cli.pyzabbix.types import ParamsType
@@ -48,35 +48,8 @@ DEFAULT_PROXY = ".+"
 
 HELP_PANEL = "Host"
 
-# `zabbix-cli host <cmd>`
-host_cmd = StatefulApp(
-    name="host",
-    help="Host commands.",
-)
-# app.add_typer(host_cmd)
 
-
-# `zabbix-cli host inventory <cmd>`
-inventory_cmd = StatefulApp(
-    name="inventory",
-    help="Host inventory commands.",
-)
-host_cmd.add_subcommand(inventory_cmd)
-
-# `zabbix-cli host interface <cmd>`
-interface_cmd = StatefulApp(
-    name="interface",
-    help="Host interface commands.",
-)
-host_cmd.add_subcommand(interface_cmd)
-
-
-@host_cmd.command(
-    name="create",
-    options_metavar="[hostname|IP] [hostgroups] [proxy] [status]",
-    rich_help_panel=HELP_PANEL,
-)
-@app.command(name="create_host", rich_help_panel=HELP_PANEL, hidden=False)
+@app.command(name="create_host", rich_help_panel=HELP_PANEL)
 def create_host(
     ctx: typer.Context,
     args: Optional[List[str]] = ARGS_POSITIONAL,
@@ -98,7 +71,7 @@ def create_host(
         ),
     ),
     proxy: Optional[str] = typer.Option(
-        None,
+        ".+",
         "--proxy",
         help=(
             "Proxy server used to monitor the host. "
@@ -108,10 +81,10 @@ def create_host(
             "no proxy is specified. "
         ),
     ),
-    status: Optional[str] = typer.Option(
-        None,
+    status: MonitoringStatus = typer.Option(
+        MonitoringStatus.ON.value,
         "--status",
-        help="Status of the host. 0 - monitored host; 1 - unmonitored host.",
+        help="Host monitoring status.",
     ),
     # Options below are new in V3:
     no_default_hostgroup: bool = typer.Option(
@@ -141,63 +114,58 @@ def create_host(
         hostname_or_ip = args[0]
         hostgroups = args[1]
         proxy = args[2]
-        status = args[3]
+        status = MonitoringStatus(args[3])
     if not hostname_or_ip:
         hostname_or_ip = str_prompt("Hostname or IP")
     if not hostgroups:
         hostgroups = str_prompt(
             "Hostgroup(s)", default="", show_default=False, empty_ok=True
         )
-    if not proxy:
-        proxy = str_prompt("Proxy", default=DEFAULT_PROXY)
-    if not status:
-        status = str_prompt(
-            "Status", default=DEFAULT_HOST_STATUS
-        )  # TODO: don't hardcode this
+
+    host_name = name or hostname_or_ip
+    if app.state.client.host_exists(host_name):
+        exit_err(f"Host {host_name!r} already exists")
 
     # Check if we are using a hostname or IP
     try:
         ipaddress.ip_address(hostname_or_ip)
-        useip = 1
-        interface_ip = hostname_or_ip
-        interface_dns = ""
     except ValueError:
-        useip = 0
+        useip = False
         interface_ip = ""
         interface_dns = hostname_or_ip
+    else:
+        useip = True
+        interface_ip = hostname_or_ip
+        interface_dns = ""
 
     interfaces = [
-        {
-            "type": 1,
-            "main": 1,
-            "useip": useip,
-            "ip": interface_ip,
-            "dns": interface_dns,
-            "port": "10050",
-        }
+        HostInterface(
+            type=1,
+            main=True,
+            useip=useip,
+            ip=interface_ip,
+            dns=interface_dns,
+            port="10050",
+        )
     ]
 
     # Determine host group IDs
-    hostgroup_ids = []
+    hg_args = []
     if not no_default_hostgroup and app.state.config.app.default_hostgroups:
-        for hg in app.state.config.app.default_hostgroups:
-            hostgroup_ids.append(app.state.client.get_hostgroup_id(hg))
+        hg_args.extend(app.state.config.app.default_hostgroups)
     # TODO: add some sort of plural prompt so we don't have to split manually
     if hostgroups:
         hostgroup_args = parse_list_arg(hostgroups)
-        # FIXME: this will fail if we pass in a hostgroup ID!
-        for hg in hostgroup_args:
-            hostgroup_ids.append(app.state.client.get_hostgroup_id(hg))
-    if not hostgroup_ids:
+        hg_args.extend(hostgroup_args)
+    hgs = [app.state.client.get_hostgroup(hg) for hg in hg_args]
+    if not hgs:
         raise ZabbixCLIError("Unable to create a host without at least one host group.")
-    hostgroup_id_params = [{"groupid": hostgroup_id} for hostgroup_id in hostgroup_ids]
 
     # Find a proxy (No match = monitored by zabbix server)
     try:
-        random_proxy = app.state.client.get_random_proxy(pattern=proxy)
-        proxy_id = random_proxy.proxyid
+        prox = app.state.client.get_random_proxy(pattern=proxy)
     except ZabbixNotFoundError:
-        proxy_id = None
+        prox = None
 
     try:
         app.state.client.get_host(hostname_or_ip)
@@ -208,21 +176,17 @@ def create_host(
     else:
         raise ZabbixCLIError(f"Host {hostname_or_ip} already exists.")
 
-    host_name = name or hostname_or_ip
-    query = {
-        "host": host_name,
-        "groups": hostgroup_id_params,
-        compat.host_proxyid(app.state.client.version): proxy_id,
-        "status": int(status),
-        "interfaces": interfaces,
-        "inventory_mode": 1,
-        "inventory": {"name": hostname_or_ip},
-        "description": description,
-    }
-    result = app.state.client.host.create(**query)
-    render_result(
-        Result(message=f"Created host {host_name!r} with ID {result['hostids'][0]}.")
+    host_id = app.state.client.create_host(
+        host_name,
+        groups=hgs,
+        proxy=prox,
+        status=status,
+        interfaces=interfaces,
+        inventory_mode=InventoryMode.AUTOMATIC,
+        inventory={"name": hostname_or_ip},
+        description=description,
     )
+    render_result(Result(message=f"Created host {host_name!r} ({host_id})"))
     # TODO: cache host ID
 
 
@@ -300,11 +264,6 @@ class CreateHostInterfaceV2Args(NamedTuple):
     default: Optional[str] = None
 
 
-@interface_cmd.command(
-    name="create",
-    options_metavar="[hostname] [interface connection] [interface type] [interface port] [interface IP] [interface DNS] [default interface]",
-    rich_help_panel=HELP_PANEL,
-)
 @app.command(
     name="create_host_interface",
     options_metavar="[hostname] [interface connection] [interface type] [interface port] [interface IP] [interface DNS] [default interface]",
@@ -605,8 +564,7 @@ def define_host_monitoring_status(
         )
 
 
-@host_cmd.command(name="remove", rich_help_panel=HELP_PANEL)
-@app.command(name="remove_host", rich_help_panel=HELP_PANEL, hidden=False)
+@app.command(name="remove_host", rich_help_panel=HELP_PANEL)
 def remove_host(
     ctx: typer.Context,
     hostname: Optional[str] = typer.Argument(None, help="Name of host to remove."),
@@ -686,8 +644,7 @@ class HostsResult(Result):
         return cols, rows
 
 
-@host_cmd.command(name="show", rich_help_panel=HELP_PANEL)
-@app.command(name="show_host", rich_help_panel=HELP_PANEL, hidden=False)
+@app.command(name="show_host", rich_help_panel=HELP_PANEL)
 def show_host(
     ctx: typer.Context,
     hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID,
@@ -734,8 +691,7 @@ def show_host(
     render_result(host)
 
 
-@host_cmd.command(name="list", rich_help_panel=HELP_PANEL)
-@app.command(name="show_hosts", rich_help_panel=HELP_PANEL, hidden=False)
+@app.command(name="show_hosts", rich_help_panel=HELP_PANEL)
 def show_hosts(
     ctx: typer.Context,
     # This is the legacy filter argument from V2
@@ -782,8 +738,7 @@ def show_hosts(
     render_result(AggregateResult(result=hosts))
 
 
-@inventory_cmd.command(name="get", rich_help_panel=HELP_PANEL)
-@app.command(name="show_host_inventory", rich_help_panel=HELP_PANEL, hidden=False)
+@app.command(name="show_host_inventory", rich_help_panel=HELP_PANEL)
 def show_host_inventory(hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID) -> None:
     """Show host inventory details for a specific host."""
     # TODO: support undocumented filter argument from V2
