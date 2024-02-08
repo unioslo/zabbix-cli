@@ -321,8 +321,6 @@ def create_host_interface(
         dns = args[4]
         default = args[5] == "1"
 
-        # Changed from V2: Remove prompts
-        hostname = str_prompt("Hostname")
     if connection == InterfaceConnectionMode.IP:
         use_ip = True
         ip = "127.0.0.1"

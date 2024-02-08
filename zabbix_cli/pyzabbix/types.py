@@ -35,7 +35,6 @@ from pydantic import model_validator
 from pydantic import ValidationInfo
 from strenum import StrEnum
 from typing_extensions import Literal
-from typing_extensions import NotRequired
 from typing_extensions import TypedDict
 
 from zabbix_cli.exceptions import ZabbixCLIError
@@ -130,54 +129,6 @@ ModifyTemplateParams = List[ModifyTemplateItem]
 
 E.g. `[{"templateid": "123"}, {"templateid": "456"}]`
 """
-
-
-class SNMPv1Params(TypedDict):
-    """SNMPv1 parameters for a host interface."""
-
-    version: Literal[1]
-    community: str
-    bulk: int
-
-
-class SNMPv2Params(TypedDict):
-    """SNMPv2c parameters for a host interface."""
-
-    version: Literal[2]
-    community: str
-    bulk: int
-    max_repetitions: NotRequired[int]
-
-
-class SNMPv3Params(TypedDict):
-    """SNMPv3 parameters for a host interface."""
-
-    version: Literal[3]
-    bulk: int
-    max_repetitions: NotRequired[int]
-    securityname: NotRequired[str]
-    securitylevel: NotRequired[int]
-    authpassphrase: NotRequired[str]
-    privpassphrase: NotRequired[str]
-    authprotocol: NotRequired[int]
-    privprotocol: NotRequired[int]
-    contextname: NotRequired[str]
-
-
-class HostInterfaceDetailsParams(TypedDict):
-    """Host interface details parameters for a host interface."""
-
-    version: int
-    bulk: int
-    community: NotRequired[str]
-    max_repetitions: NotRequired[int]
-    securityname: NotRequired[str]
-    securitylevel: NotRequired[int]
-    authpassphrase: NotRequired[str]
-    privpassphrase: NotRequired[str]
-    authprotocol: NotRequired[int]
-    privprotocol: NotRequired[int]
-    contextname: NotRequired[str]
 
 
 class AgentAvailable(ChoiceMixin[str], APIStrEnum):
