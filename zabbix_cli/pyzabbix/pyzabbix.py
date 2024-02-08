@@ -42,8 +42,10 @@ from zabbix_cli.pyzabbix.types import GUIAccess
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import HostInterface
+from zabbix_cli.pyzabbix.types import HostInterfaceDetails
 from zabbix_cli.pyzabbix.types import Image
 from zabbix_cli.pyzabbix.types import ImportRules
+from zabbix_cli.pyzabbix.types import InterfaceType
 from zabbix_cli.pyzabbix.types import InventoryMode
 from zabbix_cli.pyzabbix.types import Item
 from zabbix_cli.pyzabbix.types import Macro
@@ -524,6 +526,7 @@ class ZabbixAPI:
         name_or_id: str,
         select_groups: bool = False,
         select_templates: bool = False,
+        select_interfaces: bool = False,
         select_inventory: bool = False,
         select_macros: bool = False,
         proxyid: Optional[str] = None,
@@ -540,6 +543,7 @@ class ZabbixAPI:
             select_groups=select_groups,
             select_templates=select_templates,
             select_inventory=select_inventory,
+            select_interfaces=select_interfaces,
             select_macros=select_macros,
             proxyid=proxyid,
             sort_field=sort_field,
@@ -568,6 +572,7 @@ class ZabbixAPI:
         select_templates: bool = False,
         select_inventory: bool = False,
         select_macros: bool = False,
+        select_interfaces: bool = False,
         proxyid: Optional[str] = None,
         # These params take special API values we don't want to evaluate
         # inside this method, so we delegate it to the enums.
@@ -673,6 +678,8 @@ class ZabbixAPI:
             params["selectInventory"] = "extend"
         if select_macros:
             params["selectMacros"] = "extend"
+        if select_interfaces:
+            params["selectInterfaces"] = "extend"
         if sort_field:
             params["sortfield"] = sort_field
         if sort_order:
@@ -738,14 +745,6 @@ class ZabbixAPI:
         else:
             return True
 
-    def get_host_id(self, hostname: str) -> str:
-        # FIXME: remove this method. we don't use it!
-        # TODO: implement caching for hosts
-        resp = self.host.get(filter={"host": hostname}, output=["hostid"])
-        if not resp:
-            raise ZabbixNotFoundError(f"Host with name {hostname!r} not found")
-        return resp[0]["hostid"]
-
     def hostgroup_exists(self, hostgroup_name: str) -> bool:
         try:
             self.get_hostgroup(hostgroup_name)
@@ -757,6 +756,67 @@ class ZabbixAPI:
             )
         else:
             return True
+
+    def create_hostinterface(
+        self,
+        host: Host,
+        main: bool,
+        type: InterfaceType,
+        use_ip: bool,
+        port: str,
+        ip: Optional[str] = None,
+        dns: Optional[str] = None,
+        details: Optional[HostInterfaceDetails] = None,
+    ) -> str:
+        if not ip and not dns:
+            raise ZabbixAPIException("Either IP or DNS must be provided")
+        if use_ip and not ip:
+            raise ZabbixAPIException("IP must be provided if using IP connection mode.")
+        if not use_ip and not dns:
+            raise ZabbixAPIException(
+                "DNS must be provided if using DNS connection mode."
+            )
+        params: ParamsType = {
+            # All API values are strings!
+            "hostid": host.hostid,
+            "main": int(main),
+            "type": type.as_api_value(),
+            "useip": int(use_ip),
+            "port": str(port),
+            "ip": ip or "",
+            "dns": dns or "",
+        }
+        if type == InterfaceType.SNMP:
+            if not details:
+                raise ZabbixAPIException(
+                    "SNMP details must be provided for SNMP interfaces."
+                )
+            params["details"] = details.model_dump_api()
+
+        try:
+            resp = self.hostinterface.create(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to create host interface for host {host.host!r}: {e}"
+            ) from e
+        if not resp or not resp.get("interfaceids"):
+            raise ZabbixAPIException(
+                "Host interface creation returned no data. Unable to determine if interface was created."
+            )
+        return str(resp["interfaceids"][0])
+
+    def update_hostinterface(
+        self, interface_id: str, default: Optional[bool] = None
+    ) -> None:
+        params = {"interfaceid": interface_id}  # type: ParamsType
+        if default is not None:
+            params["main"] = int(default)
+        try:
+            self.hostinterface.update(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to update host interface with ID {interface_id}: {e}"
+            ) from e
 
     def get_usergroup(
         self,

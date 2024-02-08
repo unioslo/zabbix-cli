@@ -35,8 +35,10 @@ from pydantic import model_validator
 from pydantic import ValidationInfo
 from strenum import StrEnum
 from typing_extensions import Literal
+from typing_extensions import NotRequired
 from typing_extensions import TypedDict
 
+from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.models import TableRenderableDict
 from zabbix_cli.utils.args import APIStr
@@ -130,6 +132,54 @@ E.g. `[{"templateid": "123"}, {"templateid": "456"}]`
 """
 
 
+class SNMPv1Params(TypedDict):
+    """SNMPv1 parameters for a host interface."""
+
+    version: Literal[1]
+    community: str
+    bulk: int
+
+
+class SNMPv2Params(TypedDict):
+    """SNMPv2c parameters for a host interface."""
+
+    version: Literal[2]
+    community: str
+    bulk: int
+    max_repetitions: NotRequired[int]
+
+
+class SNMPv3Params(TypedDict):
+    """SNMPv3 parameters for a host interface."""
+
+    version: Literal[3]
+    bulk: int
+    max_repetitions: NotRequired[int]
+    securityname: NotRequired[str]
+    securitylevel: NotRequired[int]
+    authpassphrase: NotRequired[str]
+    privpassphrase: NotRequired[str]
+    authprotocol: NotRequired[int]
+    privprotocol: NotRequired[int]
+    contextname: NotRequired[str]
+
+
+class HostInterfaceDetailsParams(TypedDict):
+    """Host interface details parameters for a host interface."""
+
+    version: int
+    bulk: int
+    community: NotRequired[str]
+    max_repetitions: NotRequired[int]
+    securityname: NotRequired[str]
+    securitylevel: NotRequired[int]
+    authpassphrase: NotRequired[str]
+    privpassphrase: NotRequired[str]
+    authprotocol: NotRequired[int]
+    privprotocol: NotRequired[int]
+    contextname: NotRequired[str]
+
+
 class AgentAvailable(ChoiceMixin[str], APIStrEnum):
     """Agent availability status."""
 
@@ -189,6 +239,70 @@ class TriggerPriority(ChoiceMixin[str], APIStrEnum):
     AVERAGE = APIStr("average", "3")
     HIGH = APIStr("high", "4")
     DISASTER = APIStr("disaster", "5")
+
+
+class InterfaceConnectionMode(ChoiceMixin[str], APIStrEnum):
+    """Interface connection mode.
+
+    Controls the value of `useip` when creating interfaces in the API."""
+
+    DNS = APIStr("DNS", "0")
+    IP = APIStr("IP", "1")
+
+
+class InterfaceType(ChoiceMixin[int], APIStrEnum):
+    """Interface type."""
+
+    AGENT = APIStr("Agent", 1, metadata={"port": 10050})
+    SNMP = APIStr("SNMP", 2, metadata={"port": 161})
+    IPMI = APIStr("IPMI", 3, metadata={"port": 623})
+    JMX = APIStr("JMX", 4, metadata={"port": 12345})
+
+    # TODO: test to ensure we always catch all cases (i.e. error should never be thrown)
+    def get_port(self: InterfaceType) -> str:
+        """Returns the default port for the given interface type."""
+        try:
+            return self.value.metadata["port"]
+        except KeyError:
+            raise ZabbixCLIError(f"Unknown interface type: {self}")
+
+
+class SNMPSecurityLevel(ChoiceMixin[int], APIStrEnum):
+    __choice_name__ = "SNMPv3 security level"
+
+    # Match casing from Zabbix API
+    NO_AUTH_NO_PRIV = APIStr("noAuthNoPriv", 0)
+    AUTH_NO_PRIV = APIStr("authNoPriv", 1)
+    AUTH_PRIV = APIStr("authPriv", 2)
+
+
+class SNMPAuthProtocol(ChoiceMixin[int], APIStrEnum):
+    """Authentication protocol for SNMPv3."""
+
+    __choice_name__ = "SNMPv3 auth protocol"
+
+    MD5 = APIStr("MD5", 0)
+    SHA1 = APIStr("SHA1", 1)
+    # >=6.0 only:
+    SHA224 = APIStr("SHA224", 2)
+    SHA256 = APIStr("SHA256", 3)
+    SHA384 = APIStr("SHA384", 4)
+    SHA512 = APIStr("SHA512", 5)
+
+
+class SNMPPrivProtocol(ChoiceMixin[int], APIStrEnum):
+    """Privacy protocol for SNMPv3."""
+
+    __choice_name__ = "SNMPv3 privacy protocol"
+
+    DES = APIStr("DES", 0)
+    AES = APIStr("AES", 1)  # < 6.0 only
+    # >=6.0 only:
+    AES128 = APIStr("AES128", 1)  # >= 6.0
+    AES192 = APIStr("AES192", 2)
+    AES256 = APIStr("AES256", 3)
+    AES192C = APIStr("AES192C", 4)
+    AES256C = APIStr("AES256C", 5)
 
 
 class ExportFormat(StrEnum):
@@ -420,38 +534,43 @@ class Host(ZabbixAPIBaseModel):
     )
     proxy_address: Optional[str] = None
     maintenance_status: Optional[str] = None
-    zabbix_agent: Optional[str] = Field(
+    zabbix_agent: Optional[int] = Field(
         None, validation_alias=AliasChoices("available", "active_available")
     )
     status: Optional[str] = None
     macros: List[Macro] = Field(default_factory=list)
+    interfaces: List[HostInterface] = Field(default_factory=list)
 
     def __str__(self) -> str:
         return f"{self.host!r} ({self.hostid})"
 
     # Legacy V2 JSON format compatibility
     @field_serializer("maintenance_status")
-    def _maintenance_status_serializer(self, v: Optional[str], _info) -> Optional[str]:
+    def _LEGACY_maintenance_status_serializer(
+        self, v: Optional[str], _info
+    ) -> Optional[str]:
         """Serializes the maintenance status as a formatted string
         in legacy mode, and as-is in new mode."""
         if self.legacy_json_format:
-            return get_maintenance_status(v)
+            return get_maintenance_status(v, with_code=True)
         return v
 
     @field_serializer("zabbix_agent")
-    def _zabbix_agent_serializer(self, v: Optional[str], _info) -> Optional[str]:
+    def _LEGACY_zabbix_agent_serializer(
+        self, v: Optional[int], _info
+    ) -> Optional[Union[int, str]]:
         """Serializes the zabbix agent status as a formatted string
         in legacy mode, and as-is in new mode."""
         if self.legacy_json_format:
-            return get_zabbix_agent_status(v)
+            return get_zabbix_agent_status(v, with_code=True)
         return v
 
     @field_serializer("status")
-    def _status_serializer(self, v: Optional[str], _info) -> Optional[str]:
+    def _LEGACY_status_serializer(self, v: Optional[str], _info) -> Optional[str]:
         """Serializes the monitoring status as a formatted string
         in legacy mode, and as-is in new mode."""
         if self.legacy_json_format:
-            return get_monitoring_status(v)
+            return get_monitoring_status(v, with_code=True)
         return v
 
     @field_validator("host", mode="before")  # TODO: add test for this
@@ -500,6 +619,22 @@ class HostInterface(ZabbixAPIBaseModel):
     available: Optional[int] = None
     hostid: Optional[str] = None
     bulk: Optional[int] = None
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = ["ID", "Type", "IP", "DNS", "Port", "Use IP", "Main", "Available"]
+        rows = [
+            [
+                self.interfaceid or "",
+                str(InterfaceType(self.type).value),
+                self.ip,
+                self.dns or "",
+                self.port,
+                str(bool(self.useip)),
+                str(bool(self.main)),
+                get_zabbix_agent_status(self.available),
+            ]
+        ]  # type: RowsType
+        return cols, rows
 
 
 class HostInterfaceDetails(ZabbixAPIBaseModel):
@@ -979,7 +1114,7 @@ class Map(ZabbixAPIBaseModel):
     # Other fields are omitted. We only use this for export and import.
 
 
-class ImportRule(BaseModel):
+class ImportRule(BaseModel):  # does not need to inherit from ZabbixAPIBaseModel
     createMissing: bool
     updateExisting: Optional[bool] = None
 

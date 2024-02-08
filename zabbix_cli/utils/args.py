@@ -118,7 +118,13 @@ class ChoiceMixin(Generic[T]):
     enables it to be instantiated with either the name of the option
     or the Zabbix API value of the option.
 
-    E.g. `AgentAvailable("available")` or `AgentAvailable("1")`
+    We can instantiate the enum with either the name or the API value:
+        * `AgentAvailable("available")`
+        * `AgentAvailable("1")`
+        * `AgentAvailable(1)`
+
+    Since the API is inconsistent with usage of strings and ints, we support
+    instantiation with both.
 
     Provides the `from_prompt` class method, which prompts the user to select
     one of the enum members. The prompt text is generated from the class name
@@ -200,7 +206,7 @@ class ChoiceMixin(Generic[T]):
 
         Attempts to find the member with 2 strategies:
         1. Search for a member with the given string value (ignoring case)
-        2. Search for a member with the given API value
+        2. Search for a member with the given API value (converted to string)
         """
         for v in cls:  # type: ignore # again with the cls.__iter__ problem
             if v.value == value:

@@ -13,6 +13,7 @@
   - `create_templategroup`: Create a template group.
   - `remove_hostgroup`: Delete a host group.
   - `remove_templategroup`: Delete a template group.
+  - `show_host_interfaces`: Show interfaces for a host.
   - `show_user`: Show details for a single user.
   - `show_templategroup`: Show a single template group.
   - `show_templategroups`: Show all template groups.

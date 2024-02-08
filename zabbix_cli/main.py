@@ -135,7 +135,7 @@ def main_callback(
     configure_logging(conf.logging)
     state.configure(conf)
 
-    # NOTE: LogContext is kept from <3.0.0. Do we still need it?
+    # NOTE: LogContext is kept from V2. Do we still need it?
     with LogContext(logger, user=conf.app.username):
         # TODO: look at order of evaluation here. What takes precedence?
         # Should passing both --input-file and --command be an error? probably

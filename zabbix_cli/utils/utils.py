@@ -68,23 +68,23 @@ def get_trigger_status(code):
     return f"Unknown ({str(code)})"
 
 
-def get_maintenance_status(code: Optional[str]) -> str:
+def get_maintenance_status(code: Optional[str], with_code: bool = False) -> str:
     """Get maintenance status from code."""
     # TODO: can we change the type of the code to int?
     maintenance_status = {"0": "No maintenance", "1": "In progress"}
-    return _format_code(code, maintenance_status)
+    return _format_code(code, maintenance_status, with_code=with_code)
 
 
-def get_monitoring_status(code: Optional[str]) -> str:
+def get_monitoring_status(code: Optional[str], with_code: bool = False) -> str:
     """Get monitoring status from code."""
     monitoring_status = {"0": "Monitored", "1": "Not monitored"}
-    return _format_code(code, monitoring_status)
+    return _format_code(code, monitoring_status, with_code=with_code)
 
 
-def get_zabbix_agent_status(code: Optional[str]) -> str:
+def get_zabbix_agent_status(code: Optional[int], with_code: bool = False) -> str:
     """Get zabbix agent status from code."""
-    zabbix_agent_status = {"1": "Available", "2": "Unavailable"}
-    return _format_code(code, zabbix_agent_status)
+    zabbix_agent_status = {1: "Available", 2: "Unavailable"}
+    return _format_code(code, zabbix_agent_status, with_code=with_code)
 
 
 def get_gui_access(code: int) -> str:
