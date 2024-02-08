@@ -8822,7 +8822,9 @@ class zabbixcli(cmd.Cmd):
 
     def get_version(self):
         """Get Zabbix-CLI version."""
-        return zabbix_cli.__version__
+        from zabbix_cli.__about__ import __version__
+
+        return __version__
 
 
 if __name__ == "__main__":
