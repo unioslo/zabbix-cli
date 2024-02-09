@@ -1807,30 +1807,38 @@ class ZabbixAPI:
         self,
         trigger_ids: Union[str, List[str], None] = None,
         hostgroups: Optional[List[HostGroup]] = None,
+        templates: Optional[List[Template]] = None,
         description: Optional[str] = None,
         priority: Optional[TriggerPriority] = None,
         unacknowledged: bool = False,
-        skip_dependent: bool = True,
-        monitored: bool = True,
-        active: bool = True,
-        expand_description: bool = True,
+        skip_dependent: Optional[bool] = None,
+        monitored: Optional[bool] = None,
+        active: Optional[bool] = None,
+        expand_description: Optional[bool] = None,
+        filter: Optional[Dict[str, Any]] = None,
         select_hosts: bool = False,
         sort_field: Optional[str] = "lastchange",
         sort_order: SortOrder = "DESC",
     ) -> List[Trigger]:
-        params = {
-            "output": "extend",
-            "search": {"description": description or ""},
-            "skipDependent": int(skip_dependent),
-            "monitored": int(monitored),
-            "active": int(active),
-            "expandDescription": int(expand_description),
-            "filter": {"value": 1},  # why?
-        }  # type: ParamsType
+        params = {"output": "extend"}  # type: ParamsType
+        if description:
+            params["search"] = {"description": description}
+        if skip_dependent is not None:
+            params["skipDependent"] = int(skip_dependent)
+        if monitored is not None:
+            params["monitored"] = int(monitored)
+        if active is not None:
+            params["active"] = int(active)
+        if expand_description is not None:
+            params["expandDescription"] = int(expand_description)
+        if filter:
+            params["filter"] = filter
         if trigger_ids:
             params["triggerids"] = trigger_ids
         if hostgroups:
             params["groupids"] = [hg.groupid for hg in hostgroups]
+        if templates:
+            params["templateids"] = [t.templateid for t in templates]
         if priority:
             params["filter"]["priority"] = priority.as_api_value()
         if unacknowledged:

@@ -407,6 +407,23 @@ def show_items(
     """Show items that belong to a template."""
     if not template_name:
         template_name = str_prompt("Template")
-    templates = app.state.client.get_templates(template_name)
-    items = app.state.client.get_items(templates=templates)
+    template = app.state.client.get_template(template_name)
+    items = app.state.client.get_items(templates=[template])
     render_result(AggregateResult(result=items))
+
+
+@app.command("show_triggers", rich_help_panel=HELP_PANEL)
+def show_triggers(
+    ctx: typer.Context,
+    template_name: Optional[str] = typer.Argument(
+        None, help="Template name or ID. Names support wildcards."
+    ),
+) -> None:
+    """Show triggers that belong to a template."""
+    if not template_name:
+        template_name = str_prompt("Template")
+    template = app.state.client.get_template(template_name)
+    triggers = app.state.client.get_triggers(
+        templates=[template], sort_field="triggerid", sort_order="ASC"
+    )
+    render_result(AggregateResult(result=triggers))

@@ -249,5 +249,10 @@ def show_alarms(
         priority=priority,
         unacknowledged=unacknowledged,
         select_hosts=True,
+        skip_dependent=True,
+        monitored=True,
+        active=True,
+        expand_description=True,
+        filter={"value": 1},  # why?
     )
     render_result(AggregateResult(result=triggers))
