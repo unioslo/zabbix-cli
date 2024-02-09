@@ -4,6 +4,7 @@ from typing import List
 from typing import TYPE_CHECKING
 
 import typer
+from rich.box import SIMPLE_HEAD
 
 from zabbix_cli import auth
 from zabbix_cli.app import app
@@ -15,7 +16,6 @@ from zabbix_cli.output.render import render_result
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsType  # noqa: F401
-    from zabbix_cli.models import ColsRowsType
     from zabbix_cli.models import RowsType  # noqa: F401
 
 
@@ -53,13 +53,9 @@ class HistoryResult(TableRenderable):
     """Result type for `show_history` command."""
 
     __show_lines__ = False
+    __box__ = SIMPLE_HEAD
 
     commands: List[str] = []
-
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["Command"]  # type: ColsType
-        rows = [[command] for command in self.commands]  # type: RowsType
-        return cols, rows
 
 
 # TODO: find out how to log full command invocations (especially in REPL, where we cant use sys.argv)
