@@ -12,6 +12,7 @@ from pydantic import Field
 from pydantic import model_serializer
 
 from zabbix_cli.app import app
+from zabbix_cli.app import Example
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import TableRenderable
@@ -34,6 +35,8 @@ if TYPE_CHECKING:
 HELP_PANEL = "Template"
 
 
+# TODO: we do share these models between different commands, but they are impacting
+# the startup time of the application. Can we inline them in the commands?
 class LinkTemplateResult(TableRenderable):
     """Result type for `(un)link_template_{to,from}_host` command."""
 
@@ -171,7 +174,32 @@ ARG_GROUP_NAMES_OR_IDS = typer.Argument(
 )
 
 
-@app.command("link_template_to_host", rich_help_panel=HELP_PANEL)
+@app.command(
+    "link_template_to_host",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Link one template to one host",
+            "link_template_to_host 'Apache by HTTP' foo.example.com",
+        ),
+        Example(
+            "Link many templates to many hosts",
+            "link_template_to_host 'Apache by HTTP,HAProxy by Zabbix agent' foo.example.com,bar.example.com",
+        ),
+        Example(
+            "Link one template to all hosts",
+            "link_template_to_host 'Apache by HTTP' '*'",
+        ),
+        Example(
+            "Link many templates to all hosts",
+            "link_template_to_host 'Apache by HTTP,HAProxy by Zabbix agent' '*'",
+        ),
+        Example(
+            "Link all templates to all hosts [red](use with caution!)[/red]",
+            "link_template_to_host '*' '*'",
+        ),
+    ],
+)
 def link_template_to_host(
     ctx: typer.Context,
     template_names_or_ids: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
@@ -182,25 +210,7 @@ def link_template_to_host(
         help="Fail if any hosts or templates aren't found. Should not be used in conjunction with wildcards.",
     ),
 ) -> None:
-    """Link template(s) to host(s).
-
-    \n[bold underline]Examples[/]
-
-     Link one template to one host:
-         [green]link_template_to_host 'Apache by HTTP' foo.example.com[/]
-
-     Link many templates template to many hosts:
-         [green]link_template_to_host 'Apache by HTTP,HAProxy by Zabbix agent' foo.example.com,bar.example.com[/]
-
-     Link one template to all hosts:
-         [green]link_template_to_host 'Apache by HTTP' '*'[/]
-
-     Link many templates to all hosts:
-         [green]link_template_to_host 'Apache by HTTP,HAProxy by Zabbix agent' '*'[/]
-
-     Link all templates to all hosts [red](use with caution!)[/]:
-         [green]link_template_to_host '*' '*'[/]
-    """
+    """Link template(s) to host(s)."""
     templates = _handle_template_arg(template_names_or_ids, strict)
     hosts = _handle_hostnames_args(hostnames_or_ids, strict)
     with app.state.console.status("Linking templates..."):

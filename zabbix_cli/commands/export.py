@@ -16,16 +16,11 @@ from typing import Union
 
 import typer
 from pydantic import field_serializer
-from rich.progress import BarColumn
-from rich.progress import Progress
-from rich.progress import SpinnerColumn
-from rich.progress import TaskProgressColumn
-from rich.progress import TextColumn
-from rich.progress import TimeElapsedColumn
 from strenum import StrEnum
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
+from zabbix_cli.app import Example
 from zabbix_cli.config import Config
 from zabbix_cli.config import ExportFormat
 from zabbix_cli.config import OutputFormat
@@ -328,12 +323,6 @@ class ExportResult(TableRenderable):
     format: ExportFormat
 
 
-# def parse_objects_callback(
-#     ctx: typer.Context, param: typer.CallbackParam, value: str
-# ) -> List[ExportType]:
-#     pass
-
-
 def parse_export_types(value: List[str]) -> List[ExportType]:
     # If we have no specific exports, export all object types
     if not value:
@@ -369,7 +358,28 @@ def parse_export_types_callback(
     return parse_export_types(value)
 
 
-@app.command(name="export_configuration", rich_help_panel=HELP_PANEL)
+@app.command(
+    name="export_configuration",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Export everything",
+            "export_configuration",
+        ),
+        Example(
+            "Export all host groups",
+            "export_configuration --type host_groups",
+        ),
+        Example(
+            "Export all host groups containing 'Linux'",
+            "export_configuration --type host_groups --name '*Linux*'",
+        ),
+        Example(
+            "Export all template groups and templates containing 'Linux' or 'Windows'",
+            "export_configuration --type template_groups --type templates --name '*Linux*,*Windows*'",
+        ),
+    ],
+)
 def export_configuration(
     ctx: typer.Context,
     directory: Optional[str] = typer.Option(
@@ -424,25 +434,6 @@ def export_configuration(
     r"""Export Zabbix configuration for one or more components.
 
     Uses defaults from Zabbix-CLI configuration file if not specified.
-
-
-    [bold]Examples[/bold]
-
-    * Export everything:
-
-        [green]export_configuration[/]
-
-    * Export all host groups:
-
-        [green]export_configuration --type host_groups[/]
-
-    * Export all host groups containing "Linux":
-
-        [green]export_configuration --type host_groups --name "*Linux*"[/]
-
-    * Export all template groups and templates containing "Linux" or "Windows":
-
-        [green]export_configuration --type template_groups --type templates --name "*Linux*,*Windows*"[/]
 
     [b]NOTE:[/] --name arguments are not regex-patterns, but more akin to glob-patterns.
 
@@ -533,6 +524,13 @@ class ZabbixImporter:
 
     def run(self) -> None:
         """Runs the importer."""
+        from rich.progress import BarColumn
+        from rich.progress import Progress
+        from rich.progress import SpinnerColumn
+        from rich.progress import TaskProgressColumn
+        from rich.progress import TextColumn
+        from rich.progress import TimeElapsedColumn
+
         progress = Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),

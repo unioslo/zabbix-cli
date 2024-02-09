@@ -4,7 +4,6 @@ from abc import ABC
 from abc import abstractmethod
 from typing import TYPE_CHECKING
 
-from rich.table import Table
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -33,8 +32,9 @@ class BasePatcher(ABC):
     ) -> bool:
         if not exc_type:
             return True
-        import rich
         import sys
+        import rich
+        from rich.table import Table
         from zabbix_cli.__about__ import __version__
 
         # Rudimentary, but provides enough info to debug and fix the issue

@@ -6,12 +6,15 @@
 * add_host_to_hostgroup & remove_host_from_hostgroup should probably take 2 positional arguments as opposed to 2 options. The current implementation is over-complicated.
 
 
+* Auto relogin + custom error when this happens:
+```
+✗ ERROR: Failed to get all host groups: ("Error -32602: Invalid params.: Session terminated, re-login, please. while sending {'jsonrpc': '2.0', 'method': 'hostgroup.get', 'params': {'output': 'extend', 'selectHosts': 'extend', 'sortorder': 'ASC', 'sortfield': 'name'}, 'id': 3, 'auth': '1234abc'}", -32602)
+```
+
 ----------------
 
 
-## scripts
 
-* Some sort of shared callback function between all scripts and the main CLI. This way we can pass in config etc, and have a common way of handling errors etc.
 
 ## API
 
@@ -48,6 +51,11 @@ Use APIStr enums in functions that take in a code and return a string representa
 * Hide positional args from help?
 * Consistent hostname vs hostname_or_id arguments
 
+
+## Auth
+
+* Add configurable auth token file location. Requires a minor refactoring of functions in `auth.py` to locate the custom file. Also might not be possible to automatically clear the file when we encounter an error with an exipred token.
+
 ## Bulk / -C mode
 
 * Add timeout to commands when running in bulk mode in case command prompts for input.
@@ -74,6 +82,11 @@ Use APIStr enums in functions that take in a code and return a string representa
 
 * Sort command categories by help panel names.
   * Sorting order seems to be alphabetical BUT BASED ON THE COMMAND NAMES. So if one category has a command that starts with "A" and another category has a command that starts with "B", then the category with the "A" command will be listed first, regardless of the category name. Why...
+
+* Add an `examples=` kwarg to app.command that lets us add examples to the help text.
+  * Define `CommandExample` NamedTuple that we can use to define examples.
+  * Can add an `--examples` flag that shows the examples for a command (????)
+  * Defining examples (and then rendering them) will thus be consistent across all commands. It also lets us configure the styling of the examples in a single place.
 
 
 ## Config
@@ -150,6 +163,9 @@ Use APIStr enums in functions that take in a code and return a string representa
   * We do not strive for 1:1 compatibility with the Zabbix API. It's more important that users can read the output.
   * We need to fix  `Host` to convert to string representations instead of codes.
 
+## scripts
+
+* Some sort of shared callback function between all scripts and the main CLI. This way we can pass in config etc, and have a common way of handling errors etc.
 
 ## Tests
 
@@ -176,9 +192,18 @@ We only need runtime typing on the functions that typer use for type inference. 
     * Startup: O(n) -> O(1)
     * Command execution: O(1) -> O(n/n)
     * Where n is the number of commands/result models.
+
+### Imports
+
 * Reduce number of cross-imports
 * Perform more cached lazy imports
+* Profile using py-spy. Preliminary tests show that the majority of the slowdowns are from defining Pydantic models on runtime.
 
+#### Config
+
+The config is a rather large Pydantic model that contains several different submodels, all of which have to be evaluated each time the application starts.
+
+In order to optimize this, we need to move certain parts of the config into separate files, especially the model definitions. We are importing some names from the module, such as `ENV_ZABBIX_USERNAME`, `ENV_ZABBIX_PASSWORD` and `OutputFormat`. These are required on runtime, and cannot reside in the same module as the main config model.
 
 --------------------
 

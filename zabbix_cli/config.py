@@ -354,7 +354,7 @@ def find_config(
     :param filename: An optional user supplied file to throw into the mix
     """
     # FIXME: this is a mess.
-    # If we have a file, just try to load it and call it a day?
+    #        If we have a file, just try to load it and call it a day?
     filename_prio = list(priority)
     if filename:
         filename_prio.insert(

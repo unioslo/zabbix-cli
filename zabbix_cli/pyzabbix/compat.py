@@ -48,18 +48,6 @@ def login_user_name(version: Version) -> Literal["user", "username"]:
     return "username"
 
 
-def mediatype_name(version: Version) -> Literal["name", "description"]:
-    # TODO: find out why this was changed and what it signifies
-    # NO URL YET
-    # FIXME: what is the basis for this? The docs don't mention it?
-    # https://www.zabbix.com/documentation/current/en/manual/api/reference/mediatype/object
-    # https://www.zabbix.com/documentation/6.0/en/manual/api/reference/mediatype/object
-    # https://www.zabbix.com/documentation/5.0/en/manual/api/reference/mediatype/object
-    if version.release < (6, 0, 0):
-        return "description"
-    return "name"
-
-
 def proxy_name(version: Version) -> Literal["host", "name"]:
     # https://support.zabbix.com/browse/ZBXNEXT-8500
     # https://www.zabbix.com/documentation/7.0/en/manual/api/changes#proxy

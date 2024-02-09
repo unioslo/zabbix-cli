@@ -12,6 +12,7 @@ from pydantic import Field
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
+from zabbix_cli.app import Example
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.models import AggregateResult
@@ -187,8 +188,33 @@ def create_host(
 
 @app.command(
     name="create_host_interface",
-    # options_metavar="[hostname] [interface connection] [interface type] [interface port] [interface IP] [interface DNS] [default interface]",
     rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Create an SNMPv2 interface on host 'foo.example.com' with derived DNS name 'foo.example.com (default)",
+            "create_host_interface foo.example.com",
+        ),
+        Example(
+            "Create an SNMPv2 interface on host 'foo.example.com' with IP connection",
+            "create_host_interface foo.example.com --type snmp --ip 127.0.0.1",
+        ),
+        Example(
+            "Create an SNMPv2 interface on host 'foo.example.com' with different DNS name",
+            "create_host_interface foo.example.com --type snmp --dns agent.example.com",
+        ),
+        Example(
+            "Create an SNMPv2 interface on host 'foo' with both IP and DNS, using DNS as enabled agent address",
+            "create_host_interface foo --type snmp --connection dns --dns foo.example.com --ip 127.0.0.1",
+        ),
+        Example(
+            "Create an SNMPv3 interface on host 'foo.example.com'",
+            "create_host_interface foo --type snmp --snmp-version 3 --snmp-context-name mycontext --snmp-security-name myuser --snmp-security-level authpriv  --snmp-auth-protocol MD5 --snmp-auth-passphrase mypass --snmp-priv-protocol DES --snmp-priv-passphrase myprivpass",
+        ),
+        Example(
+            "Create an Agent interface on 'foo.example.com' using hostname",
+            "create_host_interface foo --type agent",
+        ),
+    ],
 )
 def create_host_interface(
     ctx: typer.Context,
@@ -197,10 +223,10 @@ def create_host_interface(
         help="Name of host to create interface on.",
         show_default=False,
     ),
-    connection: InterfaceConnectionMode = typer.Option(
-        InterfaceConnectionMode.DNS,
+    connection: Optional[InterfaceConnectionMode] = typer.Option(
+        None,
         "--connection",
-        help="Interface connection mode.",
+        help="Interface connection mode. Required if both --ip and --dns are specified.",
         case_sensitive=False,
     ),
     type_: InterfaceType = typer.Option(
@@ -217,13 +243,13 @@ def create_host_interface(
     ip: Optional[str] = typer.Option(
         None,
         "--ip",
-        help="IP address. Must be specified if connection mode is IP.",
+        help="IP address of agent.",
         show_default=False,
     ),
     dns: Optional[str] = typer.Option(
         None,
         "--dns",
-        help="DNS address. Must be specified if connection mode is DNS.",
+        help="DNS address of agent.",
         show_default=False,
     ),
     default: bool = typer.Option(
@@ -271,12 +297,14 @@ def create_host_interface(
         "--snmp-security-level",
         help="SNMPv3 security level.",
         show_default=False,
+        case_sensitive=False,
     ),
     snmp_auth_protocol: Optional[SNMPAuthProtocol] = typer.Option(
         None,
         "--snmp-auth-protocol",
         help="SNMPv3 auth protocol (authNoPriv & authPriv).",
         show_default=False,
+        case_sensitive=False,
     ),
     snmp_auth_passphrase: Optional[str] = typer.Option(
         None,
@@ -289,6 +317,7 @@ def create_host_interface(
         "--snmp-priv-protocol",
         help="SNMPv3 priv protocol (authPriv)",
         show_default=False,
+        case_sensitive=False,
     ),
     snmp_priv_passphrase: Optional[str] = typer.Option(
         None,
@@ -302,7 +331,7 @@ def create_host_interface(
     """Create a host interface.
 
     Creates an SNMPv2 interface by default. Use --type to specify a different type.
-    Agent address defaults to hostname if connection mode is DNS, and 127.0.0.1
+    One of --dns and --ip is required. If both are specified, --connection is required.
 
     [b]NOTE:[/] Can only create secondary host interfaces for interfaces of types
     that already have a default interface. (API limitation)
@@ -321,12 +350,17 @@ def create_host_interface(
         dns = args[4]
         default = args[5] == "1"
 
-    if connection == InterfaceConnectionMode.IP:
-        use_ip = True
-        ip = "127.0.0.1"
-    else:
-        use_ip = False
-        dns = hostname
+    # Determine connection
+    if not connection:
+        if ip and dns:
+            exit_err("Cannot specify both IP and DNS address without --connection.")
+        elif ip:
+            connection = InterfaceConnectionMode.IP
+        else:
+            connection = InterfaceConnectionMode.DNS
+            if not dns:
+                dns = hostname
+    use_ip = connection == InterfaceConnectionMode.IP
 
     # Use default port for type if not specified
     if port is None:
@@ -344,7 +378,7 @@ def create_host_interface(
             break
     else:
         # No default interface of this type found
-        info(f"No default {type_} interface found. Setting new interface to default.")
+        info(f"No default {type_} interface found. Setting new interface as default.")
         default = True
 
     details = None  # type: HostInterfaceDetails | None

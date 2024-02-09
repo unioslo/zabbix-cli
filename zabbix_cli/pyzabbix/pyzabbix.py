@@ -25,10 +25,6 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
 
-import requests
-import urllib3
-from packaging.version import Version
-
 from zabbix_cli.cache import ZabbixCache
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
@@ -74,6 +70,8 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyGroupParams  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyTemplateParams  # noqa: F401
+    import requests
+    from packaging.version import Version
 
 
 class _NullHandler(logging.Handler):
@@ -97,6 +95,7 @@ class ZabbixAPI:
             session: optional pre-configured requests.Session instance
             timeout: optional connect and read timeout in seconds, default: None (if you're using Requests >= 2.4 you can set it as tuple: "(connect, read)" which is used to set individual connect and read timeouts.)
         """
+        import requests  # inline import (can be sloooooooow....)
 
         if session:
             self.session = session
@@ -128,6 +127,8 @@ class ZabbixAPI:
 
     def disable_ssl_verification(self):
         """Disables SSL verification and suppresses urllib3 SSL warning."""
+        import urllib3
+
         self.session.verify = False
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -175,6 +176,8 @@ class ZabbixAPI:
         """Alternate version of api_version() that caches version info
         as a Version object."""
         if self._version is None:
+            from packaging.version import Version
+
             self._version = Version(self.apiinfo.version())
         return self._version
 
@@ -361,7 +364,6 @@ class ZabbixAPI:
         Returns:
             List[HostGroup]: List of host groups.
         """
-        # HACK: don't filter if we have an asterisk (all templates)
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
         params = {"output": "extend"}  # type: ParamsType
 
@@ -471,7 +473,6 @@ class ZabbixAPI:
             List[TemplateGroup]: List of template groups.
         """
         # FIXME: ensure we use searching correctly here
-        # HACK: don't filter if we have an asterisk (all templates)
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
         params = {"output": "extend"}  # type: ParamsType
 
@@ -1305,7 +1306,6 @@ class ZabbixAPI:
         """Fetches one or more templates given a name or ID."""
         params = {"output": "extend"}  # type: ParamsType
 
-        # HACK: don't filter if we have an asterisk (all templates)
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
         if "*" in template_names_or_ids:
             template_names_or_ids = tuple()
@@ -1590,11 +1590,10 @@ class ZabbixAPI:
         if search:
             params["searchWildcardsEnabled"] = True
         if name is not None:
-            param = compat.mediatype_name(self.version)
             if search:
-                params["search"] = {param: name}
+                params["search"] = {"name": name}
             else:
-                filter_params[param] = name
+                filter_params["name"] = name
         if filter_params:
             params["filter"] = filter_params
         resp = self.mediatype.get(**params)

@@ -39,7 +39,6 @@ def no_headless(f: Callable[P, T]) -> Callable[P, T]:
     @wraps(f)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         if is_headless():
-            # TODO: determine caller etc. via the stack
             # If a default argument was passed in, we can return that:
             default = kwargs.get("default")
             if "default" in kwargs and default is not ...:

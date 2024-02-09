@@ -4,14 +4,26 @@ app object here, which we share between the different command modules.
 Thus, every command is part of the same command group."""
 from __future__ import annotations
 
+import inspect
+from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import Iterable
+from typing import List
+from typing import NamedTuple
 from typing import Optional
 from typing import Protocol
 from typing import Tuple
+from typing import Type
 from typing import TYPE_CHECKING
+from typing import Union
 
 import typer
+from typer.core import TyperCommand
 from typer.main import Typer
+from typer.models import CommandFunctionType
+from typer.models import CommandInfo as TyperCommandInfo
+from typer.models import Default
 
 from zabbix_cli.state import get_state
 from zabbix_cli.state import State
@@ -22,8 +34,45 @@ if TYPE_CHECKING:
     from rich.style import StyleType  # noqa: F401
 
 
+class Example(NamedTuple):
+    """Example command usage."""
+
+    description: str
+    command: str
+    return_value: Optional[str] = None
+
+    def __str__(self) -> str:
+        return f"  [i]{self.description}:[/]\n\n    [green]{self.command}[/]"
+
+
+class CommandInfo(TyperCommandInfo):
+    def __init__(
+        self, *args, examples: Optional[List[Example]] = None, **kwargs
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.examples = examples or []
+        self.set_command_help()
+
+    def set_command_help(self) -> None:
+        if not self.help:
+            self.help = inspect.getdoc(self.callback) or ""
+        if not self.short_help:
+            self.short_help = self.help.split("\n")[0]
+        self._set_command_examples()
+
+    def _set_command_examples(self) -> None:
+        if not self.examples or not self.help:
+            return
+        examples = [str(e) for e in self.examples]
+        examples.insert(0, "\n\n[b]Examples:[/]")
+        self.help = self.help.strip()
+        self.help += "\n\n".join(examples)
+
+
 class StatusCallable(Protocol):
-    """Function that returns a Status object."""
+    """Function that returns a Status object.
+
+    Protocol for rich.console.Console.status method."""
 
     def __call__(
         self,
@@ -44,10 +93,10 @@ class StatefulApp(typer.Typer):
 
     # NOTE: might be a good idea to add a typing.Unpack definition for the kwargs?
     def __init__(self, *args, **kwargs) -> None:
-        StatefulApp.__init__.__doc__ = typer.Typer.__init__.__doc__
         self.parent = None
         super().__init__(*args, **kwargs)
 
+    # Methods for adding subcommands and keeping track of hierarchy
     def add_typer(self, typer_instance: Typer, **kwargs) -> None:
         kwargs.setdefault("no_args_is_help", True)
         if isinstance(typer_instance, StatefulApp):
@@ -71,6 +120,58 @@ class StatefulApp(typer.Typer):
         for parent in self.parents():
             app = parent
         return app
+
+    def command(
+        self,
+        name: Optional[str] = None,
+        *,
+        cls: Optional[Type[TyperCommand]] = None,
+        context_settings: Optional[Dict[Any, Any]] = None,
+        help: Optional[str] = None,
+        epilog: Optional[str] = None,
+        short_help: Optional[str] = None,
+        options_metavar: str = "[OPTIONS]",
+        add_help_option: bool = True,
+        no_args_is_help: bool = False,
+        hidden: bool = False,
+        deprecated: bool = False,
+        # Rich settings
+        rich_help_panel: Union[str, None] = Default(None),
+        # Zabbix-cli kwargs
+        examples: Optional[List[Example]] = None,
+    ) -> Callable[[CommandFunctionType], CommandFunctionType]:
+        if cls is None:
+            cls = TyperCommand
+
+        def decorator(f: CommandFunctionType) -> CommandFunctionType:
+            self.registered_commands.append(
+                CommandInfo(
+                    name=name,
+                    cls=cls,
+                    context_settings=context_settings,
+                    callback=f,
+                    help=help,
+                    epilog=epilog,
+                    short_help=short_help,
+                    options_metavar=options_metavar,
+                    add_help_option=add_help_option,
+                    no_args_is_help=no_args_is_help,
+                    hidden=hidden,
+                    deprecated=deprecated,
+                    # Rich settings
+                    rich_help_panel=rich_help_panel,
+                    # Zabbix-cli kwargs
+                    # TODO: Define examples in a way that has minimal startup time impact.
+                    # Some sort lazy evaluation that only populates the help text when --help is called
+                    # or something like that. Maybe a custom help formatter?
+                    # Currently, examples are all defined on startup, which is not ideal for a CLI app.
+                    # We'll have to see how much performance impact it has.
+                    examples=examples,
+                )
+            )
+            return f
+
+        return decorator
 
     @property
     def state(self) -> State:

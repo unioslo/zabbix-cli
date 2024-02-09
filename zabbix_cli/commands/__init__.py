@@ -4,7 +4,6 @@ import importlib
 from pathlib import Path
 
 
-# TODO: import all modules automatically here
 def bootstrap_commands() -> None:
     """Bootstrap all command defined in the command modules."""
     module_dir = Path(__file__).parent

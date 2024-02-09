@@ -29,24 +29,13 @@ from typing import Optional
 from typing import TYPE_CHECKING
 
 import typer
-from click_repl import repl as start_repl
-from prompt_toolkit.history import FileHistory
-from rich.console import Group
-from rich.panel import Panel
 
 from zabbix_cli.__about__ import __version__
-from zabbix_cli._v2_compat import run_command_from_option
 from zabbix_cli.app import app
-from zabbix_cli.bulk import run_bulk
 from zabbix_cli.commands import bootstrap_commands
 from zabbix_cli.config import get_config
 from zabbix_cli.config import OutputFormat
-from zabbix_cli.exceptions import handle_exception
-from zabbix_cli.logs import configure_logging
-from zabbix_cli.logs import LogContext
-from zabbix_cli.output.console import console
-from zabbix_cli.output.style.color import green
-from zabbix_cli.state import get_state
+
 
 if TYPE_CHECKING:
     from typing import Any  # noqa: F401
@@ -57,6 +46,17 @@ bootstrap_commands()
 
 
 def run_repl(ctx: typer.Context) -> None:
+    from click_repl import repl as start_repl
+    from prompt_toolkit.history import FileHistory
+    from rich.console import Group
+    from rich.panel import Panel
+    from zabbix_cli.output.console import console
+    from zabbix_cli.output.style.color import green
+    from zabbix_cli.state import get_state
+    from zabbix_cli._patches.click_repl import patch
+
+    # Apply patches here to avoid impacting startup time of the CLI
+    patch()
     state = get_state()
 
     def print_intro() -> None:
@@ -74,7 +74,6 @@ def run_repl(ctx: typer.Context) -> None:
         console.print(intro)
 
     def pre_run() -> None:
-        # TODO: find a better way to print a message ONCE at the start of the REPL
         if not state.repl:
             print_intro()
             state.repl = True
@@ -117,6 +116,10 @@ def main_callback(
         case_sensitive=False,
     ),
 ) -> None:
+    from zabbix_cli.logs import configure_logging
+    from zabbix_cli.logs import LogContext
+    from zabbix_cli.state import get_state
+
     state = get_state()
     if state.is_config_loaded:
         conf = state.config
@@ -140,10 +143,13 @@ def main_callback(
         # TODO: look at order of evaluation here. What takes precedence?
         # Should passing both --input-file and --command be an error? probably
         if zabbix_command:
+            from zabbix_cli._v2_compat import run_command_from_option
+
             run_command_from_option(ctx, zabbix_command)
             return
         elif input_file:
-            state
+            from zabbix_cli.bulk import run_bulk
+
             run_bulk(ctx, input_file)
         elif ctx.invoked_subcommand is not None:
             return  # modern alternative to `-C` option to run a single command
@@ -157,10 +163,14 @@ def main() -> None:
     try:
         app()
     except Exception as e:
+        from zabbix_cli.exceptions import handle_exception
+
         handle_exception(e)
     else:
         print("\nDone, thank you for using Zabbix-CLI")
     finally:
+        from zabbix_cli.state import get_state
+
         state = get_state()
         state.logout()
         logger.debug("Zabbix-CLI stopped.")

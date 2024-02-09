@@ -9,7 +9,6 @@ from typing import runtime_checkable
 from typing import Type
 
 from pydantic import ValidationError
-from requests.exceptions import ConnectionError
 
 
 class ZabbixCLIError(Exception):
@@ -135,18 +134,19 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
         handle_notraceback(e)
 
 
-EXC_HANDLERS = {
-    ZabbixAPIException: handle_zabbix_api_exception,  # NOTE: use different strategy for this?
-    ZabbixCLIError: handle_notraceback,
-    ValidationError: handle_validation_error,
-    ConnectionError: handle_connection_error,
-    ConfigError: handle_notraceback,
-}  # type: dict[type[Exception], HandleFunc]
-"""Mapping of exception types to exception handling strategies."""
-
-
 def get_exception_handler(type_: Type[Exception]) -> Optional[HandleFunc]:
     """Returns the exception handler for the given exception type."""
+    from requests.exceptions import ConnectionError
+
+    EXC_HANDLERS = {
+        ZabbixAPIException: handle_zabbix_api_exception,  # NOTE: use different strategy for this?
+        ZabbixCLIError: handle_notraceback,
+        ValidationError: handle_validation_error,
+        ConnectionError: handle_connection_error,
+        ConfigError: handle_notraceback,
+    }  # type: dict[type[Exception], HandleFunc]
+    """Mapping of exception types to exception handling strategies."""
+
     handler = EXC_HANDLERS.get(type_, None)
     if handler:
         return handler

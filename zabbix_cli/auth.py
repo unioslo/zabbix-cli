@@ -235,7 +235,6 @@ def _parse_auth_file_contents(
 
 
 def load_auth_file(config: Config) -> Optional[str]:
-    # TODO: refactor. re-use code from load_auth_token_file
     files = (AUTH_FILE, AUTH_FILE_LEGACY)
     for file in files:
         contents = _do_load_auth_file(file, config.app.allow_insecure_authfile)

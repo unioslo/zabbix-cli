@@ -112,15 +112,15 @@ def create_hostgroup(
 
     [i]Create a host group with default user group permissions[/i]
 
-        [green]zabbix-cli create_hostgroup "My Host Group"[/]
+        [green]create_hostgroup "My Host Group"[/]
 
     [i]Create a host group with specific RO and RW groups[/i]
 
-        [green]zabbix-cli create_hostgroup "My Host Group" --ro-groups users --rw-groups admins[/]
+        [green]create_hostgroup "My Host Group" --ro-groups users --rw-groups admins[/]
 
     [i]Create a host group with no user group permissions[/i]
 
-        [green]zabbix-cli create_hostgroup "My Host Group" --no-usergroup-permissions[/]
+        [green]create_hostgroup "My Host Group" --no-usergroup-permissions[/]
     """
     if not hostgroup:
         hostgroup = str_prompt("Host group name")

@@ -7,6 +7,7 @@ from typing import List
 from typing import MutableSequence
 from typing import Optional
 from typing import Tuple
+from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
 
@@ -18,11 +19,13 @@ from pydantic import JsonValue
 from pydantic import RootModel
 from pydantic.fields import ComputedFieldInfo
 from pydantic.fields import FieldInfo
-from rich.console import RenderableType
-from rich.table import Table
 from strenum import StrEnum
 
 from zabbix_cli.table import get_table
+
+if TYPE_CHECKING:
+    from rich.console import RenderableType
+    from rich.table import Table
 
 
 class ReturnCode(StrEnum):
@@ -33,7 +36,7 @@ class ReturnCode(StrEnum):
 ColsType = List[str]
 """A list of column headers."""
 
-RowContent = MutableSequence[RenderableType]
+RowContent = MutableSequence["RenderableType"]
 """A list of renderables representing the content of a row."""
 
 RowsType = MutableSequence[RowContent]

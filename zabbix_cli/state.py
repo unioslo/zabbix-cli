@@ -26,14 +26,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.history import InMemoryHistory
-from rich.console import Console
-
 
 # This module should not import from other local modules because it's widely
 # used throughout the application, and we don't want to create circular imports.
 # Imports from other modules should be done inside functions, or in TYPE_CHECKING:
 if TYPE_CHECKING:
+    from rich.console import Console
     from prompt_toolkit.history import History  # noqa: F401
     from zabbix_cli.config import Config
     from zabbix_cli.pyzabbix import ZabbixAPI
@@ -72,7 +70,7 @@ class State:
     token = None  # type: str | None
     """The current active Zabbix API auth token."""
 
-    history = InMemoryHistory()  # type: History
+    _history = None  # type: History | None
 
     @property
     def client(self) -> ZabbixAPI:
@@ -113,6 +111,19 @@ class State:
             self._console = console
         return self._console
         # fmt: on
+
+    @property
+    def history(self) -> History:
+        """Prompt history."""
+        if not self._history:
+            from prompt_toolkit.history import InMemoryHistory
+
+            self._history = InMemoryHistory()
+        return self._history
+
+    @history.setter
+    def history(self, history: History) -> None:
+        self._history = history
 
     def configure(self, config: Config) -> None:
         """Bootstrap the state object with the config and Zabbix API

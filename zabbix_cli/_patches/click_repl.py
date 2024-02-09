@@ -111,13 +111,13 @@ def patch_exception_handling() -> None:
                 pass
             except ExitReplException:
                 break
-            # XXX: Patched to handle zabbix-cli exceptions
+            # PATCH: Patched to handle zabbix-cli exceptions
             except Exception as e:
                 try:
                     handle_exception(e)  # this could be dangerous? Infinite looping?
                 except SystemExit:
                     pass
-            # XXX: Patched to continue on keyboard interrupt
+            # PATCH: Patched to continue on keyboard interrupt
             except KeyboardInterrupt:
                 from zabbix_cli.output.console import err_console
 
