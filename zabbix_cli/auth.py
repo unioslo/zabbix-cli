@@ -35,9 +35,10 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.client import ZabbixAPI
     from zabbix_cli.config.model import Config
 
+    AuthFunc = Callable[[Config], Tuple[Optional[str], Optional[str]]]
+
 logger = logging.getLogger(__name__)
 
-AuthFunc = Callable[[Config], Tuple[Optional[str], Optional[str]]]
 """Function that returns a username/password tuple or None if not available."""
 
 # Auth file location
