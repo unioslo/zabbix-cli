@@ -33,8 +33,8 @@ import typer
 from zabbix_cli.__about__ import __version__
 from zabbix_cli.app import app
 from zabbix_cli.commands import bootstrap_commands
-from zabbix_cli.config import get_config
-from zabbix_cli.config import OutputFormat
+from zabbix_cli.config.constants import OutputFormat
+from zabbix_cli.config.utils import get_config
 
 
 if TYPE_CHECKING:

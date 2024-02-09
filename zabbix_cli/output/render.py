@@ -3,22 +3,24 @@ from __future__ import annotations
 import json
 from contextlib import nullcontext
 from typing import Any
+from typing import TYPE_CHECKING
 
 import typer
 from pydantic import BaseModel
 
-from ..config import OutputFormat
-from .console import console
-from .console import error
-from .console import success
-from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import Result
-from zabbix_cli.models import ResultBase
-from zabbix_cli.models import ReturnCode
-from zabbix_cli.models import TableRenderable
-from zabbix_cli.models import TableRenderableDict
-from zabbix_cli.models import TableRenderableProto
+from zabbix_cli.config.constants import OutputFormat
+from zabbix_cli.output.console import console
+from zabbix_cli.output.console import error
+from zabbix_cli.output.console import success
 from zabbix_cli.state import get_state
+
+if TYPE_CHECKING:
+    from zabbix_cli.models import ResultBase
+    from zabbix_cli.models import Result
+    from zabbix_cli.models import ReturnCode
+    from zabbix_cli.models import TableRenderable
+    from zabbix_cli.models import TableRenderableDict
+    from zabbix_cli.models import TableRenderableProto
 
 
 def wrap_result(result: BaseModel) -> ResultBase:
@@ -27,6 +29,9 @@ def wrap_result(result: BaseModel) -> ResultBase:
     is available as `result`.
 
     Does nothing if the function argument is already a ResultBase instance."""
+
+    from zabbix_cli.models import ResultBase
+
     if isinstance(result, ResultBase):
         return result
     # TODO: handle AggregateResult?
@@ -79,6 +84,8 @@ def render_table(
     """
     # TODO: be able to print message _AND_ table
     # The Result/TableRenderable dichotomy is a bit of a mess
+    from zabbix_cli.models import Result
+
     if isinstance(result, Result) and result.message:
         if result.return_code == ReturnCode.ERROR:
             error(result.message)
@@ -125,11 +132,15 @@ def render_json_legacy(
     We should try to move away from this format ASAP, so we can remove
     this function and all its hacks.
     """
+    from zabbix_cli.models import Result
+
     # If we have a message, it should not be indexed
     # NOTE: do we have a more accurate heuristic for this?
     if isinstance(result, Result) and result.message:
         j = result.model_dump_json(indent=2)
     else:
+        from zabbix_cli.models import AggregateResult
+
         jdict = {}  # type: dict[str, Any] # always a dict in legacy mode
         res = result.model_dump(mode="json", by_alias=True)
         if isinstance(result, AggregateResult):

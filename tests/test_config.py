@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from zabbix_cli.config import Config
+from zabbix_cli.config.model import Config
 
 
 def test_config_default() -> None:

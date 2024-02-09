@@ -20,20 +20,13 @@
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import configparser
 import logging
-from enum import Enum
 from pathlib import Path
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Literal
 from typing import Optional
-from typing import Tuple
 
-import tomli
-import tomli_w
-import typer
 from pydantic import AliasChoices
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict
@@ -42,45 +35,17 @@ from pydantic import field_validator
 from pydantic import model_validator
 from pydantic import SecretStr
 from pydantic import ValidationInfo
-from strenum import StrEnum
 
 from zabbix_cli._v2_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
-from zabbix_cli.dirs import CONFIG_DIR
+from zabbix_cli.config.constants import OutputFormat
+from zabbix_cli.config.utils import _load_config_conf
+from zabbix_cli.config.utils import _load_config_toml
+from zabbix_cli.config.utils import find_config
 from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
-from zabbix_cli.dirs import SITE_CONFIG_DIR
 from zabbix_cli.exceptions import ConfigError
 from zabbix_cli.pyzabbix.types import ExportFormat
-
-
-# Config file basename
-CONFIG_FILENAME = "zabbix-cli.toml"
-DEFAULT_CONFIG_FILE = CONFIG_DIR / CONFIG_FILENAME
-
-CONFIG_PRIORITY = (
-    Path() / CONFIG_FILENAME,  # current directory
-    DEFAULT_CONFIG_FILE,  # local config directory
-    SITE_CONFIG_DIR / CONFIG_FILENAME,  # system config directory
-)
-
-
-# ExportFormat = Literal["XML", "JSON", "YAML", "PHP"]
-
-
-logger = logging.getLogger(__name__)
-
-
-# Environment variable names
-ENV_VAR_PREFIX = "ZABBIX_CLI_"
-ENV_ZABBIX_USERNAME = f"{ENV_VAR_PREFIX}USERNAME"
-ENV_ZABBIX_PASSWORD = f"{ENV_VAR_PREFIX}PASSWORD"
-
-
-class OutputFormat(StrEnum):
-    CSV = "csv"
-    JSON = "json"
-    TABLE = "table"
 
 
 class BaseModel(PydanticBaseModel):
@@ -300,7 +265,7 @@ class Config(BaseModel):
         if not fp:  # We didn't find a .toml file, so try to find a legacy .conf file
             fp = find_config(filename, CONFIG_PRIORITY_LEGACY)
             if fp:
-                logger.warning("Using legacy config file %r", fp)
+                logging.warning("Using legacy config file %r", fp)
                 conf = _load_config_conf(fp)
                 # Use legacy JSON format if we find a legacy config file
                 conf.setdefault("zabbix_config", {}).setdefault(
@@ -315,6 +280,8 @@ class Config(BaseModel):
 
     def as_toml(self) -> str:
         """Dump the configuration to a TOML string."""
+        import tomli_w
+
         return tomli_w.dumps(
             self.model_dump(
                 mode="json",
@@ -328,92 +295,6 @@ class Config(BaseModel):
             try:
                 filename.parent.mkdir(parents=True)
             except OSError:
-                logger.error("unable to create directory %r", filename.parent)
+                logging.error("unable to create directory %r", filename.parent)
                 raise ConfigError(f"unable to create directory {filename.parent}")
         filename.write_text(self.as_toml())
-
-
-def _load_config_toml(filename: Path) -> Dict[str, Any]:
-    """Load a TOML configuration file."""
-    return tomli.loads(filename.read_text())
-
-
-def _load_config_conf(filename: Path) -> Dict[str, Any]:
-    """Load a conf configuration file with ConfigParser."""
-    config = configparser.ConfigParser()
-    config.read_file(filename.open())
-    return {s: dict(config.items(s)) for s in config.sections()}
-
-
-def find_config(
-    filename: Optional[Path] = None,
-    priority: Tuple[Path, ...] = CONFIG_PRIORITY,
-) -> Optional[Path]:
-    """Find all available configuration files.
-
-    :param filename: An optional user supplied file to throw into the mix
-    """
-    # FIXME: this is a mess.
-    #        If we have a file, just try to load it and call it a day?
-    filename_prio = list(priority)
-    if filename:
-        filename_prio.insert(
-            0, filename
-        )  # TODO: append last when we implement multi-file config merging
-    for fp in filename_prio:
-        if fp.exists():
-            logger.debug("found config %r", fp)
-            return fp
-    return None
-
-
-def get_config(filename: Optional[Path] = None) -> Config:
-    """Get a configuration object.
-
-    Args:
-        filename (Optional[str], optional): An optional user supplied file to throw into the mix. Defaults to None.
-
-    Returns:
-        Config: Config object loaded from file
-    """
-    return Config.from_file(find_config(filename))
-
-
-def create_config_file(filename: Optional[Path] = None) -> Path:
-    """Create a default config file."""
-    if filename is None:
-        filename = DEFAULT_CONFIG_FILE
-    if filename.exists():
-        raise ConfigError(f"File {filename} already exists")
-    config = Config.sample_config()
-    try:
-        config.dump_to_file(filename)
-    except OSError:
-        raise ConfigError(f"unable to create config file {filename}")
-    logger.info("Created default config file %r", filename)
-    return filename
-
-
-class RunMode(str, Enum):
-    SHOW = "show"
-    DEFAULTS = "defaults"
-
-
-def main(
-    arg: RunMode = typer.Argument(RunMode.DEFAULTS, case_sensitive=False),
-    filename: Optional[Path] = None,
-):
-    """Print current or default config to stdout."""
-    if arg == RunMode.SHOW:
-        config = get_config(filename)
-    else:
-        config = Config.sample_config()
-    print(config.as_toml())
-
-
-if __name__ == "__main__":
-    # logging.basicConfig(level=logging.DEBUG)
-    from zabbix_cli.logs import configure_logging
-
-    configure_logging()
-    typer.run(main)

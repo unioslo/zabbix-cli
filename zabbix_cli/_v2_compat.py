@@ -9,10 +9,13 @@ import os
 from pathlib import Path
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 
 import typer
-from click.core import CommandCollection
-from click.core import Group
+
+if TYPE_CHECKING:
+    from click.core import CommandCollection
+    from click.core import Group
 
 
 CONFIG_FILENAME = "zabbix-cli.conf"

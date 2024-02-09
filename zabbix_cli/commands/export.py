@@ -21,9 +21,8 @@ from strenum import StrEnum
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
-from zabbix_cli.config import Config
-from zabbix_cli.config import ExportFormat
-from zabbix_cli.config import OutputFormat
+from zabbix_cli.config.constants import OutputFormat
+from zabbix_cli.config.model import Config
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.logs import logger
 from zabbix_cli.models import Result
@@ -37,7 +36,7 @@ from zabbix_cli.output.console import info
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.formatting.path import path_link
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.pyzabbix import ZabbixAPI
+from zabbix_cli.pyzabbix.types import ExportFormat
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import Image
@@ -58,6 +57,7 @@ if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
     from typing_extensions import TypedDict
     from typing_extensions import Unpack
+    from zabbix_cli.pyzabbix.client import ZabbixAPI
 
     class ExportKwargs(TypedDict, total=False):
         hosts: List[Host]

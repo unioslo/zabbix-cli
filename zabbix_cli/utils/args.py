@@ -9,19 +9,22 @@ from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Type
+from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
 
 import typer
-from click.core import ParameterSource
 
-from zabbix_cli._types import EllipsisType
 from zabbix_cli.exceptions import ZabbixCLIError
-from zabbix_cli.output.prompts import str_prompt
+
+if TYPE_CHECKING:
+    from zabbix_cli._types import EllipsisType
 
 
 def is_set(ctx: typer.Context, option: str) -> bool:
     """Check if option is set in context."""
+    from click.core import ParameterSource
+
     src = ctx.get_parameter_source(option)
     if not src:
         logging.warning(f"Parameter {option} not found in context.")
@@ -171,6 +174,8 @@ class ChoiceMixin(Generic[T]):
         Returns:
             MixinType: Enum member selected by the user.
         """
+        from zabbix_cli.output.prompts import str_prompt
+
         if not prompt:
             # Assume
             prompt = cls.__fmt_name__()

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from zabbix_cli.exceptions import ZabbixCLIError
 
 if TYPE_CHECKING:
-    from zabbix_cli.pyzabbix import ZabbixAPI
+    from zabbix_cli.pyzabbix.client import ZabbixAPI
 
 
 class ZabbixCache:

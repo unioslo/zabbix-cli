@@ -5,8 +5,8 @@ from typing import Optional
 
 import typer
 
-from zabbix_cli.config import Config
-from zabbix_cli.config import DEFAULT_CONFIG_FILE
+from zabbix_cli.config.constants import DEFAULT_CONFIG_FILE
+from zabbix_cli.config.model import Config
 from zabbix_cli.dirs import init_directories
 from zabbix_cli.dirs import mkdir_if_not_exists
 from zabbix_cli.logs import configure_logging

@@ -7,8 +7,12 @@ from typing import Optional
 from typing import Protocol
 from typing import runtime_checkable
 from typing import Type
+from typing import TYPE_CHECKING
 
 from pydantic import ValidationError
+
+if TYPE_CHECKING:
+    from requests.exceptions import ConnectionError as RequestsConnectionError
 
 
 class ZabbixCLIError(Exception):
@@ -89,7 +93,7 @@ def handle_validation_error(e: ValidationError) -> NoReturn:
     get_exit_err()(str(e), exception=e, exc_info=True)
 
 
-def handle_connection_error(e: ConnectionError) -> NoReturn:
+def handle_connection_error(e: RequestsConnectionError) -> NoReturn:
     """Handles a ConnectionError."""
     reason = ""
     if e.request:

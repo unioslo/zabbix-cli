@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-import click
+from typing import TYPE_CHECKING
+
 import typer
+
+if TYPE_CHECKING:
+    import click
 
 
 def get_parent_ctx(

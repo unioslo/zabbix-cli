@@ -11,7 +11,7 @@ from pydantic import Field
 from pydantic import model_serializer
 
 from zabbix_cli.app import app
-from zabbix_cli.config import OutputFormat
+from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import Result

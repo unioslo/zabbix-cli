@@ -26,7 +26,7 @@ import sys
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from zabbix_cli.config import LoggingConfig
+    from zabbix_cli.config.model import LoggingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ def get_log_level(level: str) -> int:
 def configure_logging(config: LoggingConfig | None = None):
     """Configure the root logger."""
     if not config:
-        from zabbix_cli.config import LoggingConfig
+        from zabbix_cli.config.model import LoggingConfig
 
         config = LoggingConfig()
 

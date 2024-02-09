@@ -22,9 +22,7 @@ from pydantic import SecretStr
 
 from zabbix_cli._v2_compat import AUTH_FILE as AUTH_FILE_LEGACY
 from zabbix_cli._v2_compat import AUTH_TOKEN_FILE as AUTH_TOKEN_FILE_LEGACY
-from zabbix_cli.config import Config
-from zabbix_cli.config import ENV_ZABBIX_PASSWORD
-from zabbix_cli.config import ENV_ZABBIX_USERNAME
+from zabbix_cli.config.constants import ConfigEnvVars
 from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.exceptions import AuthTokenFileError
 from zabbix_cli.exceptions import ZabbixCLIError
@@ -34,7 +32,8 @@ from zabbix_cli.output.prompts import str_prompt
 
 
 if TYPE_CHECKING:
-    from zabbix_cli.pyzabbix.pyzabbix import ZabbixAPI
+    from zabbix_cli.pyzabbix.client import ZabbixAPI
+    from zabbix_cli.config.model import Config
 
 logger = logging.getLogger(__name__)
 
@@ -208,8 +207,8 @@ def _prompt_username_password(config: Config) -> Tuple[str, str]:
 
 def _get_username_password_env(config: Config) -> Tuple[Optional[str], Optional[str]]:
     """Get username and password from environment variables."""
-    username = os.environ.get(ENV_ZABBIX_USERNAME)
-    password = os.environ.get(ENV_ZABBIX_PASSWORD)
+    username = os.environ.get(ConfigEnvVars.USERNAME)
+    password = os.environ.get(ConfigEnvVars.PASSWORD)
     return username, password
 
 

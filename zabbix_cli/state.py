@@ -33,8 +33,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from rich.console import Console
     from prompt_toolkit.history import History  # noqa: F401
-    from zabbix_cli.config import Config
-    from zabbix_cli.pyzabbix import ZabbixAPI
+    from zabbix_cli.config.model import Config
+    from zabbix_cli.pyzabbix.client import ZabbixAPI
 
 
 class State:
@@ -138,7 +138,7 @@ class State:
         Finally, the API version is set on the ZabbixAPIBaseModel class, so that
         we know how to render the results for the given version of the API.
         """
-        from zabbix_cli.pyzabbix import ZabbixAPI
+        from zabbix_cli.pyzabbix.client import ZabbixAPI
         from zabbix_cli.pyzabbix.types import ZabbixAPIBaseModel
         from zabbix_cli.auth import login  # circular import
 

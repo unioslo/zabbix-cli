@@ -45,7 +45,7 @@ from zabbix_cli.prettytable import ALL
 from zabbix_cli.prettytable import FRAME
 from zabbix_cli.prettytable import PrettyTable
 from zabbix_cli.pyzabbix import compat
-from zabbix_cli.pyzabbix import ZabbixAPI
+from zabbix_cli.pyzabbix.client import ZabbixAPI
 
 logger = logging.getLogger(__name__)
 

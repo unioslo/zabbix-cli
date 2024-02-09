@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import typer
 
 from zabbix_cli.app import app
-from zabbix_cli.config import Config
+from zabbix_cli.config.model import Config
 from zabbix_cli.dirs import CONFIG_DIR
 from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
