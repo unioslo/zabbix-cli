@@ -307,7 +307,7 @@ class ZabbixAPIBaseModel(TableRenderable):
 
     def model_dump_api(self) -> Dict[str, Any]:
         """Dump the model with fields used as parameters in API requests."""
-        return self.model_dump(mode="json")
+        return self.model_dump(mode="json", exclude_none=True)
 
 
 class ZabbixRight(ZabbixAPIBaseModel):
@@ -322,7 +322,9 @@ class ZabbixRight(ZabbixAPIBaseModel):
         return get_permission(self.permission)
 
     def model_dump_api(self) -> Dict[str, Any]:
-        return self.model_dump(mode="json", include={"permission", "id"})
+        return self.model_dump(
+            mode="json", include={"permission", "id"}, exclude_none=True
+        )
 
 
 class User(ZabbixAPIBaseModel):
@@ -1125,6 +1127,3 @@ class ImportRules(ZabbixAPIBaseModel):
             rules.templateScreens = create_update
 
         return rules
-
-    def dump_params(self) -> ParamsType:
-        return self.model_dump(mode="json", exclude_none=True)

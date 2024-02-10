@@ -11,7 +11,6 @@
 #
 from __future__ import annotations
 
-import json
 import logging
 import random
 import re
@@ -70,8 +69,13 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyGroupParams  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyTemplateParams  # noqa: F401
-    import requests
+    import httpx
     from packaging.version import Version
+    from typing_extensions import TypedDict
+    from httpx._types import TimeoutTypes
+
+    class HTTPXClientKwargs(TypedDict, total=False):
+        timeout: TimeoutTypes
 
 
 class _NullHandler(logging.Handler):
@@ -86,7 +90,7 @@ class ZabbixAPI:
     def __init__(
         self,
         server: str = "http://localhost/zabbix",
-        session: Optional[requests.Session] = None,
+        session: Optional[httpx.Client] = None,
         timeout: Optional[int] = None,
     ):
         """
@@ -95,42 +99,48 @@ class ZabbixAPI:
             session: optional pre-configured requests.Session instance
             timeout: optional connect and read timeout in seconds, default: None (if you're using Requests >= 2.4 you can set it as tuple: "(connect, read)" which is used to set individual connect and read timeouts.)
         """
-        import requests  # inline import (can be sloooooooow....)
+        self.timeout = timeout
 
         if session:
             self.session = session
         else:
-            self.session = requests.Session()
-
-        # Default headers for all requests
-        self.session.headers.update(
-            {
-                "Content-Type": "application/json-rpc",
-                "User-Agent": "python/pyzabbix",
-                "Cache-Control": "no-cache",
-            }
-        )
+            self.session = self._get_client(verify_ssl=True, timeout=timeout)
 
         self.auth = ""
         self.id = 0
 
-        self.timeout = timeout
-
         self.url = server + "/api_jsonrpc.php"
         logger.info("JSON-RPC Server Endpoint: %s", self.url)
-
-        # Attributes for properties
-        self._version = None  # type: Version | None
 
         # Cache
         self.cache = ZabbixCache(self)
 
-    def disable_ssl_verification(self):
-        """Disables SSL verification and suppresses urllib3 SSL warning."""
-        import urllib3
+        # Attributes for properties
+        self._version = None  # type: Version | None
 
-        self.session.verify = False
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    def _get_client(
+        self, verify_ssl: bool, timeout: Union[float, int, None] = None
+    ) -> httpx.Client:
+        import httpx
+
+        kwargs = {}  # type: HTTPXClientKwargs
+        if timeout is not None:
+            kwargs["timeout"] = timeout
+        client = httpx.Client(
+            verify=verify_ssl,
+            # Default headers for all requests
+            headers={
+                "Content-Type": "application/json-rpc",
+                "User-Agent": "python/pyzabbix",
+                "Cache-Control": "no-cache",
+            },
+            **kwargs,
+        )
+        return client
+
+    def disable_ssl_verification(self):
+        """Disables SSL verification for the current session."""
+        self.session = self._get_client(verify_ssl=False, timeout=self.timeout)
 
     def login(
         self,
@@ -166,7 +176,7 @@ class ZabbixAPI:
             params={
                 "format": format,
                 "source": source,
-                "rules": rules.dump_params(),
+                "rules": rules.model_dump_api(),
             },
         )["result"]
 
@@ -184,7 +194,9 @@ class ZabbixAPI:
     def api_version(self):
         return self.apiinfo.version()
 
-    def do_request(self, method, params=None):
+    def do_request(self, method: str, params: Optional[ParamsType] = None):
+        from json import JSONDecodeError
+
         request_json = {
             "jsonrpc": "2.0",
             "method": method,
@@ -200,9 +212,7 @@ class ZabbixAPI:
         #     "Sending: %s", json.dumps(request_json, indent=4, separators=(",", ": "))
         # )
 
-        response = self.session.post(
-            self.url, data=json.dumps(request_json), timeout=self.timeout
-        )
+        response = self.session.post(self.url, json=request_json)
 
         # logger.debug("Response Code: %s", str(response.status_code))
 
@@ -214,13 +224,9 @@ class ZabbixAPI:
             raise ZabbixAPIException("Received empty response")
 
         try:
-            response_json = json.loads(response.text)
-        except ValueError:
+            response_json = response.json()
+        except (ValueError, JSONDecodeError):
             raise ZabbixAPIException("Unable to parse json: %s" % response.text)
-        # logger.debug(
-        #     "Response Body: %s",
-        #     json.dumps(response_json, indent=4, separators=(",", ": ")),
-        # )
 
         self.id += 1
 
@@ -230,12 +236,9 @@ class ZabbixAPI:
             ):  # some errors don't contain 'data': workaround for ZBX-9340
                 response_json["error"]["data"] = "No data"
 
-            #
             # We do not want to get the password value in the error
             # message if the user uses a not valid username or
             # password.
-            #
-
             if (
                 response_json["error"]["data"]
                 in (
@@ -275,6 +278,7 @@ class ZabbixAPI:
         # NOTE: Must be manually invoked. Can we do this in a thread?
         self.cache.populate()
 
+    # TODO: delete when we don't need to test v2 code anymore
     def get_hostgroup_name(self, hostgroup_id: str) -> str:
         """Returns the name of a host group given its ID."""
         hostgroup_name = self.cache.get_hostgroup_name(hostgroup_id)

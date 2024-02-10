@@ -17,7 +17,6 @@ from zabbix_cli.state import get_state
 if TYPE_CHECKING:
     from zabbix_cli.models import ResultBase
     from zabbix_cli.models import Result
-    from zabbix_cli.models import ReturnCode
     from zabbix_cli.models import TableRenderable
     from zabbix_cli.models import TableRenderableDict
     from zabbix_cli.models import TableRenderableProto
@@ -85,6 +84,7 @@ def render_table(
     # TODO: be able to print message _AND_ table
     # The Result/TableRenderable dichotomy is a bit of a mess
     from zabbix_cli.models import Result
+    from zabbix_cli.models import ReturnCode
 
     if isinstance(result, Result) and result.message:
         if result.return_code == ReturnCode.ERROR:
@@ -105,6 +105,8 @@ def render_json(
     **kwargs: Any,
 ) -> None:
     """Render the result of a command as JSON."""
+    from zabbix_cli.models import ReturnCode
+
     result = wrap_result(result)
     o_json = result.model_dump_json(indent=2, by_alias=True)
     console.print_json(o_json, indent=2, sort_keys=False)

@@ -148,6 +148,9 @@ def create_host(
     # Determine host group IDs
     hg_args = []
     if not no_default_hostgroup and app.state.config.app.default_hostgroups:
+        info(
+            f"Will add host to default host group(s): {', '.join(app.state.config.app.default_hostgroups)}"
+        )
         hg_args.extend(app.state.config.app.default_hostgroups)
     # TODO: add some sort of plural prompt so we don't have to split manually
     if hostgroups:
