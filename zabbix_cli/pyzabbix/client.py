@@ -558,12 +558,6 @@ class ZabbixAPI:
             raise ZabbixNotFoundError(
                 f"Host {name_or_id!r} not found. Check your search pattern and filters."
             )
-        if len(hosts) > 1:
-            logger.debug(
-                "Found multiple hosts matching %s, choosing first result: %s",
-                name_or_id,
-                hosts[0],
-            )
         return hosts[0]
 
     def get_hosts(
@@ -777,8 +771,7 @@ class ZabbixAPI:
             raise ZabbixAPIException(
                 "DNS must be provided if using DNS connection mode."
             )
-        params: ParamsType = {
-            # All API values are strings!
+        params = {
             "hostid": host.hostid,
             "main": int(main),
             "type": type.as_api_value(),
@@ -786,7 +779,7 @@ class ZabbixAPI:
             "port": str(port),
             "ip": ip or "",
             "dns": dns or "",
-        }
+        }  # type: ParamsType
         if type == InterfaceType.SNMP:
             if not details:
                 raise ZabbixAPIException(

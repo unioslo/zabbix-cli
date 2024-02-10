@@ -58,7 +58,6 @@ class HistoryResult(TableRenderable):
     commands: List[str] = []
 
 
-# TODO: find out how to log full command invocations (especially in REPL, where we cant use sys.argv)
 @app.command("show_history", help=HELP_PANEL)
 def show_history(
     ctx: typer.Context,
