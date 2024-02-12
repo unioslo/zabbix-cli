@@ -100,7 +100,7 @@ def _fmt_request_error(e: RequestError, exc_type: str, reason: str) -> str:
     return f"{exc_type}: {method} {url} - {reason}"
 
 
-def handle_connection_error(e: ConnectError) -> NoReturn:
+def handle_connect_error(e: ConnectError) -> NoReturn:
     """Handles an httpx ConnectError."""
     # Simple heuristic here to determine cause
     if e.args and "connection refused" in str(e.args[0]).casefold():
@@ -134,8 +134,6 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
     else:
         # TODO: extract the reason for the error from the exception here
         # and add it to the message.
-        # if e.__cause__ and e.__cause__.args:
-        #     e.args
         handle_notraceback(e)
 
 
@@ -148,7 +146,7 @@ def get_exception_handler(type_: Type[Exception]) -> Optional[HandleFunc]:
         ZabbixAPIException: handle_zabbix_api_exception,  # NOTE: use different strategy for this?
         ZabbixCLIError: handle_notraceback,
         ValidationError: handle_validation_error,
-        ConnectError: handle_connection_error,
+        ConnectError: handle_connect_error,
         ConfigError: handle_notraceback,  # NOTE: can we remove this? subclass of ZabbixCLIError
     }  # type: dict[type[Exception], HandleFunc]
     """Mapping of exception types to exception handling strategies."""
