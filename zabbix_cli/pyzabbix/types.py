@@ -218,6 +218,25 @@ class InterfaceType(ChoiceMixin[int], APIStrEnum):
             raise ZabbixCLIError(f"Unknown interface type: {self}")
 
 
+class ZabbixAPIError(BaseModel):
+    """Zabbix API error information."""
+
+    code: int
+    message: str
+    data: Optional[str] = None
+
+
+class ZabbixAPIResponse(BaseModel):
+    """The raw response from the Zabbix API"""
+
+    jsonrpc: str
+    id: int
+    result: Any = None  # can subclass this and specify types (ie. ZabbixAPIListResponse, ZabbixAPIStrResponse, etc.)
+    """Result of API call, if request succeeded."""
+    error: Optional[ZabbixAPIError] = None
+    """Error info, if request failed."""
+
+
 class SNMPSecurityLevel(ChoiceMixin[int], APIStrEnum):
     __choice_name__ = "SNMPv3 security level"
 
