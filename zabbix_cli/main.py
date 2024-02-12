@@ -46,17 +46,20 @@ bootstrap_commands()
 
 
 def run_repl(ctx: typer.Context) -> None:
-    from click_repl import repl as start_repl
     from prompt_toolkit.history import FileHistory
     from rich.console import Group
     from rich.panel import Panel
     from zabbix_cli.output.console import console
     from zabbix_cli.output.style.color import green
     from zabbix_cli.state import get_state
+
+    # Patch click-repl THEN import it
     from zabbix_cli._patches.click_repl import patch
 
-    # Apply patches here to avoid impacting startup time of the CLI
     patch()
+    from click_repl import repl as start_repl
+
+    # Apply patches here to avoid impacting startup time of the CLI
     state = get_state()
 
     def print_intro() -> None:

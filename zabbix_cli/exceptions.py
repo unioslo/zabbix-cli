@@ -9,10 +9,11 @@ from typing import runtime_checkable
 from typing import Type
 from typing import TYPE_CHECKING
 
-from pydantic import ValidationError
 
 if TYPE_CHECKING:
-    from requests.exceptions import ConnectionError as RequestsConnectionError
+    from pydantic import ValidationError
+    from httpx import ConnectError
+    from httpx import RequestError
 
 
 class ZabbixCLIError(Exception):
@@ -20,19 +21,19 @@ class ZabbixCLIError(Exception):
 
 
 class ConfigError(ZabbixCLIError):
-    """Exception raised when there is a configuration error."""
+    """Error with configuration file."""
 
 
 class CommandFileError(ZabbixCLIError):
-    """Exception raised when there is a bulk command file error."""
+    """Error running bulk commands from a file."""
 
 
 class AuthTokenFileError(ZabbixCLIError):
-    """Exception raised when there is an auth token file error."""
+    """Auth token file error."""
 
 
 class AuthTokenError(ZabbixCLIError):  # NOTE: unused
-    """Exception raised when there is an auth token error."""
+    """Auth token (not file) error."""
 
 
 class ZabbixAPIException(ZabbixCLIError):
@@ -42,6 +43,10 @@ class ZabbixAPIException(ZabbixCLIError):
          -32602 - Invalid params (eg already exists)
          -32500 - no permissions
     """
+
+    def __init__(self, *args, code: int | None = None, **kwargs) -> None:
+        self.code = code
+        super().__init__(*args, **kwargs)
 
 
 class ZabbixNotFoundError(ZabbixAPIException):
@@ -93,25 +98,26 @@ def handle_validation_error(e: ValidationError) -> NoReturn:
     get_exit_err()(str(e), exception=e, exc_info=True)
 
 
-def handle_connection_error(e: RequestsConnectionError) -> NoReturn:
-    """Handles a ConnectionError."""
-    reason = ""
-    if e.request:
-        msg = f"Connection error: {e.request.method} {e.request.url}"
-        # Simple heuristic here to determine cause
-        if e.args and "connection refused" in str(e.args[0]).casefold():
-            reason = "Connection refused"
+def _fmt_request_error(e: RequestError, exc_type: str, reason: str) -> str:
+    method = e.request.method
+    url = e.request.url
+    return f"{exc_type}: {method} {url} - {reason}"
+
+
+def handle_connect_error(e: ConnectError) -> NoReturn:
+    """Handles an httpx ConnectError."""
+    # Simple heuristic here to determine cause
+    if e.args and "connection refused" in str(e.args[0]).casefold():
+        reason = "Connection refused"
     else:
-        msg = str(e)
-    if reason:
-        msg += f" - {reason}"
+        reason = str(e)
+    msg = _fmt_request_error(e, "Connection error", reason)
     get_exit_err()(msg, exception=e, exc_info=False)
 
 
 def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
     """Handles a ZabbixAPIException."""
     from zabbix_cli.state import get_state
-    from zabbix_cli.output.console import error
 
     state = get_state()
 
@@ -123,31 +129,29 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
     ):
         from zabbix_cli.auth import clear_auth_token_file
 
-        error("Your auth token has expired. Please re-authenticate.")
         clear_auth_token_file()
         if state.repl:  # kinda hacky
             state.configure(state.config)
         # NOTE: ideally we automatically re-run the command here, but that's
         # VERY hacky and could lead to unexpected behavior.
-        get_exit_err()("Auth token expired. Re-run the command.")
+        get_exit_err()("Auth token expired. Re-run the command to re-authenticate.")
     else:
         # TODO: extract the reason for the error from the exception here
         # and add it to the message.
-        # if e.__cause__ and e.__cause__.args:
-        #     e.args
         handle_notraceback(e)
 
 
 def get_exception_handler(type_: Type[Exception]) -> Optional[HandleFunc]:
     """Returns the exception handler for the given exception type."""
-    from requests.exceptions import ConnectionError
+    from httpx import ConnectError
+    from pydantic import ValidationError
 
     EXC_HANDLERS = {
         ZabbixAPIException: handle_zabbix_api_exception,  # NOTE: use different strategy for this?
         ZabbixCLIError: handle_notraceback,
         ValidationError: handle_validation_error,
-        ConnectionError: handle_connection_error,
-        ConfigError: handle_notraceback,
+        ConnectError: handle_connect_error,
+        ConfigError: handle_notraceback,  # NOTE: can we remove this? subclass of ZabbixCLIError
     }  # type: dict[type[Exception], HandleFunc]
     """Mapping of exception types to exception handling strategies."""
 

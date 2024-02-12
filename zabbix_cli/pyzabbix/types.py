@@ -218,6 +218,25 @@ class InterfaceType(ChoiceMixin[int], APIStrEnum):
             raise ZabbixCLIError(f"Unknown interface type: {self}")
 
 
+class ZabbixAPIError(BaseModel):
+    """Zabbix API error information."""
+
+    code: int
+    message: str
+    data: Optional[str] = None
+
+
+class ZabbixAPIResponse(BaseModel):
+    """The raw response from the Zabbix API"""
+
+    jsonrpc: str
+    id: int
+    result: Any = None  # can subclass this and specify types (ie. ZabbixAPIListResponse, ZabbixAPIStrResponse, etc.)
+    """Result of API call, if request succeeded."""
+    error: Optional[ZabbixAPIError] = None
+    """Error info, if request failed."""
+
+
 class SNMPSecurityLevel(ChoiceMixin[int], APIStrEnum):
     __choice_name__ = "SNMPv3 security level"
 
@@ -307,7 +326,7 @@ class ZabbixAPIBaseModel(TableRenderable):
 
     def model_dump_api(self) -> Dict[str, Any]:
         """Dump the model with fields used as parameters in API requests."""
-        return self.model_dump(mode="json")
+        return self.model_dump(mode="json", exclude_none=True)
 
 
 class ZabbixRight(ZabbixAPIBaseModel):
@@ -322,7 +341,9 @@ class ZabbixRight(ZabbixAPIBaseModel):
         return get_permission(self.permission)
 
     def model_dump_api(self) -> Dict[str, Any]:
-        return self.model_dump(mode="json", include={"permission", "id"})
+        return self.model_dump(
+            mode="json", include={"permission", "id"}, exclude_none=True
+        )
 
 
 class User(ZabbixAPIBaseModel):
@@ -1125,6 +1146,3 @@ class ImportRules(ZabbixAPIBaseModel):
             rules.templateScreens = create_update
 
         return rules
-
-    def dump_params(self) -> ParamsType:
-        return self.model_dump(mode="json", exclude_none=True)

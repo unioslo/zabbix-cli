@@ -11,7 +11,6 @@
 #
 from __future__ import annotations
 
-import json
 import logging
 import random
 import re
@@ -24,6 +23,8 @@ from typing import Literal
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
+
+from pydantic import ValidationError
 
 from zabbix_cli.cache import ZabbixCache
 from zabbix_cli.exceptions import ZabbixAPIException
@@ -59,6 +60,7 @@ from zabbix_cli.pyzabbix.types import TriggerPriority
 from zabbix_cli.pyzabbix.types import User
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import UserMedia
+from zabbix_cli.pyzabbix.types import ZabbixAPIResponse
 from zabbix_cli.pyzabbix.types import ZabbixRight
 from zabbix_cli.utils.args import UsergroupPermission
 from zabbix_cli.utils.args import UserRole
@@ -70,8 +72,13 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyGroupParams  # noqa: F401
     from zabbix_cli.pyzabbix.types import ModifyTemplateParams  # noqa: F401
-    import requests
+    import httpx
     from packaging.version import Version
+    from typing_extensions import TypedDict
+    from httpx._types import TimeoutTypes
+
+    class HTTPXClientKwargs(TypedDict, total=False):
+        timeout: TimeoutTypes
 
 
 class _NullHandler(logging.Handler):
@@ -86,7 +93,7 @@ class ZabbixAPI:
     def __init__(
         self,
         server: str = "http://localhost/zabbix",
-        session: Optional[requests.Session] = None,
+        session: Optional[httpx.Client] = None,
         timeout: Optional[int] = None,
     ):
         """
@@ -95,42 +102,51 @@ class ZabbixAPI:
             session: optional pre-configured requests.Session instance
             timeout: optional connect and read timeout in seconds, default: None (if you're using Requests >= 2.4 you can set it as tuple: "(connect, read)" which is used to set individual connect and read timeouts.)
         """
-        import requests  # inline import (can be sloooooooow....)
+        self.timeout = timeout
 
         if session:
             self.session = session
         else:
-            self.session = requests.Session()
-
-        # Default headers for all requests
-        self.session.headers.update(
-            {
-                "Content-Type": "application/json-rpc",
-                "User-Agent": "python/pyzabbix",
-                "Cache-Control": "no-cache",
-            }
-        )
+            self.session = self._get_client(verify_ssl=True, timeout=timeout)
 
         self.auth = ""
         self.id = 0
 
-        self.timeout = timeout
-
         self.url = server + "/api_jsonrpc.php"
         logger.info("JSON-RPC Server Endpoint: %s", self.url)
-
-        # Attributes for properties
-        self._version = None  # type: Version | None
 
         # Cache
         self.cache = ZabbixCache(self)
 
-    def disable_ssl_verification(self):
-        """Disables SSL verification and suppresses urllib3 SSL warning."""
-        import urllib3
+        # Attributes for properties
+        self._version = None  # type: Version | None
 
-        self.session.verify = False
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    def _get_client(
+        self, verify_ssl: bool, timeout: Union[float, int, None] = None
+    ) -> httpx.Client:
+        import httpx
+
+        kwargs = {}  # type: HTTPXClientKwargs
+        if timeout is not None:
+            kwargs["timeout"] = timeout
+        client = httpx.Client(
+            verify=verify_ssl,
+            # Default headers for all requests
+            headers={
+                "Content-Type": "application/json-rpc",
+                "User-Agent": "python/pyzabbix",
+                "Cache-Control": "no-cache",
+            },
+            **kwargs,
+        )
+        return client
+
+    def disable_ssl_verification(self):
+        """Disables SSL verification for HTTP requests.
+
+        Replaces the current session with a new session.
+        """
+        self.session = self._get_client(verify_ssl=False, timeout=self.timeout)
 
     def login(
         self,
@@ -157,7 +173,7 @@ class ZabbixAPI:
         self.auth = str(auth) if auth else ""  # ensure str
         return self.auth
 
-    def confimport(self, format: ExportFormat, source: str, rules: ImportRules):
+    def confimport(self, format: ExportFormat, source: str, rules: ImportRules) -> Any:
         """Alias for configuration.import because it clashes with
         Python's import reserved keyword"""
 
@@ -166,9 +182,9 @@ class ZabbixAPI:
             params={
                 "format": format,
                 "source": source,
-                "rules": rules.dump_params(),
+                "rules": rules.model_dump_api(),
             },
-        )["result"]
+        ).result
 
     # TODO (pederhan): Use functools.cachedproperty when we drop 3.7 support
     @property
@@ -184,7 +200,9 @@ class ZabbixAPI:
     def api_version(self):
         return self.apiinfo.version()
 
-    def do_request(self, method, params=None):
+    def do_request(
+        self, method: str, params: Optional[ParamsType] = None
+    ) -> ZabbixAPIResponse:
         request_json = {
             "jsonrpc": "2.0",
             "method": method,
@@ -196,15 +214,11 @@ class ZabbixAPI:
         if self.auth and method != "apiinfo.version":
             request_json["auth"] = self.auth
 
-        # logger.debug(
-        #     "Sending: %s", json.dumps(request_json, indent=4, separators=(",", ": "))
-        # )
+        logger.debug("Sending %s to %s", method, self.url)
 
-        response = self.session.post(
-            self.url, data=json.dumps(request_json), timeout=self.timeout
-        )
+        response = self.session.post(self.url, json=request_json)
 
-        # logger.debug("Response Code: %s", str(response.status_code))
+        logger.debug("Response Code: %s", str(response.status_code))
 
         # NOTE: Getting a 412 response code means the headers are not in the
         # list of allowed headers.
@@ -213,68 +227,60 @@ class ZabbixAPI:
         if not len(response.text):
             raise ZabbixAPIException("Received empty response")
 
-        try:
-            response_json = json.loads(response.text)
-        except ValueError:
-            raise ZabbixAPIException("Unable to parse json: %s" % response.text)
-        # logger.debug(
-        #     "Response Body: %s",
-        #     json.dumps(response_json, indent=4, separators=(",", ": ")),
-        # )
-
         self.id += 1
 
-        if "error" in response_json:  # some exception
-            if (
-                "data" not in response_json["error"]
-            ):  # some errors don't contain 'data': workaround for ZBX-9340
-                response_json["error"]["data"] = "No data"
+        try:
+            resp = ZabbixAPIResponse.model_validate_json(response.text)
+        except ValidationError as e:
+            raise ZabbixAPIException(f"Unable to parse Zabbix API response: {e}") from e
 
-            #
-            # We do not want to get the password value in the error
-            # message if the user uses a not valid username or
-            # password.
-            #
-
+        if resp.error is not None:
+            # some errors don't contain 'data': workaround for ZBX-9340
+            if not resp.error.data:
+                resp.error.data = "No data"
             if (
-                response_json["error"]["data"]
+                resp.error.data
                 in (
                     "Login name or password is incorrect.",
                     "Incorrect user name or password or account is temporarily blocked.",  # >=6.4
                 )
             ):
+                # We do not want to get the password value in the error
+                # message if the user uses a not valid username or
+                # password.
                 msg = "Error {code}: {message}: {data}".format(
-                    code=response_json["error"]["code"],
-                    message=response_json["error"]["message"],
-                    data=response_json["error"]["data"],
+                    code=resp.error.code,
+                    message=resp.error.message,
+                    data=resp.error.data,
                 )
 
-            elif response_json["error"]["data"] == "Not authorized":
+            elif resp.error.data == "Not authorized":
                 msg = "Error {code}: {data}: {message}".format(
-                    code=response_json["error"]["code"],
-                    data=response_json["error"]["data"],
-                    message=response_json["error"]["message"]
+                    code=resp.error.code,
+                    data=resp.error.data,
+                    message=resp.error.message
                     + "\n\n* Your API-auth-token has probably expired.\n"
                     + "* Try to login again with your username and password",
                 )
 
             else:
                 msg = "Error {code}: {message}: {data} while sending {json}".format(
-                    code=response_json["error"]["code"],
-                    message=response_json["error"]["message"],
-                    data=response_json["error"]["data"],
+                    code=resp.error.code,
+                    message=resp.error.message,
+                    data=resp.error.data,
                     json=str(request_json),
                 )
 
-            raise ZabbixAPIException(msg, response_json["error"]["code"])
+            raise ZabbixAPIException(msg, code=resp.error.code)
 
-        return response_json
+        return resp
 
     def populate_cache(self) -> None:
         """Populates the various caches with data from the Zabbix API."""
         # NOTE: Must be manually invoked. Can we do this in a thread?
         self.cache.populate()
 
+    # TODO: delete when we don't need to test v2 code anymore
     def get_hostgroup_name(self, hostgroup_id: str) -> str:
         """Returns the name of a host group given its ID."""
         hostgroup_name = self.cache.get_hostgroup_name(hostgroup_id)
@@ -558,12 +564,6 @@ class ZabbixAPI:
             raise ZabbixNotFoundError(
                 f"Host {name_or_id!r} not found. Check your search pattern and filters."
             )
-        if len(hosts) > 1:
-            logger.debug(
-                "Found multiple hosts matching %s, choosing first result: %s",
-                name_or_id,
-                hosts[0],
-            )
         return hosts[0]
 
     def get_hosts(
@@ -777,8 +777,7 @@ class ZabbixAPI:
             raise ZabbixAPIException(
                 "DNS must be provided if using DNS connection mode."
             )
-        params: ParamsType = {
-            # All API values are strings!
+        params = {
             "hostid": host.hostid,
             "main": int(main),
             "type": type.as_api_value(),
@@ -786,7 +785,7 @@ class ZabbixAPI:
             "port": str(port),
             "ip": ip or "",
             "dns": dns or "",
-        }
+        }  # type: ParamsType
         if type == InterfaceType.SNMP:
             if not details:
                 raise ZabbixAPIException(
@@ -1981,9 +1980,7 @@ class ZabbixAPIObjectClass:
             if args and kwargs:
                 raise TypeError("Found both args and kwargs")
 
-            return self.parent.do_request(f"{self.name}.{attr}", args or kwargs)[
-                "result"
-            ]
+            return self.parent.do_request(f"{self.name}.{attr}", args or kwargs).result
 
         return fn
 
