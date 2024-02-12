@@ -271,7 +271,7 @@ class ZabbixAPI:
                     json=str(request_json),
                 )
 
-            raise ZabbixAPIException(msg, resp.error.code)
+            raise ZabbixAPIException(msg, code=resp.error.code)
 
         return resp
 

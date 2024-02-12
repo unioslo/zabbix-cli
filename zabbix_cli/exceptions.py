@@ -21,19 +21,19 @@ class ZabbixCLIError(Exception):
 
 
 class ConfigError(ZabbixCLIError):
-    """Exception raised when there is a configuration error."""
+    """Error with configuration file."""
 
 
 class CommandFileError(ZabbixCLIError):
-    """Exception raised when there is a bulk command file error."""
+    """Error running bulk commands from a file."""
 
 
 class AuthTokenFileError(ZabbixCLIError):
-    """Exception raised when there is an auth token file error."""
+    """Auth token file error."""
 
 
 class AuthTokenError(ZabbixCLIError):  # NOTE: unused
-    """Exception raised when there is an auth token error."""
+    """Auth token (not file) error."""
 
 
 class ZabbixAPIException(ZabbixCLIError):
@@ -43,6 +43,10 @@ class ZabbixAPIException(ZabbixCLIError):
          -32602 - Invalid params (eg already exists)
          -32500 - no permissions
     """
+
+    def __init__(self, *args, code: int | None = None, **kwargs) -> None:
+        self.code = code
+        super().__init__(*args, **kwargs)
 
 
 class ZabbixNotFoundError(ZabbixAPIException):
