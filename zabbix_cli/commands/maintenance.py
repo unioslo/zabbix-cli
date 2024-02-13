@@ -133,6 +133,7 @@ def remove_maintenance_definition(
         None, help="ID of maintenance to remove"
     ),
 ) -> None:
+    """Remove a maintenance definition."""
     if not maintenance_id:
         maintenance_id = str_prompt("Maintenance ID(s)")
 
@@ -228,13 +229,18 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
 def show_maintenance_definitions(
     ctx: typer.Context,
     maintenance_id: Optional[str] = typer.Option(
-        None, help="Comma-separated list of maintenance IDs."
+        None, "--maintenance-id", help="Comma-separated list of maintenance IDs."
     ),
     hostgroup: Optional[str] = typer.Option(
-        None, help="Comma-separated list of host groups"
+        None, "--hostgroup", help="Comma-separated list of host groups."
     ),
-    host: Optional[str] = typer.Option(None, help="Comma-separated list of host"),
+    host: Optional[str] = typer.Option(
+        None, "--host", help="Comma-separated list of hosts."
+    ),
 ) -> None:
+    """Show maintenance definitions for IDs, host groups or hosts.
+
+    At least one of --maintenance-id, --hostgroup, or --host is required."""
     if not any((maintenance_id, hostgroup, host)):
         maintenance_id = str_prompt_optional("Maintenance ID")
         hostgroup = str_prompt_optional("Host group(s)")

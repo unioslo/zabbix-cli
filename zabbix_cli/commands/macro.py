@@ -226,6 +226,7 @@ def define_global_macro(
     name: Optional[str] = typer.Argument(None, help="Name of the macro"),
     value: Optional[str] = typer.Argument(None, help="Value of the macro"),
 ) -> None:
+    """Create a global macro."""
     if not name:
         name = str_prompt("Macro name")
     if not value:
@@ -250,6 +251,7 @@ def define_global_macro(
 
 @app.command("show_global_macros", rich_help_panel=HELP_PANEL)
 def show_global_macros(ctx: typer.Context) -> None:
+    """Show all global macros."""
     macros = app.state.client.get_global_macros()
     render_result(
         AggregateResult(

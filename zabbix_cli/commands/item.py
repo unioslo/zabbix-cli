@@ -10,6 +10,7 @@ from pydantic import Field
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
+from zabbix_cli.app import Example
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
@@ -132,7 +133,24 @@ def group_items(items: List[Item]) -> List[ItemResult]:
     return list(item_map.values())
 
 
-@app.command(name="show_last_values", rich_help_panel=HELP_PANEL)
+@app.command(
+    name="show_last_values",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Get items starting with 'MongoDB'",
+            "zabbix-cli show_last_values 'MongoDB*'",
+        ),
+        Example(
+            "Get items containing 'memory'",
+            "zabbix-cli show_last_values '*memory*'",
+        ),
+        Example(
+            "Get all items (WARNING: slow!)",
+            "zabbix-cli show_last_values '*'",
+        ),
+    ],
+)
 def show_last_values(
     ctx: typer.Context,
     item_name: Optional[str] = typer.Argument(
@@ -144,22 +162,7 @@ def show_last_values(
     ),
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
-    """Shows the last values of given item(s) of monitored hosts.
-
-    [bold]Examples[/bold]
-
-    * Get items starting with "MongoDB":
-
-        [green]zabbix-cli show_last_values "MongoDB*"[/]
-
-    * Get items containing "memory":
-
-        [green]zabbix-cli show_last_values "*memory*"[/]
-
-    * Get [i]all[/i] items [yellow](WARNING: slow!)[/]:
-
-        [green]zabbix-cli show_last_values "*"[/]
-    """
+    """Shows the last values of given item(s) of monitored hosts."""
     if args:
         if not len(args) == 1:
             exit_err("Invalid number of positional arguments. Use options instead.")

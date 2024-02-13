@@ -506,6 +506,7 @@ def create_usergroup(
     # V2 legacy args
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
+    """Create a user group."""
     # We already have name and GUI access, so we expect 1 more arg at most
     if args:
         if len(args) != 1:
@@ -661,6 +662,7 @@ def show_usergroup(
 
 @app.command("show_usergroups", rich_help_panel=HELP_PANEL)
 def show_usergroups(ctx: typer.Context) -> None:
+    """Show all user groups."""
     usergroups = app.state.client.get_usergroups(select_users=True, search=True)
     res = []
     for ugroup in usergroups:
