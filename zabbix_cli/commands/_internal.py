@@ -22,6 +22,7 @@ from zabbix_cli.output.console import info
 from zabbix_cli.output.console import print_path
 from zabbix_cli.output.console import print_toml
 from zabbix_cli.output.console import success
+from zabbix_cli.output.formatting.path import path_link
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.utils import open_directory
 
@@ -144,7 +145,7 @@ def debug_cmd(
         api_version: Optional[Version] = None
         url: Optional[str] = None
         user: Optional[str] = None
-        auth: Optional[str] = None
+        auth_token: Optional[str] = None
         connected_to_zabbix: bool = False
         python: PythonInfo
 
@@ -153,6 +154,14 @@ def debug_cmd(
         @field_serializer("api_version")
         def ser_api_version(self, _info) -> str:
             return str(self.api_version)
+
+        @property
+        def config_path_str(self) -> str:
+            return (
+                path_link(self.config_path)
+                if self.config_path
+                else str(self.config_path)
+            )
 
         @classmethod
         def from_debug_data(cls, state: State, with_auth: bool = False) -> DebugInfo:
@@ -182,7 +191,7 @@ def debug_cmd(
                 obj.url = state.client.url
                 obj.user = state.config.app.username
                 if with_auth:
-                    obj.auth = state.client.auth
+                    obj.auth_token = state.client.auth
                 obj.connected_to_zabbix = True
             except RuntimeError:
                 error("Unable to retrieve API info: Not connected to Zabbix API. ")
@@ -195,11 +204,11 @@ def debug_cmd(
             table.add_column("Key", justify="right", style="cyan")
             table.add_column("Value", justify="left", style="magenta")
 
-            table.add_row("Config File", str(self.config_path))
+            table.add_row("Config File", self.config_path_str)
             table.add_row("API URL", str(self.url))
             table.add_row("API Version", str(self.api_version))
             table.add_row("User", str(self.user))
-            table.add_row("Auth Token", str(self.auth))
+            table.add_row("Auth Token", str(self.auth_token))
             table.add_row("Connected to Zabbix", str(self.connected_to_zabbix))
             table.add_row("Python Version", str(self.python["version"]))
             table.add_row("Platform", str(self.python["platform"]))
