@@ -42,7 +42,7 @@ class Example(NamedTuple):
     return_value: Optional[str] = None
 
     def __str__(self) -> str:
-        return f"  [i]{self.description}:[/]\n\n    [green]{self.command}[/]"
+        return f"  • [b]{self.description}[/]\n\n    [green]{self.command}[/]"
 
 
 class CommandInfo(TyperCommandInfo):
