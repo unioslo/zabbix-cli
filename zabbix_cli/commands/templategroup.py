@@ -12,6 +12,7 @@ from pydantic import Field
 from pydantic import field_serializer
 
 from zabbix_cli.app import app
+from zabbix_cli.app import Example
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
@@ -32,7 +33,24 @@ if TYPE_CHECKING:
 HELP_PANEL = "Template Group"
 
 
-@app.command("create_templategroup", rich_help_panel=HELP_PANEL)
+@app.command(
+    "create_templategroup",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Create a template group with default user group permissions",
+            "zabbix-cli create_templategroup 'My Template Group'",
+        ),
+        Example(
+            "Create a template group with specific RO and RW groups",
+            "zabbix-cli create_templategroup 'My Template Group' --ro-groups users --rw-groups admins",
+        ),
+        Example(
+            "Create a template group with no user group permissions",
+            "zabbix-cli create_templategroup 'My Template Group' --no-usergroup-permissions",
+        ),
+    ],
+)
 def create_templategroup(
     ctx: typer.Context,
     templategroup: str = typer.Argument(..., help="Name of the group."),
@@ -56,20 +74,6 @@ def create_templategroup(
     unless --no-usergroup-permissions is specified.
 
     The user groups can be overridden with the --rw-groups and --ro-groups.
-
-    [b]Examples[/b]:
-
-    [i]Create a template group with default user group permissions[/i]
-
-        [green]zabbix-cli create_templategroup "My Template Group"[/]
-
-    [i]Create a template group with specific RO and RW groups[/i]
-
-        [green]zabbix-cli create_templategroup "My Template Group" --ro-groups users --rw-groups admins[/]
-
-    [i]Create a template group with no user group permissions[/i]
-
-        [green]zabbix-cli create_templategroup "My Template Group" --no-usergroup-permissions[/]
     """
     groupid = app.state.client.create_templategroup(templategroup)
 

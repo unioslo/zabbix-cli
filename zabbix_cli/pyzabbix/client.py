@@ -232,7 +232,11 @@ class ZabbixAPI:
         try:
             resp = ZabbixAPIResponse.model_validate_json(response.text)
         except ValidationError as e:
-            raise ZabbixAPIException(f"Unable to parse Zabbix API response: {e}") from e
+            raise ZabbixAPIException(
+                f"Zabbix API returned malformed response: {e}"
+            ) from e
+        except ValueError as e:
+            raise ZabbixAPIException(f"Zabbix API returned invalid JSON: {e}") from e
 
         if resp.error is not None:
             # some errors don't contain 'data': workaround for ZBX-9340
@@ -308,6 +312,7 @@ class ZabbixAPI:
         name_or_id: str,
         search: bool = False,
         select_hosts: bool = False,
+        select_templates: bool = False,
         sort_order: SortOrder | None = None,
         sort_field: str | None = None,
     ) -> HostGroup:
@@ -321,7 +326,8 @@ class ZabbixAPI:
         Args:
             name_or_id (str): Name or ID of the host group.
             search (bool, optional): Search for host groups using the given pattern instead of filtering. Defaults to False.
-            hosts (bool, optional): Fetch full information for each host in the group. Defaults to False.
+            select_hosts (bool, optional): Fetch hosts in host groups. Defaults to False.
+            select_templates (bool, optional): <6.2 ONLY: Fetch templates in host groups. Defaults to False.
 
         Raises:
             ZabbixNotFoundError: Group is not found.
@@ -332,9 +338,10 @@ class ZabbixAPI:
         hostgroups = self.get_hostgroups(
             name_or_id,
             search=search,
-            select_hosts=select_hosts,
             sort_order=sort_order,
             sort_field=sort_field,
+            select_hosts=select_hosts,
+            select_templates=select_templates,
         )
         if not hostgroups:
             raise ZabbixNotFoundError(f"Host group {name_or_id!r} not found")
@@ -346,6 +353,7 @@ class ZabbixAPI:
         search: bool = False,
         search_union: bool = True,
         select_hosts: bool = False,
+        select_templates: bool = False,
         sort_order: SortOrder | None = None,
         sort_field: str | None = None,
     ) -> List[HostGroup]:
@@ -361,6 +369,7 @@ class ZabbixAPI:
             search (bool, optional): Search for host groups using the given pattern instead of filtering. Defaults to False.
             search_union (bool, optional): Union searching. Has no effect if `search` is False. Defaults to True.
             select_hosts (bool, optional): Fetch hosts in host groups. Defaults to False.
+            select_templates (bool, optional): <6.2 ONLY: Fetch templates in host groups. Defaults to False.
             sort_order (SortOrder, optional): Sort order. Defaults to None.
             sort_field (str, optional): Sort field. Defaults to None.
 
@@ -391,6 +400,8 @@ class ZabbixAPI:
                     params["filter"] = {norid_key: name_or_id}
         if select_hosts:
             params["selectHosts"] = "extend"
+        if self.version.release < (6, 2, 0) and select_templates:
+            params["selectTemplates"] = "extend"
         if sort_order:
             params["sortorder"] = sort_order
         if sort_field:
@@ -420,6 +431,19 @@ class ZabbixAPI:
         except ZabbixAPIException as e:
             raise ZabbixAPIException(
                 f"Failed to delete host group(s) with ID {hostgroup_id}: {e}"
+            ) from e
+
+    def copy_hosts_from_hostgroup(
+        self, src_group: HostGroup, dest_groups: List[HostGroup]
+    ) -> None:
+        try:
+            self.hostgroup.massadd(
+                groups=[{"groupid": dest_group.groupid} for dest_group in dest_groups],
+                hosts=[{"hostid": host.hostid} for host in src_group.hosts],
+            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to copy hosts from group {src_group.name!r} to {dest_groups!r}: {e}"
             ) from e
 
     def get_templategroup(
@@ -1332,6 +1356,21 @@ class ZabbixAPI:
                 f"Unknown error when fetching templates: {e}"
             ) from e
         return [Template(**template) for template in templates]
+
+    def add_templates_to_groups(
+        self,
+        templates: List[Template],
+        groups: List[HostGroup] | List[TemplateGroup],
+    ) -> None:
+        try:
+            self.template.massadd(
+                templates=[
+                    {"templateid": template.templateid} for template in templates
+                ],
+                groups=[{"groupid": group.groupid} for group in groups],
+            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to add templates to groups: {e}") from e
 
     def get_items(
         self,

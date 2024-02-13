@@ -426,6 +426,7 @@ class HostGroup(ZabbixAPIBaseModel):
     # FIXME: Use Optional[str] and None default?
     flags: int = 0
     internal: int = 0  # should these be ints?
+    templates: List[Template] = []  # <6.2.0
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]

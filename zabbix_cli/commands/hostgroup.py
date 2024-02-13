@@ -12,12 +12,14 @@ from pydantic import field_validator
 from typing_extensions import TypedDict
 
 from zabbix_cli.app import app
+from zabbix_cli.app import Example
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
+from zabbix_cli.output.console import success
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.types import Host
@@ -33,7 +35,10 @@ if TYPE_CHECKING:
     from zabbix_cli.models import RowsType  # noqa: F401
 
 
-@app.command("add_host_to_hostgroup")
+HELP_PANEL = "Host Group"
+
+
+@app.command("add_host_to_hostgroup", rich_help_panel=HELP_PANEL)
 def add_host_to_hostgroup(
     ctx: typer.Context,
     hostnames: Optional[str] = typer.Option(
@@ -84,7 +89,24 @@ def _parse_hostname_hostgroup_args(
     return host_models, hg_models
 
 
-@app.command("create_hostgroup")
+@app.command(
+    "create_hostgroup",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Create a host group with default user group permissions",
+            "zabbix-cli create_hostgroup 'My Host Group'",
+        ),
+        Example(
+            "Create a host group with specific RO and RW groups",
+            "zabbix-cli create_hostgroup 'My Host Group' --ro-groups users --rw-groups admins",
+        ),
+        Example(
+            "Create a host group with no user group permissions",
+            "zabbix-cli create_hostgroup 'My Host Group' --no-usergroup-permissions",
+        ),
+    ],
+)
 def create_hostgroup(
     hostgroup: str = typer.Argument(None, help="Name of host group."),
     rw_groups: Optional[str] = typer.Option(
@@ -107,20 +129,6 @@ def create_hostgroup(
     unless --no-usergroup-permissions is specified.
 
     The user groups can be overridden with the --rw-groups and --ro-groups.
-
-    [b]Examples[/b]:
-
-    [i]Create a host group with default user group permissions[/i]
-
-        [green]create_hostgroup "My Host Group"[/]
-
-    [i]Create a host group with specific RO and RW groups[/i]
-
-        [green]create_hostgroup "My Host Group" --ro-groups users --rw-groups admins[/]
-
-    [i]Create a host group with no user group permissions[/i]
-
-        [green]create_hostgroup "My Host Group" --no-usergroup-permissions[/]
     """
     if not hostgroup:
         hostgroup = str_prompt("Host group name")
@@ -166,7 +174,7 @@ class HostGroupDeleteResult(TableRenderable):
     groups: List[str]
 
 
-@app.command("remove_hostgroup")
+@app.command("remove_hostgroup", rich_help_panel=HELP_PANEL)
 def delete_hostgroup(
     hostgroup: str = typer.Argument(
         ..., help="Name of host group(s) to delete. Comma-separated."
@@ -188,7 +196,7 @@ def delete_hostgroup(
     )
 
 
-@app.command("remove_host_from_hostgroup")
+@app.command("remove_host_from_hostgroup", rich_help_panel=HELP_PANEL)
 def remove_host_from_hostgroup(
     hostnames: Optional[str] = typer.Argument(
         None,
@@ -199,6 +207,7 @@ def remove_host_from_hostgroup(
         help="Host group names or IDs. Separate values with commas.",
     ),
 ) -> None:
+    """Remove one or more hosts from one or more host groups."""
     hosts, hgs = _parse_hostname_hostgroup_args(hostnames, hostgroups)
     query = {
         "hostids": [host.hostid for host in hosts],
@@ -216,12 +225,66 @@ def remove_host_from_hostgroup(
     )
 
 
+class CopyHostsResult(TableRenderable):
+    """Result type for hostgroup."""
+
+    source: str
+    destination: List[str]
+    hosts: List[str]
+
+    @classmethod
+    def from_result(
+        cls, source: HostGroup, destination: List[HostGroup]
+    ) -> CopyHostsResult:
+        return cls(
+            source=source.name,
+            destination=[dst.name for dst in destination],
+            hosts=[host.host for host in source.hosts],
+        )
+
+
+@app.command("copy_hosts_from_hostgroup", rich_help_panel=HELP_PANEL)
+def copy_hosts_from_hostgroup(
+    src_group: str = typer.Argument(
+        ...,
+        help="Group to use hosts from.",
+    ),
+    dest_group: str = typer.Argument(
+        ...,
+        help="Group(s) to add hosts to. Comma-separated. Wildcards supported.",
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Show hosts and host groups without copying.",
+    ),
+) -> None:
+    """Add hosts from one host group to another."""
+    dest_args = parse_list_arg(dest_group)
+    src = app.state.client.get_hostgroup(src_group, select_hosts=True)
+    dest = app.state.client.get_hostgroups(*dest_args, select_hosts=True)
+
+    if not dest:
+        exit_err(f"No host groups found matching {dest_group!r}.")
+    if not src.hosts:
+        exit_err(f"No hosts found in {src_group!r}.")
+
+    if not dryrun:
+        app.state.client.copy_hosts_from_hostgroup(src, dest)
+        success(
+            f"Copied {len(src.hosts)} hosts from {src.name!r} to {len(dest)} groups."
+        )
+    else:
+        info(f"Would copy {len(src.hosts)} hosts from {src.name!r}:")
+    render_result(CopyHostsResult.from_result(src, dest))
+
+
 class HostGroupHostResult(TypedDict):
     hostid: str
     host: str
 
 
-class HostGroupResult(TableRenderable):  # FIXME: inherit from TableRenderable instead
+class HostGroupResult(TableRenderable):
     """Result type for hostgroup."""
 
     groupid: str
@@ -278,7 +341,7 @@ class HostGroupResult(TableRenderable):  # FIXME: inherit from TableRenderable i
         return cols, rows
 
 
-@app.command("show_hostgroup")
+@app.command("show_hostgroup", rich_help_panel=HELP_PANEL)
 def show_hostgroup(
     hostgroup: str = typer.Argument(None, help="Name of host group."),
 ) -> None:
@@ -306,7 +369,7 @@ class HostGroupPermissionsResult(AggregateResult[HostGroupPermissions]):
     pass
 
 
-@app.command("show_hostgroup_permissions")
+@app.command("show_hostgroup_permissions", rich_help_panel=HELP_PANEL)
 def show_hostgroup_permissions(
     hostgroup_arg: Optional[str] = typer.Argument(
         None, help="Host group name. Supports wildcards."
@@ -361,7 +424,7 @@ def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostGroupPermissions]
 
 
 # TODO: match V2 behavior
-@app.command("show_hostgroups")
+@app.command("show_hostgroups", rich_help_panel=HELP_PANEL)
 def show_hostgroups() -> None:
     """Show details for all host groups."""
     hostgroups = app.state.client.get_hostgroups(

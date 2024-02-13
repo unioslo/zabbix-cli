@@ -17,6 +17,7 @@ from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
+from zabbix_cli.output.console import info
 from zabbix_cli.output.console import success
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
@@ -225,7 +226,32 @@ def link_template_to_host(
     success(f"Linked {len(templates)} templates to {len(hosts)} hosts.")
 
 
-@app.command("unlink_template_from_host", rich_help_panel=HELP_PANEL)
+@app.command(
+    "unlink_template_from_host",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Unlink one template from one host",
+            "unlink_template_from_host 'Apache by HTTP' foo.example.com",
+        ),
+        Example(
+            "Unlink many templates from many hosts",
+            "unlink_template_from_host 'Apache by HTTP,HAProxy by Zabbix agent' foo.example.com,bar.example.com",
+        ),
+        Example(
+            "Unlink one template from all hosts",
+            "unlink_template_from_host 'Apache by HTTP' '*'",
+        ),
+        Example(
+            "Unlink many templates from all hosts",
+            "unlink_template_from_host 'Apache by HTTP,HAProxy by Zabbix agent' '*'",
+        ),
+        Example(
+            "Unlink all templates from all hosts [red](use with caution!)[/red]",
+            "unlink_template_from_host '*' '*'",
+        ),
+    ],
+)
 def unlink_template_from_host(
     ctx: typer.Context,
     template_names_or_ids: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
@@ -236,26 +262,7 @@ def unlink_template_from_host(
         help="Fail if any hosts or templates aren't found. Should not be used in conjunction with wildcards.",
     ),
 ) -> None:
-    """Unlinks and clears template(s) from host(s).
-
-
-    \n[bold underline]Examples[/]
-
-    Unlink one template from one host:
-        [green]unlink_template_from_host 'Apache by HTTP' foo.example.com[/]
-
-    Unlink many templates template from many hosts:
-        [green]unlink_template_from_host 'Apache by HTTP,HAProxy by Zabbix agent' foo.example.com,bar.example.com[/]
-
-    Unlink one template from all hosts:
-        [green]unlink_template_from_host 'Apache by HTTP' '*'[/]
-
-    Unlink many templates from all hosts:
-        [green]unlink_template_from_host 'Apache by HTTP,HAProxy by Zabbix agent' '*'[/]
-
-    Unlink all templates from all hosts [red](use with caution!)[/]:
-        [green]unlink_template_from_host '*' '*'[/]
-    """
+    """Unlinks and clears template(s) from host(s)."""
     templates = _handle_template_arg(template_names_or_ids, strict)
     hosts = _handle_hostnames_args(hostnames_or_ids, strict)
     with app.state.console.status("Unlinking templates..."):
@@ -412,18 +419,64 @@ def show_items(
     render_result(AggregateResult(result=items))
 
 
-@app.command("show_triggers", rich_help_panel=HELP_PANEL)
+class CopyTemplatesResult(TableRenderable):
+    source: str
+    destination: List[str]
+    templates: List[str]
+
+    @classmethod
+    def from_result(
+        cls,
+        src_group: Union[HostGroup, TemplateGroup],
+        dest_group: Union[List[HostGroup], List[TemplateGroup]],
+        templates: List[Template],
+    ) -> CopyTemplatesResult:
+        return cls(
+            source=src_group.name,
+            destination=[grp.name for grp in dest_group],
+            templates=[t.host for t in templates],
+        )
+
+
+@app.command("copy_templates", rich_help_panel=HELP_PANEL)
 def show_triggers(
     ctx: typer.Context,
-    template_name: Optional[str] = typer.Argument(
-        None, help="Template name or ID. Names support wildcards."
+    src_group: str = typer.Argument(..., help="Name of group to copy from."),
+    dest_group: str = typer.Argument(
+        ..., help="Name of group(s) to copy to. Wildcards supported."
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Show groups and templates without copying.",
     ),
 ) -> None:
-    """Show triggers that belong to a template."""
-    if not template_name:
-        template_name = str_prompt("Template")
-    template = app.state.client.get_template(template_name)
-    triggers = app.state.client.get_triggers(
-        templates=[template], sort_field="triggerid", sort_order="ASC"
-    )
-    render_result(AggregateResult(result=triggers))
+    """Copy templates from one group to another."""
+    dest_arg = parse_list_arg(dest_group)
+
+    src: Union[HostGroup, TemplateGroup]
+    dest: Union[List[HostGroup], List[TemplateGroup]]
+    if app.state.client.version.release > (6, 2, 0):
+        src = app.state.client.get_templategroup(src_group, select_templates=True)
+        dest = app.state.client.get_templategroups(
+            *dest_arg, select_templates=True, search=True
+        )
+    else:
+        src = app.state.client.get_hostgroup(src_group, select_templates=True)
+        dest = app.state.client.get_hostgroups(
+            *dest_arg, select_templates=True, search=True
+        )
+
+    if not src.templates:
+        exit_err(f"No templates found in {src_group!r}")
+    if not dest:
+        exit_err(f"No groups found matching {dest_group!r}")
+
+    if not dryrun:
+        app.state.client.add_templates_to_groups(src.templates, dest)
+        success(
+            f"Copied {len(src.templates)} templates from {src.name} to {len(dest)} groups."
+        )
+    else:
+        info("Would copy the following templates:")
+    render_result(CopyTemplatesResult.from_result(src, dest, src.templates))
