@@ -36,14 +36,17 @@ if TYPE_CHECKING:
     from zabbix_cli.config.model import Config
 
     AuthFunc = Callable[[Config], Tuple[Optional[str], Optional[str]]]
+    """Function that returns a username/password tuple or None if not available."""
 
 logger = logging.getLogger(__name__)
 
-"""Function that returns a username/password tuple or None if not available."""
 
 # Auth file location
 AUTH_FILE = DATA_DIR / ".zabbix-cli_auth"
+"""Path to file containing user credentials."""
+
 AUTH_TOKEN_FILE = DATA_DIR / ".zabbix-cli_auth_token"
+"""Path to file containing API session token."""
 
 SECURE_PERMISSIONS: Final[int] = 0o600
 SECURE_PERMISSIONS_STR = format(SECURE_PERMISSIONS, "o")
@@ -67,9 +70,7 @@ def login(client: ZabbixAPI, config: Config) -> None:
         # Should never happen due to running configure_auth() first
         raise ZabbixCLIError("No password or auth token configured.")
 
-    if config.api.verify_ssl:
-        client.session.verify = True
-    else:
+    if not config.api.verify_ssl:
         client.disable_ssl_verification()
 
     token = client.login(user=username, password=password, auth_token=config_token)
