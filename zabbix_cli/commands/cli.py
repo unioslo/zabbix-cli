@@ -58,7 +58,7 @@ class HistoryResult(TableRenderable):
     commands: List[str] = []
 
 
-@app.command("show_history", help=HELP_PANEL)
+@app.command("show_history", rich_help_panel=HELP_PANEL)
 def show_history(
     ctx: typer.Context,
     limit: int = typer.Option(
