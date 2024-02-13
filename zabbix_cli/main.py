@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
 from typing import Optional
 from typing import TYPE_CHECKING
@@ -97,13 +98,7 @@ def main_callback(
         None,
         "--config",
         "-c",
-        help="Define an alternative configuration file.",
-    ),
-    zabbix_command: str = typer.Option(
-        "",
-        "--command",
-        "-C",
-        help="Zabbix-CLI command to execute when running in command-line mode.",
+        help="Alternate configuration file to use.",
     ),
     input_file: Optional[Path] = typer.Option(
         None,
@@ -118,7 +113,20 @@ def main_callback(
         help="Define the output format when running in command-line mode.",
         case_sensitive=False,
     ),
+    # Deprecated option, kept for compatibility with V2
+    zabbix_command: Optional[str] = typer.Option(
+        None,
+        "--command",
+        "-C",
+        help="Zabbix-CLI command to execute when running in command-line mode.",
+        hidden=True,
+    ),
 ) -> None:
+    # Don't run callback if --help is passed in
+    # https://github.com/tiangolo/typer/issues/55
+    if "--help" in sys.argv:
+        return
+
     from zabbix_cli.logs import configure_logging
     from zabbix_cli.logs import LogContext
     from zabbix_cli.state import get_state

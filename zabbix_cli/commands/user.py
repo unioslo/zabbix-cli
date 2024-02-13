@@ -798,22 +798,16 @@ def add_usergroup_permissions(
 
     if hgroups:
         with app.status("Adding host group permissions"):
-            try:
-                app.state.client.update_usergroup_rights(
-                    usergroup, hgroups, permission, hostgroup=True
-                )
-            except ZabbixAPIException as e:
-                exit_err(f"Failed to add host group permissions: {e}")
+            app.state.client.update_usergroup_rights(
+                usergroup, hgroups, permission, hostgroup=True
+            )
         success("Added host group permissions.")
 
     if tgroups:
         with app.status("Adding template group permissions"):
-            try:
-                app.state.client.update_usergroup_rights(
-                    usergroup, tgroups, permission, hostgroup=False
-                )
-            except ZabbixAPIException as e:
-                exit_err(f"Failed to add template group permissions: {e}")
+            app.state.client.update_usergroup_rights(
+                usergroup, tgroups, permission, hostgroup=False
+            )
         success("Added template group permissions.")
 
     render_result(

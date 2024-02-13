@@ -13,6 +13,8 @@ from typing_extensions import TypedDict
 
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.commands.host import HELP_PANEL
+from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
@@ -33,9 +35,6 @@ from zabbix_cli.utils.utils import get_permission
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
     from zabbix_cli.models import RowsType  # noqa: F401
-
-
-HELP_PANEL = "Host Group"
 
 
 @app.command("add_host_to_hostgroup", rich_help_panel=HELP_PANEL)
@@ -225,8 +224,8 @@ def remove_host_from_hostgroup(
     )
 
 
-class CopyHostsResult(TableRenderable):
-    """Result type for hostgroup."""
+class ExtendHostgroupResult(TableRenderable):
+    """Result type for `extend_hostgroup` command."""
 
     source: str
     destination: List[str]
@@ -235,7 +234,7 @@ class CopyHostsResult(TableRenderable):
     @classmethod
     def from_result(
         cls, source: HostGroup, destination: List[HostGroup]
-    ) -> CopyHostsResult:
+    ) -> ExtendHostgroupResult:
         return cls(
             source=source.name,
             destination=[dst.name for dst in destination],
@@ -243,11 +242,11 @@ class CopyHostsResult(TableRenderable):
         )
 
 
-@app.command("copy_hosts_from_hostgroup", rich_help_panel=HELP_PANEL)
-def copy_hosts_from_hostgroup(
+@app.command("extend_hostgroup", rich_help_panel=HELP_PANEL)
+def extend_hostgroup(
     src_group: str = typer.Argument(
         ...,
-        help="Group to use hosts from.",
+        help="Group to get hosts from.",
     ),
     dest_group: str = typer.Argument(
         ...,
@@ -256,10 +255,13 @@ def copy_hosts_from_hostgroup(
     dryrun: bool = typer.Option(
         False,
         "--dryrun",
-        help="Show hosts and host groups without copying.",
+        help="Show hosts and groups without making changes.",
     ),
 ) -> None:
-    """Add hosts from one host group to another."""
+    """Add all hosts from a host group to other host group(s).
+
+    The source group is not modified. Existing hosts in the destination group(s)
+    are not removed or modified."""
     dest_args = parse_list_arg(dest_group)
     src = app.state.client.get_hostgroup(src_group, select_hosts=True)
     dest = app.state.client.get_hostgroups(*dest_args, select_hosts=True)
@@ -267,16 +269,82 @@ def copy_hosts_from_hostgroup(
     if not dest:
         exit_err(f"No host groups found matching {dest_group!r}.")
     if not src.hosts:
-        exit_err(f"No hosts found in {src_group!r}.")
+        exit_err(f"No hosts found in host group {src_group!r}.")
 
     if not dryrun:
-        app.state.client.copy_hosts_from_hostgroup(src, dest)
+        app.state.client.add_hosts_to_hostgroups(src.hosts, dest)
         success(
             f"Copied {len(src.hosts)} hosts from {src.name!r} to {len(dest)} groups."
         )
     else:
         info(f"Would copy {len(src.hosts)} hosts from {src.name!r}:")
-    render_result(CopyHostsResult.from_result(src, dest))
+    render_result(ExtendHostgroupResult.from_result(src, dest))
+
+
+class MoveHostsResult(TableRenderable):
+    """Result type for `move_hosts` command."""
+
+    source: str
+    destination: str
+    hosts: List[str]
+
+    @classmethod
+    def from_result(cls, source: HostGroup, destination: HostGroup) -> MoveHostsResult:
+        return cls(
+            source=source.name,
+            destination=destination.name,
+            hosts=[host.host for host in source.hosts],
+        )
+
+
+@app.command("move_hosts", rich_help_panel=HELP_PANEL)
+def move_hosts(
+    src_group: str = typer.Argument(
+        ...,
+        help="Group to move hosts from.",
+    ),
+    dest_group: str = typer.Argument(
+        ...,
+        help="Group to move hosts to.",
+    ),
+    rollback: bool = typer.Option(
+        True,
+        "--rollback/--no-rollback",
+        help="Rollback changes if hosts cannot be removed from source group.",
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Show hosts and groups without making changes.",
+    ),
+) -> None:
+    """Move all hosts from one host group to another."""
+    src = app.state.client.get_hostgroup(src_group, select_hosts=True)
+    dest = app.state.client.get_hostgroup(dest_group, select_hosts=True)
+
+    if not src.hosts:
+        exit_err(f"No hosts found in host group {src_group!r}.")
+
+    if dryrun:
+        info(f"Would copy {len(src.hosts)} hosts from {src.name!r}:")
+    else:
+        app.state.client.add_hosts_to_hostgroups(src.hosts, [dest])
+        info(f"Added hosts to {dest.name!r}")
+        try:
+            raise ZabbixAPIException("Test rollback")
+            app.state.client.remove_hosts_from_hostgroups(src.hosts, [src])
+        except Exception as e:
+            if rollback:
+                error(
+                    f"Failed to remove hosts from {src.name!r}. Attempting to roll back changes."
+                )
+                app.state.client.remove_hosts_from_hostgroups(src.hosts, [dest])
+            raise e
+        else:
+            info(f"Removed hosts from {src.name!r}.")
+        success(f"Moved {len(src.hosts)} hosts from {src.name!r} to {dest.name!r}.")
+
+    render_result(MoveHostsResult.from_result(src, dest))
 
 
 class HostGroupHostResult(TypedDict):

@@ -433,18 +433,31 @@ class ZabbixAPI:
                 f"Failed to delete host group(s) with ID {hostgroup_id}: {e}"
             ) from e
 
-    def copy_hosts_from_hostgroup(
-        self, src_group: HostGroup, dest_groups: List[HostGroup]
+    def add_hosts_to_hostgroups(
+        self, hosts: List[Host], hostgroups: List[HostGroup]
     ) -> None:
+        """Adds hosts to one or more host groups."""
         try:
             self.hostgroup.massadd(
-                groups=[{"groupid": dest_group.groupid} for dest_group in dest_groups],
-                hosts=[{"hostid": host.hostid} for host in src_group.hosts],
+                groups=[{"groupid": hg.groupid} for hg in hostgroups],
+                hosts=[{"hostid": host.hostid} for host in hosts],
             )
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to copy hosts from group {src_group.name!r} to {dest_groups!r}: {e}"
-            ) from e
+            hgs = ", ".join(hg.name for hg in hostgroups)
+            raise ZabbixAPIException(f"Failed to copy hosts to {hgs}: {e}") from e
+
+    def remove_hosts_from_hostgroups(
+        self, hosts: List[Host], hostgroups: List[HostGroup]
+    ) -> None:
+        """Removes the given hosts from one or more host groups."""
+        try:
+            self.hostgroup.massremove(
+                groupids=[hg.groupid for hg in hostgroups],
+                hostids=[host.hostid for host in hosts],
+            )
+        except ZabbixAPIException as e:
+            hgs = ", ".join(hg.name for hg in hostgroups)
+            raise ZabbixAPIException(f"Failed to remove hosts from {hgs}: {e}") from e
 
     def get_templategroup(
         self,

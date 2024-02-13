@@ -419,7 +419,7 @@ def show_items(
     render_result(AggregateResult(result=items))
 
 
-class CopyTemplatesResult(TableRenderable):
+class ExtendTemplateGroupResult(TableRenderable):
     source: str
     destination: List[str]
     templates: List[str]
@@ -430,7 +430,7 @@ class CopyTemplatesResult(TableRenderable):
         src_group: Union[HostGroup, TemplateGroup],
         dest_group: Union[List[HostGroup], List[TemplateGroup]],
         templates: List[Template],
-    ) -> CopyTemplatesResult:
+    ) -> ExtendTemplateGroupResult:
         return cls(
             source=src_group.name,
             destination=[grp.name for grp in dest_group],
@@ -438,12 +438,12 @@ class CopyTemplatesResult(TableRenderable):
         )
 
 
-@app.command("copy_templates", rich_help_panel=HELP_PANEL)
+@app.command("extend_templategroup", rich_help_panel=HELP_PANEL)
 def show_triggers(
     ctx: typer.Context,
-    src_group: str = typer.Argument(..., help="Name of group to copy from."),
+    src_group: str = typer.Argument(..., help="Group to get templates from."),
     dest_group: str = typer.Argument(
-        ..., help="Name of group(s) to copy to. Wildcards supported."
+        ..., help="Group(s) to add templates to. Comma-separated. Wildcards supported."
     ),
     dryrun: bool = typer.Option(
         False,
@@ -451,7 +451,9 @@ def show_triggers(
         help="Show groups and templates without copying.",
     ),
 ) -> None:
-    """Copy templates from one group to another."""
+    """Add all templates from a group to other group(s).
+
+    Interprets the source group as a template group in >= 6.2, otherwise as a host group."""
     dest_arg = parse_list_arg(dest_group)
 
     src: Union[HostGroup, TemplateGroup]
@@ -479,4 +481,4 @@ def show_triggers(
         )
     else:
         info("Would copy the following templates:")
-    render_result(CopyTemplatesResult.from_result(src, dest, src.templates))
+    render_result(ExtendTemplateGroupResult.from_result(src, dest, src.templates))

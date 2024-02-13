@@ -13,6 +13,7 @@ from pydantic import field_serializer
 
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.commands.template import HELP_PANEL  # combine with template commands
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
@@ -28,9 +29,6 @@ from zabbix_cli.utils.args import UsergroupPermission
 
 if TYPE_CHECKING:
     from zabbix_cli.models import RowsType
-
-
-HELP_PANEL = "Template Group"
 
 
 @app.command(
