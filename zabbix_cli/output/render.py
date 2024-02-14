@@ -16,7 +16,6 @@ from zabbix_cli.state import get_state
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ResultBase
-    from zabbix_cli.models import Result
     from zabbix_cli.models import TableRenderable
     from zabbix_cli.models import TableRenderableDict
     from zabbix_cli.models import TableRenderableProto
@@ -30,6 +29,7 @@ def wrap_result(result: BaseModel) -> ResultBase:
     Does nothing if the function argument is already a ResultBase instance."""
 
     from zabbix_cli.models import ResultBase
+    from zabbix_cli.models import Result
 
     if isinstance(result, ResultBase):
         return result
