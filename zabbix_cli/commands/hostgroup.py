@@ -14,7 +14,6 @@ from typing_extensions import TypedDict
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
 from zabbix_cli.commands.host import HELP_PANEL
-from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.models import AggregateResult
 from zabbix_cli.models import Result
 from zabbix_cli.models import TableRenderable
@@ -331,7 +330,6 @@ def move_hosts(
         app.state.client.add_hosts_to_hostgroups(src.hosts, [dest])
         info(f"Added hosts to {dest.name!r}")
         try:
-            raise ZabbixAPIException("Test rollback")
             app.state.client.remove_hosts_from_hostgroups(src.hosts, [src])
         except Exception as e:
             if rollback:
