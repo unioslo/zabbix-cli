@@ -346,7 +346,6 @@ def move_templates(
             app.state.client.remove_templates_from_groups(
                 src.templates,
                 [src],  # type: ignore # ditto
-                clear=False,  # templates are not linked to groups
             )
         except Exception as e:
             if rollback:
@@ -356,7 +355,6 @@ def move_templates(
                 app.state.client.remove_templates_from_groups(
                     src.templates,
                     [dest],  # type: ignore # ditto
-                    clear=False,  # ditto
                 )
             raise e
         else:
