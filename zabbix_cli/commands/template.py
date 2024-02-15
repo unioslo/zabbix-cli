@@ -8,13 +8,10 @@ from typing import TYPE_CHECKING
 from typing import Union
 
 import typer
-from pydantic import Field
-from pydantic import model_serializer
 
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
 from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
@@ -36,55 +33,29 @@ if TYPE_CHECKING:
 HELP_PANEL = "Template"
 
 
-# TODO: we do share these models between different commands, but they are impacting
-# the startup time of the application. Can we inline them in the commands?
-class LinkTemplateResult(TableRenderable):
-    """Result type for `(un)link_template_{to,from}_host` command."""
+class LinkTemplateHostResult(TableRenderable):
+    templates: List[str]
+    hosts: List[str]
+    action: str
 
-    templates: List[Template] = []
-    hosts: List[Host] = []
-    groups: Union[List[HostGroup], List[TemplateGroup]] = Field(default_factory=list)
-    action: Literal["link", "unlink", "unlink_clear"]
+    @classmethod
+    def from_results(
+        cls,
+        templates: List[Template],
+        hosts: List[Host],
+        action: Literal["Link", "Unlink", "Unlink and clear"],
+    ) -> LinkTemplateHostResult:
+        return cls(
+            hosts=[h.host for h in hosts],
+            templates=[t.host for t in templates],
+            action=action,
+        )
 
-    @model_serializer
-    def ser_model(self) -> dict:
-        # V2 has no JSON output for this beyond message and status code
-        # so we are free to invent our own for new and legacy formats
-        return {
-            # Custom format here instead of dumping all fields of each object
-            "action": self.action,
-            "templates": [
-                {
-                    "name": template.name,
-                    "templateid": template.templateid,
-                }
-                for template in self.templates
-            ],
-            "hosts": [
-                {"host": host.host, "hostid": host.hostid} for host in self.hosts
-            ],
-            "groups": [
-                {"name": group.name, "groupid": group.groupid} for group in self.groups
-            ],
-        }
-
-
-class LinkTemplateHostResult(LinkTemplateResult):
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["Template", "Hosts"]
-        hostnames = ", ".join([h.host for h in self.hosts])
-        rows = [[template.host, hostnames] for template in self.templates]  # type: RowsType
-        return cols, rows
-
-
-class LinkTemplateGroupResult(LinkTemplateResult):
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["Groups", "Templates"]
-        rows = []  # type: RowsType
-        tmp_names = "\n".join([t.host for t in self.templates])
-        for group in self.groups:
-            rows.append([group.name, tmp_names])
-        return cols, rows
+    # def __cols_rows__(self) -> ColsRowsType:
+    #     cols = ["Template", "Hosts"]
+    #     hostnames = ", ".join([h.host for h in self.hosts])
+    #     rows = [[template.host, hostnames] for template in self.templates]  # type: RowsType
+    #     return cols, rows
 
 
 def _handle_hostnames_args(
@@ -132,7 +103,7 @@ def _handle_templategroup_args(
     if not tgroup_names_or_ids:
         tgroup_names_or_ids = str_prompt("Template group(s)")
 
-    tg_args = [h.strip() for h in tgroup_names_or_ids.split(",")]
+    tg_args = parse_list_arg(tgroup_names_or_ids)
     if not tg_args:
         exit_err("At least one template group name/ID is required.")
 
@@ -152,7 +123,7 @@ def _handle_template_arg(
     if not template_names_or_ids:
         template_names_or_ids = str_prompt("Template(s)")
 
-    template_args = [t.strip() for t in template_names_or_ids.split(",")]
+    template_args = parse_list_arg(template_names_or_ids)
     if not template_args:
         exit_err("At least one template name/ID is required.")
 
@@ -216,14 +187,163 @@ def link_template_to_host(
     hosts = _handle_hostnames_args(hostnames_or_ids, strict)
     with app.state.console.status("Linking templates..."):
         app.state.client.link_templates_to_hosts(templates, hosts)
+    render_result(LinkTemplateHostResult.from_results(templates, hosts, "Link"))
+    success(f"Linked {len(templates)} templates to {len(hosts)} hosts.")
+
+
+class LinkTemplateResult(TableRenderable):
+    source: List[str]
+    destination: List[str]
+    action: str
+
+    @classmethod
+    def from_results(
+        cls,
+        source: List[Template],
+        destination: List[Template],
+        action: Literal["Link", "Unlink", "Unlink and clear"],
+    ) -> LinkTemplateResult:
+        return cls(
+            source=[t.host for t in source],
+            destination=[t.host for t in destination],
+            action=action,
+        )
+
+
+@app.command(
+    "link_template_to_template",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Link one template to one template",
+            "link_template_to_template 'Apache by HTTP' foo_template",
+        ),
+        Example(
+            "Link many templates to many templates",
+            "link_template_to_template 'Apache by HTTP,HAProxy by Zabbix agent' foo_template,bar_template",
+        ),
+        Example(
+            "Link all templates starting with 'Apache' to a template",
+            "link_template_to_template 'Apache*' foo_template",
+        ),
+        Example(
+            "Link all templates containing 'HTTP' to a subset of templates",
+            "link_template_to_template '*HTTP*' 'Webserver-*'",
+        ),
+    ],
+)
+def link_template_to_template(
+    ctx: typer.Context,
+    source: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
+    dest: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
+    strict: bool = typer.Option(
+        False,
+        "--strict",
+        help="Fail if any templates aren't found. Should not be used in conjunction with wildcards.",
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Do not actually link templates, just show what would be done.",
+    ),
+) -> None:
+    """Link template(s) to templates(s).
+
+    [b]NOTE:[/] Destination templates are the ones that are ultimately modified. Source templates remain unchanged.
+    """
+    source_templates = _handle_template_arg(source, strict)
+    dest_templates = _handle_template_arg(dest, strict)
+    if dryrun:
+        info(
+            f"Would link {len(source_templates)} templates to {len(dest_templates)} templates:"
+        )
+    else:
+        with app.state.console.status("Linking templates..."):
+            app.state.client.link_templates(source_templates, dest_templates)
     render_result(
-        LinkTemplateHostResult(
-            templates=templates,
-            hosts=hosts,
-            action="link",
+        LinkTemplateResult.from_results(source_templates, dest_templates, "Link")
+    )
+    if not dryrun:
+        success(
+            f"Linked {len(source_templates)} templates to {len(dest_templates)} templates."
+        )
+
+
+@app.command(
+    "unlink_template_from_template",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Unlink one template from one template",
+            "unlink_template_from_template 'Apache by HTTP' foo_template",
+        ),
+        Example(
+            "Unlink many templates from many templates",
+            "unlink_template_from_template 'Apache by HTTP,HAProxy by Zabbix agent' foo_template,bar_template",
+        ),
+        Example(
+            "Unlink all templates starting with 'Apache' from a template",
+            "unlink_template_from_template 'Apache*' foo_template",
+        ),
+        Example(
+            "Unlink all templates containing 'HTTP' from a subset of templates",
+            "unlink_template_from_template '*HTTP*' 'Webserver-*'",
+        ),
+        Example(
+            "Unlink a template without clearing items and triggers",
+            "unlink_template_from_template --no-clear foo_template bar_template",
+        ),
+    ],
+)
+def unlink_template_from_template(
+    ctx: typer.Context,
+    source: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
+    dest: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
+    strict: bool = typer.Option(
+        False,
+        "--strict",
+        help="Fail if any templates aren't found. Should not be used in conjunction with wildcards.",
+    ),
+    clear: bool = typer.Option(
+        True,
+        "--clear/--no-clear",
+        help="Unlink and clear templates.",
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Preview changes.",
+    ),
+) -> None:
+    """Unlink template(s) from templates(s).
+
+    Unlinks and clears by default. Use `--no-clear` to unlink without clearing.
+    [b]NOTE:[/] Destination templates are the ones that are ultimately modified. Source templates remain unchanged.
+    """
+    source_templates = _handle_template_arg(source, strict)
+    dest_templates = _handle_template_arg(dest, strict)
+    action = "Unlink and clear" if clear else "Unlink"
+    if dryrun:
+        info(
+            f"Would {action.lower()} {len(source_templates)} templates from {len(dest_templates)} templates:"
+        )
+    else:
+        with app.state.console.status("Unlinking templates..."):
+            app.state.client.unlink_templates(
+                source_templates, dest_templates, clear=clear
+            )
+    render_result(
+        LinkTemplateResult.from_results(
+            source_templates,
+            dest_templates,
+            action,  # type: ignore # mypy unable to infer literal type
         )
     )
-    success(f"Linked {len(templates)} templates to {len(hosts)} hosts.")
+    if not dryrun:
+        action_success = "Unlinked and cleared" if clear else "Unlinked"
+        success(
+            f"{action_success} {len(source_templates)} templates from {len(dest_templates)} templates."
+        )
 
 
 @app.command(
@@ -271,17 +391,29 @@ def unlink_template_from_host(
     # Right now we just assume all of them were.
     # host.massremove does not return anything useful in this regard...
     render_result(
-        LinkTemplateHostResult(
-            templates=templates,
-            hosts=hosts,
-            action="unlink_clear",
-        )
+        LinkTemplateHostResult.from_results(templates, hosts, "Unlink and clear")
     )
     success(f"Unlinked and cleared {len(templates)} templates from {len(hosts)} hosts.")
 
 
+class TemplateGroupResult(TableRenderable):
+    templates: List[str]
+    groups: List[str]
+
+    @classmethod
+    def from_results(
+        cls,
+        templates: List[Template],
+        groups: Union[List[TemplateGroup], List[HostGroup]],
+    ) -> TemplateGroupResult:
+        return cls(
+            templates=[t.host for t in templates],
+            groups=[h.name for h in groups],
+        )
+
+
 # Changed in V3: Changed name to reflect introduction of template groups in >=6.2
-@app.command("link_template_to_group", rich_help_panel=HELP_PANEL)
+@app.command("add_template_to_group", rich_help_panel=HELP_PANEL)
 @app.command(
     # old name for backwards compatibility
     "link_template_to_hostgroup",
@@ -298,7 +430,7 @@ def link_template_to_group(
         help="Fail if any host groups or templates aren't found. Should not be used in conjunction with wildcards.",
     ),
 ) -> None:
-    """Link template(s) to group(s).
+    """Add template(s) to group(s).
 
     [bold]NOTE:[/] Group arguments are interpreted as template groups in >= 6.2,
     otherwise as host groups.
@@ -311,27 +443,21 @@ def link_template_to_group(
 
     templates = _handle_template_arg(template_names_or_ids, strict)
 
-    with app.state.console.status("Linking templates..."):
+    with app.state.console.status("Adding templates..."):
         app.state.client.link_templates_to_groups(templates, groups)
-    render_result(
-        LinkTemplateGroupResult(
-            templates=templates,
-            groups=groups,
-            action="link",
-        )
-    )
-    success(f"Linked {len(templates)} templates to {len(groups)} groups.")
+    render_result(TemplateGroupResult.from_results(templates, groups))
+    success(f"Added {len(templates)} templates to {len(groups)} groups.")
 
 
 # Changed in V3: Changed name to reflect introduction of template groups in >=6.2
-@app.command("unlink_template_from_group", rich_help_panel=HELP_PANEL)
+@app.command("remove_template_from_group", rich_help_panel=HELP_PANEL)
 @app.command(
     # old name for backwards compatibility
     "unlink_template_from_hostgroup",
     hidden=True,
     rich_help_panel=HELP_PANEL,
 )
-def unlink_template_from_group(
+def remove_template_from_group(
     ctx: typer.Context,
     template_names_or_ids: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
     group_names_or_ids: Optional[str] = ARG_GROUP_NAMES_OR_IDS,
@@ -342,7 +468,7 @@ def unlink_template_from_group(
     ),
     # TODO: add toggle for NOT clearing when unlinking?
 ) -> None:
-    """Unlink and clear template(s) from host/template group(s)."""
+    """Remove templates from groups."""
     groups: Union[List[HostGroup], List[TemplateGroup]]
     if app.state.client.version.release >= (6, 2, 0):
         groups = _handle_templategroup_args(group_names_or_ids, strict)
@@ -351,16 +477,17 @@ def unlink_template_from_group(
 
     templates = _handle_template_arg(template_names_or_ids, strict)
 
-    with app.state.console.status("Unlinking templates..."):
-        app.state.client.unlink_templates_from_groups(templates, groups)
-    render_result(
-        LinkTemplateGroupResult(
-            templates=templates,
-            groups=groups,
-            action="unlink_clear",
+    with app.state.console.status("Removing templates from groups..."):
+        # LEGACY: This used to also pass the templateids to templateids_clear,
+        # which would unlink and clear all the templates from each other
+        # This was a mistake, and has been removed in V3.
+        # Users should use `unlink_templates_from_templates` for that.
+        app.state.client.remove_templates_from_groups(
+            templates,
+            groups,
         )
-    )
-    success(f"Unlinked and cleared {len(templates)} templates to {len(groups)} groups.")
+    render_result(TemplateGroupResult.from_results(templates, groups))
+    success(f"Removed {len(templates)} templates from {len(groups)} groups.")
 
 
 @app.command("show_template", rich_help_panel=HELP_PANEL)
@@ -417,68 +544,3 @@ def show_items(
     template = app.state.client.get_template(template_name)
     items = app.state.client.get_items(templates=[template])
     render_result(AggregateResult(result=items))
-
-
-class ExtendTemplateGroupResult(TableRenderable):
-    source: str
-    destination: List[str]
-    templates: List[str]
-
-    @classmethod
-    def from_result(
-        cls,
-        src_group: Union[HostGroup, TemplateGroup],
-        dest_group: Union[List[HostGroup], List[TemplateGroup]],
-        templates: List[Template],
-    ) -> ExtendTemplateGroupResult:
-        return cls(
-            source=src_group.name,
-            destination=[grp.name for grp in dest_group],
-            templates=[t.host for t in templates],
-        )
-
-
-@app.command("extend_templategroup", rich_help_panel=HELP_PANEL)
-def show_triggers(
-    ctx: typer.Context,
-    src_group: str = typer.Argument(..., help="Group to get templates from."),
-    dest_group: str = typer.Argument(
-        ..., help="Group(s) to add templates to. Comma-separated. Wildcards supported."
-    ),
-    dryrun: bool = typer.Option(
-        False,
-        "--dryrun",
-        help="Show groups and templates without copying.",
-    ),
-) -> None:
-    """Add all templates from a group to other group(s).
-
-    Interprets the source group as a template group in >= 6.2, otherwise as a host group."""
-    dest_arg = parse_list_arg(dest_group)
-
-    src: Union[HostGroup, TemplateGroup]
-    dest: Union[List[HostGroup], List[TemplateGroup]]
-    if app.state.client.version.release > (6, 2, 0):
-        src = app.state.client.get_templategroup(src_group, select_templates=True)
-        dest = app.state.client.get_templategroups(
-            *dest_arg, select_templates=True, search=True
-        )
-    else:
-        src = app.state.client.get_hostgroup(src_group, select_templates=True)
-        dest = app.state.client.get_hostgroups(
-            *dest_arg, select_templates=True, search=True
-        )
-
-    if not src.templates:
-        exit_err(f"No templates found in {src_group!r}")
-    if not dest:
-        exit_err(f"No groups found matching {dest_group!r}")
-
-    if not dryrun:
-        app.state.client.add_templates_to_groups(src.templates, dest)
-        success(
-            f"Copied {len(src.templates)} templates from {src.name} to {len(dest)} groups."
-        )
-    else:
-        info("Would copy the following templates:")
-    render_result(ExtendTemplateGroupResult.from_result(src, dest, src.templates))

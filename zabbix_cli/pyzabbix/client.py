@@ -1356,6 +1356,7 @@ class ZabbixAPI:
                     name_or_id
                 )
                 params.setdefault("searchWildcardsEnabled", True)
+                params.setdefault("searchByAny", True)
         if select_hosts:
             params["selectHosts"] = "extend"
         if select_templates:
@@ -1383,7 +1384,165 @@ class ZabbixAPI:
                 groups=[{"groupid": group.groupid} for group in groups],
             )
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to add templates to groups: {e}") from e
+            raise ZabbixAPIException(f"Failed to add templates to group(s): {e}") from e
+
+    def link_templates_to_hosts(
+        self, templates: List[Template], hosts: List[Host]
+    ) -> None:
+        """Links one or more templates to one or more hosts.
+
+        Args:
+            templates (List[str]): A list of template names or IDs
+            hosts (List[str]): A list of host names or IDs
+        """
+        if not templates:
+            raise ZabbixAPIException("At least one template is required")
+        if not hosts:
+            raise ZabbixAPIException("At least one host is required")
+        template_ids = [{"templateid": template.templateid} for template in templates]  # type: ModifyTemplateParams
+        host_ids = [{"hostid": host.hostid} for host in hosts]  # type: ModifyHostParams
+        try:
+            self.host.massadd(templates=template_ids, hosts=host_ids)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to link templates: {e}") from e
+
+    def unlink_templates_from_hosts(
+        self, templates: List[Template], hosts: List[Host]
+    ) -> None:
+        """Unlinks and clears one or more templates from one or more hosts.
+
+        Args:
+            templates (List[Template]): A list of templates to unlink
+            hosts (List[Host]): A list of hosts to unlink templates from
+        """
+        if not templates:
+            raise ZabbixAPIException("At least one template is required")
+        if not hosts:
+            raise ZabbixAPIException("At least one host is required")
+
+        try:
+            self.host.massremove(
+                hostids=[h.hostid for h in hosts],
+                templateids_clear=[t.templateid for t in templates],
+            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to unlink and clear templates: {e}"
+            ) from e
+
+    def link_templates(
+        self, source: List[Template], destination: List[Template]
+    ) -> None:
+        """Links one or more templates to one or more templates
+
+        Destination templates are the templates that ultimately inherit the
+        items and triggers from the source templates.
+
+        Args:
+            source (List[Template]): A list of templates to link from
+            destination (List[Template]): A list of templates to link to
+        """
+        if not source:
+            raise ZabbixAPIException("At least one source template is required")
+        if not destination:
+            raise ZabbixAPIException("At least one destination template is required")
+        # NOTE: source templates are passed to templates_link param
+        templates = [{"templateid": template.templateid} for template in destination]  # type: ModifyTemplateParams
+        templates_link = [{"templateid": template.templateid} for template in source]  # type: ModifyTemplateParams
+        try:
+            self.template.massadd(templates=templates, templates_link=templates_link)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to link templates: {e}") from e
+
+    def unlink_templates(
+        self, source: List[Template], destination: List[Template], clear: bool = True
+    ) -> None:
+        """Unlinks template(s) from template(s) and optionally clears them.
+
+        Destination templates are the templates that ultimately inherit the
+        items and triggers from the source templates.
+
+        Args:
+            source (List[Template]): A list of templates to unlink
+            destination (List[Template]): A list of templates to unlink source templates from
+            clear (bool): Whether to clear the source templates from the destination templates. Defaults to True.
+        """
+        if not source:
+            raise ZabbixAPIException("At least one source template is required")
+        if not destination:
+            raise ZabbixAPIException("At least one destination template is required")
+        params = {
+            "templateids": [template.templateid for template in destination],
+            "templateids_link": [template.templateid for template in source],
+        }  # type: ParamsType
+        # NOTE: despite what the docs say, we need to pass both templateids_link and templateids_clear
+        # in order to unlink and clear templates. Only passing in templateids_clear will just
+        # unlink the templates but not clear them (????) Absurd behavior.
+        # This is NOT the case for host.massremove, where `templateids_clear` is enough...
+        if clear:
+            params["templateids_clear"] = params["templateids_link"]
+        try:
+            self.template.massremove(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to unlink template(s): {e}") from e
+
+    def link_templates_to_groups(
+        self,
+        templates: list[Template],
+        groups: list[HostGroup] | List[TemplateGroup],
+    ) -> None:
+        """Links one or more templates to one or more host/template groups.
+
+        Callers must ensure that the right type of group is passed in depending
+        on the Zabbix version:
+            * Host groups for Zabbix < 6.2
+            * Template groups for Zabbix >= 6.2
+
+        Args:
+            templates (List[str]): A list of template names or IDs
+            groups (list[HostGroup] | List[TemplateGroup]): A list of host/template groups
+        """
+        if not templates:
+            raise ZabbixAPIException("At least one template is required")
+        if not groups:
+            raise ZabbixAPIException("At least one group is required")
+        template_ids = [{"templateid": template.templateid} for template in templates]  # type: ModifyTemplateParams
+        group_ids = [{"groupid": group.groupid} for group in groups]  # type: ModifyGroupParams
+        try:
+            self.template.massadd(templates=template_ids, groups=group_ids)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to link template(s): {e}") from e
+
+    def remove_templates_from_groups(
+        self,
+        templates: list[Template],
+        groups: list[HostGroup] | List[TemplateGroup],
+    ) -> None:
+        """Unlinks one or more templates from one or more host/template groups.
+
+        Callers must ensure that the right type of group is passed in depending
+        on the Zabbix version:
+            * Host groups for Zabbix < 6.2
+            * Template groups for Zabbix >= 6.2
+
+        Args:
+            templates (List[str]): A list of template names or IDs
+            groups (list[HostGroup] | List[TemplateGroup]): A list of host/template groups
+        """
+        # NOTE: do we even want to enforce this?
+        if not templates:
+            raise ZabbixAPIException("At least one template is required")
+        if not groups:
+            raise ZabbixAPIException("At least one group is required")
+        try:
+            self.template.massremove(
+                templateids=[template.templateid for template in templates],
+                groupids=[group.groupid for group in groups],
+            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to unlink template from groups: {e}"
+            ) from e
 
     def get_items(
         self,
@@ -1414,112 +1573,6 @@ class ZabbixAPI:
         except ZabbixAPIException as e:
             raise ZabbixAPIException(f"Unknown error when fetching items: {e}") from e
         return [Item(**item) for item in items]
-
-    def link_templates_to_hosts(
-        self, templates: List[Template], hosts: List[Host]
-    ) -> None:
-        """Links one or more templates to one or more hosts.
-
-        Args:
-            templates (List[str]): A list of template names or IDs
-            hosts (List[str]): A list of host names or IDs
-        """
-        if not templates:
-            raise ZabbixAPIException("At least one template is required")
-        if not hosts:
-            raise ZabbixAPIException("At least one host is required")
-        template_ids = [{"templateid": template.templateid} for template in templates]  # type: ModifyTemplateParams
-        host_ids = [{"hostid": host.hostid} for host in hosts]  # type: ModifyHostParams
-        try:
-            self.host.massadd(templates=template_ids, hosts=host_ids)
-        except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to link templates: {e}") from e
-
-    def unlink_templates_from_hosts(
-        self, templates: List[Template], hosts: List[Host]
-    ) -> None:
-        """Unlinks and clears one or more templates from one or more hosts.
-
-        Args:
-            templates (List[str]): A list of template names or IDs
-            hosts (List[str]): A list of host names or IDs
-        """
-        if not templates:
-            raise ZabbixAPIException("At least one template is required")
-        if not hosts:
-            raise ZabbixAPIException("At least one host is required")
-
-        try:
-            resp = self.host.massremove(
-                hostids=[h.hostid for h in hosts],
-                templateids_clear=[t.templateid for t in templates],
-            )
-        except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to unlink and clear templates: {e}"
-            ) from e
-        else:
-            logger.debug("Unlink and clear templates response: %s", resp)
-
-    def link_templates_to_groups(
-        self,
-        templates: list[Template],
-        groups: list[HostGroup] | List[TemplateGroup],
-    ) -> None:
-        """Links one or more templates to one or more host/template groups.
-
-        Callers must ensure that the right type of group is passed in depending
-        on the Zabbix version:
-            * Host groups for Zabbix < 6.2
-            * Template groups for Zabbix >= 6.2
-
-        Args:
-            templates (List[str]): A list of template names or IDs
-            groups (list[HostGroup] | List[TemplateGroup]): A list of host/template groups
-        """
-        if not templates:
-            raise ZabbixAPIException("At least one template is required")
-        if not groups:
-            raise ZabbixAPIException("At least one group is required")
-        template_ids = [{"templateid": template.templateid} for template in templates]  # type: ModifyTemplateParams
-        group_ids = [{"groupid": group.groupid} for group in groups]  # type: ModifyGroupParams
-        try:
-            self.template.massadd(templates=template_ids, groups=group_ids)
-        except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to link templates: {e}") from e
-
-    def unlink_templates_from_groups(
-        self,
-        templates: list[Template],
-        groups: list[HostGroup] | List[TemplateGroup],
-    ) -> None:
-        """Unlinks one or more templates from one or more host/template groups.
-
-        Callers must ensure that the right type of group is passed in depending
-        on the Zabbix version:
-            * Host groups for Zabbix < 6.2
-            * Template groups for Zabbix >= 6.2
-
-        Args:
-            templates (List[str]): A list of template names or IDs
-            groups (list[HostGroup] | List[TemplateGroup]): A list of host/template groups
-        """
-        if not templates:
-            raise ZabbixAPIException("At least one template is required")
-        if not groups:
-            raise ZabbixAPIException("At least one group is required")
-        template_ids = [template.templateid for template in templates]
-        group_ids = [group.groupid for group in groups]
-        try:
-            self.template.massremove(
-                templateids=template_ids,
-                templateids_clear=template_ids,
-                groupids=group_ids,
-            )
-        except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to unlink and clear templates: {e}"
-            ) from e
 
     def create_user(
         self,

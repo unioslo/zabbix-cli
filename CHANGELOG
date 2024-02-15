@@ -13,14 +13,17 @@
   - `create_templategroup`: Create a template group.
   - `extend_templategroup`: Add all templates from a group to other group(s) without removing them from the original group.
   - `extend_hostgroup`: Add all hosts from a host group to other host group(s) without removing them from the original group.
+  - `link_template_to_template`: Link template(s) to template(s).
   - `move_hosts`: Move all hosts from one host group to another.
+  - `move_templates`: Move all templates from one group to another.
+  - `open`: Open a CLI directory in the system's file manager.
   - `remove_hostgroup`: Delete a host group.
   - `remove_templategroup`: Delete a template group.
   - `show_host_interfaces`: Show interfaces for a host.
   - `show_user`: Show details for a single user.
   - `show_templategroup`: Show a single template group.
   - `show_templategroups`: Show all template groups.
-  - `open`: Open a CLI directory in the system's file manager.
+  - `unlink_template_from_template`: Unlink template(s) from template(s).
 - New command options:
   - `create_host`:
     - `--name`: Host name
@@ -88,6 +91,14 @@
   - `show_host_inventory`
     - Now shows shows any inventory field that is set in the table.
     - Includes _all_ inventory fields in JSON output.
+  - `unlink_templates_from_hostgroups`:
+    - Renamed to `remove_templates_from_groups`.
+    - No longer unlinks and clears templates from each other.
+      - This was a bug/misunderstanding of the Zabbix API in the old version.
+      - Use `unlink_template_from_template` to unlink and clear templates from each other.
+  - `link_template_to_hostgroup`:
+    - Renamed to `add_templates_to_group`.
+    - Old name is still supported, but hidden and deprecated.
 - Use Hatch for building and publishing
 - Switch from setup.py to pyproject.toml
 

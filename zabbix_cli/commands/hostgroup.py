@@ -309,7 +309,7 @@ def move_hosts(
     rollback: bool = typer.Option(
         True,
         "--rollback/--no-rollback",
-        help="Rollback changes if hosts cannot be removed from source group.",
+        help="Rollback changes if hosts cannot be removed from source group afterwards.",
     ),
     dryrun: bool = typer.Option(
         False,

@@ -5,6 +5,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Union
 
 import typer
 from pydantic import computed_field
@@ -20,9 +21,12 @@ from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
+from zabbix_cli.output.console import success
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
+from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import Template
+from zabbix_cli.pyzabbix.types import TemplateGroup
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.args import UsergroupPermission
 
@@ -201,3 +205,165 @@ def show_templategroups(
             ]
         )
     )
+
+
+class ExtendTemplateGroupResult(TableRenderable):
+    source: str
+    destination: List[str]
+    templates: List[str]
+
+    @classmethod
+    def from_result(
+        cls,
+        src_group: Union[HostGroup, TemplateGroup],
+        dest_group: Union[List[HostGroup], List[TemplateGroup]],
+        templates: List[Template],
+    ) -> ExtendTemplateGroupResult:
+        return cls(
+            source=src_group.name,
+            destination=[grp.name for grp in dest_group],
+            templates=[t.host for t in templates],
+        )
+
+
+@app.command("extend_templategroup", rich_help_panel=HELP_PANEL)
+def show_triggers(
+    ctx: typer.Context,
+    src_group: str = typer.Argument(..., help="Group to get templates from."),
+    dest_group: str = typer.Argument(
+        ..., help="Group(s) to add templates to. Comma-separated. Wildcards supported."
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Show groups and templates without copying.",
+    ),
+) -> None:
+    """Add all templates from a group to other group(s).
+
+    Interprets the source group as a template group in >= 6.2, otherwise as a host group.
+
+    Does not modify the source group or its templates.
+    To remove the templates from the source group, use the [green]move_templates[/] command instead."""
+    dest_arg = parse_list_arg(dest_group)
+
+    src: Union[HostGroup, TemplateGroup]
+    dest: Union[List[HostGroup], List[TemplateGroup]]
+    if app.state.client.version.release > (6, 2, 0):
+        src = app.state.client.get_templategroup(src_group, select_templates=True)
+        dest = app.state.client.get_templategroups(
+            *dest_arg, select_templates=True, search=True
+        )
+    else:
+        src = app.state.client.get_hostgroup(src_group, select_templates=True)
+        dest = app.state.client.get_hostgroups(
+            *dest_arg, select_templates=True, search=True
+        )
+
+    if not src.templates:
+        exit_err(f"No templates found in {src_group!r}")
+    if not dest:
+        exit_err(f"No groups found matching {dest_group!r}")
+
+    if not dryrun:
+        app.state.client.add_templates_to_groups(src.templates, dest)
+    else:
+        info("Would copy the following templates:")
+    render_result(ExtendTemplateGroupResult.from_result(src, dest, src.templates))
+    if not dryrun:
+        success(
+            f"Copied {len(src.templates)} templates from {src.name} to {len(dest)} groups."
+        )
+
+
+class MoveTemplatesResult(TableRenderable):
+    """Result type for `move_templates` command."""
+
+    source: str
+    destination: str
+    templates: List[str]
+
+    @classmethod
+    def from_result(
+        cls,
+        source: Union[HostGroup, TemplateGroup],
+        destination: Union[HostGroup, TemplateGroup],
+    ) -> MoveTemplatesResult:
+        return cls(
+            source=source.name,
+            destination=destination.name,
+            templates=[template.host for template in source.templates],
+        )
+
+
+@app.command("move_templates", rich_help_panel=HELP_PANEL)
+def move_templates(
+    src_group: str = typer.Argument(
+        ...,
+        help="Group to move templates from.",
+    ),
+    dest_group: str = typer.Argument(
+        ...,
+        help="Group to move templates to.",
+    ),
+    rollback: bool = typer.Option(
+        True,
+        "--rollback/--no-rollback",
+        help="Rollback changes if templates cannot be removed from source group afterwards.",
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Show templates and groups without making changes.",
+    ),
+) -> None:
+    """Move all templates from one group to another."""
+    src: Union[HostGroup, TemplateGroup]
+    dest: Union[HostGroup, TemplateGroup]
+
+    if app.state.client.version.release < (6, 2, 0):
+        src = app.state.client.get_hostgroup(src_group, select_templates=True)
+        dest = app.state.client.get_hostgroup(dest_group, select_templates=True)
+    else:
+        src = app.state.client.get_templategroup(src_group, select_templates=True)
+        dest = app.state.client.get_templategroup(dest_group, select_templates=True)
+
+    if not src.templates:
+        exit_err(f"No templates found in template group {src_group!r}.")
+
+    if dryrun:
+        info(f"Would copy {len(src.templates)} templates from {src.name!r}:")
+    else:
+        app.state.client.add_templates_to_groups(
+            src.templates,
+            # Clunky typing semantics here:
+            # We cannot prove that list is homogenous (list[HostGroup] | list[TemplateGroup])
+            # because inferred type is list[Union[HostGroup, TemplateGroup]]
+            [dest],  # type: ignore
+        )
+        info(f"Added templates to {dest.name!r}")
+        try:
+            app.state.client.remove_templates_from_groups(
+                src.templates,
+                [src],  # type: ignore # ditto
+                clear=False,  # templates are not linked to groups
+            )
+        except Exception as e:
+            if rollback:
+                error(
+                    f"Failed to remove hosts from {src.name!r}. Attempting to roll back changes."
+                )
+                app.state.client.remove_templates_from_groups(
+                    src.templates,
+                    [dest],  # type: ignore # ditto
+                    clear=False,  # ditto
+                )
+            raise e
+        else:
+            info(f"Removed templates from {src.name!r}.")
+
+    render_result(MoveTemplatesResult.from_result(src, dest))
+    if not dryrun:
+        success(
+            f"Moved {len(src.templates)} templates from {src.name!r} to {dest.name!r}."
+        )
