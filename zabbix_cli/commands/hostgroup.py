@@ -1,90 +1,121 @@
 from __future__ import annotations
 
-from typing import Any
-from typing import List
+from itertools import chain
 from typing import Optional
-from typing import Tuple
-from typing import TYPE_CHECKING
 
 import typer
-from pydantic import Field
-from pydantic import field_validator
-from typing_extensions import TypedDict
 
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
 from zabbix_cli.commands.host import HELP_PANEL
-from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import Result
-from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.console import success
+from zabbix_cli.output.formatting.grammar import pluralize as p
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.types import Host
-from zabbix_cli.pyzabbix.types import HostGroup
+from zabbix_cli.pyzabbix.enums import UsergroupPermission
+from zabbix_cli.utils.args import parse_hostgroups_arg
+from zabbix_cli.utils.args import parse_hostnames_arg
 from zabbix_cli.utils.args import parse_list_arg
-from zabbix_cli.utils.args import UsergroupPermission
-from zabbix_cli.utils.utils import get_hostgroup_flag
-from zabbix_cli.utils.utils import get_hostgroup_type
 from zabbix_cli.utils.utils import get_permission
-
-if TYPE_CHECKING:
-    from zabbix_cli.models import ColsRowsType
-    from zabbix_cli.models import RowsType  # noqa: F401
 
 
 @app.command("add_host_to_hostgroup", rich_help_panel=HELP_PANEL)
 def add_host_to_hostgroup(
     ctx: typer.Context,
-    hostnames: Optional[str] = typer.Option(
-        None, help="Hostnames or IDs. Separate values with commas."
+    hostnames_or_ids: Optional[str] = typer.Argument(
+        None,
+        help="Host names or IDs. Comma-separated. Supports wildcards.",
+        metavar="HOSTS",
     ),
-    hostgroups: Optional[str] = typer.Option(
-        None, help="Hostnames or IDs. Separate values with commas."
+    hostgroups: Optional[str] = typer.Argument(
+        None,
+        help="Host group names or IDs. Comma-separated. Supports wildcards.",
+        metavar="HOSTGROUPS",
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Preview changes",
     ),
 ) -> None:
     """Adds one or more hosts to one or more host groups.
 
     Host{name,group} arguments are interpreted as IDs if they are numeric.
     """
-    hosts, hgs = _parse_hostname_hostgroup_args(hostnames, hostgroups)
-    query = {
-        "hosts": [{"hostid": host.hostid} for host in hosts],
-        "groups": [{"groupid": hg.groupid} for hg in hgs],
-    }
-    try:
-        app.state.client.hostgroup.massadd(**query)
-    except Exception as e:
-        exit_err(f"Failed to add hosts to hostgroups: {e}")
-    hnames = ", ".join(host.host for host in hosts)
-    hgnames = ", ".join(hg.name for hg in hgs)
-    render_result(Result(message=f"Added host(s) {hnames} to hostgroup(s) {hgnames}."))
+    from zabbix_cli.commands.results.hostgroup import AddHostsToHostGroup
+    from zabbix_cli.models import AggregateResult
+
+    hosts = parse_hostnames_arg(app, hostnames_or_ids)
+    hgs = parse_hostgroups_arg(app, hostgroups, select_hosts=True)
+    if not dryrun:
+        with app.status("Adding hosts to host groups..."):
+            app.state.client.add_hosts_to_hostgroups(hosts, hgs)
+
+    result = []  # type: list[AddHostsToHostGroup]
+    for hg in hgs:
+        r = AddHostsToHostGroup.from_result(hosts, hg)
+        if not r.hosts:
+            continue
+        result.append(r)
+
+    total_hosts = len(set(chain.from_iterable((r.hosts) for r in result)))
+    total_hgs = len(result)
+
+    render_result(AggregateResult(result=result))
+    base_msg = f"{p('host', total_hosts)} to {p('host group', total_hgs)}"
+    if dryrun:
+        info(f"Would add {base_msg}.")
+    else:
+        success(f"Added {base_msg}.")
 
 
-def _parse_hostname_hostgroup_args(
-    hostnames: Optional[str], hostgroups: Optional[str]
-) -> Tuple[List[Host], List[HostGroup]]:
-    """Helper function for parsing hostnames and hostgroups args."""
-    # Prompt for missing arguments
-    if not hostnames:
-        hostnames = str_prompt("Host name(s)")
-    hostname_args = parse_list_arg(hostnames)
-    if not hostname_args:
-        exit_err("No host names specified.")
+@app.command("remove_host_from_hostgroup", rich_help_panel=HELP_PANEL)
+def remove_host_from_hostgroup(
+    hostnames_or_ids: Optional[str] = typer.Argument(
+        None,
+        help="Host names or IDs. Comma-separated. Supports wildcards.",
+        metavar="HOSTS",
+    ),
+    hostgroups: Optional[str] = typer.Argument(
+        None,
+        help="Host group names or IDs. Comma-separated. Supports wildcards.",
+        metavar="HOSTGROUPS",
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Preview changes",
+    ),
+) -> None:
+    """Remove one or more hosts from one or more host groups."""
+    from zabbix_cli.commands.results.hostgroup import RemoveHostsFromHostGroup
+    from zabbix_cli.models import AggregateResult
 
-    if not hostgroups:
-        hostgroups = str_prompt("Host group(s)")
-    hostgroup_args = parse_list_arg(hostgroups)
-    if not hostgroup_args:
-        exit_err("No host groups specified.")
+    hosts = parse_hostnames_arg(app, hostnames_or_ids)
+    hgs = parse_hostgroups_arg(app, hostgroups, select_hosts=True)
+    if not dryrun:
+        with app.status("Removing hosts from host groups..."):
+            app.state.client.remove_hosts_from_hostgroups(hosts, hgs)
 
-    host_models = [app.state.client.get_host(hn) for hn in hostname_args]
-    hg_models = [app.state.client.get_hostgroup(hg) for hg in hostgroup_args]
+    result = []  # type: list[RemoveHostsFromHostGroup]
+    for hg in hgs:
+        r = RemoveHostsFromHostGroup.from_result(hosts, hg)
+        if not r.hosts:
+            continue
+        result.append(r)
 
-    return host_models, hg_models
+    total_hosts = len(set(chain.from_iterable((r.hosts) for r in result)))
+    total_hgs = len(result)
+
+    render_result(AggregateResult(result=result))
+    base_msg = f"{p('host', total_hosts)} from {p('host group', total_hgs)}"
+    if dryrun:
+        info(f"Would remove {base_msg}.")
+    else:
+        success(f"Removed {base_msg}.")
 
 
 @app.command(
@@ -128,6 +159,8 @@ def create_hostgroup(
 
     The user groups can be overridden with the --rw-groups and --ro-groups.
     """
+    from zabbix_cli.models import Result
+
     if not hostgroup:
         hostgroup = str_prompt("Host group name")
 
@@ -168,10 +201,6 @@ def create_hostgroup(
     render_result(Result(message=f"Created host group {hostgroup} ({hostgroup_id})."))
 
 
-class HostGroupDeleteResult(TableRenderable):
-    groups: List[str]
-
-
 @app.command("remove_hostgroup", rich_help_panel=HELP_PANEL)
 def delete_hostgroup(
     hostgroup: str = typer.Argument(
@@ -179,6 +208,9 @@ def delete_hostgroup(
     ),
 ) -> None:
     """Delete a host group."""
+    from zabbix_cli.commands.results.hostgroup import HostGroupDeleteResult
+    from zabbix_cli.models import Result
+
     hostgroup_names = parse_list_arg(hostgroup)
 
     hostgroups = [app.state.client.get_hostgroup(hg) for hg in hostgroup_names]
@@ -194,53 +226,6 @@ def delete_hostgroup(
     )
 
 
-@app.command("remove_host_from_hostgroup", rich_help_panel=HELP_PANEL)
-def remove_host_from_hostgroup(
-    hostnames: Optional[str] = typer.Argument(
-        None,
-        help="Host names or IDs. Separate values with commas.",
-    ),
-    hostgroups: Optional[str] = typer.Argument(
-        None,
-        help="Host group names or IDs. Separate values with commas.",
-    ),
-) -> None:
-    """Remove one or more hosts from one or more host groups."""
-    hosts, hgs = _parse_hostname_hostgroup_args(hostnames, hostgroups)
-    query = {
-        "hostids": [host.hostid for host in hosts],
-        "groupids": [hg.groupid for hg in hgs],
-    }
-    try:
-        app.state.client.hostgroup.massremove(**query)
-    except Exception as e:
-        exit_err(f"Failed to remove hosts from hostgroups: {e}")
-    hnames = ", ".join(host.host for host in hosts)
-    hgnames = ", ".join(hg.name for hg in hgs)
-    # TODO: add list of hostnames and host groups to the result
-    render_result(
-        Result(message=f"Removed host(s) {hnames} from hostgroup(s) {hgnames}.")
-    )
-
-
-class ExtendHostgroupResult(TableRenderable):
-    """Result type for `extend_hostgroup` command."""
-
-    source: str
-    destination: List[str]
-    hosts: List[str]
-
-    @classmethod
-    def from_result(
-        cls, source: HostGroup, destination: List[HostGroup]
-    ) -> ExtendHostgroupResult:
-        return cls(
-            source=source.name,
-            destination=[dst.name for dst in destination],
-            hosts=[host.host for host in source.hosts],
-        )
-
-
 @app.command("extend_hostgroup", rich_help_panel=HELP_PANEL)
 def extend_hostgroup(
     src_group: str = typer.Argument(
@@ -249,7 +234,7 @@ def extend_hostgroup(
     ),
     dest_group: str = typer.Argument(
         ...,
-        help="Group(s) to add hosts to. Comma-separated. Wildcards supported.",
+        help="Group(s) to add hosts to. Comma-separated. Supports wildcards.",
     ),
     dryrun: bool = typer.Option(
         False,
@@ -261,6 +246,8 @@ def extend_hostgroup(
 
     The source group is not modified. Existing hosts in the destination group(s)
     are not removed or modified."""
+    from zabbix_cli.commands.results.hostgroup import ExtendHostgroupResult
+
     dest_args = parse_list_arg(dest_group)
     src = app.state.client.get_hostgroup(src_group, select_hosts=True)
     dest = app.state.client.get_hostgroups(*dest_args, select_hosts=True)
@@ -278,22 +265,6 @@ def extend_hostgroup(
     else:
         info(f"Would copy {len(src.hosts)} hosts from {src.name!r}:")
     render_result(ExtendHostgroupResult.from_result(src, dest))
-
-
-class MoveHostsResult(TableRenderable):
-    """Result type for `move_hosts` command."""
-
-    source: str
-    destination: str
-    hosts: List[str]
-
-    @classmethod
-    def from_result(cls, source: HostGroup, destination: HostGroup) -> MoveHostsResult:
-        return cls(
-            source=source.name,
-            destination=destination.name,
-            hosts=[host.host for host in source.hosts],
-        )
 
 
 @app.command("move_hosts", rich_help_panel=HELP_PANEL)
@@ -318,6 +289,8 @@ def move_hosts(
     ),
 ) -> None:
     """Move all hosts from one host group to another."""
+    from zabbix_cli.commands.results.hostgroup import MoveHostsResult
+
     src = app.state.client.get_hostgroup(src_group, select_hosts=True)
     dest = app.state.client.get_hostgroup(dest_group, select_hosts=True)
 
@@ -345,128 +318,63 @@ def move_hosts(
     render_result(MoveHostsResult.from_result(src, dest))
 
 
-class HostGroupHostResult(TypedDict):
-    hostid: str
-    host: str
-
-
-class HostGroupResult(TableRenderable):
-    """Result type for hostgroup."""
-
-    groupid: str
-    name: str
-    hosts: List[HostGroupHostResult] = []
-    flags: str
-    internal: str = Field(
-        get_hostgroup_type(0),
-        serialization_alias="type",  # Dumped as "type" to mimick V2 behavior
-    )
-
-    @classmethod
-    def from_hostgroup(cls, hostgroup: HostGroup) -> HostGroupResult:
-        return cls(
-            groupid=hostgroup.groupid,
-            name=hostgroup.name,
-            flags=hostgroup.flags,  # type: ignore # validator
-            internal=hostgroup.internal,  # type: ignore # validator
-            hosts=[
-                HostGroupHostResult(hostid=host.hostid, host=host.host)
-                for host in hostgroup.hosts
-            ],
-        )
-
-    # Mimicks old behavior by also writing the string representation of the
-    # flags and internal fields to the serialized output.
-    @field_validator("flags", mode="before")
-    @classmethod
-    def _get_flag_str(cls, v: Any) -> Any:
-        if isinstance(v, int):
-            return get_hostgroup_flag(v)
-        else:
-            return v
-
-    @field_validator("internal", mode="before")
-    @classmethod
-    def _get_type_str(cls, v: Any) -> Any:
-        if isinstance(v, int):
-            return get_hostgroup_type(v)
-        else:
-            return v
-
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
-        rows = [
-            [
-                self.groupid,
-                self.name,
-                self.flags,
-                self.internal,
-                ", ".join([host["host"] for host in self.hosts]),
-            ]
-        ]  # type: RowsType
-        return cols, rows
-
-
 @app.command("show_hostgroup", rich_help_panel=HELP_PANEL)
 def show_hostgroup(
     hostgroup: str = typer.Argument(None, help="Name of host group."),
 ) -> None:
     """Show details of a host group."""
+    from zabbix_cli.commands.results.hostgroup import HostGroupResult
+
     if not hostgroup:
         hostgroup = str_prompt("Host group name")
     hg = app.state.client.get_hostgroup(hostgroup, select_hosts=True)
     render_result(HostGroupResult.from_hostgroup(hg))
 
 
-class HostGroupPermissions(TableRenderable):
-    """Result type for hostgroup permissions."""
+# TODO: match V2 behavior
+@app.command("show_hostgroups", rich_help_panel=HELP_PANEL)
+def show_hostgroups() -> None:
+    """Show details for all host groups."""
+    from zabbix_cli.commands.results.hostgroup import HostGroupResult
+    from zabbix_cli.models import AggregateResult
 
-    groupid: str
-    name: str
-    permissions: List[str]
-
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["GroupID", "Name", "Permissions"]
-        rows = [[self.groupid, self.name, "\n".join(self.permissions)]]  # type: RowsType
-        return cols, rows
-
-
-class HostGroupPermissionsResult(AggregateResult[HostGroupPermissions]):
-    pass
+    hostgroups = app.state.client.get_hostgroups(
+        select_hosts=True, search=True, sort_field="name", sort_order="ASC"
+    )
+    render_result(
+        AggregateResult(
+            result=[HostGroupResult.from_hostgroup(hg) for hg in hostgroups]
+        )
+    )
 
 
 @app.command("show_hostgroup_permissions", rich_help_panel=HELP_PANEL)
 def show_hostgroup_permissions(
-    hostgroup_arg: Optional[str] = typer.Argument(
-        None, help="Host group name. Supports wildcards."
+    hostgroups: Optional[str] = typer.Argument(
+        None, help="Host group name(s). Comma-separated. Supports wildcards."
     ),
 ) -> None:
     """Show usergroups with permissions for the given hostgroup. Supports wildcards.
 
     Use "*" to list all host groups."""
 
-    if not hostgroup_arg:
-        hostgroup_arg = str_prompt("Host group")
+    from zabbix_cli.commands.results.hostgroup import HostGroupPermissions
+    from zabbix_cli.models import AggregateResult
 
-    permissions = _get_hostgroup_permissions(hostgroup_arg)
-    return render_result(AggregateResult(result=permissions))
-
-
-def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostGroupPermissions]:
-    if not hostgroup_arg:
-        hostgroup_arg = str_prompt("Host group")
+    if not hostgroups:
+        hostgroups = str_prompt("Host group")
 
     usergroups = app.state.client.get_usergroups()
-    hostgroups = app.state.client.get_hostgroups(
-        hostgroup_arg,
+    hgs = app.state.client.get_hostgroups(
+        *hostgroups,
         sort_field="name",
         sort_order="ASC",
         select_hosts=False,
         search=True,
     )
 
-    hg_results = []
-    for hostgroup in hostgroups:
+    result = []
+    for hg in hgs:
         permissions = []
         for usergroup in usergroups:
             if app.api_version >= (6, 2, 0):
@@ -474,30 +382,16 @@ def _get_hostgroup_permissions(hostgroup_arg: str) -> List[HostGroupPermissions]
             else:
                 rights = usergroup.rights
             for right in rights:
-                if right.id == hostgroup.groupid:
+                if right.id == hg.groupid:
                     permissions.append(
                         f"{usergroup.name} ({get_permission(right.permission)})"
                     )
                     break
-        hg_results.append(
+        result.append(
             HostGroupPermissions(
-                groupid=hostgroup.groupid,
-                name=hostgroup.name,
+                groupid=hg.groupid,
+                name=hg.name,
                 permissions=permissions,
             )
         )
-    return hg_results
-
-
-# TODO: match V2 behavior
-@app.command("show_hostgroups", rich_help_panel=HELP_PANEL)
-def show_hostgroups() -> None:
-    """Show details for all host groups."""
-    hostgroups = app.state.client.get_hostgroups(
-        "*", select_hosts=True, search=True, sort_field="name", sort_order="ASC"
-    )
-    render_result(
-        AggregateResult(
-            result=[HostGroupResult.from_hostgroup(hg) for hg in hostgroups]
-        )
-    )
+    return render_result(AggregateResult(result=result))

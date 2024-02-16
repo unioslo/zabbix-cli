@@ -3,43 +3,28 @@ from __future__ import annotations
 import ipaddress
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 
 import typer
-from pydantic import BaseModel
-from pydantic import ConfigDict
-from pydantic import Field
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixNotFoundError
-from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import ColsRowsType
-from zabbix_cli.models import Result
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.types import AgentAvailable
-from zabbix_cli.pyzabbix.types import Host
-from zabbix_cli.pyzabbix.types import HostInterface
-from zabbix_cli.pyzabbix.types import HostInterfaceDetails
-from zabbix_cli.pyzabbix.types import InterfaceConnectionMode
-from zabbix_cli.pyzabbix.types import InterfaceType
-from zabbix_cli.pyzabbix.types import InventoryMode
-from zabbix_cli.pyzabbix.types import MaintenanceStatus
-from zabbix_cli.pyzabbix.types import MonitoringStatus
-from zabbix_cli.pyzabbix.types import SNMPAuthProtocol
-from zabbix_cli.pyzabbix.types import SNMPPrivProtocol
-from zabbix_cli.pyzabbix.types import SNMPSecurityLevel
+from zabbix_cli.pyzabbix.enums import AgentAvailable
+from zabbix_cli.pyzabbix.enums import InterfaceConnectionMode
+from zabbix_cli.pyzabbix.enums import InterfaceType
+from zabbix_cli.pyzabbix.enums import InventoryMode
+from zabbix_cli.pyzabbix.enums import MonitoringStatus
+from zabbix_cli.pyzabbix.enums import SNMPAuthProtocol
+from zabbix_cli.pyzabbix.enums import SNMPPrivProtocol
+from zabbix_cli.pyzabbix.enums import SNMPSecurityLevel
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.commands import ARG_HOSTNAME_OR_ID
-
-if TYPE_CHECKING:
-    from zabbix_cli.models import ColsType  # noqa: F401
-    from zabbix_cli.models import RowsType  # noqa: F401
 
 
 HELP_PANEL = "Host"
@@ -104,6 +89,9 @@ def create_host(
     Always adds the host to the default host group unless --no-default-hostgroup
     is specified.
     """
+    from zabbix_cli.models import Result
+    from zabbix_cli.pyzabbix.types import HostInterface
+
     if args:
         if len(args) != 4:
             exit_err("create_host takes exactly 4 positional arguments.")
@@ -339,6 +327,9 @@ def create_host_interface(
     [b]NOTE:[/] Can only create secondary host interfaces for interfaces of types
     that already have a default interface. (API limitation)
     """
+    from zabbix_cli.models import Result
+    from zabbix_cli.pyzabbix.types import HostInterfaceDetails
+
     # Handle V2 positional args (deprecated)
     if args:
         if len(args) != 6:  # 7 - 1 (hostname)
@@ -431,115 +422,39 @@ def create_host_interface(
 
 @app.command(name="define_host_monitoring_status", rich_help_panel=HELP_PANEL)
 def define_host_monitoring_status(
-    hostname: Optional[str] = typer.Argument(
-        None,
+    hostname: str = typer.Argument(
+        ...,
         help="Name of host",
         show_default=False,
     ),
-    new_status: Optional[MonitoringStatus] = typer.Argument(
-        None,
+    new_status: MonitoringStatus = typer.Argument(
+        ...,
         help="Monitoring status",
         case_sensitive=False,
         show_default=False,
     ),
 ) -> None:
     """Monitor or unmonitor a host."""
-    if not hostname:
-        hostname = str_prompt("Hostname")
-    if new_status is None:
-        new_status = MonitoringStatus.from_prompt()
+    from zabbix_cli.models import Result
+
     host = app.state.client.get_host(hostname)
-    try:
-        app.state.client.host.update(
-            hostid=host.hostid,
-            status=new_status.as_api_value(),
-        )
-    except Exception as e:
-        raise ZabbixCLIError(f"Failed to update host: {e}") from e
-    else:
-        render_result(
-            Result(message=f"Updated host {hostname!r}. New status: {new_status}")
-        )
+    app.state.client.update_host_status(host, new_status)
+    render_result(
+        Result(message=f"Updated host {hostname!r}. New status: {new_status}")
+    )
 
 
 @app.command(name="remove_host", rich_help_panel=HELP_PANEL)
 def remove_host(
     ctx: typer.Context,
-    hostname: Optional[str] = typer.Argument(None, help="Name of host to remove."),
+    hostname: str = typer.Argument(..., help="Name of host to remove."),
 ) -> None:
     """Delete a host."""
-    if not hostname:
-        hostname = str_prompt("Hostname")
+    from zabbix_cli.models import Result
+
     host = app.state.client.get_host(hostname)
-    # TODO: delegate deletion to ZabbixAPI, so that cache is updated
-    # after we delete the host.
-    try:
-        app.state.client.host.delete(host.hostid)
-    except Exception as e:
-        raise ZabbixCLIError(f"Failed to remove host {hostname!r}") from e
-    else:
-        render_result(Result(message=f"Removed host {hostname!r}."))
-
-
-class HostFilterArgs(BaseModel):
-    """Unified processing of old filter string and new filter options."""
-
-    available: Optional[AgentAvailable] = None
-    maintenance_status: Optional[MaintenanceStatus] = None
-    status: Optional[MonitoringStatus] = None
-
-    model_config = ConfigDict(validate_assignment=True)
-
-    @classmethod
-    def from_command_args(
-        cls,
-        filter_legacy: Optional[str],
-        agent: Optional[AgentAvailable],
-        maintenance: Optional[bool],
-        monitored: Optional[bool],
-    ) -> HostFilterArgs:
-        args = cls()
-        if filter_legacy:
-            items = filter_legacy.split(",")
-            for item in items:
-                try:
-                    key, value = (s.strip("'\"") for s in item.split(":"))
-                except ValueError as e:
-                    raise ZabbixCLIError(
-                        f"Failed to parse filter argument at: {item!r}"
-                    ) from e
-                if key == "available":
-                    args.available = value  # type: ignore # validator converts it
-                elif key == "maintenance":
-                    args.maintenance_status = value  # type: ignore # validator converts it
-                elif key == "status":
-                    args.status = value  # type: ignore # validator converts it
-        else:
-            if agent is not None:
-                args.available = agent
-            if monitored is not None:
-                # Inverted API values (0 = ON, 1 = OFF) - use enums directly
-                args.status = MonitoringStatus.ON if monitored else MonitoringStatus.OFF
-            if maintenance is not None:
-                args.maintenance_status = (
-                    MaintenanceStatus.ON if maintenance else MaintenanceStatus.OFF
-                )
-        return args
-
-
-class HostsResult(Result):
-    # TODO: Just use AggregateResult instead?
-    hosts: List[Host] = Field(default_factory=list)
-
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = []  # type: ColsType
-        rows = []  # type: RowsType
-        for host in self.hosts:
-            host_cols, host_rows = host.__cols_rows__()  # type: ignore # TODO: add test for this
-            rows.extend(host_rows)
-            if not cols:
-                cols = host_cols
-        return cols, rows
+    app.state.client.delete_host(host)
+    render_result(Result(message=f"Removed host {hostname!r}."))
 
 
 @app.command(name="show_host", rich_help_panel=HELP_PANEL)
@@ -567,6 +482,8 @@ def show_host(
     ),
 ) -> None:
     """Show a specific host."""
+    from zabbix_cli.commands.results.host import HostFilterArgs
+
     if not hostname_or_id:
         hostname_or_id = str_prompt("Hostname or ID")
 
@@ -618,6 +535,9 @@ def show_hosts(
     Hosts can be filtered by agent, monitoring and maintenance status.
     Hosts are sorted by name.
     """
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.commands.results.host import HostFilterArgs
+
     args = HostFilterArgs.from_command_args(
         filter_legacy, agent, maintenance, monitored
     )
@@ -639,6 +559,8 @@ def show_hosts(
 @app.command(name="show_host_interfaces", rich_help_panel=HELP_PANEL)
 def show_host_interfaces(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
     """Show host interfaces."""
+    from zabbix_cli.models import AggregateResult
+
     host = app.state.client.get_host(hostname_or_id, select_interfaces=True)
     render_result(AggregateResult(result=host.interfaces))
 
@@ -657,33 +579,18 @@ def show_host_inventory(hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID) -> N
 @app.command(name="update_host_inventory", rich_help_panel=HELP_PANEL)
 def update_host_inventory(
     ctx: typer.Context,
-    hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID,
-    key: Optional[str] = typer.Argument(None, help="Inventory key"),
-    value: Optional[str] = typer.Argument(None, help="Inventory value"),
+    hostname_or_id: str = typer.Argument(..., help="Hostname or ID of host."),
+    key: str = typer.Argument(..., help="Inventory key"),
+    value: str = typer.Argument(..., help="Inventory value"),
 ) -> None:
     """Update a host inventory field.
 
     Inventory field do not always match Web GUI field names.
     Use `zabbix-cli -o json show_host_inventory <hostname>` to see the available fields.
     """
-    if not hostname_or_id:
-        hostname_or_id = str_prompt("Hostname or ID")
-    if not key:
-        key = str_prompt("Key")
-    if not value:
-        value = str_prompt("Value")
+    from zabbix_cli.models import Result
 
     host = app.state.client.get_host(hostname_or_id)
-    try:
-        app.state.client.host.update(
-            hostid=host.hostid,
-            inventory={key: value},
-        )
-    except Exception as e:
-        raise ZabbixCLIError(
-            f"Failed to update host inventory field {key!r} for host {host}"
-        ) from e
-    else:
-        render_result(
-            Result(message=f"Updated inventory field {key!r} for host {host}.")
-        )
+    to_update = {key: value}
+    app.state.client.update_host_inventory(host, to_update)
+    render_result(Result(message=f"Updated inventory field {key!r} for host {host}."))

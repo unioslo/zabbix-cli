@@ -33,16 +33,12 @@ from pydantic import field_serializer
 from pydantic import field_validator
 from pydantic import model_validator
 from pydantic import ValidationInfo
-from strenum import StrEnum
 from typing_extensions import Literal
 from typing_extensions import TypedDict
 
-from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.models import TableRenderableDict
-from zabbix_cli.utils.args import APIStr
-from zabbix_cli.utils.args import APIStrEnum
-from zabbix_cli.utils.args import ChoiceMixin
+from zabbix_cli.pyzabbix.enums import InterfaceType
 from zabbix_cli.utils.utils import get_ack_status
 from zabbix_cli.utils.utils import get_event_status
 from zabbix_cli.utils.utils import get_gui_access
@@ -131,93 +127,6 @@ E.g. `[{"templateid": "123"}, {"templateid": "456"}]`
 """
 
 
-class AgentAvailable(ChoiceMixin[str], APIStrEnum):
-    """Agent availability status."""
-
-    __choice_name__ = "Agent availability status"
-
-    UNKNOWN = APIStr("unknown", "0")
-    AVAILABLE = APIStr("available", "1")
-    UNAVAILABLE = APIStr("unavailable", "2")
-
-
-# See: zabbix_cli.utils.args.OnOffChoice for why we re-define on/off enum here
-class MonitoringStatus(ChoiceMixin[str], APIStrEnum):
-    """Host monitoring status."""
-
-    ON = APIStr("on", "0")  # Yes, 0 is on, 1 is off...
-    OFF = APIStr("off", "1")
-
-
-class MaintenanceStatus(ChoiceMixin[str], APIStrEnum):
-    """Host maintenance status."""
-
-    # API values are inverted here compared to monitoring status...
-    ON = APIStr("on", "1")
-    OFF = APIStr("off", "0")
-
-
-class InventoryMode(ChoiceMixin[str], APIStrEnum):
-    """Host inventory mode."""
-
-    DISABLED = APIStr("disabled", "-1")
-    MANUAL = APIStr("manual", "0")
-    AUTOMATIC = APIStr("automatic", "1")
-
-
-class GUIAccess(ChoiceMixin[str], APIStrEnum):
-    """GUI Access for a user group."""
-
-    __choice_name__ = "GUI Access"
-
-    DEFAULT = APIStr("default", "0")
-    INTERNAL = APIStr("internal", "1")
-    LDAP = APIStr("ldap", "2")
-    DISABLE = APIStr("disable", "3")
-
-
-class DataCollectionMode(ChoiceMixin[str], APIStrEnum):
-    """Maintenance type."""
-
-    ON = APIStr("on", "0")
-    OFF = APIStr("off", "1")
-
-
-class TriggerPriority(ChoiceMixin[str], APIStrEnum):
-    UNCLASSIFIED = APIStr("unclassified", "0")
-    INFORMATION = APIStr("information", "1")
-    WARNING = APIStr("warning", "2")
-    AVERAGE = APIStr("average", "3")
-    HIGH = APIStr("high", "4")
-    DISASTER = APIStr("disaster", "5")
-
-
-class InterfaceConnectionMode(ChoiceMixin[str], APIStrEnum):
-    """Interface connection mode.
-
-    Controls the value of `useip` when creating interfaces in the API."""
-
-    DNS = APIStr("DNS", "0")
-    IP = APIStr("IP", "1")
-
-
-class InterfaceType(ChoiceMixin[int], APIStrEnum):
-    """Interface type."""
-
-    AGENT = APIStr("Agent", 1, metadata={"port": 10050})
-    SNMP = APIStr("SNMP", 2, metadata={"port": 161})
-    IPMI = APIStr("IPMI", 3, metadata={"port": 623})
-    JMX = APIStr("JMX", 4, metadata={"port": 12345})
-
-    # TODO: test to ensure we always catch all cases (i.e. error should never be thrown)
-    def get_port(self: InterfaceType) -> str:
-        """Returns the default port for the given interface type."""
-        try:
-            return self.value.metadata["port"]
-        except KeyError:
-            raise ZabbixCLIError(f"Unknown interface type: {self}")
-
-
 class ZabbixAPIError(BaseModel):
     """Zabbix API error information."""
 
@@ -235,69 +144,6 @@ class ZabbixAPIResponse(BaseModel):
     """Result of API call, if request succeeded."""
     error: Optional[ZabbixAPIError] = None
     """Error info, if request failed."""
-
-
-class SNMPSecurityLevel(ChoiceMixin[int], APIStrEnum):
-    __choice_name__ = "SNMPv3 security level"
-
-    # Match casing from Zabbix API
-    NO_AUTH_NO_PRIV = APIStr("noAuthNoPriv", 0)
-    AUTH_NO_PRIV = APIStr("authNoPriv", 1)
-    AUTH_PRIV = APIStr("authPriv", 2)
-
-
-class SNMPAuthProtocol(ChoiceMixin[int], APIStrEnum):
-    """Authentication protocol for SNMPv3."""
-
-    __choice_name__ = "SNMPv3 auth protocol"
-
-    MD5 = APIStr("MD5", 0)
-    SHA1 = APIStr("SHA1", 1)
-    # >=6.0 only:
-    SHA224 = APIStr("SHA224", 2)
-    SHA256 = APIStr("SHA256", 3)
-    SHA384 = APIStr("SHA384", 4)
-    SHA512 = APIStr("SHA512", 5)
-
-
-class SNMPPrivProtocol(ChoiceMixin[int], APIStrEnum):
-    """Privacy protocol for SNMPv3."""
-
-    __choice_name__ = "SNMPv3 privacy protocol"
-
-    DES = APIStr("DES", 0)
-    AES = APIStr("AES", 1)  # < 6.0 only
-    # >=6.0 only:
-    AES128 = APIStr("AES128", 1)  # >= 6.0
-    AES192 = APIStr("AES192", 2)
-    AES256 = APIStr("AES256", 3)
-    AES192C = APIStr("AES192C", 4)
-    AES256C = APIStr("AES256C", 5)
-
-
-class ExportFormat(StrEnum):
-    XML = "xml"
-    JSON = "json"
-    YAML = "yaml"
-    PHP = "php"
-
-    @classmethod
-    def _missing_(cls, v: object) -> ExportFormat:
-        """Case-insensitive missing lookup.
-
-        Allows for both `ExportFormat("JSON")` and `ExportFormat("json")`, etc."""
-        if not isinstance(v, str):
-            raise TypeError(f"Invalid format: {v!r}. Must be a string.")
-        v = v.lower()
-        for e in cls:
-            if e.value.lower() == v:
-                return e
-        raise ValueError(f"Invalid format: {v!r}.")
-
-    @classmethod
-    def get_importables(cls) -> List[ExportFormat]:
-        """Return list of formats that can be imported."""
-        return [cls.JSON, cls.YAML, cls.XML]
 
 
 class ZabbixAPIBaseModel(TableRenderable):

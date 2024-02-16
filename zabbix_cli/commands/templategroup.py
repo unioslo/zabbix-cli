@@ -1,38 +1,28 @@
 from __future__ import annotations
 
-from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
 
 import typer
-from pydantic import computed_field
-from pydantic import Field
-from pydantic import field_serializer
 
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
 from zabbix_cli.commands.template import HELP_PANEL  # combine with template commands
-from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import Result
-from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.console import success
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.types import HostGroup
-from zabbix_cli.pyzabbix.types import Template
-from zabbix_cli.pyzabbix.types import TemplateGroup
+from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.utils.args import parse_list_arg
-from zabbix_cli.utils.args import UsergroupPermission
 
 
 if TYPE_CHECKING:
-    from zabbix_cli.models import RowsType
+    from zabbix_cli.pyzabbix.types import HostGroup
+    from zabbix_cli.pyzabbix.types import TemplateGroup
 
 
 @app.command(
@@ -77,6 +67,8 @@ def create_templategroup(
 
     The user groups can be overridden with the --rw-groups and --ro-groups.
     """
+    from zabbix_cli.models import Result
+
     groupid = app.state.client.create_templategroup(templategroup)
 
     app_config = app.state.config.app
@@ -123,46 +115,17 @@ def delete_templategroup(
     templategroup: str = typer.Argument(..., help="Name of the group to delete."),
 ) -> None:
     """Delete a template group."""
+    from zabbix_cli.models import Result
+
     app.state.client.delete_templategroup(templategroup)
     render_result(Result(message=f"Deleted template group {templategroup!r}."))
-
-
-class ShowTemplateGroupResult(TableRenderable):
-    """Result type for templategroup."""
-
-    groupid: str = Field(..., json_schema_extra={"header": "Group ID"})
-    name: str
-    templates: List[Template] = []
-    show_templates: bool = Field(True, exclude=True)
-
-    @computed_field()  # type: ignore # mypy bug
-    @property
-    def template_count(self) -> int:
-        return len(self.templates)
-
-    @field_serializer("templates")
-    def templates_serializer(self, value: List[Template]) -> List[Dict[str, Any]]:
-        if self.show_templates:
-            return [t.model_dump(mode="json") for t in value]
-        return []
-
-    def __rows__(self) -> RowsType:
-        tpls = self.templates if self.show_templates else []
-        return [
-            [
-                self.groupid,
-                self.name,
-                "\n".join(str(t.host) for t in sorted(tpls, key=lambda t: t.host)),
-                str(self.template_count),
-            ]
-        ]
 
 
 @app.command("show_templategroup", rich_help_panel=HELP_PANEL)
 def show_templategroup(
     ctx: typer.Context,
     templategroup: Optional[str] = typer.Argument(
-        None, help="Name of the group to show. Wildcards supported."
+        None, help="Name of the group to show. Supports wildcards."
     ),
     templates: bool = typer.Option(
         True,
@@ -171,6 +134,8 @@ def show_templategroup(
     ),
 ) -> None:
     """Show details for all template groups."""
+    from zabbix_cli.commands.results.templategroup import ShowTemplateGroupResult
+
     if not templategroup:
         templategroup = str_prompt("Template group")
     tg = app.state.client.get_templategroup(
@@ -189,6 +154,9 @@ def show_templategroups(
     ),
 ) -> None:
     """Show details for all template groups."""
+    from zabbix_cli.commands.results.templategroup import ShowTemplateGroupResult
+    from zabbix_cli.models import AggregateResult
+
     try:
         templategroups = app.state.client.get_templategroups(select_templates=True)
     except Exception as e:
@@ -207,31 +175,12 @@ def show_templategroups(
     )
 
 
-class ExtendTemplateGroupResult(TableRenderable):
-    source: str
-    destination: List[str]
-    templates: List[str]
-
-    @classmethod
-    def from_result(
-        cls,
-        src_group: Union[HostGroup, TemplateGroup],
-        dest_group: Union[List[HostGroup], List[TemplateGroup]],
-        templates: List[Template],
-    ) -> ExtendTemplateGroupResult:
-        return cls(
-            source=src_group.name,
-            destination=[grp.name for grp in dest_group],
-            templates=[t.host for t in templates],
-        )
-
-
 @app.command("extend_templategroup", rich_help_panel=HELP_PANEL)
 def show_triggers(
     ctx: typer.Context,
     src_group: str = typer.Argument(..., help="Group to get templates from."),
     dest_group: str = typer.Argument(
-        ..., help="Group(s) to add templates to. Comma-separated. Wildcards supported."
+        ..., help="Group(s) to add templates to. Comma-separated. Supports wildcards."
     ),
     dryrun: bool = typer.Option(
         False,
@@ -245,6 +194,8 @@ def show_triggers(
 
     Does not modify the source group or its templates.
     To remove the templates from the source group, use the [green]move_templates[/] command instead."""
+    from zabbix_cli.commands.results.templategroup import ExtendTemplateGroupResult
+
     dest_arg = parse_list_arg(dest_group)
 
     src: Union[HostGroup, TemplateGroup]
@@ -276,26 +227,6 @@ def show_triggers(
         )
 
 
-class MoveTemplatesResult(TableRenderable):
-    """Result type for `move_templates` command."""
-
-    source: str
-    destination: str
-    templates: List[str]
-
-    @classmethod
-    def from_result(
-        cls,
-        source: Union[HostGroup, TemplateGroup],
-        destination: Union[HostGroup, TemplateGroup],
-    ) -> MoveTemplatesResult:
-        return cls(
-            source=source.name,
-            destination=destination.name,
-            templates=[template.host for template in source.templates],
-        )
-
-
 @app.command("move_templates", rich_help_panel=HELP_PANEL)
 def move_templates(
     src_group: str = typer.Argument(
@@ -318,6 +249,8 @@ def move_templates(
     ),
 ) -> None:
     """Move all templates from one group to another."""
+    from zabbix_cli.commands.results.templategroup import MoveTemplatesResult
+
     src: Union[HostGroup, TemplateGroup]
     dest: Union[HostGroup, TemplateGroup]
 

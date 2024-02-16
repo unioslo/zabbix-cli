@@ -1,6 +1,9 @@
 #
-# Most of the code in this file is from the project PyZabbix:
+# The code in this file is based on the pyzabbix library:
 # https://github.com/lukecyca/pyzabbix
+#
+# Numerous changes have been made to the original code to make it more
+# type-safe and to better fit the use-cases of the zabbix-cli project.
 #
 # We have modified the login method to be able to send an auth-token so
 # we do not have to login again as long as the auth-token used is still
@@ -30,12 +33,18 @@ from zabbix_cli.cache import ZabbixCache
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
-from zabbix_cli.pyzabbix.types import AgentAvailable
-from zabbix_cli.pyzabbix.types import DataCollectionMode
+from zabbix_cli.pyzabbix.enums import AgentAvailable
+from zabbix_cli.pyzabbix.enums import DataCollectionMode
+from zabbix_cli.pyzabbix.enums import ExportFormat
+from zabbix_cli.pyzabbix.enums import GUIAccess
+from zabbix_cli.pyzabbix.enums import InventoryMode
+from zabbix_cli.pyzabbix.enums import MaintenanceStatus
+from zabbix_cli.pyzabbix.enums import MonitoringStatus
+from zabbix_cli.pyzabbix.enums import TriggerPriority
+from zabbix_cli.pyzabbix.enums import UsergroupPermission
+from zabbix_cli.pyzabbix.enums import UserRole
 from zabbix_cli.pyzabbix.types import Event
-from zabbix_cli.pyzabbix.types import ExportFormat
 from zabbix_cli.pyzabbix.types import GlobalMacro
-from zabbix_cli.pyzabbix.types import GUIAccess
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import HostInterface
@@ -43,27 +52,21 @@ from zabbix_cli.pyzabbix.types import HostInterfaceDetails
 from zabbix_cli.pyzabbix.types import Image
 from zabbix_cli.pyzabbix.types import ImportRules
 from zabbix_cli.pyzabbix.types import InterfaceType
-from zabbix_cli.pyzabbix.types import InventoryMode
 from zabbix_cli.pyzabbix.types import Item
 from zabbix_cli.pyzabbix.types import Macro
 from zabbix_cli.pyzabbix.types import Maintenance
-from zabbix_cli.pyzabbix.types import MaintenanceStatus
 from zabbix_cli.pyzabbix.types import Map
 from zabbix_cli.pyzabbix.types import MediaType
-from zabbix_cli.pyzabbix.types import MonitoringStatus
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Role
 from zabbix_cli.pyzabbix.types import Template
 from zabbix_cli.pyzabbix.types import TemplateGroup
 from zabbix_cli.pyzabbix.types import Trigger
-from zabbix_cli.pyzabbix.types import TriggerPriority
 from zabbix_cli.pyzabbix.types import User
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import UserMedia
 from zabbix_cli.pyzabbix.types import ZabbixAPIResponse
 from zabbix_cli.pyzabbix.types import ZabbixRight
-from zabbix_cli.utils.args import UsergroupPermission
-from zabbix_cli.utils.args import UserRole
 from zabbix_cli.utils.utils import get_acknowledge_action_value
 
 if TYPE_CHECKING:
@@ -79,11 +82,6 @@ if TYPE_CHECKING:
 
     class HTTPXClientKwargs(TypedDict, total=False):
         timeout: TimeoutTypes
-
-
-class _NullHandler(logging.Handler):
-    def emit(self, record):
-        pass
 
 
 logger = logging.getLogger(__name__)
@@ -313,8 +311,8 @@ class ZabbixAPI:
         search: bool = False,
         select_hosts: bool = False,
         select_templates: bool = False,
-        sort_order: SortOrder | None = None,
-        sort_field: str | None = None,
+        sort_order: Optional[SortOrder] = None,
+        sort_field: Optional[str] = None,
     ) -> HostGroup:
         """Fetches a host group given its name or ID.
 
@@ -354,8 +352,8 @@ class ZabbixAPI:
         search_union: bool = True,
         select_hosts: bool = False,
         select_templates: bool = False,
-        sort_order: SortOrder | None = None,
-        sort_field: str | None = None,
+        sort_order: Optional[SortOrder] = None,
+        sort_field: Optional[str] = None,
     ) -> List[HostGroup]:
         """Fetches a list of host groups given its name or ID.
 
@@ -444,7 +442,7 @@ class ZabbixAPI:
             )
         except ZabbixAPIException as e:
             hgs = ", ".join(hg.name for hg in hostgroups)
-            raise ZabbixAPIException(f"Failed to copy hosts to {hgs}: {e}") from e
+            raise ZabbixAPIException(f"Failed to add hosts to {hgs}: {e}") from e
 
     def remove_hosts_from_hostgroups(
         self, hosts: List[Host], hostgroups: List[HostGroup]
@@ -769,6 +767,13 @@ class ZabbixAPI:
                 "Host creation returned no data. Unable to determine if host was created."
             )
         return str(resp["hostids"][0])
+
+    def delete_host(self, host: Host) -> None:
+        """Deletes a host."""
+        try:
+            self.host.delete(host.hostid)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to delete host {host.host!r}: {e}") from e
 
     def host_exists(self, name_or_id: str) -> bool:
         """Checks if a host exists given its name or ID."""
@@ -1268,7 +1273,7 @@ class ZabbixAPI:
         return resp["hostmacroids"][0]
 
     def update_host_inventory(self, host: Host, inventory: Dict[str, str]) -> str:
-        """Updates a host inventory given a host ID and inventory."""
+        """Updates a host inventory given a host and inventory."""
         try:
             resp = self.host.update(hostid=host.hostid, inventory=inventory)
         except ZabbixAPIException as e:
@@ -1296,6 +1301,20 @@ class ZabbixAPI:
         if not resp or not resp.get("hostids"):
             raise ZabbixNotFoundError(
                 f"No host ID returned when updating proxy for host {host.host!r} (ID {host.hostid})"
+            )
+        return resp["hostids"][0]
+
+    def update_host_status(self, host: Host, status: MonitoringStatus) -> str:
+        """Updates a host status given a host ID and status."""
+        try:
+            resp = self.host.update(hostid=host.hostid, status=status.as_api_value())
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to update host status for host {host.host!r} (ID {host.hostid})"
+            ) from e
+        if not resp or not resp.get("hostids"):
+            raise ZabbixNotFoundError(
+                f"No host ID returned when updating status for host {host.host!r} (ID {host.hostid})"
             )
         return resp["hostids"][0]
 
@@ -1374,7 +1393,7 @@ class ZabbixAPI:
     def add_templates_to_groups(
         self,
         templates: List[Template],
-        groups: List[HostGroup] | List[TemplateGroup],
+        groups: Union[List[HostGroup], List[TemplateGroup]],
     ) -> None:
         try:
             self.template.massadd(
@@ -1495,7 +1514,7 @@ class ZabbixAPI:
     def link_templates_to_groups(
         self,
         templates: list[Template],
-        groups: list[HostGroup] | List[TemplateGroup],
+        groups: Union[List[HostGroup], List[TemplateGroup]],
     ) -> None:
         """Links one or more templates to one or more host/template groups.
 
@@ -1506,7 +1525,7 @@ class ZabbixAPI:
 
         Args:
             templates (List[str]): A list of template names or IDs
-            groups (list[HostGroup] | List[TemplateGroup]): A list of host/template groups
+            groups (Union[List[HostGroup], List[TemplateGroup]]): A list of host/template groups
         """
         if not templates:
             raise ZabbixAPIException("At least one template is required")
@@ -1522,7 +1541,7 @@ class ZabbixAPI:
     def remove_templates_from_groups(
         self,
         templates: list[Template],
-        groups: list[HostGroup] | List[TemplateGroup],
+        groups: Union[List[HostGroup], List[TemplateGroup]],
     ) -> None:
         """Removes template(s) from host/template group(s).
 
@@ -1533,7 +1552,7 @@ class ZabbixAPI:
 
         Args:
             templates (List[str]): A list of template names or IDs
-            groups (list[HostGroup] | List[TemplateGroup]): A list of host/template groups
+            groups (Union[List[HostGroup], List[TemplateGroup]]): A list of host/template groups
         """
         # NOTE: do we even want to enforce this?
         if not templates:
@@ -1584,13 +1603,13 @@ class ZabbixAPI:
         self,
         username: str,
         password: str,
-        first_name: str | None = None,
-        last_name: str | None = None,
-        role: UserRole | None = None,
-        autologin: bool | None = None,
-        autologout: str | int | None = None,
-        usergroups: List[Usergroup] | None = None,
-        media: List[UserMedia] | None = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        role: Optional[UserRole] = None,
+        autologin: Optional[bool] = None,
+        autologout: Union[str, int, None] = None,
+        usergroups: Union[List[Usergroup], None] = None,
+        media: Optional[List[UserMedia]] = None,
     ) -> str:
         # TODO: handle invalid password
         # TODO: handle invalid type
@@ -1630,7 +1649,7 @@ class ZabbixAPI:
             raise ZabbixNotFoundError(f"Role {name_or_id!r} not found")
         return roles[0]
 
-    def get_roles(self, name_or_id: str | None = None) -> List[Role]:
+    def get_roles(self, name_or_id: Optional[str] = None) -> List[Role]:
         params = {"output": "extend"}  # type: ParamsType
         if name_or_id is not None:
             if name_or_id.isdigit():
@@ -1649,8 +1668,8 @@ class ZabbixAPI:
 
     def get_users(
         self,
-        username: str | None = None,
-        role: UserRole | None = None,
+        username: Optional[str] = None,
+        role: Optional[UserRole] = None,
         search: bool = False,
     ) -> List[User]:
         params = {"output": "extend"}  # type: ParamsType
@@ -1693,7 +1712,7 @@ class ZabbixAPI:
         return mts[0]
 
     def get_mediatypes(
-        self, name: str | None = None, search: bool = False
+        self, name: Optional[str] = None, search: bool = False
     ) -> List[MediaType]:
         params = {"output": "extend"}  # type: ParamsType
         filter_params = {}  # type: ParamsType

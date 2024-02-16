@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import glob
 import time
 from datetime import datetime
 from functools import partial
@@ -15,19 +14,14 @@ from typing import TYPE_CHECKING
 from typing import Union
 
 import typer
-from pydantic import field_serializer
 from strenum import StrEnum
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
 from zabbix_cli.config.constants import OutputFormat
-from zabbix_cli.config.model import Config
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.logs import logger
-from zabbix_cli.models import Result
-from zabbix_cli.models import ReturnCode
-from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import console
 from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import error
@@ -36,14 +30,7 @@ from zabbix_cli.output.console import info
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.formatting.path import path_link
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.types import ExportFormat
-from zabbix_cli.pyzabbix.types import Host
-from zabbix_cli.pyzabbix.types import HostGroup
-from zabbix_cli.pyzabbix.types import Image
-from zabbix_cli.pyzabbix.types import Map
-from zabbix_cli.pyzabbix.types import MediaType
-from zabbix_cli.pyzabbix.types import Template
-from zabbix_cli.pyzabbix.types import TemplateGroup
+from zabbix_cli.pyzabbix.enums import ExportFormat
 from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.args import parse_path_arg
@@ -53,11 +40,18 @@ from zabbix_cli.utils.utils import sanitize_filename
 
 
 if TYPE_CHECKING:
+    from zabbix_cli.pyzabbix.types import Host
+    from zabbix_cli.pyzabbix.types import HostGroup
+    from zabbix_cli.pyzabbix.types import Image
+    from zabbix_cli.pyzabbix.types import Map
+    from zabbix_cli.pyzabbix.types import MediaType
+    from zabbix_cli.pyzabbix.types import Template
+    from zabbix_cli.pyzabbix.types import TemplateGroup
     from zabbix_cli.models import RowsType  # noqa: F401
-    from zabbix_cli.models import ColsRowsType
     from typing_extensions import TypedDict
     from typing_extensions import Unpack
     from zabbix_cli.pyzabbix.client import ZabbixAPI
+    from zabbix_cli.config.model import Config
 
     class ExportKwargs(TypedDict, total=False):
         hosts: List[Host]
@@ -313,16 +307,6 @@ class ZabbixExporter:
         return filename
 
 
-class ExportResult(TableRenderable):
-    """Result type for `export_configuration` command."""
-
-    exported: List[Path] = []
-    """List of paths to exported files."""
-    types: List[ExportType] = []
-    names: List[str] = []
-    format: ExportFormat
-
-
 def parse_export_types(value: List[str]) -> List[ExportType]:
     # If we have no specific exports, export all object types
     if not value:
@@ -448,6 +432,9 @@ def export_configuration(
     Timestamps are disabled by default, but can be enabled with the [green i]app.export_timestamps[/]
     configuration option.
     """
+    from zabbix_cli.models import Result
+    from zabbix_cli.commands.results.export import ExportResult
+
     if args:
         if not len(args) == 3:
             exit_err("Invalid number of arguments. Use options instead.")
@@ -495,6 +482,7 @@ def export_configuration(
             result=ExportResult(
                 exported=exported, types=types, names=obj_names, format=format
             ),
+            table=False,
         )
     )
 
@@ -563,32 +551,6 @@ class ZabbixImporter:
             logger.info(f"Imported file {file}")
 
 
-class ZabbixImportResult(TableRenderable):
-    """Result type for `import_configuration` command."""
-
-    success: bool = True
-    dryrun: bool = False
-    imported: List[Path] = []
-    failed: List[Path] = []
-    duration: Optional[float] = None
-    """Duration it took to import files in seconds. Is None if import failed."""
-
-    @field_serializer("imported", "failed", when_used="json")
-    def _serialize_files(self, files: List[Path]) -> List[str]:
-        """Serializes files as list of normalized, absolute paths with symlinks resolved."""
-        return [str(f.resolve()) for f in files]
-
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["Imported", "Failed"]  # type: List[str]
-        rows = [
-            [
-                "\n".join(path_link(f) for f in self.imported),
-                "\n".join(path_link(f) for f in self.failed),
-            ]
-        ]  # type: RowsType
-        return cols, rows
-
-
 def filter_valid_imports(files: List[Path]) -> List[Path]:
     """Filter list of files to include only valid imports."""
     importables = [i.casefold() for i in ExportFormat.get_importables()]
@@ -634,9 +596,14 @@ def import_configuration(
 
     Determines format to import based on file extensions.
     """
+    import glob
+    from zabbix_cli.models import Result
+    from zabbix_cli.models import ReturnCode
+    from zabbix_cli.commands.results.export import ImportResult
+
     if args:
         if not len(args) == 2:
-            exit_err("Invalid number of arguments. Use options instead.")
+            exit_err("Invalid number of positional arguments. Use options instead.")
         to_import = args[0]
         dry_run = parse_bool_arg(args[1])
 
@@ -671,9 +638,7 @@ def import_configuration(
             render_result(
                 Result(
                     message=msg,
-                    result=ZabbixImportResult(
-                        success=True, dryrun=True, imported=files
-                    ),
+                    result=ImportResult(success=True, dryrun=True, imported=files),
                 )
             )
         return
@@ -699,12 +664,13 @@ def import_configuration(
         res = Result(
             message=f"{e}. See log for further details. Use [cyan]--ignore-errors[/] to ignore failed files.",
             return_code=ReturnCode.ERROR,
-            result=ZabbixImportResult(
+            result=ImportResult(
                 success=False,
                 dryrun=False,
                 imported=importer.imported,
                 failed=importer.failed,
             ),
+            table=False,  # only render this in JSON mode
         )
     else:
         duration = time.monotonic() - start_time
@@ -713,12 +679,13 @@ def import_configuration(
             msg += f", failed to import {len(importer.failed)} files"
         res = Result(
             message=msg,
-            result=ZabbixImportResult(
+            result=ImportResult(
                 success=len(importer.failed) == 0,
                 imported=importer.imported,
                 failed=importer.failed,
                 duration=duration,
             ),
+            table=False,  # only render this in JSON mode
         )
 
     render_result(res)

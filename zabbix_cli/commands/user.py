@@ -4,46 +4,27 @@ from __future__ import annotations
 import hashlib
 import random
 from contextlib import suppress
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Union
 
-import rich.box
 import typer
-from pydantic import computed_field
-from pydantic import Field
-from pydantic import field_validator
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
-from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import META_KEY_JOIN_CHAR
-from zabbix_cli.models import Result
-from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import success
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.prompts import bool_prompt
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.types import GUIAccess
-from zabbix_cli.pyzabbix.types import HostGroup
-from zabbix_cli.pyzabbix.types import TemplateGroup
-from zabbix_cli.pyzabbix.types import User
-from zabbix_cli.pyzabbix.types import Usergroup
-from zabbix_cli.pyzabbix.types import UserMedia
-from zabbix_cli.pyzabbix.types import ZabbixRight
+from zabbix_cli.pyzabbix.enums import GUIAccess
+from zabbix_cli.pyzabbix.enums import UsergroupPermission
+from zabbix_cli.pyzabbix.enums import UserRole
 from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_list_arg
-from zabbix_cli.utils.args import UsergroupPermission
-from zabbix_cli.utils.args import UserRole
-from zabbix_cli.utils.utils import get_gui_access
-from zabbix_cli.utils.utils import get_permission
-from zabbix_cli.utils.utils import get_usergroup_status
 
 
 if TYPE_CHECKING:
@@ -52,12 +33,6 @@ if TYPE_CHECKING:
     from zabbix_cli.models import RowContent  # noqa: F401
     from zabbix_cli.models import RowsType  # noqa: F401
 
-# # `zabbix-cli host user <cmd>`
-# user_cmd = StatefulApp(
-#     name="user",
-#     help="Host user commands.",
-# )
-# app.add_subcommand(user_cmd)
 
 HELP_PANEL = "User"
 
@@ -66,16 +41,6 @@ def get_random_password() -> str:
     x = hashlib.md5()
     x.update(str(random.randint(1, 1000000)).encode("ascii"))
     return x.hexdigest()
-
-
-class ShowUsermacroTemplateListResult(TableRenderable):
-    macro: str
-    value: Optional[str] = None
-    templateid: str
-    template: str
-
-    def __cols__(self) -> list[str]:
-        return ["Macro", "Value", "Template ID", "Template"]
 
 
 @app.command("create_user", rich_help_panel=HELP_PANEL)
@@ -118,6 +83,9 @@ def create_user(
     Prompts for missing values.
     Leave prompt values empty to not set values.
     """
+    from zabbix_cli.models import Result
+    from zabbix_cli.pyzabbix.types import User
+
     # TODO: add new options
     if not username:
         username = str_prompt("Username")
@@ -192,11 +160,12 @@ def create_user(
 @app.command("remove_user", rich_help_panel=HELP_PANEL)
 def remove_user(
     ctx: typer.Context,
-    username: Optional[str] = typer.Argument(None, help="Username to remove."),
+    username: str = typer.Argument(..., help="Username to remove."),
 ) -> None:
     """Remove a user."""
-    if not username:
-        username = str_prompt("Username")
+    from zabbix_cli.models import Result
+    from zabbix_cli.pyzabbix.types import User
+
     userid = app.state.client.delete_user(username)
     render_result(
         Result(
@@ -209,11 +178,9 @@ def remove_user(
 @app.command("show_user", rich_help_panel=HELP_PANEL)
 def show_user(
     ctx: typer.Context,
-    username: Optional[str] = typer.Argument(None, help="Username of user"),
+    username: str = typer.Argument(..., help="Username of user"),
 ) -> None:
     """Show a user."""
-    if not username:
-        username = str_prompt("Username")
     user = app.state.client.get_user(username)
     render_result(user)
 
@@ -225,7 +192,7 @@ def show_users(
         None, "--limit", help="Limit the number of users shown."
     ),
     username: Optional[str] = typer.Option(
-        None, "--username", help="Filter users by username. Wildcards supported."
+        None, "--username", help="Filter users by username. Supports wildcards."
     ),
     role: Optional[UserRole] = typer.Option(
         None,
@@ -235,14 +202,10 @@ def show_users(
     ),
 ) -> None:
     """Show all users."""
-    kwargs = {}  # type: dict[str, Any]
-    if username or role:
-        kwargs["search"] = True
-    if username:
-        kwargs["username"] = username
-    if role:
-        kwargs["role"] = role
-    users = app.state.client.get_users(**kwargs)
+    from zabbix_cli.models import AggregateResult
+
+    search = bool(username or role)
+    users = app.state.client.get_users(username=username, role=role, search=search)
     if limit:
         users = users[: abs(limit)]
     render_result(AggregateResult(result=users))
@@ -297,6 +260,10 @@ def create_notification_user(
     The configuration file option [green]default_notification_users_usergroup[/green]
     must be configured if [green]--usergroups[/green] is not specified.
     """
+    from zabbix_cli.models import Result
+    from zabbix_cli.pyzabbix.types import User
+    from zabbix_cli.pyzabbix.types import UserMedia
+
     if args:
         # Old args format: <sendto> <mediatype> <remarks>
         # We already have sendto and mediatype, so we are left with 1 arg.
@@ -389,25 +356,6 @@ def create_notification_user(
     )
 
 
-class UgroupUpdateUsersResult(TableRenderable):
-    usergroups: List[str]
-    users: List[str]
-
-    def __cols_rows__(self) -> ColsRowsType:
-        return (
-            ["Usergroups", "Users"],
-            [["\n".join(self.usergroups), ", ".join(self.users)]],
-        )
-
-
-class UsergroupAddUsers(UgroupUpdateUsersResult):
-    __title__ = "Added Users"
-
-
-class UsergroupRemoveUsers(UgroupUpdateUsersResult):
-    __title__ = "Removed Users"
-
-
 @app.command("add_user_to_usergroup", rich_help_panel=HELP_PANEL)
 def add_user_to_usergroup(
     ctx: typer.Context,
@@ -422,6 +370,8 @@ def add_user_to_usergroup(
     """Adds user(s) to usergroup(s).
 
     Ignores users not in user groups. Users and groups must exist."""
+    from zabbix_cli.commands.results.user import UsergroupAddUsers
+
     # FIXME: requires support for IDs for parity with V2
     if not usernames:
         usernames = str_prompt("Usernames")
@@ -451,24 +401,19 @@ def add_user_to_usergroup(
 @app.command("remove_user_from_usergroup", rich_help_panel=HELP_PANEL)
 def remove_user_from_usergroup(
     ctx: typer.Context,
-    usernames: Optional[str] = typer.Argument(
-        None, help="Comma-separated list of usernames to remove."
-    ),
-    usergroups: Optional[str] = typer.Argument(
-        None,
-        help="Comma-separated list of user groups to remove the users from. [yellow]WARNING: Case sensitive![/yellow]]",
+    usernames: str = typer.Argument(..., help="Usernames to remove. Comma-separated."),
+    usergroups: str = typer.Argument(
+        ...,
+        help="User groups to remove the users from. Comma-separated.",
     ),
 ) -> None:
     """Removes user(s) from usergroup(s).
 
     Ignores users not in user groups. Users and groups must exist."""
-    # FIXME: requires support for IDs for parity with V2
-    if not usernames:
-        usernames = str_prompt("Usernames")
-    unames = parse_list_arg(usernames)
+    from zabbix_cli.commands.results.user import UsergroupRemoveUsers
 
-    if not usergroups:
-        usergroups = str_prompt("User groups")
+    # FIXME: requires support for IDs for parity with V2
+    unames = parse_list_arg(usernames)
     ugroups = parse_list_arg(usergroups)
 
     with app.status("Removing users from user groups"):
@@ -534,125 +479,21 @@ def create_usergroup(
     success(f"Created user group {usergroup!r} ({usergroupid}).")
 
 
-class GroupRights(TableRenderable):
-    __box__ = rich.box.MINIMAL
-
-    groups: Union[Dict[str, HostGroup], Dict[str, TemplateGroup]] = Field(
-        default_factory=dict,
-    )
-
-    rights: List[ZabbixRight] = Field(
-        default_factory=list,
-        description="Group rights for the user group.",
-    )
-
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["Name", "Permission"]
-        rows = []  # type: RowsType
-        for right in self.rights:
-            group = self.groups.get(right.id, None)
-            if group:
-                group_name = group.name
-            else:
-                group_name = "Unknown"
-            rows.append([group_name, str(UsergroupPermission(right.permission))])
-        return cols, rows
-
-
-class ShowUsergroupResult(TableRenderable):
-    usrgrpid: str
-    name: str
-    gui_access: str = Field(..., json_schema_extra={"header": "GUI Access"})
-    status: str
-    users: List[str] = Field(
-        default_factory=list, json_schema_extra={META_KEY_JOIN_CHAR: ", "}
-    )
-    hostgroup_rights: List[ZabbixRight] = []
-    templategroup_rights: List[ZabbixRight] = []
-
-    @classmethod
-    def from_usergroup(cls, usergroup: Usergroup) -> ShowUsergroupResult:
-        return cls(
-            name=usergroup.name,
-            usrgrpid=usergroup.usrgrpid,
-            gui_access=usergroup.gui_access_str,
-            status=usergroup.users_status_str,
-            users=[user.username for user in usergroup.users],
-        )
-
-    @field_validator("gui_access")
-    @classmethod
-    def _validate_gui_access(cls, v: Any) -> str:
-        if isinstance(v, int):
-            return get_gui_access(v)
-        return v
-
-    @field_validator("status")
-    @classmethod
-    def _validate_status(cls, v: Any) -> str:
-        if isinstance(v, int):
-            return get_usergroup_status(v)
-        return v
-
-
-class ShowUsergroupPermissionsResult(Usergroup):
-    hostgroups: Dict[str, HostGroup] = Field(
-        default_factory=dict,
-        exclude=True,
-        description="Host groups the user group has access to. Used to render host group rights.",
-    )
-    templategroups: Dict[str, TemplateGroup] = Field(
-        default_factory=dict,
-        exclude=True,
-        description="Mapping of all template groups. Used to render template group rights.",
-    )
-
-    @classmethod
-    def from_usergroup(
-        cls,
-        usergroup: Usergroup,
-        hostgroups: list[HostGroup],
-        templategroups: list[TemplateGroup],
-    ) -> ShowUsergroupPermissionsResult:
-        ug = cls.model_validate(usergroup, from_attributes=True)
-        if hostgroups:
-            ug.hostgroups = {hg.groupid: hg for hg in hostgroups}
-        if templategroups:
-            ug.templategroups = {tg.groupid: tg for tg in templategroups}
-        return ug
-
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["ID", "Name", "Host Group Rights"]
-        row = [self.usrgrpid, self.name]  # type: RowContent
-
-        # Host group rights table
-        row.append(
-            GroupRights(groups=self.hostgroups, rights=self.hostgroup_rights).as_table()
-        )
-
-        # Template group rights table
-        if self.zabbix_version.release >= (6, 2, 0):
-            cols.append("Template Group Rights")
-            row.append(
-                GroupRights(
-                    groups=self.templategroups, rights=self.templategroup_rights
-                ).as_table()
-            )
-        return cols, [row]
-
-
 @app.command("show_usergroup", rich_help_panel=HELP_PANEL)
 def show_usergroup(
     ctx: typer.Context,
-    usergroup: List[str] = typer.Argument(
-        None, help="Name of the user group to show. Supports wildcards. Can be repeated"
+    usergroup: str = typer.Argument(
+        ...,
+        help="Name of the user group(s) to show. Comma-separated. Supports wildcards.",
     ),
 ) -> None:
-    """Show details for one or more user groups."""
-    if not usergroup:
-        usergroup = parse_list_arg(str_prompt("User group"))
+    """Show details for user group(s)."""
+    from zabbix_cli.commands.results.user import ShowUsergroupResult
+    from zabbix_cli.models import AggregateResult
+
+    ugs = parse_list_arg(usergroup)
     usergroups = app.state.client.get_usergroups(
-        *usergroup, select_users=True, select_rights=True, search=True
+        *ugs, select_users=True, select_rights=True, search=True
     )
     res = []
     for ugroup in usergroups:
@@ -663,6 +504,9 @@ def show_usergroup(
 @app.command("show_usergroups", rich_help_panel=HELP_PANEL)
 def show_usergroups(ctx: typer.Context) -> None:
     """Show all user groups."""
+    from zabbix_cli.commands.results.user import ShowUsergroupResult
+    from zabbix_cli.models import AggregateResult
+
     usergroups = app.state.client.get_usergroups(select_users=True, search=True)
     res = []
     for ugroup in usergroups:
@@ -683,6 +527,9 @@ def show_usergroup_permissions(
     # under the key "permissions".
     # In V3, we follow the API and serialize it as a list of dicts under the key
     # "rights" in <6.2.0 and "hostgroup_rights" and "templategroup_rights" in >=6.2.0
+    from zabbix_cli.commands.results.user import ShowUsergroupPermissionsResult
+    from zabbix_cli.models import AggregateResult
+
     ugs = parse_list_arg(usergroup)
     usergroups = app.state.client.get_usergroups(*ugs, select_rights=True, search=True)
 
@@ -704,53 +551,21 @@ def show_usergroup_permissions(
     render_result(AggregateResult(result=res))
 
 
-class AddUsergroupPermissionsResult(TableRenderable):
-    usergroup: str
-    hostgroups: List[str]
-    templategroups: List[str]
-    permission: UsergroupPermission
-
-    @computed_field  # type: ignore # computed field on @property
-    @property
-    def permission_str(self) -> str:
-        return get_permission(self.permission.as_api_value())
-
-    def __cols_rows__(self) -> ColsRowsType:
-        return (
-            [
-                "Usergroup",
-                "Host Groups",
-                "Template Groups",
-                "Permission",
-            ],
-            [
-                [
-                    self.usergroup,
-                    ", ".join(self.hostgroups),
-                    ", ".join(self.templategroups),
-                    self.permission_str,
-                ],
-            ],
-        )
-
-
 # NOTE: {add,update}_usergroup_permissions seem to be the exact same command in V2. Keeping that here.
 @app.command("add_usergroup_permissions", rich_help_panel=HELP_PANEL)
 @app.command("update_usergroup_permissions", rich_help_panel=HELP_PANEL)
 def add_usergroup_permissions(
     ctx: typer.Context,
-    usergroup: Optional[str] = typer.Argument(
-        None, help="User group to give permissions to."
-    ),
+    usergroup: str = typer.Argument(..., help="User group to give permissions to."),
     hostgroups: Optional[str] = typer.Option(
         None,
         "--hostgroups",
-        help="Comma-separated list of host group names. [yellow]WARNING: Case sensitive![/yellow]]",
+        help="Comma-separated list of host group names.",
     ),
     templategroups: Optional[str] = typer.Option(
         None,
         "--templategroups",
-        help="Comma-separated list of template group names. [yellow]WARNING: Case sensitive![/yellow]]",
+        help="Comma-separated list of template group names.",
     ),
     permission: Optional[UsergroupPermission] = typer.Option(
         None,
@@ -766,6 +581,8 @@ def add_usergroup_permissions(
     Run [green]show_hostgroups[/] to get a list of host groups, and
     [green]show_templategroups --no-templates[/] to get a list of template groups.
     """
+    from zabbix_cli.commands.results.user import AddUsergroupPermissionsResult
+
     # Legacy positional args: <usergroup> <hostgroups> <permission>
     # We already have usergroup as positional arg, so we are left with 2 args.
     if args:
@@ -777,17 +594,7 @@ def add_usergroup_permissions(
         hostgroups = hostgroups or args[0]
         permission = permission or UsergroupPermission(args[1])
 
-    if not usergroup:
-        usergroup = str_prompt("User group")
-
-    # Only prompt if no group options
-    if not hostgroups and not templategroups:
-        hostgroups = str_prompt("Host groups", empty_ok=True, default="")
     hgroups = parse_list_arg(hostgroups)
-
-    # Ditto
-    if not templategroups and not hostgroups:
-        templategroups = str_prompt("Template groups", empty_ok=True, default="")
     tgroups = parse_list_arg(templategroups)
 
     if not hgroups and not tgroups:

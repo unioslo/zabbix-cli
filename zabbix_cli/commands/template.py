@@ -1,9 +1,7 @@
-"""Commands that interact with the application itself."""
 from __future__ import annotations
 
 from itertools import chain
 from typing import List
-from typing import Literal
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
@@ -12,28 +10,25 @@ import typer
 
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
-from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.console import success
+from zabbix_cli.output.formatting.grammar import pluralize as p
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.types import Host
-from zabbix_cli.pyzabbix.types import HostGroup
-from zabbix_cli.pyzabbix.types import Template
-from zabbix_cli.pyzabbix.types import TemplateGroup
 from zabbix_cli.utils.args import parse_list_arg
 
-
 if TYPE_CHECKING:
-    from zabbix_cli.models import ColsType  # noqa: F401
-    from zabbix_cli.models import RowsType  # noqa: F401
+    from zabbix_cli.pyzabbix.types import Host
+    from zabbix_cli.pyzabbix.types import HostGroup
+    from zabbix_cli.pyzabbix.types import Template
+    from zabbix_cli.pyzabbix.types import TemplateGroup
 
 
 HELP_PANEL = "Template"
 
 
+# FIXME: use parse_hostgroup_args from utils.args
 def _handle_hostnames_args(
     hostnames_or_ids: str | None,
     strict: bool = False,
@@ -56,7 +51,7 @@ def _handle_hostnames_args(
 def _handle_hostgroups_args(
     hgroup_names_or_ids: str | None,
     strict: bool = False,
-) -> list[HostGroup]:
+) -> List[HostGroup]:
     if not hgroup_names_or_ids:
         hgroup_names_or_ids = str_prompt("Host group(s)")
 
@@ -75,7 +70,7 @@ def _handle_hostgroups_args(
 def _handle_templategroup_args(
     tgroup_names_or_ids: str | None,
     strict: bool = False,
-) -> list[TemplateGroup]:
+) -> List[TemplateGroup]:
     if not tgroup_names_or_ids:
         tgroup_names_or_ids = str_prompt("Template group(s)")
 
@@ -168,31 +163,8 @@ def link_template_to_host(
     ),
 ) -> None:
     """Link template(s) to host(s)."""
-
-    class LinkTemplateToHostResult(TableRenderable):
-        hosts: str
-        templates: List[str]
-        action: str
-
-        @classmethod
-        def from_results(
-            cls,
-            templates: List[Template],
-            host: Host,
-            action: str,
-        ) -> LinkTemplateToHostResult:
-            to_link = set()  # names of templates to link
-            for t in templates:
-                for h in t.hosts:
-                    if h.host == host.host:
-                        break
-                else:
-                    to_link.add(t.host)
-            return cls(
-                hosts=host.host,
-                templates=sorted(to_link),
-                action=action,
-            )
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.commands.results.template import LinkTemplateToHostResult
 
     templates = _handle_template_arg(template_names_or_ids, strict, select_hosts=True)
     hosts = _handle_hostnames_args(hostnames_or_ids, strict)
@@ -201,19 +173,20 @@ def link_template_to_host(
             app.state.client.link_templates_to_hosts(templates, hosts)
     result = []  # type: list[LinkTemplateToHostResult]
     for host in hosts:
-        r = LinkTemplateToHostResult.from_results(templates, host, "Link")
+        r = LinkTemplateToHostResult.from_result(templates, host, "Link")
         if not r.templates:
             continue
         result.append(r)
 
     total_templates = len(set(chain.from_iterable((r.templates) for r in result)))
     total_hosts = len(result)
-    if dryrun:
-        info(f"Would link {total_templates} template(s) to {total_hosts} host(s):")
 
     render_result(AggregateResult(result=result))
-    if not dryrun:
-        success(f"Linked {total_templates} templates to {total_hosts} hosts.")
+    base_msg = f"{p('template', total_templates)} to {p('host', total_hosts)}"
+    if dryrun:
+        info(f"Would link {base_msg}.")
+    else:
+        success(f"Linked {base_msg}.")
 
 
 @app.command(
@@ -257,30 +230,8 @@ def unlink_template_from_host(
     ),
 ) -> None:
     """Unlinks templates from hosts."""
-
-    class UnlinkTemplateFromHostResult(TableRenderable):
-        host: str
-        templates: List[str]
-        action: str
-
-        @classmethod
-        def from_results(
-            cls,
-            templates: List[Template],
-            host: Host,
-            action: str,
-        ) -> UnlinkTemplateFromHostResult:
-            """Only show templates that are actually unlinked."""
-            to_remove = set()
-            for t in templates:
-                for h in t.hosts:
-                    if h.host == host.host:
-                        to_remove.add(t.host)  # name of template
-            return cls(
-                host=host.host,
-                templates=list(to_remove),
-                action=action,
-            )
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.commands.results.template import UnlinkTemplateFromHostResult
 
     templates = _handle_template_arg(template_names_or_ids, strict, select_hosts=True)
     hosts = _handle_hostnames_args(hostnames_or_ids, strict)
@@ -293,45 +244,21 @@ def unlink_template_from_host(
     # Only show hosts with matching templates to unlink
     result = []  # type: list[UnlinkTemplateFromHostResult]
     for host in hosts:
-        r = UnlinkTemplateFromHostResult.from_results(templates, host, action)
+        r = UnlinkTemplateFromHostResult.from_result(templates, host, action)
         if not r.templates:
             continue
         result.append(r)
 
     total_templates = len(set(chain.from_iterable((r.templates) for r in result)))
     total_hosts = len(result)
-    if dryrun:
-        info(
-            f"Would {action.lower()} {total_templates} template(s) from {total_hosts} host(s):"
-        )
 
     render_result(AggregateResult(result=result))
-    if not dryrun:
+    base_msg = f"{p('template', total_templates)} from {p('host', total_hosts)}"
+    if dryrun:
+        info(f"Would {action.lower()} {base_msg}:")
+    else:
         action_success = "Unlinked and cleared" if clear else "Unlinked"
-        success(
-            f"{action_success} {total_templates} template(s) from {total_hosts} host(s)."
-        )
-
-
-class LinkTemplateResult(TableRenderable):
-    """Result type for (un)linking templates to templates."""
-
-    source: List[str]
-    destination: List[str]
-    action: str
-
-    @classmethod
-    def from_results(
-        cls,
-        source: List[Template],
-        destination: List[Template],
-        action: Literal["Link", "Unlink", "Unlink and clear"],
-    ) -> LinkTemplateResult:
-        return cls(
-            source=[t.host for t in source],
-            destination=[t.host for t in destination],
-            action=action,
-        )
+        success(f"{action_success} {base_msg}.")
 
 
 @app.command(
@@ -375,24 +302,24 @@ def link_template_to_template(
 
     [b]NOTE:[/] Destination templates are the ones that are ultimately modified. Source templates remain unchanged.
     """
+    from zabbix_cli.commands.results.template import LinkTemplateResult
+
     # TODO: add existing link checking just like in `link_template_to_host` & `unlink_template_from_host`
     # so we only print the ones that are actually linked
     source_templates = _handle_template_arg(source, strict)
     dest_templates = _handle_template_arg(dest, strict)
-    if dryrun:
-        info(
-            f"Would link {len(source_templates)} templates to {len(dest_templates)} templates:"
-        )
-    else:
+
+    if not dryrun:
         with app.state.console.status("Linking templates..."):
             app.state.client.link_templates(source_templates, dest_templates)
     render_result(
-        LinkTemplateResult.from_results(source_templates, dest_templates, "Link")
+        LinkTemplateResult.from_result(source_templates, dest_templates, "Link")
     )
-    if not dryrun:
-        success(
-            f"Linked {len(source_templates)} templates to {len(dest_templates)} templates."
-        )
+    base_msg = f"{p('template', len(source_templates))} to {p('template', len(dest_templates))}"
+    if dryrun:
+        info(f"Would link {base_msg}.")
+    else:
+        success(f"Linked {base_msg}.")
 
 
 @app.command(
@@ -446,46 +373,29 @@ def unlink_template_from_template(
     Unlinks and clears by default. Use `--no-clear` to unlink without clearing.
     [b]NOTE:[/] Destination templates are the ones that are ultimately modified. Source templates remain unchanged.
     """
+    from zabbix_cli.commands.results.template import LinkTemplateResult
+
     source_templates = _handle_template_arg(source, strict)
     dest_templates = _handle_template_arg(dest, strict)
-    action = "Unlink and clear" if clear else "Unlink"
-    if dryrun:
-        info(
-            f"Would {action.lower()} {len(source_templates)} template(s) from {len(dest_templates)} template(s):"
-        )
-    else:
+    if not dryrun:
         with app.state.console.status("Unlinking templates..."):
             app.state.client.unlink_templates(
                 source_templates, dest_templates, clear=clear
             )
+    action = "Unlink and clear" if clear else "Unlink"
     render_result(
-        LinkTemplateResult.from_results(
+        LinkTemplateResult.from_result(
             source_templates,
             dest_templates,
             action,  # type: ignore # mypy unable to infer literal type
         )
     )
-    if not dryrun:
+    base_msg = f"{p('template', len(source_templates))} from {p('template', len(dest_templates))}"
+    if dryrun:
+        info(f"Would {action.lower()} {base_msg}.")
+    else:
         action_success = "Unlinked and cleared" if clear else "Unlinked"
-        success(
-            f"{action_success} {len(source_templates)} template(s) from {len(dest_templates)} template(s)."
-        )
-
-
-class TemplateGroupResult(TableRenderable):
-    templates: List[str]
-    groups: List[str]
-
-    @classmethod
-    def from_results(
-        cls,
-        templates: List[Template],
-        groups: Union[List[TemplateGroup], List[HostGroup]],
-    ) -> TemplateGroupResult:
-        return cls(
-            templates=[t.host for t in templates],
-            groups=[h.name for h in groups],
-        )
+        success(f"{action_success} {base_msg}.")
 
 
 # Changed in V3: Changed name to reflect introduction of template groups in >=6.2
@@ -511,6 +421,8 @@ def add_template_to_group(
     [bold]NOTE:[/] Group arguments are interpreted as template groups in >= 6.2,
     otherwise as host groups.
     """
+    from zabbix_cli.commands.results.template import TemplateGroupResult
+
     groups: Union[List[HostGroup], List[TemplateGroup]]
     if app.state.client.version.release >= (6, 2, 0):
         groups = _handle_templategroup_args(group_names_or_ids, strict)
@@ -521,7 +433,7 @@ def add_template_to_group(
 
     with app.state.console.status("Adding templates..."):
         app.state.client.link_templates_to_groups(templates, groups)
-    render_result(TemplateGroupResult.from_results(templates, groups))
+    render_result(TemplateGroupResult.from_result(templates, groups))
     success(f"Added {len(templates)} templates to {len(groups)} groups.")
 
 
@@ -547,6 +459,7 @@ def remove_template_from_group(
     # TODO: add toggle for NOT clearing when unlinking?
 ) -> None:
     """Remove templates from groups."""
+    from zabbix_cli.commands.results.template import TemplateGroupResult
 
     groups: Union[List[HostGroup], List[TemplateGroup]]
     if app.state.client.version.release >= (6, 2, 0):
@@ -565,7 +478,7 @@ def remove_template_from_group(
             templates,
             groups,
         )
-    render_result(TemplateGroupResult.from_results(templates, groups))
+    render_result(TemplateGroupResult.from_result(templates, groups))
     success(f"Removed {len(templates)} templates from {len(groups)} groups.")
 
 
@@ -600,6 +513,8 @@ def show_templates(
 
     Shows all templates by default. The template name can be a pattern containing wildcards.
     Names and IDs cannot be mixed."""
+    from zabbix_cli.models import AggregateResult
+
     args = parse_list_arg(templates)
     tmpls = app.state.client.get_templates(
         *args,
@@ -618,6 +533,8 @@ def show_items(
     ),
 ) -> None:
     """Show items that belong to a template."""
+    from zabbix_cli.models import AggregateResult
+
     if not template_name:
         template_name = str_prompt("Template")
     template = app.state.client.get_template(template_name)

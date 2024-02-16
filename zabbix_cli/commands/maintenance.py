@@ -1,39 +1,20 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any
-from typing import List
 from typing import Optional
 
 import typer
-from pydantic import computed_field
-from pydantic import Field
-from pydantic import field_validator
-from typing_extensions import Literal
 
 from zabbix_cli.app import app
-from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import ColsRowsType
-from zabbix_cli.models import Result
-from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.prompts import str_prompt_optional
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.types import DataCollectionMode
-from zabbix_cli.pyzabbix.types import TimePeriod
+from zabbix_cli.pyzabbix.enums import DataCollectionMode
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.utils import convert_time_to_interval
-from zabbix_cli.utils.utils import get_maintenance_type
 
 
 HELP_PANEL = "Maintenance"
-
-
-class CreateMaintenanceDefinitionResult(TableRenderable):
-    """Result type for `create_maintenance_definition` command."""
-
-    maintenance_id: str
 
 
 @app.command(name="create_maintenance_definition", rich_help_panel=HELP_PANEL)
@@ -80,6 +61,11 @@ def create_maintenance_definition(
 
         [green]--period 3600[/]
     """
+    from zabbix_cli.commands.results.maintenance import (
+        CreateMaintenanceDefinitionResult,
+    )
+    from zabbix_cli.models import Result
+
     if not name:
         name = str_prompt("Name")
     if not description:
@@ -134,6 +120,8 @@ def remove_maintenance_definition(
     ),
 ) -> None:
     """Remove a maintenance definition."""
+    from zabbix_cli.models import Result
+
     if not maintenance_id:
         maintenance_id = str_prompt("Maintenance ID(s)")
 
@@ -148,81 +136,6 @@ def remove_maintenance_definition(
         app.state.client.delete_maintenance(*maintenance_ids)
 
     render_result(Result(message="Removed maintenance definition(s)."))
-
-
-class ShowMaintenanceDefinitionsResult(TableRenderable):
-    """Result type for `show_maintenance_definitions` command."""
-
-    maintenanceid: str
-    name: str
-    type: Optional[int]
-    active_till: datetime
-    description: Optional[str]
-    hosts: List[str]
-    groups: List[str]
-
-    @computed_field()  # type: ignore # mypy bug
-    @property
-    def state(self) -> Literal["Active", "Expired"]:
-        now_time = datetime.now(tz=self.active_till.tzinfo)
-        if self.active_till > now_time:
-            return "Active"
-        return "Expired"
-
-    @computed_field()  # type: ignore # mypy bug
-    @property
-    def maintenance_type(self) -> str:
-        return get_maintenance_type(self.type)
-
-    @field_validator("active_till", mode="before")
-    @classmethod
-    def validate_active_till(cls, v: Any) -> datetime:
-        if v is None:
-            return datetime.now()
-        return v
-
-    @property
-    def state_str(self) -> str:
-        if self.state == "Active":
-            color = "green"
-        else:
-            color = "red"
-        return f"[{color}]{self.state}[/]"
-
-    @property
-    def maintenance_type_str(self) -> str:
-        # FIXME: This is very brittle! We are beholden to self.maintenance_type...
-        if "With DC" in self.maintenance_type:
-            color = "green"
-        else:
-            color = "red"
-        return f"[{color}]{self.maintenance_type}[/]"
-
-    def __cols_rows__(self) -> ColsRowsType:
-        return (
-            [
-                "ID",
-                "Name",
-                "Type",
-                "Active till",
-                "Hosts",
-                "Host groups",
-                "State",
-                "Description",
-            ],
-            [
-                [
-                    self.maintenanceid,
-                    self.name,
-                    self.maintenance_type_str,
-                    self.active_till.strftime("%Y-%m-%d %H:%M"),
-                    ", ".join(self.hosts),
-                    ", ".join(self.groups),
-                    self.state_str,
-                    self.description or "",
-                ]
-            ],
-        )
 
 
 @app.command(name="show_maintenance_definitions", rich_help_panel=HELP_PANEL)
@@ -241,6 +154,9 @@ def show_maintenance_definitions(
     """Show maintenance definitions for IDs, host groups or hosts.
 
     At least one of --maintenance-id, --hostgroup, or --host is required."""
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.commands.results.maintenance import ShowMaintenanceDefinitionsResult
+
     if not any((maintenance_id, hostgroup, host)):
         maintenance_id = str_prompt_optional("Maintenance ID")
         hostgroup = str_prompt_optional("Host group(s)")
@@ -288,25 +204,21 @@ def show_maintenance_definitions(
     )
 
 
-class ShowMaintenancePeriodsResult(TableRenderable):
-    maintenanceid: str = Field(title="Maintenance ID")
-    name: str
-    timeperiods: List[TimePeriod]
-    hosts: List[str]
-    groups: List[str]
-
-
 @app.command(name="show_maintenance_periods", rich_help_panel=HELP_PANEL)
 def show_maintenance_periods(
     ctx: typer.Context,
     maintenance_id: Optional[str] = typer.Argument(
         None,
-        help="Comma-separated list of maintenance IDs. Wildcards supported. Defaults to all maintenances.",
+        help="Maintenance IDs. Comma-separated. Supports wildcards.",
     ),
 ) -> None:
-    """Show maintenance periods for one or more maintenance definitions."""
-    # Don't prompt so that we show all by default.
-    # In general, prompting for missing values is kind of awkward...
+    """Show maintenance periods for one or more maintenance definitions.
+
+    Shows all maintenance definitions by default.
+    """
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.commands.results.maintenance import ShowMaintenancePeriodsResult
+
     mids = parse_list_arg(maintenance_id)
     maintenances = app.state.client.get_maintenances(maintenance_ids=mids)
     render_result(

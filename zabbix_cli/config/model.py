@@ -45,7 +45,7 @@ from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
 from zabbix_cli.exceptions import ConfigError
-from zabbix_cli.pyzabbix.types import ExportFormat
+from zabbix_cli.pyzabbix.enums import ExportFormat
 
 
 class BaseModel(PydanticBaseModel):

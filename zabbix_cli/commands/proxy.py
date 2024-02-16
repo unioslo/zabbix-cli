@@ -3,42 +3,21 @@ from __future__ import annotations
 import itertools
 import logging
 import random
-from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 
 import typer
-from pydantic import BaseModel
-from pydantic import model_serializer
 
 from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixCLIError
-from zabbix_cli.models import Result
-from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import success
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.types import Host
-from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.utils.args import parse_int_list_arg
 from zabbix_cli.utils.utils import compile_pattern
 
-if TYPE_CHECKING:
-    from zabbix_cli.models import ColsRowsType
-    from zabbix_cli.models import RowsType  # noqa: F401
-
 
 HELP_PANEL = "Proxy"
-
-
-class UpdateHostProxyResult(BaseModel):
-    """Result type for `update_host_proxy` command."""
-
-    source: Optional[str] = None
-    """ID of the source (old) proxy."""
-    destination: Optional[str] = None
-    """ID of the destination (new) proxy."""
 
 
 @app.command(name="update_host_proxy", rich_help_panel=HELP_PANEL)
@@ -50,6 +29,9 @@ def update_host_proxy(
     ),
 ) -> None:
     """Change the proxy for a host."""
+    from zabbix_cli.models import Result
+    from zabbix_cli.commands.results.proxy import UpdateHostProxyResult
+
     if not hostname_or_id:
         hostname_or_id = str_prompt("Hostname or ID")
     if not proxy_name:
@@ -72,12 +54,6 @@ def update_host_proxy(
     )
 
 
-class MoveProxyHostsResult(UpdateHostProxyResult):
-    """Result type for `move_proxy_hosts` command."""
-
-    hosts: List[str] = []
-
-
 @app.command(name="move_proxy_hosts", rich_help_panel=HELP_PANEL)
 def move_proxy_hosts(
     ctx: typer.Context,
@@ -93,6 +69,9 @@ def move_proxy_hosts(
     ),
 ) -> None:
     """Move hosts from one proxy to another."""
+    from zabbix_cli.models import Result
+    from zabbix_cli.commands.results.proxy import MoveProxyHostsResult
+
     if not proxy_src:
         proxy_src = str_prompt("Source proxy")
     if not proxy_dst:
@@ -131,38 +110,6 @@ def move_proxy_hosts(
     )
 
 
-class LBProxy(BaseModel):
-    """A load balanced proxy."""
-
-    proxy: Proxy
-    hosts: List[Host] = []
-    weight: int
-    count: int = 0
-
-    @model_serializer
-    def ser_model(self):
-        return {
-            "name": self.proxy.name,
-            "proxyid": self.proxy.proxyid,
-            "weight": self.weight,
-            "count": self.count,
-            "hosts": [h.host for h in self.hosts],
-        }
-
-
-class LBProxyResult(TableRenderable):
-    """Result type for `load_balance_proxy_hosts` command."""
-
-    proxies: List[LBProxy]
-
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["Proxy", "Weight", "Hosts"]
-        rows = []  # type: RowsType
-        for proxy in self.proxies:
-            rows.append([proxy.proxy.name, str(proxy.weight), str(len(proxy.hosts))])
-        return cols, rows
-
-
 @app.command(name="load_balance_proxy_hosts", rich_help_panel=HELP_PANEL)
 def load_balance_proxy_hosts(
     ctx: typer.Context,
@@ -193,6 +140,9 @@ def load_balance_proxy_hosts(
     Multiple proxies and weights can be specified:
         [green]load_balance_proxy_hosts proxy1,proxy2,proxy3 1,1,2[/green]
     """
+    from zabbix_cli.commands.results.proxy import LBProxy
+    from zabbix_cli.commands.results.proxy import LBProxyResult
+
     if not proxies:
         # TODO: add some sort of multi prompt for this
         proxies = str_prompt("Proxies")

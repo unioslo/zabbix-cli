@@ -145,7 +145,6 @@ class State:
         self.config = config
 
         self.client = ZabbixAPI(self.config.api.url)
-        self.client.session.verify = self.config.api.verify_ssl
         login(self.client, self.config)
 
         ZabbixAPIBaseModel.zabbix_version = self.client.version

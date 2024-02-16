@@ -1,24 +1,18 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum
 from pathlib import Path
-from typing import Any
-from typing import Generic
-from typing import List
-from typing import Mapping
 from typing import Optional
-from typing import Type
 from typing import TYPE_CHECKING
-from typing import TypeVar
-from typing import Union
 
 import typer
 
 from zabbix_cli.exceptions import ZabbixCLIError
 
 if TYPE_CHECKING:
-    from zabbix_cli._types import EllipsisType
+    from zabbix_cli.pyzabbix.types import Host
+    from zabbix_cli.pyzabbix.types import HostGroup
+    from zabbix_cli.app import StatefulApp
 
 
 def is_set(ctx: typer.Context, option: str) -> bool:
@@ -64,6 +58,55 @@ def parse_int_list_arg(arg: str) -> list[int]:
         raise ZabbixCLIError(f"Invalid comma-separated string value: {arg}") from e
 
 
+def parse_hostgroups_arg(
+    app: StatefulApp,
+    hgroup_names_or_ids: Optional[str],
+    strict: bool = False,
+    select_hosts: bool = False,
+) -> list[HostGroup]:
+    from zabbix_cli.output.prompts import str_prompt
+    from zabbix_cli.output.console import exit_err
+
+    if not hgroup_names_or_ids:
+        hgroup_names_or_ids = str_prompt("Host group(s)")
+
+    hg_args = [h.strip() for h in hgroup_names_or_ids.split(",")]
+    if not hg_args:
+        exit_err("At least one host group name/ID is required.")
+
+    hostgroups = app.state.client.get_hostgroups(
+        *hg_args, search=True, select_hosts=select_hosts
+    )
+    if not hostgroups:
+        exit_err(f"No host groups found matching {hgroup_names_or_ids}")
+    if strict and len(hostgroups) != len(hg_args):
+        exit_err(f"Found {len(hostgroups)} host groups, expected {len(hostgroups)}")
+    return hostgroups
+
+
+def parse_hostnames_arg(
+    app: StatefulApp,
+    hostnames_or_ids: Optional[str],
+    strict: bool = False,
+) -> list[Host]:
+    from zabbix_cli.output.prompts import str_prompt
+    from zabbix_cli.output.console import exit_err
+
+    if not hostnames_or_ids:
+        hostnames_or_ids = str_prompt("Host(s)")
+
+    host_args = [h.strip() for h in hostnames_or_ids.split(",")]
+    if not host_args:
+        exit_err("At least one host name/ID is required.")
+
+    hosts = app.state.client.get_hosts(*host_args, search=True)
+    if not hosts:
+        exit_err(f"No hosts found matching {hostnames_or_ids}")
+    if strict and len(hosts) != len(host_args):
+        exit_err(f"Found {len(hosts)} hosts, expected {len(host_args)}")
+    return hosts
+
+
 TRUE_CHOICES = ["true", "yes", "1", "on"]
 FALSE_CHOICES = ["false", "no", "0", "off"]
 
@@ -89,204 +132,3 @@ def parse_path_arg(arg: str, must_exist: bool = False) -> Path:
         if must_exist and not p.exists():
             raise ZabbixCLIError(f"Path does not exist: {arg}")
         return p
-
-
-T = TypeVar("T")
-
-
-class APIStr(str, Generic[T]):
-    """String type that can be used as an Enum choice while also
-    carrying an API value associated with the string."""
-
-    api_value: T
-    metadata: Mapping[str, Any]
-
-    def __new__(
-        cls,
-        s: str,
-        api_value: T,
-        metadata: Optional[Mapping[str, Any]] = None,
-    ) -> APIStr[T]:
-        obj = str.__new__(cls, s)
-        obj.api_value = api_value
-        obj.metadata = metadata or {}
-        return obj
-
-
-MixinType = TypeVar("MixinType", bound="ChoiceMixin")
-
-
-class ChoiceMixin(Generic[T]):
-    """Mixin that allows for an Enum to have APIStr values, which
-    enables it to be instantiated with either the name of the option
-    or the Zabbix API value of the option.
-
-    We can instantiate the enum with either the name or the API value:
-        * `AgentAvailable("available")`
-        * `AgentAvailable("1")`
-        * `AgentAvailable(1)`
-
-    Since the API is inconsistent with usage of strings and ints, we support
-    instantiation with both.
-
-    Provides the `from_prompt` class method, which prompts the user to select
-    one of the enum members. The prompt text is generated from the class name
-    by default, but can be overridden by setting the `__choice_name__` class var.
-
-    Also provides a method for returning the API value of an enum member with the
-    with the `as_api_value()` method.
-    """
-
-    value: APIStr[T]
-    __choice_name__: str = ""  # default (falls back to class name)
-
-    def __init__(self, *args, **kwargs) -> None:
-        pass
-
-    @classmethod
-    def __fmt_name__(cls) -> str:
-        """Return the name of the enum class in a human-readable format.
-
-        If no default is provided, the class name is split on capital letters and
-        lowercased, e.g. `AgentAvailable` becomes `agent availability status`.
-        """
-        if cls.__choice_name__:
-            return cls.__choice_name__
-        return (
-            "".join([(" " + i if i.isupper() else i) for i in cls.__name__])
-            .lower()
-            .strip()
-        )
-
-    # NOTE: should we use a custom prompt class instead of repurposing the str prompt?
-    @classmethod
-    def from_prompt(
-        cls: Type[MixinType],
-        prompt: str | None = None,
-        default: Union[MixinType, EllipsisType] = ...,
-    ) -> MixinType:
-        """Prompt the user to select a choice from the enum.
-
-        Args:
-            prompt (str | None, optional): Alternative prompt.
-                Defaults to None, which uses the formatted class name.
-
-        Returns:
-            MixinType: Enum member selected by the user.
-        """
-        from zabbix_cli.output.prompts import str_prompt
-
-        if not prompt:
-            # Assume
-            prompt = cls.__fmt_name__()
-            # Uppercase first letter without mangling the rest of the string
-            if prompt and prompt[0].islower():
-                prompt = prompt[0].upper() + prompt[1:]
-        default = default if default is ... else str(default)
-        choice = str_prompt(
-            prompt,
-            choices=cls.choices(),
-            default=default,
-        )
-        return cls(choice)
-
-    @classmethod
-    def choices(cls) -> List[str]:
-        """Return list of string values of the enum members."""
-        return [str(e) for e in cls]  # type: ignore # how do we stipulate that the class requires __iter__?
-
-    @classmethod
-    def all_choices(cls) -> List[str]:
-        """Choices including API values."""
-        return [str(e) for e in cls] + [str(e.as_api_value()) for e in cls]  # type: ignore # how do we stipulate that the class requires __iter__?
-
-    def as_api_value(self) -> T:
-        """Return the equivalent Zabbix API value."""
-        return self.value.api_value
-
-    @classmethod
-    def _missing_(cls, value: object) -> object:
-        """
-        Method that is called when an enum member is not found.
-
-        Attempts to find the member with 2 strategies:
-        1. Search for a member with the given string value (ignoring case)
-        2. Search for a member with the given API value (converted to string)
-        """
-        for v in cls:  # type: ignore # again with the cls.__iter__ problem
-            if v.value == value:
-                return v
-            # kinda hacky. Should make sure we are dealing with strings here:
-            elif str(v.value).lower() == str(value).lower():
-                return v
-            elif str(v.as_api_value()) == str(value):
-                return v
-        raise ZabbixCLIError(f"Invalid {cls.__fmt_name__()}: {value!r}.")
-
-
-# class EnumChoice(NamedTuple):
-#     """Enum choice."""
-
-#     name: str
-#     value: str
-
-
-# class ChoiceMeta(EnumMeta):
-#     """Metaclass for APIStrEnum Enums."""
-
-#     # HACK: doing something very illegal with the iterator here
-#     def __iter__(cls) -> Iterator[EnumChoice]:
-#         """Iterate over the enum members."""
-#         items = []
-#         for name, member in cls._member_map_.items():
-#             items.append(member)
-#             member_api_value = copy(member)
-#             items.append(EnumChoice(name=str(name), value=str(member.as_api_value())))  # type: ignore
-#         return iter(items)
-
-
-class APIStrEnum(Enum):
-    """Enum that returns value of member as str."""
-
-    # FIXME: should inherit from string somehow!
-    # Does not inherit from str now, as it would convert enum member value
-    # to string, thereby losing the API associated value.
-    # If we are to do that, we need to hijack the object creation and inject
-    # the member value somehow?
-
-    def __str__(self) -> str:
-        return str(self.value)
-
-    def casefold(self) -> str:
-        return str(self.value).casefold()
-
-
-class OnOffChoice(ChoiceMixin[str], APIStrEnum):
-    """On/Off choice."""
-
-    # TODO: find a way to create subclasses/different enums from this,
-    # so that we can re-use these members, but with different a
-    # class names  or __choice__name__
-    # Currently, we can't subclass enums with members, so just creating a
-    # new enum with the same members is the only way to do it.
-
-    ON = APIStr("on", "0")  # Yes, 0 is on, 1 is off...
-    OFF = APIStr("off", "1")
-
-
-class UserRole(ChoiceMixin[str], APIStrEnum):
-    __choice_name__ = "User role"
-
-    # Match casing from Zabbix API
-    USER = APIStr("user", "1")
-    ADMIN = APIStr("admin", "2")
-    SUPERADMIN = APIStr("superadmin", "3")
-    GUEST = APIStr("guest", "4")
-
-
-class UsergroupPermission(ChoiceMixin[int], APIStrEnum):
-    """Usergroup permission levels."""
-
-    DENY = APIStr("deny", 0)
-    READ_ONLY = APIStr("ro", 2)
-    READ_WRITE = APIStr("rw", 3)

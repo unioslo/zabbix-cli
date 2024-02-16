@@ -6,7 +6,6 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 import typer
-from pydantic import BaseModel
 
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.output.console import console
@@ -19,6 +18,7 @@ if TYPE_CHECKING:
     from zabbix_cli.models import TableRenderable
     from zabbix_cli.models import TableRenderableDict
     from zabbix_cli.models import TableRenderableProto
+    from pydantic import BaseModel
 
 
 def wrap_result(result: BaseModel) -> ResultBase:
@@ -83,20 +83,19 @@ def render_table(
     """
     # TODO: be able to print message _AND_ table
     # The Result/TableRenderable dichotomy is a bit of a mess
-    from zabbix_cli.models import Result
+    # from zabbix_cli.models import Result
     from zabbix_cli.models import ReturnCode
 
-    if isinstance(result, Result) and result.message:
+    result = wrap_result(result)
+    if result.table:
+        tbl = result.as_table()
+        if tbl.rows:
+            console.print(tbl)
+    if result.message:
         if result.return_code == ReturnCode.ERROR:
             error(result.message)
         else:
             success(result.message)
-    else:
-        tbl = result.as_table()
-        if not tbl.rows:
-            console.print("No results found.")
-        else:
-            console.print(tbl)
 
 
 def render_json(

@@ -1,25 +1,126 @@
+"""Commands that interact with the application itself."""
 from __future__ import annotations
 
-from typing import List
+from enum import Enum
+from pathlib import Path
+from typing import Optional
 from typing import TYPE_CHECKING
 
 import typer
-from rich.box import SIMPLE_HEAD
 
 from zabbix_cli import auth
 from zabbix_cli.app import app
+from zabbix_cli.dirs import CONFIG_DIR
+from zabbix_cli.dirs import DATA_DIR
+from zabbix_cli.dirs import EXPORT_DIR
+from zabbix_cli.dirs import LOGS_DIR
+from zabbix_cli.dirs import SITE_CONFIG_DIR
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.logs import logger
-from zabbix_cli.models import TableRenderable
+from zabbix_cli.output.console import info
+from zabbix_cli.output.console import print_path
+from zabbix_cli.output.console import print_toml
 from zabbix_cli.output.console import success
 from zabbix_cli.output.render import render_result
+from zabbix_cli.utils.utils import open_directory
 
 if TYPE_CHECKING:
-    from zabbix_cli.models import ColsType  # noqa: F401
-    from zabbix_cli.models import RowsType  # noqa: F401
+    from zabbix_cli.config.model import Config
 
 
 HELP_PANEL = "CLI"
+
+
+@app.command("show_zabbixcli_config", rich_help_panel=HELP_PANEL)
+def show_zabbixcli_version(ctx: typer.Context) -> None:
+    """Show the current application configuration."""
+    config = app.state.config
+    print_toml(config.as_toml())
+    if config.config_path:
+        info(f"Config file: {config.config_path}")
+
+
+class DirectoryType(Enum):
+    """Directory types."""
+
+    CONFIG = "config"
+    DATA = "data"
+    LOGS = "logs"
+    SITE_CONFIG = "siteconfig"
+    EXPORTS = "exports"
+
+    def as_path(self) -> Path:
+        DIR_MAP = {
+            DirectoryType.CONFIG: CONFIG_DIR,
+            DirectoryType.DATA: DATA_DIR,
+            DirectoryType.LOGS: LOGS_DIR,
+            DirectoryType.SITE_CONFIG: SITE_CONFIG_DIR,
+            DirectoryType.EXPORTS: EXPORT_DIR,
+        }
+        d = DIR_MAP.get(self)
+        if d is None:
+            raise ZabbixCLIError(f"No default path available for {self!r}.")
+        return d
+
+
+def get_directory(directory_type: DirectoryType, config: Config) -> Path:
+    if directory_type == DirectoryType.CONFIG and config.config_path:
+        return config.config_path.parent
+    elif directory_type == DirectoryType.EXPORTS:
+        return config.app.export_directory
+    else:
+        return directory_type.as_path()
+
+
+@app.command("open", rich_help_panel=HELP_PANEL)
+def open_config_dir(
+    ctx: typer.Context,
+    directory_type: DirectoryType = typer.Argument(
+        ...,
+        help="The type of directory to open.",
+        case_sensitive=False,
+        show_default=False,
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        is_flag=True,
+        help="LINUX: Try to open desite no detected window manager.",
+    ),
+    path: bool = typer.Option(
+        False,
+        "--path",
+        is_flag=True,
+        help="Show path instead of opening directory.",
+    ),
+    open_command: Optional[str] = typer.Option(
+        None,
+        "--command",
+        help="Specify command to use to use for opening.",
+    ),
+) -> None:
+    """Opens an app directory in the system's file manager.
+
+    Use --force to attempt to open when no DISPLAY env var is set."""
+    directory = get_directory(directory_type, app.state.config)
+    if path:
+        print_path(directory)
+    else:
+        open_directory(directory, command=open_command, force=force)
+        success(f"Opened {directory}")
+
+
+@app.command("debug", hidden=True, rich_help_panel=HELP_PANEL)
+def debug_cmd(
+    ctx: typer.Context,
+    with_auth: bool = typer.Option(
+        False, "--auth", help="Include auth token in the result."
+    ),
+) -> None:
+    """Print debug info."""
+    from zabbix_cli.commands.results.cli import DebugInfo
+
+    render_result(DebugInfo.from_debug_data(app.state, with_auth=with_auth))
 
 
 @app.command(name="login", rich_help_panel=HELP_PANEL)
@@ -49,15 +150,6 @@ def import_configuration(
     success(f"Logged in to {config.api.url} as {config.app.username}.")
 
 
-class HistoryResult(TableRenderable):
-    """Result type for `show_history` command."""
-
-    __show_lines__ = False
-    __box__ = SIMPLE_HEAD
-
-    commands: List[str] = []
-
-
 @app.command("show_history", rich_help_panel=HELP_PANEL)
 def show_history(
     ctx: typer.Context,
@@ -69,6 +161,8 @@ def show_history(
 ) -> None:
     """Show the command history."""
     # Load the entire history, then limit afterwards
+    from zabbix_cli.commands.results.cli import HistoryResult
+
     history = list(app.state.history.get_strings())
     history = history[-limit:]
     render_result(HistoryResult(commands=history))

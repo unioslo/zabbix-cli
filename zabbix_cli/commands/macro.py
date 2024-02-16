@@ -1,39 +1,18 @@
 """Commands to view and manage macros."""
 from __future__ import annotations
 
-from typing import Any
-from typing import Dict
 from typing import Optional
-from typing import TYPE_CHECKING
 
 import typer
-from pydantic import Field
-from pydantic import model_serializer
 
 from zabbix_cli.app import app
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.exceptions import ZabbixNotFoundError
-from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import Result
-from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.types import Macro
 from zabbix_cli.utils.commands import ARG_HOSTNAME_OR_ID
 
-
-if TYPE_CHECKING:
-    from zabbix_cli.models import ColsRowsType
-    from zabbix_cli.models import RowsType  # noqa: F401
-
-
-# # `zabbix-cli host macro <cmd>`
-# macro_cmd = StatefulApp(
-#     name="macro",
-#     help="Host macro commands.",
-# )
-# app.add_subcommand(macro_cmd)
 
 HELP_PANEL = "Macro"
 
@@ -66,6 +45,8 @@ def define_host_usermacro(
     macro_value: Optional[str] = typer.Argument(None, help="Default value of macro."),
 ) -> None:
     """Create or update a host usermacro."""
+    from zabbix_cli.models import Result
+
     if not hostname:
         hostname = str_prompt("Hostname")
     if not macro_name:
@@ -97,20 +78,13 @@ def define_host_usermacro(
     )
 
 
-class ShowHostUserMacrosResult(TableRenderable):
-    hostmacroid: str = Field(json_schema_extra={"header": "MacroID"})
-    macro: str
-    value: Optional[str] = None
-    type: str
-    description: Optional[str] = None
-    hostid: str = Field(json_schema_extra={"header": "HostID"})
-    automatic: Optional[int]
-
-
 # @macro_cmd.command(name="list", rich_help_panel=HELP_PANEL)
 @app.command(name="show_host_usermacros", rich_help_panel=HELP_PANEL, hidden=False)
 def show_host_usermacros(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
     """Shows all macros defined for a host."""
+    from zabbix_cli.commands.results.macro import ShowHostUserMacrosResult
+    from zabbix_cli.models import AggregateResult
+
     if not hostname_or_id:
         hostname_or_id = str_prompt("Hostname or ID")
     # By getting the macros via the host, we also ensure the host exists.
@@ -135,39 +109,6 @@ def show_host_usermacros(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
     )
 
 
-class MacroHostListV2(TableRenderable):
-    macro: Macro
-
-    def __cols_rows__(self) -> ColsRowsType:
-        rows = [
-            [self.macro.macro, str(self.macro.value), host.hostid, host.host]
-            for host in self.macro.hosts
-        ]  # type: RowsType
-        return ["Macro", "Value", "HostID", "Host"], rows
-
-    @model_serializer()
-    def model_ser(self) -> Dict[str, Any]:
-        if not self.macro.hosts:
-            return {}  # match V2 output
-        return {
-            "macro": self.macro.macro,
-            "value": self.macro.value,
-            "hostid": self.macro.hosts[0].hostid,
-            "host": self.macro.hosts[0].host,
-        }
-
-
-class MacroHostListV3(TableRenderable):
-    macro: Macro
-
-    def __cols_rows__(self) -> ColsRowsType:
-        rows = [
-            [host.hostid, host.host, self.macro.macro, str(self.macro.value)]
-            for host in self.macro.hosts
-        ]  # type: RowsType
-        return ["Host ID", "Host", "Macro", "Value"], rows
-
-
 # TODO: find out what we actually want this command to do.
 # Each user macro belongs to one host, so we can't really list all hosts
 # with a single macro...
@@ -185,6 +126,10 @@ def show_usermacro_host_list(
     """Find all hosts with a user macro of the given name.
 
     Renders a list of the complete macro object and its hosts in JSON mode."""
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.commands.results.macro import MacroHostListV2
+    from zabbix_cli.commands.results.macro import MacroHostListV3
+
     if not usermacro:
         usermacro = str_prompt("Macro name")
     usermacro = fmt_macro_name(usermacro)
@@ -211,14 +156,6 @@ def show_usermacro_host_list(
         )
 
 
-class GlobalMacroResult(TableRenderable):
-    """Result of `define_global_macro` command."""
-
-    globalmacroid: str
-    macro: str
-    value: Optional[str] = None  # for usermacro.get calls
-
-
 # TODO: find out how to log full command invocations (especially in REPL, where we cant use sys.argv)
 @app.command("define_global_macro", rich_help_panel=HELP_PANEL)
 def define_global_macro(
@@ -227,6 +164,9 @@ def define_global_macro(
     value: Optional[str] = typer.Argument(None, help="Value of the macro"),
 ) -> None:
     """Create a global macro."""
+    from zabbix_cli.models import Result
+    from zabbix_cli.commands.results.macro import GlobalMacroResult
+
     if not name:
         name = str_prompt("Macro name")
     if not value:
@@ -252,6 +192,9 @@ def define_global_macro(
 @app.command("show_global_macros", rich_help_panel=HELP_PANEL)
 def show_global_macros(ctx: typer.Context) -> None:
     """Show all global macros."""
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.commands.results.macro import GlobalMacroResult
+
     macros = app.state.client.get_global_macros()
     render_result(
         AggregateResult(
@@ -265,16 +208,6 @@ def show_global_macros(ctx: typer.Context) -> None:
     )
 
 
-class ShowUsermacroTemplateListResult(TableRenderable):
-    macro: str
-    value: Optional[str] = None
-    templateid: str
-    template: str
-
-    def __cols__(self) -> list[str]:
-        return ["Macro", "Value", "Template ID", "Template"]
-
-
 @app.command("show_usermacro_template_list", rich_help_panel=HELP_PANEL)
 def show_usermacro_template_list(
     ctx: typer.Context,
@@ -283,6 +216,9 @@ def show_usermacro_template_list(
     ),
 ) -> None:
     """Find all templates with a user macro of the given name."""
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.commands.results.macro import ShowUsermacroTemplateListResult
+
     if not macro_name:
         macro_name = str_prompt("Macro name")
     macro_name = fmt_macro_name(macro_name)

@@ -7,34 +7,17 @@ import typer
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
-from zabbix_cli.models import AggregateResult
-from zabbix_cli.models import Result
-from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.types import TriggerPriority
+from zabbix_cli.pyzabbix.enums import TriggerPriority
 from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_int_arg
 from zabbix_cli.utils.args import parse_list_arg
 
 
 HELP_PANEL = "Problem"
-
-
-class AcknowledgeEventResult(TableRenderable):
-    """Result type for `acknowledge_event` command."""
-
-    event_ids: List[str] = []
-    close: bool = False
-    message: Optional[str] = None
-
-
-class AcknowledgeTriggerLastEventResult(AcknowledgeEventResult):
-    """Result type for `acknowledge_trigger_last_event` command."""
-
-    trigger_ids: List[str] = []
 
 
 @app.command(name="acknowledge_event", rich_help_panel=HELP_PANEL)
@@ -59,6 +42,9 @@ def acknowledge_event(
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Acknowledge event(s) by ID."""
+    from zabbix_cli.models import Result
+    from zabbix_cli.commands.results.problem import AcknowledgeEventResult
+
     if not event_ids:
         event_ids = str_prompt("Event ID(s)")
     eids = parse_list_arg(event_ids)
@@ -107,6 +93,9 @@ def acknowledge_trigger_last_event(
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Acknowledges the the last event for the given trigger(s)."""
+    from zabbix_cli.models import Result
+    from zabbix_cli.commands.results.problem import AcknowledgeTriggerLastEventResult
+
     tids = parse_list_arg(trigger_ids)
     if not tids:
         exit_err("No trigger IDs specified.")
@@ -171,6 +160,8 @@ def show_trigger_events(
     """Show the latest events for the given trigger(s), host(s), and/or host group(s).
 
     At least one trigger ID, host or host group must be specified."""
+    from zabbix_cli.models import AggregateResult
+
     if args:
         if len(args) != 2:
             exit_err("Invalid number of positional arguments.")
@@ -229,6 +220,8 @@ def show_alarms(
     """Show the latest events for the given trigger(s), host(s), and/or host group(s).
 
     At least one trigger ID, host or host group must be specified."""
+    from zabbix_cli.models import AggregateResult
+
     if args:
         if len(args) != 4:
             exit_err("Invalid number of positional arguments.")

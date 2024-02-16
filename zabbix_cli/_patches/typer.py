@@ -22,7 +22,7 @@ from typer.main import lenient_issubclass
 from typer.models import ParameterInfo
 
 from zabbix_cli._patches.common import get_patcher
-from zabbix_cli.utils.args import APIStrEnum
+from zabbix_cli.pyzabbix.enums import APIStrEnum
 
 patcher = get_patcher(f"Typer version: {typer.__version__}")
 
