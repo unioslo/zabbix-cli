@@ -258,6 +258,7 @@ def create_notification_user(
     # Legacy V2 args
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
+    # TODO: Improve phrasing of this help text. "Defining media for usergroup"???
     """Create a notification user.
 
     Notification users can be used to send notifications when a Zabbix

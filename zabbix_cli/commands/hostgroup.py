@@ -319,27 +319,56 @@ def move_hosts(
 
 @app.command("show_hostgroup", rich_help_panel=HELP_PANEL)
 def show_hostgroup(
-    hostgroup: str = typer.Argument(None, help="Name of host group."),
+    hostgroup: str = typer.Argument(..., help="Name of host group."),
 ) -> None:
     """Show details of a host group."""
     from zabbix_cli.commands.results.hostgroup import HostGroupResult
 
-    if not hostgroup:
-        hostgroup = str_prompt("Host group name")
     hg = app.state.client.get_hostgroup(hostgroup, select_hosts=True)
     render_result(HostGroupResult.from_hostgroup(hg))
 
 
 # TODO: match V2 behavior
-@app.command("show_hostgroups", rich_help_panel=HELP_PANEL)
-def show_hostgroups() -> None:
+@app.command(
+    "show_hostgroups",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Show all host groups",
+            "show_hostgroups",
+        ),
+        Example(
+            "Show all host groups starting with 'Web-'",
+            "show_hostgroups 'Web-*'",
+        ),
+        Example(
+            "Show host groups with 'web' in the name",
+            "show_hostgroups '*web*'",
+        ),
+    ],
+)
+def show_hostgroups(
+    name: Optional[str] = typer.Argument(
+        None, help="Name of host group(s). Comma-separated. Supports wildcards."
+    ),
+    select_hosts: bool = typer.Option(
+        True, "--hosts/--no-hosts", help="Show hosts in each host group."
+    ),
+) -> None:
     """Show details for all host groups."""
     from zabbix_cli.commands.results.hostgroup import HostGroupResult
     from zabbix_cli.models import AggregateResult
 
-    hostgroups = app.state.client.get_hostgroups(
-        select_hosts=True, search=True, sort_field="name", sort_order="ASC"
-    )
+    names = parse_list_arg(name)
+
+    with app.status("Fetching host groups..."):
+        hostgroups = app.state.client.get_hostgroups(
+            *names,
+            select_hosts=select_hosts,
+            search=True,
+            sort_field="name",
+            sort_order="ASC",
+        )
     render_result(
         AggregateResult(
             result=[HostGroupResult.from_hostgroup(hg) for hg in hostgroups]
@@ -355,17 +384,16 @@ def show_hostgroup_permissions(
 ) -> None:
     """Show usergroups with permissions for the given hostgroup. Supports wildcards.
 
-    Use "*" to list all host groups."""
+    Shows permissions for all host groups by default."""
 
     from zabbix_cli.commands.results.hostgroup import HostGroupPermissions
     from zabbix_cli.models import AggregateResult
 
-    if not hostgroups:
-        hostgroups = str_prompt("Host group")
+    hg_names = parse_list_arg(hostgroups)
 
     usergroups = app.state.client.get_usergroups()
     hgs = app.state.client.get_hostgroups(
-        *hostgroups,
+        *hg_names,
         sort_field="name",
         sort_order="ASC",
         select_hosts=False,
