@@ -6,10 +6,10 @@
 - Shell autocompletion
 - TOML configuration file support
   - Old configuration format is still supported, but deprecated.
-- New configuration options:
+- **New configuration options:**
   - `app.default_format`: Sets the default CLI output format. Defaults to `table`.
   - `app.legacy_json_format`: Enables the old JSON output format. Defaults to `false`.
-- New commands:
+- **New commands:**
   - `create_templategroup`: Create a template group.
   - `extend_templategroup`: Add all templates from a group to other group(s) without removing them from the original group.
   - `extend_hostgroup`: Add all hosts from a host group to other host group(s) without removing them from the original group.
@@ -18,13 +18,17 @@
   - `move_templates`: Move all templates from one group to another.
   - `open`: Open a CLI directory in the system's file manager.
   - `remove_hostgroup`: Delete a host group.
+  - `remove_host_interface`: Delete a host interface.
   - `remove_templategroup`: Delete a template group.
   - `show_host_interfaces`: Show interfaces for a host.
   - `show_user`: Show details for a single user.
   - `show_templategroup`: Show a single template group.
   - `show_templategroups`: Show all template groups.
   - `unlink_template_from_template`: Unlink template(s) from template(s).
-- New command options:
+  - `update_host_interface`: Update a host interface.
+- **New command options:**
+  - `add_host_to_hostgroup`:
+    - `--dryrun`: Preview changes without making them.
   - `create_host`:
     - `--name`: Host name
       - Host name still defaults to host DNS name or IP address if not specified.
@@ -35,6 +39,13 @@
     - `--no-usergroup-permissions`: Do not set user group permissions. Defaults to `false`.
   - `create_host_interface`:
     - `--snmp...` TODO
+  - `import_configuration`:
+    - `--dryrun`: Preview files to import.
+    - `--delete-missing`: Delete objects not found in the import file(s).
+  - `link_template_to_host`:
+    - `--dryrun`: Preview changes without making them.
+  - `remove_host_from_hostgroup`:
+    - `--dryrun`: Preview changes without making them.
   - `show_host`:
     - `--monitored/--unmonitored`: Filter by monitored status
     - `--maintenance/--no-maintenance`: Filter by maintenance status
@@ -50,7 +61,9 @@
     - `--limit`: Limit number of events to show
       - Corresponds to old positional argument 2.
       - Defaults to 10 (was 1).
-- New command arguments:
+  - `unlink_template_from_host`:
+    - `--dryrun`: Preview changes without making them.
+- **New command arguments:**
   - `show_templates`:
     - `template_names`: Template name(s) to filter by. Shows all templates by default. Supports wildcards.
 
@@ -66,7 +79,7 @@
   - The old format can be enabled with the new option `app.legacy_json_format` in the new TOML configuration file format.
   - When loading configuration from a legacy `.conf`-file, the old format is assumed.
 - Default configuration file location is now `~/.config/zabbix-cli/config.toml`
-- Changes to TOML configuration file option names:
+- **TOML configuration file option names:**
   - Table [zabbix_api] → [api]
     - `zabbix_url` → `url`
     - `cert_verify` → `verify_ssl`
@@ -77,9 +90,11 @@
     - `include_timestamp_export_filename` → `export_timestamps`
   - `logging.logging` → `logging.enabled`
   - The original names are still usable, but are deprecated and slated for removal in a future version.
-- Changes to configuration defaults:
+- **Configuration file defaults:**
   - `app.export_timestamps` defaults to `false`
     - Exports are automatically overwritten if the file already exists.
+  - `app.default_admin_usergroups` defaults to `[]` (empty list)
+  - `app.default_create_user_usergroups` defaults to `[]` (empty list)
 - Application now creates a config file on launch if it doesn't exist.
 - Command changes:
   - `create_host_interface`
@@ -92,12 +107,12 @@
     - Now shows shows any inventory field that is set in the table.
     - Includes _all_ inventory fields in JSON output.
   - `unlink_templates_from_hostgroups`:
-    - Renamed to `remove_templates_from_groups`.
+    - Renamed to `remove_template_from_group`.
     - No longer unlinks and clears templates from each other.
       - This was a bug/misunderstanding of the Zabbix API in the old version.
       - Use `unlink_template_from_template` to unlink and clear templates from each other.
   - `link_template_to_hostgroup`:
-    - Renamed to `add_templates_to_group`.
+    - Renamed to `add_template_to_group`.
     - Old name is still supported, but hidden and deprecated.
 - Use Hatch for building and publishing
 - Switch from setup.py to pyproject.toml

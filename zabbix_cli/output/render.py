@@ -84,18 +84,20 @@ def render_table(
     # TODO: be able to print message _AND_ table
     # The Result/TableRenderable dichotomy is a bit of a mess
     # from zabbix_cli.models import Result
+    from zabbix_cli.models import Result
     from zabbix_cli.models import ReturnCode
 
-    result = wrap_result(result)
-    if result.table:
-        tbl = result.as_table()
-        if tbl.rows:
-            console.print(tbl)
-    if result.message:
+    if isinstance(result, Result) and result.message:
         if result.return_code == ReturnCode.ERROR:
             error(result.message)
         else:
             success(result.message)
+    else:
+        tbl = result.as_table()
+        if not tbl.rows:
+            console.print("No results found.")
+        else:
+            console.print(tbl)
 
 
 def render_json(

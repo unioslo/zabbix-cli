@@ -37,7 +37,6 @@ from typing_extensions import Literal
 from typing_extensions import TypedDict
 
 from zabbix_cli.models import TableRenderable
-from zabbix_cli.models import TableRenderableDict
 from zabbix_cli.pyzabbix.enums import InterfaceType
 from zabbix_cli.utils.utils import get_ack_status
 from zabbix_cli.utils.utils import get_event_status
@@ -328,8 +327,15 @@ class Template(ZabbixAPIBaseModel):
         return cols, rows
 
 
-class Inventory(TableRenderableDict):
+class DictModel(ZabbixAPIBaseModel):
     """An adapter for a dict that allows it to be rendered as a table."""
+
+    model_config = ConfigDict(extra="allow")
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = ["Key", "Value"]  # type: ColsType
+        rows = [[key, str(value)] for key, value in self.model_dump().items() if value]  # type: RowsType
+        return cols, rows
 
 
 # TODO: expand Host model with all possible fields
@@ -343,9 +349,7 @@ class Host(ZabbixAPIBaseModel):
         validation_alias=AliasChoices("groups", "hostgroups"),
     )
     templates: List[Template] = Field(default_factory=list)
-    inventory: TableRenderableDict = Field(
-        default_factory=TableRenderableDict
-    )  # everything is a string as of 7.0
+    inventory: DictModel = Field(default_factory=DictModel)
     proxyid: Optional[str] = Field(
         None,
         # Compat for <7.0.0
@@ -456,9 +460,23 @@ class HostInterface(ZabbixAPIBaseModel):
         return cols, rows
 
 
-class HostInterfaceDetails(ZabbixAPIBaseModel):
+class CreateHostInterfaceDetails(ZabbixAPIBaseModel):
     version: int
     bulk: int
+    community: Optional[str] = None
+    max_repetitions: Optional[int] = None
+    securityname: Optional[str] = None
+    securitylevel: Optional[int] = None
+    authpassphrase: Optional[str] = None
+    privpassphrase: Optional[str] = None
+    authprotocol: Optional[int] = None
+    privprotocol: Optional[int] = None
+    contextname: Optional[str] = None
+
+
+class UpdateHostInterfaceDetails(ZabbixAPIBaseModel):
+    version: Optional[int] = None
+    bulk: Optional[int] = None
     community: Optional[str] = None
     max_repetitions: Optional[int] = None
     securityname: Optional[str] = None
@@ -936,6 +954,7 @@ class Map(ZabbixAPIBaseModel):
 class ImportRule(BaseModel):  # does not need to inherit from ZabbixAPIBaseModel
     createMissing: bool
     updateExisting: Optional[bool] = None
+    deleteMissing: Optional[bool] = None
 
 
 class ImportRules(ZabbixAPIBaseModel):
@@ -943,53 +962,63 @@ class ImportRules(ZabbixAPIBaseModel):
     graphs: ImportRule
     groups: Optional[ImportRule] = None  # < 6.2
     host_groups: Optional[ImportRule] = None  # >= 6.2
-    template_groups: Optional[ImportRule] = None  # >= 6.2
     hosts: ImportRule
+    httptests: ImportRule
     images: ImportRule
     items: ImportRule
     maps: ImportRule
+    mediaTypes: ImportRule
+    template_groups: Optional[ImportRule] = None  # >= 6.2
     templateLinkage: ImportRule
     templates: ImportRule
+    templateDashboards: ImportRule
     triggers: ImportRule
     valueMaps: ImportRule
-    mediaTypes: ImportRule
-    applications: Optional[ImportRule] = None
-    screens: Optional[ImportRule] = None
-    templateScreens: Optional[ImportRule] = None
+    templateScreens: Optional[ImportRule] = None  # < 6.0
+    applications: Optional[ImportRule] = None  # < 6.0
+    screens: Optional[ImportRule] = None  # < 6.0
 
     model_config = ConfigDict(validate_assignment=True)
 
     @classmethod
     def get(
-        cls, create_missing: bool = False, update_existing: bool = False
+        cls,
+        create_missing: bool = False,
+        update_existing: bool = False,
+        delete_missing: bool = False,
     ) -> ImportRules:
         """Create import rules given directives and Zabbix API version."""
-        create = ImportRule(createMissing=create_missing)
-        create_update = ImportRule(
-            createMissing=create_missing, updateExisting=update_existing
+        cd = ImportRule(createMissing=create_missing, deleteMissing=delete_missing)
+        cu = ImportRule(createMissing=create_missing, updateExisting=update_existing)
+        cud = ImportRule(
+            createMissing=create_missing,
+            updateExisting=update_existing,
+            deleteMissing=delete_missing,
         )
         rules = ImportRules(
-            discoveryRules=create_update,
-            graphs=create_update,
-            hosts=create_update,
-            images=create_update,
-            items=create_update,
-            maps=create_update,
-            templateLinkage=create,
-            templates=create_update,
-            triggers=create_update,
-            valueMaps=create_update,
-            mediaTypes=create_update,
+            discoveryRules=cud,
+            graphs=cud,
+            hosts=cu,
+            httptests=cud,
+            images=cu,
+            items=cud,
+            maps=cu,
+            mediaTypes=cu,
+            templateLinkage=cd,
+            templates=cu,
+            templateDashboards=cud,
+            triggers=cud,
+            valueMaps=cud,
         )
         if cls.zabbix_version.release >= (6, 2, 0):
-            rules.host_groups = create_update
-            rules.template_groups = create_update
+            rules.host_groups = cu
+            rules.template_groups = cu
         else:
-            rules.groups = create_update
+            rules.groups = ImportRule(createMissing=create_missing)
 
         if cls.zabbix_version.major < 6:
-            rules.applications = create
-            rules.screens = create_update
-            rules.templateScreens = create_update
+            rules.applications = cd
+            rules.screens = cu
+            rules.templateScreens = cud
 
         return rules

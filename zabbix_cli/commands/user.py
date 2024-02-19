@@ -137,6 +137,7 @@ def create_user(
     if not groups:
         groups = str_prompt("Groups (comma-separated)", default="", empty_ok=True)
     grouplist = parse_list_arg(groups)
+    # FIXME: add to default user group if no user group passed in
     ugroups = [app.state.client.get_usergroup(ug) for ug in grouplist]
 
     userid = app.state.client.create_user(
@@ -211,17 +212,32 @@ def show_users(
     render_result(AggregateResult(result=users))
 
 
+def get_notification_user_username(
+    username: Optional[str], sendto: str, remarks: str
+) -> str:
+    """Generate a username for a notification user."""
+    username = username.strip().replace(" ", "_") if username else ""
+    remarks = remarks.strip()[:20].replace(" ", "_")
+    sendto = sendto.strip().replace(".", "-")
+    if username:
+        return username
+    new = "notification-user"
+    if remarks:
+        new += f"-{remarks}"
+    return f"-{sendto}"
+
+
 @app.command("create_notification_user", rich_help_panel=HELP_PANEL)
 def create_notification_user(
     ctx: typer.Context,
-    sendto: Optional[str] = typer.Argument(
-        None,
+    sendto: str = typer.Argument(
+        ...,
         help="E-mail address, SMS number, jabber address, etc.",
         show_default=False,
     ),
-    mediatype: Optional[str] = typer.Argument(
-        None,
-        help="A media type defined in Zabbix. E.g. [green]'Email'[/green]. [yellow]WARNING: Case sensitive![/yellow]",
+    mediatype: str = typer.Argument(
+        ...,
+        help="A media type defined in Zabbix.",
         show_default=False,
     ),
     remarks: Optional[str] = typer.Option(
@@ -229,15 +245,15 @@ def create_notification_user(
         "--remarks",
         help="Remarks about the notification user to include in username (max 20 chars).",
     ),
-    usergroups: Optional[str] = typer.Option(
-        None,
-        "--usergroups",
-        help="Comma-separated list of usergroups to add the user to. Overrides user groups in config file.",
-    ),
     username: Optional[str] = typer.Option(
         None,
         "--username",
         help="Override generated username. Ignores --remarks.",
+    ),
+    usergroups: Optional[str] = typer.Option(
+        None,
+        "--usergroups",
+        help="Comma-separated list of usergroups to add the user to. Overrides user groups in config file.",
     ),
     # Legacy V2 args
     args: Optional[List[str]] = ARGS_POSITIONAL,
@@ -257,8 +273,7 @@ def create_notification_user(
 
     Run [green]show_media_types[/green] to get a list of available media types.
 
-    The configuration file option [green]default_notification_users_usergroup[/green]
-    must be configured if [green]--usergroups[/green] is not specified.
+    Falls back on the user group defined in the config file if no user groups are specified.
     """
     from zabbix_cli.models import Result
     from zabbix_cli.pyzabbix.types import User
@@ -274,27 +289,11 @@ def create_notification_user(
         remarks = args[0]
     remarks = remarks or ""
 
-    if not sendto:
-        sendto = str_prompt("Send to")
-
-    if not mediatype:
-        mediatype = str_prompt("Media type")
-
     # Generate username
     if username and remarks:
         warning("Both --username and --remarks specified. Ignoring --remarks.")
 
-    if username:
-        username = username.strip()
-    elif remarks.strip() == "":
-        username = "notification-user-" + sendto.replace(".", "-")
-    else:
-        username = (
-            "notification-user-"
-            + remarks.strip()[:20].replace(" ", "_")
-            + "-"
-            + sendto.replace(".", "-")
-        )
+    username = get_notification_user_username(username, sendto, remarks)
 
     # Check if user exists (it should not)
     try:
@@ -311,21 +310,12 @@ def create_notification_user(
             f"Media type {mediatype!r} does not exist. Run [green]show_media_types[/green] command to get a list of available media types."
         )
 
-    with app.status("Fetching usergroup(s)"):
+    with app.status("Fetching usergroup(s)..."):
         if usergroups:
             ug_list = parse_list_arg(usergroups)
         else:
             ug_list = app.state.config.app.default_notification_users_usergroups
-        if not ug_list:
-            exit_err(
-                "No usergroups specified. "
-                "Please specify usergroups with the --usergroups option "
-                "or configure [green]default_notification_users_usergroup[/green] "
-                "in the config file."
-            )
         ugroups = [app.state.client.get_usergroup(ug) for ug in ug_list]
-        if not ugroups:
-            exit_err("No usergroups found.")
 
     user_media = [
         UserMedia(
@@ -337,7 +327,7 @@ def create_notification_user(
         )
     ]
 
-    with app.status("Creating user"):
+    with app.status("Creating user..."):
         userid = app.state.client.create_user(
             username=username,
             password=get_random_password(),
@@ -359,12 +349,10 @@ def create_notification_user(
 @app.command("add_user_to_usergroup", rich_help_panel=HELP_PANEL)
 def add_user_to_usergroup(
     ctx: typer.Context,
-    usernames: Optional[str] = typer.Argument(
-        None, help="Comma-separated list of usernames"
-    ),
+    usernames: str = typer.Argument(..., help="Usernames to add. Comma-separated."),
     usergroups: Optional[str] = typer.Argument(
         None,
-        help="Comma-separated list of user groups to add the users to. [yellow]WARNING: Case sensitive![/yellow]]",
+        help="User groups to add the users to. Comma-separated.",
     ),
 ) -> None:
     """Adds user(s) to usergroup(s).
@@ -373,12 +361,7 @@ def add_user_to_usergroup(
     from zabbix_cli.commands.results.user import UsergroupAddUsers
 
     # FIXME: requires support for IDs for parity with V2
-    if not usernames:
-        usernames = str_prompt("Usernames")
     unames = parse_list_arg(usernames)
-
-    if not usergroups:
-        usergroups = str_prompt("User groups")
     ugroups = parse_list_arg(usergroups)
 
     with app.status("Adding users to user groups"):
@@ -436,11 +419,9 @@ def remove_user_from_usergroup(
 @app.command("create_usergroup", rich_help_panel=HELP_PANEL)
 def create_usergroup(
     ctx: typer.Context,
-    usergroup: Optional[str] = typer.Argument(
-        None, help="Name of the user group to create."
-    ),
-    gui_access: Optional[GUIAccess] = typer.Argument(
-        None, help="GUI access for the group.."
+    usergroup: str = typer.Argument(..., help="Name of the user group to create."),
+    gui_access: GUIAccess = typer.Option(
+        GUIAccess.DEFAULT.value, "--gui", help="GUI access for the group."
     ),
     disabled: bool = typer.Option(
         False,
@@ -459,12 +440,6 @@ def create_usergroup(
                 "Invalid number of positional arguments. Please use options instead."
             )
         disabled = parse_bool_arg(args[0])
-
-    if not usergroup:
-        usergroup = str_prompt("User group")
-
-    if not gui_access:
-        gui_access = GUIAccess.from_prompt(default=GUIAccess.DEFAULT)
 
     # Check if group exists already
     with suppress(ZabbixNotFoundError):

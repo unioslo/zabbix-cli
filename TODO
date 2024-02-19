@@ -71,14 +71,14 @@ Use APIStr enums in functions that take in a code and return a string representa
 ## Commands
 
 * Add command aliases: https://github.com/tiangolo/typer/issues/132
-* Two options:
-  * Add new name `show_host` -> `host-show`, hide old name. (easy)
-    * Need some sort of decorator like @app.old_name("show_host")
-      * Registers the command with hidden=True
-      * Adds `Old name: show_host` to the bottom of the help text.
-      * This lets us traverse all the commands and create a mapping of old to new names, as well as providing it in the help text.
-  * Add new sub-apps a la Harbor CLI: `show_host` -> `host show` (hard)
-    * Requires a bigger refactoring and is semantically different from the current set up.
+  * Two options:
+    * Add new name `show_host` -> `host-show`, hide old name. (easy)
+      * Need some sort of decorator like @app.old_name("show_host")
+        * Registers the command with hidden=True
+        * Adds `Old name: show_host` to the bottom of the help text.
+        * This lets us traverse all the commands and create a mapping of old to new names, as well as providing it in the help text.
+    * Add new sub-apps a la Harbor CLI: `show_host` -> `host show` (hard)
+      * Requires a bigger refactoring and is semantically different from the current set up.
 
 * Sort command categories by help panel names.
   * Sorting order seems to be alphabetical BUT BASED ON THE COMMAND NAMES. So if one category has a command that starts with "A" and another category has a command that starts with "B", then the category with the "A" command will be listed first, regardless of the category name. Why...
@@ -109,6 +109,9 @@ Use APIStr enums in functions that take in a code and return a string representa
 
 * Store error code and message in ZabbixAPIException, so that we can automatically add it to the error message when we write custom ZabbixAPIExceptions.
   * **VERY VERY IMPORTANT:** If we raise ZabbixAPIException from a ZabbixAPIException, we should be able to extract the data from the original exception (`__cause__`) and add it to whatever we are printing.
+
+* Don't log traceback of "expected" errors such as `ZabbixNotFound`.
+  * Perhaps add some sort of base class we handle for this such as `ZabbixStatusError`?
 
 ### Pydantic Exceptions
 
@@ -166,6 +169,11 @@ Use APIStr enums in functions that take in a code and return a string representa
 ## scripts
 
 * Some sort of shared callback function between all scripts and the main CLI. This way we can pass in config etc, and have a common way of handling errors etc.
+
+
+## Templates
+
+* Remove `--strict` option. Adds complexity without much extra value. Users can use `--dryrun` to ensure that the command will work as expected.
 
 ## Tests
 

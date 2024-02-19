@@ -43,12 +43,12 @@ from zabbix_cli.pyzabbix.enums import MonitoringStatus
 from zabbix_cli.pyzabbix.enums import TriggerPriority
 from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.pyzabbix.enums import UserRole
+from zabbix_cli.pyzabbix.types import CreateHostInterfaceDetails
 from zabbix_cli.pyzabbix.types import Event
 from zabbix_cli.pyzabbix.types import GlobalMacro
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import HostInterface
-from zabbix_cli.pyzabbix.types import HostInterfaceDetails
 from zabbix_cli.pyzabbix.types import Image
 from zabbix_cli.pyzabbix.types import ImportRules
 from zabbix_cli.pyzabbix.types import InterfaceType
@@ -62,6 +62,7 @@ from zabbix_cli.pyzabbix.types import Role
 from zabbix_cli.pyzabbix.types import Template
 from zabbix_cli.pyzabbix.types import TemplateGroup
 from zabbix_cli.pyzabbix.types import Trigger
+from zabbix_cli.pyzabbix.types import UpdateHostInterfaceDetails
 from zabbix_cli.pyzabbix.types import User
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import UserMedia
@@ -768,12 +769,14 @@ class ZabbixAPI:
             )
         return str(resp["hostids"][0])
 
-    def delete_host(self, host: Host) -> None:
+    def delete_host(self, host_id: str) -> None:
         """Deletes a host."""
         try:
-            self.host.delete(host.hostid)
+            self.host.delete(host_id)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to delete host {host.host!r}: {e}") from e
+            raise ZabbixAPIException(
+                f"Failed to delete host with ID {host_id!r}: {e}"
+            ) from e
 
     def host_exists(self, name_or_id: str) -> bool:
         """Checks if a host exists given its name or ID."""
@@ -800,7 +803,42 @@ class ZabbixAPI:
         else:
             return True
 
-    def create_hostinterface(
+    def get_hostinterface(
+        self,
+        interfaceid: Optional[str] = None,
+    ) -> HostInterface:
+        """Fetches a host interface given its ID"""
+        interfaces = self.get_hostinterfaces(interfaceids=interfaceid)
+        if not interfaces:
+            raise ZabbixNotFoundError(f"Host interface with ID {interfaceid} not found")
+        return interfaces[0]
+
+    def get_hostinterfaces(
+        self,
+        hostids: Union[str, List[str], None] = None,
+        interfaceids: Union[str, List[str], None] = None,
+        itemids: Union[str, List[str], None] = None,
+        triggerids: Union[str, List[str], None] = None,
+        # Can expand with the rest of the parameters if needed
+    ) -> List[HostInterface]:
+        """Fetches a list of host interfaces, optionally filtered by host ID,
+        interface ID, item ID or trigger ID."""
+        params = {"output": "extend"}  # type: ParamsType
+        if hostids:
+            params["hostids"] = hostids
+        if interfaceids:
+            params["interfaceids"] = interfaceids
+        if itemids:
+            params["itemids"] = itemids
+        if triggerids:
+            params["triggerids"] = triggerids
+        try:
+            resp = self.hostinterface.get(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to fetch host interfaces: {e}") from e
+        return [HostInterface(**iface) for iface in resp]
+
+    def create_host_interface(
         self,
         host: Host,
         main: bool,
@@ -809,7 +847,7 @@ class ZabbixAPI:
         port: str,
         ip: Optional[str] = None,
         dns: Optional[str] = None,
-        details: Optional[HostInterfaceDetails] = None,
+        details: Optional[CreateHostInterfaceDetails] = None,
     ) -> str:
         if not ip and not dns:
             raise ZabbixAPIException("Either IP or DNS must be provided")
@@ -847,17 +885,46 @@ class ZabbixAPI:
             )
         return str(resp["interfaceids"][0])
 
-    def update_hostinterface(
-        self, interface_id: str, default: Optional[bool] = None
+    def update_host_interface(
+        self,
+        interface: HostInterface,
+        main: Optional[bool] = None,
+        type: Optional[InterfaceType] = None,
+        use_ip: Optional[bool] = None,
+        port: Optional[str] = None,
+        ip: Optional[str] = None,
+        dns: Optional[str] = None,
+        details: Optional[UpdateHostInterfaceDetails] = None,
     ) -> None:
-        params = {"interfaceid": interface_id}  # type: ParamsType
-        if default is not None:
-            params["main"] = int(default)
+        params = {"interfaceid": interface.interfaceid}  # type: ParamsType
+        if main is not None:
+            params["main"] = int(main)
+        if type is not None:
+            params["type"] = type.as_api_value()
+        if use_ip is not None:
+            params["useip"] = int(use_ip)
+        if port is not None:
+            params["port"] = str(port)
+        if ip is not None:
+            params["ip"] = ip
+        if dns is not None:
+            params["dns"] = dns
+        if details is not None:
+            params["details"] = details.model_dump_api()
         try:
             self.hostinterface.update(**params)
         except ZabbixAPIException as e:
             raise ZabbixAPIException(
-                f"Failed to update host interface with ID {interface_id}: {e}"
+                f"Failed to update host interface with ID {interface.interfaceid}: {e}"
+            ) from e
+
+    def delete_host_interface(self, interface_id: str) -> None:
+        """Deletes a host interface."""
+        try:
+            self.hostinterface.delete(interface_id)
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(
+                f"Failed to delete host interface with ID {interface_id}: {e}"
             ) from e
 
     def get_usergroup(
@@ -2075,23 +2142,27 @@ class ZabbixAPI:
         return str(resp)
 
     def import_configuration(
-        self, to_import: Path, create_missing: bool = True, update_existing: bool = True
-    ) -> bool:
+        self,
+        to_import: Path,
+        create_missing: bool = True,
+        update_existing: bool = True,
+        delete_missing: bool = False,
+    ) -> None:
         """Imports a configuration from a file.
 
         The format to import is determined by the file extension.
         """
-
         try:
             conf = to_import.read_text()
             fmt = ExportFormat(to_import.suffix.strip("."))
             rules = ImportRules.get(
-                create_missing=create_missing, update_existing=update_existing
+                create_missing=create_missing,
+                update_existing=update_existing,
+                delete_missing=delete_missing,
             )
-            return self.confimport(format=fmt, source=conf, rules=rules)
+            self.confimport(format=fmt, source=conf, rules=rules)
         except ZabbixAPIException as e:
             raise ZabbixAPIException("Failed to import configuration") from e
-        return True
 
     def __getattr__(self, attr: str):
         """Dynamically create an object class (ie: host)"""

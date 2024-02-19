@@ -326,8 +326,7 @@ def parse_export_types(value: List[str]) -> List[ExportType]:
             raise ZabbixCLIError(f"Invalid export type: {obj}") from e
     # dedupe
     # TODO: test that StrEnum is hashable on all Python versions
-    # FIXME: this deduplication makes the order non-deterministic!
-    return list(set(objs))
+    return sorted(set(objs))
 
 
 def parse_export_types_callback(
@@ -498,6 +497,7 @@ class ZabbixImporter:
         files: List[Path],
         create_missing: bool,
         update_existing: bool,
+        delete_missing: bool,
         ignore_errors: bool,
     ) -> None:
         self.client = client
@@ -506,6 +506,7 @@ class ZabbixImporter:
         self.ignore_errors = ignore_errors
         self.create_missing = create_missing
         self.update_existing = update_existing
+        self.delete_missing = delete_missing
 
         self.imported = []  # type: List[Path]
         self.failed = []  # type: List[Path]
@@ -538,7 +539,7 @@ class ZabbixImporter:
         # API method will return true if successful, but does failure return false
         # or does it raise an exception?
         try:
-            self.client.import_configuration(file, create_missing=self.create_missing)
+            self.client.import_configuration(file)
         except Exception as e:
             self.failed.append(file)
             msg = f"Failed to import {file}"
@@ -580,11 +581,14 @@ def import_configuration(
     update_existing: bool = typer.Option(
         True, "--update-existing/--no-update-existing", help="Update existing objects."
     ),
+    delete_missing: bool = typer.Option(
+        False, "--delete-missing/--no-delete-missing", help="Delete missing objects."
+    ),
     ignore_errors: bool = typer.Option(
         False,
         "--ignore-errors",
         is_flag=True,
-        help="Enable best-effort importing. Print errors but continue importing.",
+        help="Enable best-effort importing. Print errors from failed imports but continue importing.",
     ),
     # Legacy positional args
     args: Optional[List[str]] = ARGS_POSITIONAL,
@@ -655,6 +659,7 @@ def import_configuration(
         create_missing=create_missing,
         update_existing=update_existing,
         ignore_errors=ignore_errors,
+        delete_missing=delete_missing,
     )
 
     try:

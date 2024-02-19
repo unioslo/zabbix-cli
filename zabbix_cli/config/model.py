@@ -91,14 +91,14 @@ class AppConfig(BaseModel):
         validation_alias=AliasChoices("default_hostgroups", "default_hostgroup"),
     )
     default_admin_usergroups: List[str] = Field(
-        default=["All-root"],
+        default=[],
         # Changed in V3: default_admin_usergroup -> default_admin_usergroups
         validation_alias=AliasChoices(
             "default_admin_usergroups", "default_admin_usergroup"
         ),
     )
     default_create_user_usergroups: List[str] = Field(
-        default=["All-users"],
+        default=[],
         # Changed in V3: default_create_user_usergroup -> default_create_user_usergroups
         validation_alias=AliasChoices(
             "default_create_user_usergroups", "default_create_user_usergroup"

@@ -54,16 +54,10 @@ def create_templategroup(
         None,
         help="User group(s) to give read-only permissions. Comma-separated.",
     ),
-    no_usergroup_permissions: bool = typer.Option(
-        False,
-        "--no-usergroup-permissions",
-        help="Do not assign user group permissions.",
-    ),
 ) -> None:
     """Create a new template group.
 
-    Assigns permissions for user groups defined in configuration file
-    unless --no-usergroup-permissions is specified.
+    Assigns permissions for user groups defined in configuration file if no user groups are specified.
 
     The user groups can be overridden with the --rw-groups and --ro-groups.
     """
@@ -75,9 +69,9 @@ def create_templategroup(
 
     rw_grps = []  # type: list[str]
     ro_grps = []  # type: list[str]
-    if not no_usergroup_permissions:
-        rw_grps = parse_list_arg(rw_groups) or app_config.default_admin_usergroups
-        ro_grps = parse_list_arg(ro_groups) or app_config.default_create_user_usergroups
+
+    rw_grps = parse_list_arg(rw_groups) or app_config.default_admin_usergroups
+    ro_grps = parse_list_arg(ro_groups) or app_config.default_create_user_usergroups
 
     try:
         # Admin group(s) gets Read/Write

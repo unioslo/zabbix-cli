@@ -167,9 +167,8 @@ def create_hostgroup(
     if app.state.client.hostgroup_exists(hostgroup):
         exit_err(f"Host group {hostgroup!r} already exists.")
 
-    # Create the host group
-    hostgroup_id = app.state.client.create_hostgroup(hostgroup)
-    info(f"Creating host group {hostgroup} ({hostgroup_id}).")
+    with app.status("Creating host group..."):
+        hostgroup_id = app.state.client.create_hostgroup(hostgroup)
 
     app_config = app.state.config.app
 

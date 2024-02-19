@@ -24,7 +24,6 @@ from zabbix_cli.pyzabbix.enums import SNMPAuthProtocol
 from zabbix_cli.pyzabbix.enums import SNMPPrivProtocol
 from zabbix_cli.pyzabbix.enums import SNMPSecurityLevel
 from zabbix_cli.utils.args import parse_list_arg
-from zabbix_cli.utils.commands import ARG_HOSTNAME_OR_ID
 
 
 HELP_PANEL = "Host"
@@ -154,14 +153,8 @@ def create_host(
     except ZabbixNotFoundError:
         prox = None
 
-    try:
-        app.state.client.get_host(hostname_or_ip)
-    except ZabbixNotFoundError:
-        pass  # OK: host does not exist
-    except Exception as e:
-        raise ZabbixCLIError(f"Error while checking if host exists: {e}")
-    else:
-        raise ZabbixCLIError(f"Host {hostname_or_ip} already exists.")
+    if app.state.client.host_exists(hostname_or_ip):
+        exit_err(f"Host {hostname_or_ip} already exists.")
 
     host_id = app.state.client.create_host(
         host_name,
@@ -199,11 +192,11 @@ def create_host(
         ),
         Example(
             "Create an SNMPv3 interface on host 'foo.example.com'",
-            "create_host_interface foo --type snmp --snmp-version 3 --snmp-context-name mycontext --snmp-security-name myuser --snmp-security-level authpriv  --snmp-auth-protocol MD5 --snmp-auth-passphrase mypass --snmp-priv-protocol DES --snmp-priv-passphrase myprivpass",
+            "create_host_interface foo.example.com --type snmp --snmp-version 3 --snmp-context-name mycontext --snmp-security-name myuser --snmp-security-level authpriv  --snmp-auth-protocol MD5 --snmp-auth-passphrase mypass --snmp-priv-protocol DES --snmp-priv-passphrase myprivpass",
         ),
         Example(
-            "Create an Agent interface on 'foo.example.com' using hostname",
-            "create_host_interface foo --type agent",
+            "Create an Agent interface on host 'foo.example.com'",
+            "create_host_interface foo.example.com --type agent",
         ),
     ],
 )
@@ -234,13 +227,13 @@ def create_host_interface(
     ip: Optional[str] = typer.Option(
         None,
         "--ip",
-        help="IP address of agent.",
+        help="IP address of interface.",
         show_default=False,
     ),
     dns: Optional[str] = typer.Option(
         None,
         "--dns",
-        help="DNS address of agent.",
+        help="DNS address of interface.",
         show_default=False,
     ),
     default: bool = typer.Option(
@@ -328,7 +321,7 @@ def create_host_interface(
     that already have a default interface. (API limitation)
     """
     from zabbix_cli.models import Result
-    from zabbix_cli.pyzabbix.types import HostInterfaceDetails
+    from zabbix_cli.pyzabbix.types import CreateHostInterfaceDetails
 
     # Handle V2 positional args (deprecated)
     if args:
@@ -375,9 +368,9 @@ def create_host_interface(
         info(f"No default {type_} interface found. Setting new interface as default.")
         default = True
 
-    details = None  # type: HostInterfaceDetails | None
+    details = None  # type: CreateHostInterfaceDetails | None
     if type_ == InterfaceType.SNMP:
-        details = HostInterfaceDetails(
+        details = CreateHostInterfaceDetails(
             version=snmp_version,
             community=snmp_community,
             bulk=int(snmp_bulk),
@@ -407,7 +400,7 @@ def create_host_interface(
                     if snmp_priv_passphrase:
                         details.privpassphrase = snmp_priv_passphrase
 
-    ifaceid = app.state.client.create_hostinterface(
+    ifaceid = app.state.client.create_host_interface(
         host=host,
         main=default,
         type=type_,
@@ -418,6 +411,189 @@ def create_host_interface(
         details=details,
     )
     render_result(Result(message=f"Created host interface with ID {ifaceid}."))
+
+
+@app.command(
+    name="update_host_interface",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Update the IP address of an interface.",
+            "update_host_interface 123 --ip 127.0.0.1",
+        ),
+        Example(
+            "Change connection type of an interface to IP.",
+            "update_host_interface 123 --connection ip",
+        ),
+        Example(
+            "Change SNMP community of an SNMP interface to 'public'.",
+            "update_host_interface 234 --snmp-community public",
+        ),
+    ],
+)
+def update_host_interface(
+    ctx: typer.Context,
+    interface_id: str = typer.Argument(
+        ...,
+        help="ID of interface to update.",
+        show_default=False,
+    ),
+    connection: Optional[InterfaceConnectionMode] = typer.Option(
+        None,
+        "--connection",
+        help="Interface connection mode.",
+        case_sensitive=False,
+    ),
+    port: Optional[str] = typer.Option(
+        None,
+        "--port",
+        help="Interface port.",
+    ),
+    ip: Optional[str] = typer.Option(
+        None,
+        "--ip",
+        help="IP address of interface.",
+        show_default=False,
+    ),
+    dns: Optional[str] = typer.Option(
+        None,
+        "--dns",
+        help="DNS address of interface.",
+        show_default=False,
+    ),
+    default: bool = typer.Option(
+        True, "--default/--no-default", help="Default interface."
+    ),
+    snmp_version: Optional[int] = typer.Option(
+        None,
+        "--snmp-version",
+        help="SNMP version.",
+        min=1,
+        max=3,
+        show_default=False,
+    ),
+    snmp_bulk: Optional[bool] = typer.Option(
+        None,
+        "--snmp-bulk/--no-snmp-bulk",
+        help="Use bulk SNMP requests.",
+    ),
+    snmp_community: Optional[str] = typer.Option(
+        None,
+        "--snmp-community",
+        help="SNMPv{1,2} community.",
+        show_default=False,
+    ),
+    snmp_max_repetitions: Optional[int] = typer.Option(
+        None,
+        "--snmp-max-repetitions",
+        help="Max repetitions for SNMPv{2,3} bulk requests.",
+        min=1,
+    ),
+    snmp_security_name: Optional[str] = typer.Option(
+        None,
+        "--snmp-security-name",
+        help="SNMPv3 security name.",
+        show_default=False,
+    ),
+    snmp_context_name: Optional[str] = typer.Option(
+        None,
+        "--snmp-context-name",
+        help="SNMPv3 context name.",
+        show_default=False,
+    ),
+    snmp_security_level: Optional[SNMPSecurityLevel] = typer.Option(
+        None,
+        "--snmp-security-level",
+        help="SNMPv3 security level.",
+        show_default=False,
+        case_sensitive=False,
+    ),
+    snmp_auth_protocol: Optional[SNMPAuthProtocol] = typer.Option(
+        None,
+        "--snmp-auth-protocol",
+        help="SNMPv3 auth protocol (authNoPriv & authPriv).",
+        show_default=False,
+        case_sensitive=False,
+    ),
+    snmp_auth_passphrase: Optional[str] = typer.Option(
+        None,
+        "--snmp-auth-passphrase",
+        help="SNMPv3 auth passphrase (authNoPriv & authPriv).",
+        show_default=False,
+    ),
+    snmp_priv_protocol: Optional[SNMPPrivProtocol] = typer.Option(
+        None,
+        "--snmp-priv-protocol",
+        help="SNMPv3 priv protocol (authPriv)",
+        show_default=False,
+        case_sensitive=False,
+    ),
+    snmp_priv_passphrase: Optional[str] = typer.Option(
+        None,
+        "--snmp-priv-passphrase",
+        help="SNMPv3 priv passphrase (authPriv).",
+        show_default=False,
+    ),
+) -> None:
+    """Update a host interface.
+
+    Host interface type cannot be changed.
+    """
+    from zabbix_cli.models import Result
+    from zabbix_cli.pyzabbix.types import UpdateHostInterfaceDetails
+
+    interface = app.state.client.get_hostinterface(interface_id)
+
+    details = UpdateHostInterfaceDetails(
+        version=snmp_version,
+        community=snmp_community,
+        bulk=int(snmp_bulk) if snmp_bulk is not None else None,
+        max_repetitions=snmp_max_repetitions,
+        securityname=snmp_security_name,
+        contextname=snmp_context_name,
+        securitylevel=snmp_security_level.as_api_value()
+        if snmp_security_level
+        else None,
+        authprotocol=snmp_auth_protocol.as_api_value() if snmp_auth_protocol else None,
+        authpassphrase=snmp_auth_passphrase,
+        privprotocol=snmp_priv_protocol.as_api_value() if snmp_priv_protocol else None,
+        privpassphrase=snmp_priv_passphrase,
+    )
+
+    if connection:
+        if connection == InterfaceConnectionMode.IP:
+            use_ip = True
+        elif connection == InterfaceConnectionMode.DNS:
+            use_ip = False
+    else:
+        use_ip = None
+
+    app.state.client.update_host_interface(
+        interface,
+        main=default,
+        use_ip=use_ip,
+        ip=ip,
+        dns=dns,
+        port=port,
+        details=details,
+    )
+    render_result(Result(message=f"Updated host interface ({interface_id})."))
+
+
+@app.command(name="remove_host_interface", rich_help_panel=HELP_PANEL)
+def remove_host_interface(
+    ctx: typer.Context,
+    interface_id: str = typer.Argument(
+        ...,
+        help="ID of interface to remove.",
+        show_default=False,
+    ),
+) -> None:
+    """Remove a host interface."""
+    from zabbix_cli.models import Result
+
+    app.state.client.delete_host_interface(interface_id)
+    render_result(Result(message=f"Removed host interface ({interface_id})."))
 
 
 @app.command(name="define_host_monitoring_status", rich_help_panel=HELP_PANEL)
@@ -453,14 +629,14 @@ def remove_host(
     from zabbix_cli.models import Result
 
     host = app.state.client.get_host(hostname)
-    app.state.client.delete_host(host)
+    app.state.client.delete_host(host.hostid)
     render_result(Result(message=f"Removed host {hostname!r}."))
 
 
 @app.command(name="show_host", rich_help_panel=HELP_PANEL)
 def show_host(
     ctx: typer.Context,
-    hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID,
+    hostname_or_id: str = typer.Argument(..., help="Hostname or ID."),
     # This is the legacy filter argument from V2
     filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
     agent: Optional[AgentAvailable] = typer.Option(
@@ -483,9 +659,6 @@ def show_host(
 ) -> None:
     """Show a specific host."""
     from zabbix_cli.commands.results.host import HostFilterArgs
-
-    if not hostname_or_id:
-        hostname_or_id = str_prompt("Hostname or ID")
 
     args = HostFilterArgs.from_command_args(
         filter_legacy, agent, maintenance, monitored
@@ -510,7 +683,6 @@ def show_host(
 def show_hosts(
     ctx: typer.Context,
     # This is the legacy filter argument from V2
-    filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
     agent: Optional[AgentAvailable] = typer.Option(
         None,
         "--agent",
@@ -528,6 +700,8 @@ def show_hosts(
         "--monitored/--unmonitored",
         help="Monitoring status.",
     ),
+    # V2 Legacy filter argument
+    filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
     # TODO: add sorting mode?
 ) -> None:
     """Show all hosts.
@@ -557,7 +731,9 @@ def show_hosts(
 
 
 @app.command(name="show_host_interfaces", rich_help_panel=HELP_PANEL)
-def show_host_interfaces(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
+def show_host_interfaces(
+    hostname_or_id: str = typer.Argument(..., help="Hostname or ID"),
+) -> None:
     """Show host interfaces."""
     from zabbix_cli.models import AggregateResult
 
@@ -566,12 +742,12 @@ def show_host_interfaces(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
 
 
 @app.command(name="show_host_inventory", rich_help_panel=HELP_PANEL)
-def show_host_inventory(hostname_or_id: Optional[str] = ARG_HOSTNAME_OR_ID) -> None:
+def show_host_inventory(
+    hostname_or_id: str = typer.Argument(..., help="Hostname or ID"),
+) -> None:
     """Show host inventory details for a specific host."""
     # TODO: support undocumented filter argument from V2
     # TODO: Add mapping of inventory keys to human readable names (Web GUI names)
-    if not hostname_or_id:
-        hostname_or_id = str_prompt("Hostname or ID")
     host = app.state.client.get_host(hostname_or_id, select_inventory=True)
     render_result(host.inventory)
 
