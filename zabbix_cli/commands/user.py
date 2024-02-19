@@ -221,10 +221,10 @@ def get_notification_user_username(
     sendto = sendto.strip().replace(".", "-")
     if username:
         return username
-    new = "notification-user"
+    username = "notification-user"
     if remarks:
-        new += f"-{remarks}"
-    return f"-{sendto}"
+        username += f"-{remarks}"
+    return f"{username}-{sendto}"
 
 
 @app.command("create_notification_user", rich_help_panel=HELP_PANEL)
