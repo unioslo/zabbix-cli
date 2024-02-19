@@ -26,15 +26,15 @@ CONFIG_DEFAULT_DIR = "/usr/share/zabbix-cli"
 CONFIG_SYSTEM_DIR = "/etc/zabbix-cli"
 CONFIG_USER_DIR = os.path.expanduser("~/.zabbix-cli")
 
-# Any item will overwrite values from the previous
+# Any item will overwrite values from the previous (NYI)
 CONFIG_PRIORITY = tuple(
     Path(os.path.join(d, f))
     for d, f in (
-        (CONFIG_DEFAULT_DIR, CONFIG_FILENAME),
-        (CONFIG_SYSTEM_DIR, CONFIG_FILENAME),
-        (CONFIG_USER_DIR, CONFIG_FILENAME),
-        (CONFIG_SYSTEM_DIR, CONFIG_FIXED_NAME),
         (CONFIG_DEFAULT_DIR, CONFIG_FIXED_NAME),
+        (CONFIG_SYSTEM_DIR, CONFIG_FIXED_NAME),
+        (CONFIG_USER_DIR, CONFIG_FILENAME),
+        (CONFIG_SYSTEM_DIR, CONFIG_FILENAME),
+        (CONFIG_DEFAULT_DIR, CONFIG_FILENAME),
     )
 )
 
