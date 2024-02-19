@@ -498,6 +498,8 @@ def show_usergroup_permissions(
     ),
 ) -> None:
     """Show permissions for one or more user groups."""
+    # FIXME: URGENT Does not work properly in 6.0.22
+
     # NOTE: this command breaks JSON output compatibility with V2
     # In V2, rights were serialized as a string in the format of "<NAME> (<RO/RW/DENY>)"
     # under the key "permissions".
