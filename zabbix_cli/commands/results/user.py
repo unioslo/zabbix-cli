@@ -74,15 +74,13 @@ class GroupRights(TableRenderable):
 
 
 class ShowUsergroupResult(TableRenderable):
-    usrgrpid: str
+    usrgrpid: str = Field(..., json_schema_extra={"header": "ID"})
     name: str
     gui_access: str = Field(..., json_schema_extra={"header": "GUI Access"})
     status: str
     users: List[str] = Field(
         default_factory=list, json_schema_extra={META_KEY_JOIN_CHAR: ", "}
     )
-    hostgroup_rights: List[ZabbixRight] = []
-    templategroup_rights: List[ZabbixRight] = []
 
     @classmethod
     def from_usergroup(cls, usergroup: Usergroup) -> ShowUsergroupResult:
@@ -125,6 +123,12 @@ class ShowUsergroupPermissionsResult(TableRenderable):
     hostgroup_rights: List[ZabbixRight] = []
     templategroup_rights: List[ZabbixRight] = []
     zabbix_version: Tuple[int, ...] = Field(..., exclude=True)
+
+    @computed_field  # type: ignore # computed field on @property
+    @property
+    def usergroupid(self) -> str:
+        """LEGACY: The field `usrgrpid` was called `usergroupid` in V2."""
+        return self.usrgrpid
 
     @classmethod
     def from_usergroup(
