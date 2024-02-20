@@ -83,7 +83,6 @@ def render_table(
     """
     # TODO: be able to print message _AND_ table
     # The Result/TableRenderable dichotomy is a bit of a mess
-    # from zabbix_cli.models import Result
     from zabbix_cli.models import Result
     from zabbix_cli.models import ReturnCode
 
