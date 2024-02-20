@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -108,7 +109,9 @@ class ShowUsergroupResult(TableRenderable):
         return v
 
 
-class ShowUsergroupPermissionsResult(Usergroup):
+class ShowUsergroupPermissionsResult(TableRenderable):
+    usrgrpid: str
+    name: str
     hostgroups: Dict[str, HostGroup] = Field(
         default_factory=dict,
         exclude=True,
@@ -119,6 +122,9 @@ class ShowUsergroupPermissionsResult(Usergroup):
         exclude=True,
         description="Mapping of all template groups. Used to render template group rights.",
     )
+    hostgroup_rights: List[ZabbixRight] = []
+    templategroup_rights: List[ZabbixRight] = []
+    zabbix_version: Tuple[int, ...] = Field(..., exclude=True)
 
     @classmethod
     def from_usergroup(
@@ -127,12 +133,20 @@ class ShowUsergroupPermissionsResult(Usergroup):
         hostgroups: List[HostGroup],
         templategroups: List[TemplateGroup],
     ) -> ShowUsergroupPermissionsResult:
-        ug = cls.model_validate(usergroup, from_attributes=True)
-        if hostgroups:
-            ug.hostgroups = {hg.groupid: hg for hg in hostgroups}
-        if templategroups:
-            ug.templategroups = {tg.groupid: tg for tg in templategroups}
-        return ug
+        cls.model_rebuild()  # TODO: can we avoid this?
+        res = cls(
+            usrgrpid=usergroup.usrgrpid,
+            name=usergroup.name,
+            hostgroups={hg.groupid: hg for hg in hostgroups},
+            templategroups={tg.groupid: tg for tg in templategroups},
+            zabbix_version=usergroup.zabbix_version.release,
+            templategroup_rights=usergroup.templategroup_rights,
+        )
+        if res.zabbix_version >= (6, 2, 0):
+            res.hostgroup_rights = usergroup.hostgroup_rights
+        else:
+            res.hostgroup_rights = usergroup.rights
+        return res
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Name", "Host Group Rights"]
@@ -144,7 +158,7 @@ class ShowUsergroupPermissionsResult(Usergroup):
         )
 
         # Template group rights table
-        if self.zabbix_version.release >= (6, 2, 0):
+        if self.zabbix_version >= (6, 2, 0):
             cols.append("Template Group Rights")
             row.append(
                 GroupRights(

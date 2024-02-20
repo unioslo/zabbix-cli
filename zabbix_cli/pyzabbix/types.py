@@ -264,36 +264,6 @@ class Usergroup(ZabbixAPIBaseModel):
         return v
 
 
-class HostGroup(ZabbixAPIBaseModel):
-    groupid: str
-    name: str
-    hosts: List[Host] = []
-    # FIXME: Use Optional[str] and None default?
-    flags: int = 0
-    internal: int = 0  # should these be ints?
-    templates: List[Template] = []  # <6.2.0
-
-    def __cols_rows__(self) -> ColsRowsType:
-        cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
-        rows = [
-            [
-                self.groupid,
-                self.name,
-                get_hostgroup_flag(self.flags),
-                get_hostgroup_type(self.internal),
-                ", ".join([host.host for host in self.hosts]),
-            ]
-        ]  # type: RowsType
-        return cols, rows
-
-
-class TemplateGroup(ZabbixAPIBaseModel):
-    groupid: str
-    name: str
-    uuid: str
-    templates: List[Template] = []
-
-
 class Template(ZabbixAPIBaseModel):
     """A template object. Can contain hosts and other templates."""
 
@@ -322,6 +292,36 @@ class Template(ZabbixAPIBaseModel):
                 "\n".join([host.host for host in self.hosts]),
                 "\n".join([template.host for template in self.templates]),
                 "\n".join([parent.host for parent in self.parent_templates]),
+            ]
+        ]  # type: RowsType
+        return cols, rows
+
+
+class TemplateGroup(ZabbixAPIBaseModel):
+    groupid: str
+    name: str
+    uuid: str
+    templates: List[Template] = []
+
+
+class HostGroup(ZabbixAPIBaseModel):
+    groupid: str
+    name: str
+    hosts: List[Host] = []
+    # FIXME: Use Optional[str] and None default?
+    flags: int = 0
+    internal: int = 0  # should these be ints?
+    templates: List[Template] = []  # <6.2.0
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
+        rows = [
+            [
+                self.groupid,
+                self.name,
+                get_hostgroup_flag(self.flags),
+                get_hostgroup_type(self.internal),
+                ", ".join([host.host for host in self.hosts]),
             ]
         ]  # type: RowsType
         return cols, rows
