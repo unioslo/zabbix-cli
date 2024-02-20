@@ -129,7 +129,8 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
     ):
         from zabbix_cli.auth import clear_auth_token_file
 
-        clear_auth_token_file()
+        # Clear token file and from the config object
+        clear_auth_token_file(state.config)
         if state.repl:  # kinda hacky
             state.configure(state.config)
         # NOTE: ideally we automatically re-run the command here, but that's
