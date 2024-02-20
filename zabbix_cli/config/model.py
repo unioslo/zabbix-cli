@@ -265,7 +265,7 @@ class Config(BaseModel):
         if not fp:  # We didn't find a .toml file, so try to find a legacy .conf file
             fp = find_config(filename, CONFIG_PRIORITY_LEGACY)
             if fp:
-                logging.warning("Using legacy config file %r", fp)
+                logging.warning("Using legacy config file (%s)", fp)
                 conf = _load_config_conf(fp)
                 # Use legacy JSON format if we find a legacy config file
                 conf.setdefault("zabbix_config", {}).setdefault(
