@@ -52,7 +52,11 @@
     - `--agent [available | unavailable | unknown ]`: Filter by agent availability
     - Old positional filter argument syntax is deprecated.
   - `show_hosts`:
-    - Same as `show_host`
+    - Same options as `show_host`
+  - `show_hostgroup`:
+    - `--hosts/--no-hosts`: Show hosts in the group
+  - `show_hostgroups`:
+    - `--hosts/--no-hosts`: Show hosts in the group
   - `show_trigger_events`
     - `--trigger-id`: Trigger ID(s) to get events for.
       - Corresponds to old positional argument 1.
@@ -61,11 +65,19 @@
     - `--limit`: Limit number of events to show
       - Corresponds to old positional argument 2.
       - Defaults to 10 (was 1).
+  - `show_usergroup`:
+    - `--sort`: Sort results by a field.
+  - `show_usergroups`:
+    - `--sort`: Sort results by a field.
+  - `show_usergroup_permissions`:
+    - `--sort`: Sort results by a field.
   - `unlink_template_from_host`:
     - `--dryrun`: Preview changes without making them.
 - **New command arguments:**
   - `show_templates`:
     - `template_names`: Template name(s) to filter by. Shows all templates by default. Supports wildcards.
+  - `show_hostgroup`:
+    - `name`: Host group name(s) to filter by. Shows all host groups by default. Supports wildcards.
 
 
 - **REPOSITORY:** Pre-commit configuration for linting and formatting.
@@ -81,7 +93,7 @@
 - Default configuration file location is now `~/.config/zabbix-cli/config.toml`
 - **TOML configuration file option names:**
   - Table [zabbix_api] → [api]
-    - `zabbix_url` → `url`
+    - `zabbix_api_url` → `url`
     - `cert_verify` → `verify_ssl`
   - Table [zabbix_config] → [app]
     - `system_id` → `username`
@@ -114,6 +126,8 @@
   - `link_template_to_hostgroup`:
     - Renamed to `add_template_to_group`.
     - Old name is still supported, but hidden and deprecated.
+  - `show_hostgroup_permissions`:
+    - Shows permissions for all host groups by default.
 - Use Hatch for building and publishing
 - Switch from setup.py to pyproject.toml
 

@@ -153,7 +153,7 @@ class ShowUsergroupPermissionsResult(TableRenderable):
         return res
 
     def __cols_rows__(self) -> ColsRowsType:
-        cols = ["ID", "Name", "Host Group Rights"]
+        cols = ["ID", "Name", "Host Groups"]
         row = [self.usrgrpid, self.name]  # type: RowContent
 
         # Host group rights table
@@ -163,7 +163,7 @@ class ShowUsergroupPermissionsResult(TableRenderable):
 
         # Template group rights table
         if self.zabbix_version >= (6, 2, 0):
-            cols.append("Template Group Rights")
+            cols.append("Template Groups")
             row.append(
                 GroupRights(
                     groups=self.templategroups, rights=self.templategroup_rights

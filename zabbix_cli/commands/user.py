@@ -2,16 +2,20 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import random
 from contextlib import suppress
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import TypeVar
 
 import typer
+from strenum import StrEnum
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
+from zabbix_cli.app import Example
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
@@ -32,6 +36,13 @@ if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType  # noqa: F401
     from zabbix_cli.models import RowContent  # noqa: F401
     from zabbix_cli.models import RowsType  # noqa: F401
+    from typing import Protocol
+
+    class UsergroupLike(Protocol):
+        name: str
+        usrgrpid: str
+
+    UsergroupLikeT = TypeVar("UsergroupLikeT", bound=UsergroupLike)
 
 
 HELP_PANEL = "User"
@@ -455,13 +466,61 @@ def create_usergroup(
     success(f"Created user group {usergroup!r} ({usergroupid}).")
 
 
-@app.command("show_usergroup", rich_help_panel=HELP_PANEL)
+class UsergroupSorting(StrEnum):
+    NAME = "name"
+    ID = "id"
+    USERS = "users"
+
+
+def sort_ugroups(
+    ugroups: List[UsergroupLikeT], sort: UsergroupSorting
+) -> List[UsergroupLikeT]:
+    if sort == UsergroupSorting.NAME:
+        return sorted(ugroups, key=lambda ug: ug.name)
+    elif sort == UsergroupSorting.ID:
+        # NOTE: this can fail if user group IDs are not integers (API returns strings)
+        # We should potentially just coerce them to ints in the model
+        try:
+            return sorted(ugroups, key=lambda ug: int(ug.usrgrpid))
+        except Exception as e:
+            logging.error(f"Failed to sort user groups by ID: {e}")
+            # Fall back on unsorted (likely sorted by ID anyway)
+    return ugroups
+
+
+OPTION_SORT_UGROUPS = typer.Option(
+    UsergroupSorting.NAME,
+    "--sort",
+    help="Sort by field.",
+    case_sensitive=False,
+)
+
+
+@app.command(
+    "show_usergroup",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Show user group 'Admins'",
+            "show_usergroup Admins",
+        ),
+        Example(
+            "Show user groups 'Admins' and 'Operators'",
+            "show_usergroup Admins,Operators",
+        ),
+        Example(
+            "Show all user groups containing 'web' sorted by ID",
+            "show_usergroup '*web*' --sort id",
+        ),
+    ],
+)
 def show_usergroup(
     ctx: typer.Context,
     usergroup: str = typer.Argument(
         ...,
         help="Name of the user group(s) to show. Comma-separated. Supports wildcards.",
     ),
+    sort: UsergroupSorting = OPTION_SORT_UGROUPS,
 ) -> None:
     """Show details for user group(s)."""
     from zabbix_cli.commands.results.user import ShowUsergroupResult
@@ -474,11 +533,14 @@ def show_usergroup(
     res = []
     for ugroup in usergroups:
         res.append(ShowUsergroupResult.from_usergroup(ugroup))
-    render_result(AggregateResult(result=res))
+
+    render_result(AggregateResult(result=sort_ugroups(res, sort)))
 
 
 @app.command("show_usergroups", rich_help_panel=HELP_PANEL)
-def show_usergroups(ctx: typer.Context) -> None:
+def show_usergroups(
+    ctx: typer.Context, sort: UsergroupSorting = OPTION_SORT_UGROUPS
+) -> None:
     """Show all user groups."""
     from zabbix_cli.commands.results.user import ShowUsergroupResult
     from zabbix_cli.models import AggregateResult
@@ -487,15 +549,33 @@ def show_usergroups(ctx: typer.Context) -> None:
     res = []
     for ugroup in usergroups:
         res.append(ShowUsergroupResult.from_usergroup(ugroup))
-    render_result(AggregateResult(result=res))
+    render_result(AggregateResult(result=sort_ugroups(res, sort)))
 
 
-@app.command("show_usergroup_permissions", rich_help_panel=HELP_PANEL)
+@app.command(
+    "show_usergroup_permissions",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Show permissions for user group 'Admins'",
+            "show_usergroup_permissions Admins",
+        ),
+        Example(
+            "Show permissions for user groups 'Admins' and 'Operators'",
+            "show_usergroup_permissions Admins,Operators",
+        ),
+        Example(
+            "Show permissions for all user groups sorted by ID",
+            "show_usergroup_permissions * --sort id",
+        ),
+    ],
+)
 def show_usergroup_permissions(
     ctx: typer.Context,
     usergroup: str = typer.Argument(
         ..., help="Name of user group. Comma-separated. Supports wildcards."
     ),
+    sort: UsergroupSorting = OPTION_SORT_UGROUPS,
 ) -> None:
     """Show permissions for one or more user groups."""
     # FIXME: URGENT Does not work properly in 6.0.22
@@ -519,14 +599,14 @@ def show_usergroup_permissions(
         templategroups = app.state.client.get_templategroups()
     else:
         templategroups = []
-    res = []
+    res = []  # type: list[ShowUsergroupPermissionsResult]
     for ugroup in usergroups:
         res.append(
             ShowUsergroupPermissionsResult.from_usergroup(
                 ugroup, hostgroups=hostgroups, templategroups=templategroups
             )
         )
-    render_result(AggregateResult(result=res))
+    render_result(AggregateResult(result=sort_ugroups(res, sort)))
 
 
 # NOTE: {add,update}_usergroup_permissions seem to be the exact same command in V2. Keeping that here.
