@@ -404,7 +404,9 @@ def unlink_template_from_template(
     # old name for backwards compatibility
     "link_template_to_hostgroup",
     hidden=True,
+    deprecated=True,
     rich_help_panel=HELP_PANEL,
+    help="DEPRECATED: Use add_template_to_group instead.",
 )
 def add_template_to_group(
     ctx: typer.Context,
@@ -443,8 +445,8 @@ def add_template_to_group(
     # old name for backwards compatibility
     "unlink_template_from_hostgroup",
     hidden=True,
-    rich_help_panel=HELP_PANEL,
     deprecated=True,
+    rich_help_panel=HELP_PANEL,
     help="Use `remove_template_from_group` instead.",
 )
 def remove_template_from_group(
@@ -506,7 +508,7 @@ def show_templates(
     ctx: typer.Context,
     templates: str = typer.Argument(
         "*",
-        help="Template name(s) or ID(s). Comma-separated.",
+        help="Template name(s) or ID(s). Comma-separated. Supports wildcards.",
     ),
 ) -> None:
     """Show one or more templates.
@@ -529,7 +531,7 @@ def show_templates(
 def show_items(
     ctx: typer.Context,
     template_name: Optional[str] = typer.Argument(
-        None, help="Template name or ID. Names support wildcards."
+        None, help="Template name or ID. Supports wildcards."
     ),
 ) -> None:
     """Show items that belong to a template."""

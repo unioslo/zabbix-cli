@@ -594,9 +594,11 @@ def show_usergroup_permissions(
     if not usergroups:
         exit_err("No user groups found.")
 
-    hostgroups = app.state.client.get_hostgroups()
+    with app.status("Fetching host groups..."):
+        hostgroups = app.state.client.get_hostgroups()
     if app.state.client.version.release >= (6, 2, 0):
-        templategroups = app.state.client.get_templategroups()
+        with app.status("Fetching template groups..."):
+            templategroups = app.state.client.get_templategroups()
     else:
         templategroups = []
     res = []  # type: list[ShowUsergroupPermissionsResult]
@@ -662,14 +664,14 @@ def add_usergroup_permissions(
         permission = UsergroupPermission.from_prompt()
 
     if hgroups:
-        with app.status("Adding host group permissions"):
+        with app.status("Adding host group permissions..."):
             app.state.client.update_usergroup_rights(
                 usergroup, hgroups, permission, hostgroup=True
             )
         success("Added host group permissions.")
 
     if tgroups:
-        with app.status("Adding template group permissions"):
+        with app.status("Adding template group permissions..."):
             app.state.client.update_usergroup_rights(
                 usergroup, tgroups, permission, hostgroup=False
             )

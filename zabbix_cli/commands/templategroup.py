@@ -31,15 +31,15 @@ if TYPE_CHECKING:
     examples=[
         Example(
             "Create a template group with default user group permissions",
-            "zabbix-cli create_templategroup 'My Template Group'",
+            "create_templategroup 'My Template Group'",
         ),
         Example(
             "Create a template group with specific RO and RW groups",
-            "zabbix-cli create_templategroup 'My Template Group' --ro-groups users --rw-groups admins",
+            "create_templategroup 'My Template Group' --ro-groups users --rw-groups admins",
         ),
         Example(
             "Create a template group with no user group permissions",
-            "zabbix-cli create_templategroup 'My Template Group' --no-usergroup-permissions",
+            "create_templategroup 'My Template Group' --no-usergroup-permissions",
         ),
     ],
 )

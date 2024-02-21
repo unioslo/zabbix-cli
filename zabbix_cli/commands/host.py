@@ -43,23 +43,12 @@ def create_host(
     hostgroups: Optional[str] = typer.Option(
         None,
         "--hostgroups",
-        help=(
-            "Hostgroup names or IDs. "
-            "One can define several values in a comma separated list. "
-            "Command will fail if both --hostgroups option and "
-            "[green]default_hostgroup[/] in config are empty. "
-        ),
+        help=("Hostgroup name(s) or ID(s). Comma-separated."),
     ),
     proxy: Optional[str] = typer.Option(
         ".+",
         "--proxy",
-        help=(
-            "Proxy server used to monitor the host. "
-            "Supports regular expressions to define a group of proxies, "
-            "from which one will be selected randomly. "
-            "Selects a random proxy from the list of available proxies if "
-            "no proxy is specified. "
-        ),
+        help="Proxy server used to monitor the host. Supports regular expressions.",
     ),
     status: MonitoringStatus = typer.Option(
         MonitoringStatus.ON.value,
@@ -88,6 +77,9 @@ def create_host(
     Always adds the host to the default host group unless --no-default-hostgroup
     is specified.
     """
+    # NOTE: this was one of the first commands ported over to V3, and as such
+    # it uses a lot of V2 semantics and patterns. It should be changed to have
+    # less implicit behavior such as default hostgroups.
     from zabbix_cli.models import Result
     from zabbix_cli.pyzabbix.types import HostInterface
 
@@ -133,17 +125,16 @@ def create_host(
     ]
 
     # Determine host group IDs
-    hg_args = []
+    hg_args = []  # type: List[str]
     if not no_default_hostgroup and app.state.config.app.default_hostgroups:
         info(
             f"Will add host to default host group(s): {', '.join(app.state.config.app.default_hostgroups)}"
         )
         hg_args.extend(app.state.config.app.default_hostgroups)
-    # TODO: add some sort of plural prompt so we don't have to split manually
     if hostgroups:
         hostgroup_args = parse_list_arg(hostgroups)
         hg_args.extend(hostgroup_args)
-    hgs = [app.state.client.get_hostgroup(hg) for hg in hg_args]
+    hgs = [app.state.client.get_hostgroup(hg) for hg in set(hg_args)]
     if not hgs:
         raise ZabbixCLIError("Unable to create a host without at least one host group.")
 
@@ -167,7 +158,6 @@ def create_host(
         description=description,
     )
     render_result(Result(message=f"Created host {host_name!r} ({host_id})"))
-    # TODO: cache host ID
 
 
 @app.command(
@@ -418,15 +408,15 @@ def create_host_interface(
     rich_help_panel=HELP_PANEL,
     examples=[
         Example(
-            "Update the IP address of an interface.",
+            "Update the IP address of an interface with ID 123.",
             "update_host_interface 123 --ip 127.0.0.1",
         ),
         Example(
-            "Change connection type of an interface to IP.",
+            "Change connection type of an interface with ID 123 to IP.",
             "update_host_interface 123 --connection ip",
         ),
         Example(
-            "Change SNMP community of an SNMP interface to 'public'.",
+            "Change SNMP community of an SNMP interface with ID 234 to 'public'.",
             "update_host_interface 234 --snmp-community public",
         ),
     ],

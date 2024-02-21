@@ -42,9 +42,14 @@ class Example(NamedTuple):
     return_value: Optional[str] = None
 
     def __str__(self) -> str:
-        return f"  • [b]{self.description}[/]\n\n    [green]{self.command}[/]"
+        return f"  [i]{self.description}[/]\n\n    [green]{self.command}[/]"
 
 
+# TODO: trigger example rendering only when user calls --help, so we don't build
+#       the help text for every command on startup.
+#       Need to investigate ctx.get_help() and how it's used.
+#       The question is whether we have to monkeypatch this or if we can do it with
+#       the current typer/click API
 class CommandInfo(TyperCommandInfo):
     def __init__(
         self, *args, examples: Optional[List[Example]] = None, **kwargs
@@ -64,7 +69,7 @@ class CommandInfo(TyperCommandInfo):
         if not self.examples or not self.help:
             return
         examples = [str(e) for e in self.examples]
-        examples.insert(0, "\n\n[b]Examples:[/]")
+        examples.insert(0, "\n\n[bold underline]Examples[/]")
         self.help = self.help.strip()
         self.help += "\n\n".join(examples)
 
