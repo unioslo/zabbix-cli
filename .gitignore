@@ -16,3 +16,7 @@ my_tests/
 
 # Hatch Pyapp
 pyapp
+
+
+# Dev commands
+zabbix_cli/commands/_dev.py
