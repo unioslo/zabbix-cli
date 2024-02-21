@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Tuple
+from typing import Mapping
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -11,6 +11,7 @@ import rich
 from pydantic import computed_field
 from pydantic import Field
 from pydantic import field_validator
+from pydantic import model_serializer
 
 from zabbix_cli.models import META_KEY_JOIN_CHAR
 from zabbix_cli.models import TableRenderable
@@ -122,13 +123,42 @@ class ShowUsergroupPermissionsResult(TableRenderable):
     )
     hostgroup_rights: List[ZabbixRight] = []
     templategroup_rights: List[ZabbixRight] = []
-    zabbix_version: Tuple[int, ...] = Field(..., exclude=True)
 
-    @computed_field  # type: ignore # computed field on @property
+    @model_serializer
+    def model_ser(self) -> Dict[str, Any]:
+        """LEGACY: Include the permission strings in the serialized output if
+        we have legacy JSON output enabled."""
+        d = {
+            "usrgrpid": self.usrgrpid,
+            "name": self.name,
+            "hostgroup_rights": self.hostgroup_rights,
+            "templategroup_rights": self.templategroup_rights,
+        }
+        if self.legacy_json_format:
+            d["permissions"] = self.permissions
+            d["usergroupid"] = self.usrgrpid
+        return d
+
     @property
-    def usergroupid(self) -> str:
-        """LEGACY: The field `usrgrpid` was called `usergroupid` in V2."""
-        return self.usrgrpid
+    def permissions(self) -> List[str]:
+        """LEGACY: The field `hostgroup_rights` was called `permissions` in V2."""
+        r = []
+
+        def permission_str(
+            right: ZabbixRight, groups: Mapping[str, Union[HostGroup, TemplateGroup]]
+        ) -> str:
+            group = groups.get(right.id, None)
+            if group:
+                group_name = group.name
+            else:
+                group_name = "Unknown"
+            return f"{group_name} ({get_permission(right.permission, with_code=True)})"
+
+        for right in self.hostgroup_rights:
+            r.append(permission_str(right, self.hostgroups))
+        for right in self.templategroup_rights:
+            r.append(permission_str(right, self.templategroups))
+        return r
 
     @classmethod
     def from_usergroup(
@@ -143,10 +173,9 @@ class ShowUsergroupPermissionsResult(TableRenderable):
             name=usergroup.name,
             hostgroups={hg.groupid: hg for hg in hostgroups},
             templategroups={tg.groupid: tg for tg in templategroups},
-            zabbix_version=usergroup.zabbix_version.release,
             templategroup_rights=usergroup.templategroup_rights,
         )
-        if res.zabbix_version >= (6, 2, 0):
+        if res.zabbix_version.release >= (6, 2, 0):
             res.hostgroup_rights = usergroup.hostgroup_rights
         else:
             res.hostgroup_rights = usergroup.rights
@@ -162,7 +191,7 @@ class ShowUsergroupPermissionsResult(TableRenderable):
         )
 
         # Template group rights table
-        if self.zabbix_version >= (6, 2, 0):
+        if self.zabbix_version.release >= (6, 2, 0):
             cols.append("Template Groups")
             row.append(
                 GroupRights(

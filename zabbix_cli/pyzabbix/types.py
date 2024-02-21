@@ -16,14 +16,12 @@ from __future__ import annotations
 from datetime import datetime
 from datetime import timedelta
 from typing import Any
-from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
 
-from packaging.version import Version
 from pydantic import AliasChoices
 from pydantic import BaseModel
 from pydantic import computed_field
@@ -150,22 +148,6 @@ class ZabbixAPIBaseModel(TableRenderable):
 
     Implements the `TableRenderable` interface, which allows us to render
     it as a table, JSON, csv, etc."""
-
-    zabbix_version: ClassVar[Version] = Version(
-        "6.4.0"
-    )  # assume latest released version
-    """Zabbix API version the data stems from.
-    This is a class variable that can be overridden, which causes all
-    subclasses to use the new value when accessed.
-
-    This class variable is set by `State.configure` based on the connected
-    Zabbix server API version. Assumes latest released version by default.
-    """
-    legacy_json_format: ClassVar[bool] = False
-    """Whether to use the legacy JSON format for rendering objects.
-
-    This class variable is set by `State.configure` based on the
-    current configuration. Assumes new JSON format by default."""
 
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 

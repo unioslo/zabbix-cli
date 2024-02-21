@@ -10,13 +10,13 @@ from packaging.version import Version
 # if we end up with a lot of these functions. For now, this is fine.
 # OR we could turn it into a mixin class?
 
-# Compatibility methods for Zabbix API objects properties and method parameter names (same thing)
+# Compatibility methods for Zabbix API objects properties and method parameters.
 # Returns the appropriate property name for the given Zabbix version.
 #
 # FORMAT: <object>_<property>
 # EXAMPLE: user_name() (User object, name property)
 #
-# DEV NOTE: All functions follow the same pattern:
+# NOTE: All functions follow the same pattern:
 # Early return if the version is older than the version where the property
 # was deprecated, otherwise return the new property name as the default.
 

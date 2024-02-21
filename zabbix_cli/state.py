@@ -139,7 +139,7 @@ class State:
         we know how to render the results for the given version of the API.
         """
         from zabbix_cli.pyzabbix.client import ZabbixAPI
-        from zabbix_cli.pyzabbix.types import ZabbixAPIBaseModel
+        from zabbix_cli.models import TableRenderable
         from zabbix_cli.auth import login  # circular import
 
         self.config = config
@@ -147,8 +147,8 @@ class State:
         self.client = ZabbixAPI(self.config.api.url)
         login(self.client, self.config)
 
-        ZabbixAPIBaseModel.zabbix_version = self.client.version
-        ZabbixAPIBaseModel.legacy_json_format = config.app.legacy_json_format
+        TableRenderable.zabbix_version = self.client.version
+        TableRenderable.legacy_json_format = config.app.legacy_json_format
 
     def revert_config_overrides(self) -> None:
         """Revert config overrides from CLI args applied in REPL.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import cast
+from typing import ClassVar
 from typing import Dict
 from typing import Generic
 from typing import List
@@ -12,6 +13,7 @@ from typing import TypeVar
 from typing import Union
 
 import rich.box
+from packaging.version import Version
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
@@ -87,6 +89,22 @@ class TableRenderable(BaseModel):
     __title__: Optional[str] = None
     __show_lines__: bool = True
     __box__: rich.box.Box = rich.box.ROUNDED
+
+    zabbix_version: ClassVar[Version] = Version(
+        "6.4.0"
+    )  # assume latest released version
+    """Zabbix API version the data stems from.
+    This is a class variable that can be overridden, which causes all
+    subclasses to use the new value when accessed.
+
+    This class variable is set by `State.configure` based on the connected
+    Zabbix server API version. Assumes latest released version by default.
+    """
+    legacy_json_format: ClassVar[bool] = False
+    """Whether to use the legacy JSON format for rendering objects.
+
+    This class variable is set by `State.configure` based on the
+    current configuration. Assumes new JSON format by default."""
 
     def _get_extra(self, field: str, key: str, default: T) -> T:
         f = self.model_fields.get(field, None)

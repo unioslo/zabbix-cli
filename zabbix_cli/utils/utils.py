@@ -272,10 +272,10 @@ def get_autologin_type(code):
 # pyzabbix.types.UsergroupPermission
 
 
-def get_permission(code: int) -> str:
+def get_permission(code: int, with_code: bool = True) -> str:
     """Get permission."""
     permission = {0: "deny", 2: "ro", 3: "rw"}
-    return _format_code(code, permission)
+    return _format_code(code, permission, with_code=with_code)
 
 
 def get_permission_code(permission: str) -> int:
