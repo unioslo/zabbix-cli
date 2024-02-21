@@ -215,7 +215,13 @@ class ZabbixAPI:
 
         logger.debug("Sending %s to %s", method, self.url)
 
-        response = self.session.post(self.url, json=request_json)
+        try:
+            response = self.session.post(self.url, json=request_json)
+        except TypeError as e:
+            raise ZabbixAPIException(
+                f"Failed to send request to {self.url} ({method}) with params {params}: {e}",
+                params=params,
+            ) from e
 
         logger.debug("Response Code: %s", str(response.status_code))
 

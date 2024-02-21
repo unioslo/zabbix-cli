@@ -44,9 +44,10 @@ class ZabbixAPIException(ZabbixCLIError):
          -32500 - no permissions
     """
 
-    def __init__(self, *args, code: int | None = None, **kwargs) -> None:
+    def __init__(self, *args, code: int | None = None, params: Any = None) -> None:
         self.code = code
-        super().__init__(*args, **kwargs)
+        self.params = params
+        super().__init__(*args)
 
 
 class ZabbixNotFoundError(ZabbixAPIException):
