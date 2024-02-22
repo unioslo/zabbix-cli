@@ -205,6 +205,11 @@ def delete_hostgroup(
     hostgroup: str = typer.Argument(
         ..., help="Name of host group(s) to delete. Comma-separated."
     ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Remove host group even if it contains hosts.",
+    ),
 ) -> None:
     """Delete a host group."""
     from zabbix_cli.commands.results.hostgroup import HostGroupDeleteResult
@@ -212,9 +217,15 @@ def delete_hostgroup(
 
     hostgroup_names = parse_list_arg(hostgroup)
 
-    hostgroups = [app.state.client.get_hostgroup(hg) for hg in hostgroup_names]
+    hostgroups = [
+        app.state.client.get_hostgroup(hg, select_hosts=True) for hg in hostgroup_names
+    ]
 
     for hg in hostgroups:
+        if hg.hosts and not force:
+            exit_err(
+                f"Host group {hg.name!r} contains {p('host', len(hg.hosts))}. Use --force to delete."
+            )
         app.state.client.delete_hostgroup(hg.groupid)
 
     render_result(
@@ -256,6 +267,7 @@ def extend_hostgroup(
     if not src.hosts:
         exit_err(f"No hosts found in host group {src_group!r}.")
 
+    # TODO: calculate the number of hosts that would be added like the other commands
     if not dryrun:
         app.state.client.add_hosts_to_hostgroups(src.hosts, dest)
         success(
@@ -296,6 +308,7 @@ def move_hosts(
     if not src.hosts:
         exit_err(f"No hosts found in host group {src_group!r}.")
 
+    # TODO: calculate the number of hosts that would be added like the other commands
     if dryrun:
         info(f"Would copy {len(src.hosts)} hosts from {src.name!r}:")
     else:
