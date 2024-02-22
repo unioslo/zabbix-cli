@@ -13,7 +13,6 @@ from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
-from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import AgentAvailable
 from zabbix_cli.pyzabbix.enums import InterfaceConnectionMode
@@ -34,8 +33,8 @@ def create_host(
     ctx: typer.Context,
     args: Optional[List[str]] = ARGS_POSITIONAL,
     # FIXME: specify hostname as only positional arg!
-    hostname_or_ip: Optional[str] = typer.Option(
-        None,
+    hostname_or_ip: str = typer.Option(
+        ...,
         "--host",
         "--ip",
         help="Hostname or IP",
@@ -90,12 +89,6 @@ def create_host(
         hostgroups = args[1]
         proxy = args[2]
         status = MonitoringStatus(args[3])
-    if not hostname_or_ip:
-        hostname_or_ip = str_prompt("Hostname or IP")
-    if not hostgroups:
-        hostgroups = str_prompt(
-            "Hostgroup(s)", default="", show_default=False, empty_ok=True
-        )
 
     host_name = name or hostname_or_ip
     if app.state.client.host_exists(host_name):
@@ -115,12 +108,12 @@ def create_host(
 
     interfaces = [
         HostInterface(
-            type=1,
+            type=InterfaceType.AGENT.as_api_value(),
             main=True,
             useip=useip,
             ip=interface_ip,
             dns=interface_dns,
-            port="10050",
+            port=InterfaceType.AGENT.get_port(),
         )
     ]
 
@@ -408,15 +401,15 @@ def create_host_interface(
     rich_help_panel=HELP_PANEL,
     examples=[
         Example(
-            "Update the IP address of an interface with ID 123.",
+            "Update the IP address of interface 123.",
             "update_host_interface 123 --ip 127.0.0.1",
         ),
         Example(
-            "Change connection type of an interface with ID 123 to IP.",
+            "Change connection type of interface 123 to IP.",
             "update_host_interface 123 --connection ip",
         ),
         Example(
-            "Change SNMP community of an SNMP interface with ID 234 to 'public'.",
+            "Change SNMP community of interface 234 to 'public'.",
             "update_host_interface 234 --snmp-community public",
         ),
     ],
