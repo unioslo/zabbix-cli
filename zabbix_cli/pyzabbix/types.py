@@ -852,7 +852,7 @@ class Trigger(ZabbixAPIBaseModel):
     templateid: Optional[str]
     type: int
     url: str
-    url_name: str
+    url_name: Optional[str] = None  # >6.0
     value: int
     recovery_mode: int
     recovery_expression: str
