@@ -45,7 +45,7 @@ class Example(NamedTuple):
         return f"  [i]{self.description}[/]\n\n    [green]{self.command}[/]"
 
 
-# TODO: trigger example rendering only when user calls --help, so we don't build
+# TODO: Trigger example rendering only when user calls --help, so we don't build
 #       the help text for every command on startup.
 #       Need to investigate ctx.get_help() and how it's used.
 #       The question is whether we have to monkeypatch this or if we can do it with
@@ -166,11 +166,6 @@ class StatefulApp(typer.Typer):
                     # Rich settings
                     rich_help_panel=rich_help_panel,
                     # Zabbix-cli kwargs
-                    # TODO: Define examples in a way that has minimal startup time impact.
-                    # Some sort lazy evaluation that only populates the help text when --help is called
-                    # or something like that. Maybe a custom help formatter?
-                    # Currently, examples are all defined on startup, which is not ideal for a CLI app.
-                    # We'll have to see how much performance impact it has.
                     examples=examples,
                 )
             )

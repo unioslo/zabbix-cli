@@ -27,40 +27,6 @@ from zabbix_cli.pyzabbix.enums import APIStrEnum
 patcher = get_patcher(f"Typer version: {typer.__version__}")
 
 
-# class patch(BasePatcher):
-#     """Context manager that logs and prints diagnostic info if an exception
-#     occurs."""
-
-#     def __package_info__(self) -> str:
-#         return f"Typer version: {typer.__version__}"
-
-# def __init__(self, description: str) -> None:
-#     self.description = description
-
-# def __enter__(self) -> patch:
-#     return self
-
-# def __exit__(
-#     self,
-#     exc_type: Optional[Type[BaseException]],
-#     exc_val: Optional[BaseException],
-#     exc_tb: Optional[TracebackType],
-# ) -> bool:
-#     if not exc_type:
-#         return True
-#     import rich
-#     import sys
-
-#     # Rudimentary, but provides enough info to debug and fix the issue
-#     console = rich.console.Console(stderr=True)
-#     console.print_exception()
-#     console.print(f"[bold red]Failed to patch [i]{self.description}[/][/]")
-#     console.print(f"Typer version: {typer.__version__}")
-#     console.print(f"Python version: {sys.version}")
-
-#     return True
-
-
 def patch_help_text_style() -> None:
     """Remove dimming of help text.
 
