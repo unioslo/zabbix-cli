@@ -30,7 +30,10 @@ from typing import Union
 from pydantic import ValidationError
 
 from zabbix_cli.cache import ZabbixCache
+from zabbix_cli.exceptions import ZabbixAPICallError
 from zabbix_cli.exceptions import ZabbixAPIException
+from zabbix_cli.exceptions import ZabbixAPIRequestError
+from zabbix_cli.exceptions import ZabbixAPIResponseParsingError
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
 from zabbix_cli.pyzabbix.enums import AgentAvailable
@@ -217,9 +220,9 @@ class ZabbixAPI:
 
         try:
             response = self.session.post(self.url, json=request_json)
-        except TypeError as e:
-            raise ZabbixAPIException(
-                f"Failed to send request to {self.url} ({method}) with params {params}: {e}",
+        except Exception as e:
+            raise ZabbixAPIRequestError(
+                f"Failed to send request to {self.url} ({method}) with params {params}",
                 params=params,
             ) from e
 
@@ -230,57 +233,64 @@ class ZabbixAPI:
         response.raise_for_status()
 
         if not len(response.text):
-            raise ZabbixAPIException("Received empty response")
+            raise ZabbixAPIRequestError("Received empty response", response=response)
 
         self.id += 1
 
         try:
             resp = ZabbixAPIResponse.model_validate_json(response.text)
         except ValidationError as e:
-            raise ZabbixAPIException(
-                f"Zabbix API returned malformed response: {e}"
+            raise ZabbixAPIResponseParsingError(
+                "Zabbix API returned malformed response", response=response
             ) from e
         except ValueError as e:
-            raise ZabbixAPIException(f"Zabbix API returned invalid JSON: {e}") from e
+            raise ZabbixAPIResponseParsingError(
+                "Zabbix API returned invalid JSON", response=response
+            ) from e
 
         if resp.error is not None:
             # some errors don't contain 'data': workaround for ZBX-9340
             if not resp.error.data:
                 resp.error.data = "No data"
-            if (
-                resp.error.data
-                in (
-                    "Login name or password is incorrect.",
-                    "Incorrect user name or password or account is temporarily blocked.",  # >=6.4
-                )
-            ):
-                # We do not want to get the password value in the error
-                # message if the user uses a not valid username or
-                # password.
-                msg = "Error {code}: {message}: {data}".format(
-                    code=resp.error.code,
-                    message=resp.error.message,
-                    data=resp.error.data,
-                )
+            # if (
+            #     resp.error.data
+            #     in (
+            #         "Login name or password is incorrect.",
+            #         "Incorrect user name or password or account is temporarily blocked.",  # >=6.4
+            #     )
+            # ):
+            raise ZabbixAPIRequestError(
+                f"Error: {resp.error.message}",
+                api_response=resp,
+                response=response,
+            )
+            #     # We do not want to get the password value in the error
+            #     # message if the user uses a not valid username or
+            #     # password.
+            #     msg = "Error {code}: {message}: {data}".format(
+            #         code=resp.error.code,
+            #         message=resp.error.message,
+            #         data=resp.error.data,
+            #     )
 
-            elif resp.error.data == "Not authorized":
-                msg = "Error {code}: {data}: {message}".format(
-                    code=resp.error.code,
-                    data=resp.error.data,
-                    message=resp.error.message
-                    + "\n\n* Your API-auth-token has probably expired.\n"
-                    + "* Try to login again with your username and password",
-                )
+            # elif resp.error.data == "Not authorized":
+            #     msg = "Error {code}: {data}: {message}".format(
+            #         code=resp.error.code,
+            #         data=resp.error.data,
+            #         message=resp.error.message
+            #         + "\n\n* Your API-auth-token has probably expired.\n"
+            #         + "* Try to login again with your username and password",
+            #     )
 
-            else:
-                msg = "Error {code}: {message}: {data} while sending {json}".format(
-                    code=resp.error.code,
-                    message=resp.error.message,
-                    data=resp.error.data,
-                    json=str(request_json),
-                )
+            # else:
+            #     msg = "Error {code}: {message}: {data} while sending {json}".format(
+            #         code=resp.error.code,
+            #         message=resp.error.message,
+            #         data=resp.error.data,
+            #         json=str(request_json),
+            #     )
 
-            raise ZabbixAPIException(msg, code=resp.error.code)
+            # raise ZabbixAPIRequestError(msg, code=resp.error.code, params=params)
 
         return resp
 
@@ -420,11 +430,9 @@ class ZabbixAPI:
         try:
             resp = self.hostgroup.create(name=name)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to create host group {name!r}: {e}"
-            ) from e
+            raise ZabbixAPICallError(f"Failed to create host group {name!r}") from e
         if not resp or not resp.get("groupids"):
-            raise ZabbixAPIException(
+            raise ZabbixAPICallError(
                 "Host group creation returned no data. Unable to determine if group was created."
             )
         return str(resp["groupids"][0])
@@ -434,8 +442,8 @@ class ZabbixAPI:
         try:
             self.hostgroup.delete(hostgroup_id)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to delete host group(s) with ID {hostgroup_id}: {e}"
+            raise ZabbixAPICallError(
+                f"Failed to delete host group(s) with ID {hostgroup_id}"
             ) from e
 
     def add_hosts_to_hostgroups(
@@ -449,7 +457,7 @@ class ZabbixAPI:
             )
         except ZabbixAPIException as e:
             hgs = ", ".join(hg.name for hg in hostgroups)
-            raise ZabbixAPIException(f"Failed to add hosts to {hgs}: {e}") from e
+            raise ZabbixAPICallError(f"Failed to add hosts to {hgs}") from e
 
     def remove_hosts_from_hostgroups(
         self, hosts: List[Host], hostgroups: List[HostGroup]
@@ -462,7 +470,7 @@ class ZabbixAPI:
             )
         except ZabbixAPIException as e:
             hgs = ", ".join(hg.name for hg in hostgroups)
-            raise ZabbixAPIException(f"Failed to remove hosts from {hgs}: {e}") from e
+            raise ZabbixAPICallError(f"Failed to remove hosts from {hgs}") from e
 
     def get_templategroup(
         self,
@@ -552,11 +560,9 @@ class ZabbixAPI:
         try:
             resp = self.templategroup.create(name=name)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to create template group {name!r}: {e}"
-            ) from e
+            raise ZabbixAPICallError(f"Failed to create template group {name!r}") from e
         if not resp or not resp.get("groupids"):
-            raise ZabbixAPIException(
+            raise ZabbixAPICallError(
                 "Template group creation returned no data. Unable to determine if group was created."
             )
         return str(resp["groupids"][0])
@@ -566,8 +572,8 @@ class ZabbixAPI:
         try:
             self.templategroup.delete(templategroup_id)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to delete template group(s) with ID {templategroup_id}: {e}"
+            raise ZabbixAPICallError(
+                f"Failed to delete template group(s) with ID {templategroup_id}"
             ) from e
 
     def get_host(
@@ -681,7 +687,7 @@ class ZabbixAPI:
                     id_mode = is_id
                 else:
                     if id_mode != is_id:
-                        raise ZabbixAPIException("Cannot mix host names and IDs.")
+                        raise ZabbixAPICallError("Cannot mix host names and IDs.")
 
                 # Searching for IDs is pointless - never allow it
                 # Logical AND for multiple unique identifiers is not possible
@@ -768,9 +774,9 @@ class ZabbixAPI:
         try:
             resp = self.host.create(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to create host {host!r}: {e}") from e
+            raise ZabbixAPICallError(f"Failed to create host {host!r}") from e
         if not resp or not resp.get("hostids"):
-            raise ZabbixAPIException(
+            raise ZabbixAPICallError(
                 "Host creation returned no data. Unable to determine if host was created."
             )
         return str(resp["hostids"][0])
@@ -780,8 +786,8 @@ class ZabbixAPI:
         try:
             self.host.delete(host_id)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to delete host with ID {host_id!r}: {e}"
+            raise ZabbixAPICallError(
+                f"Failed to delete host with ID {host_id!r}"
             ) from e
 
     def host_exists(self, name_or_id: str) -> bool:
@@ -790,10 +796,10 @@ class ZabbixAPI:
             self.get_host(name_or_id)
         except ZabbixNotFoundError:
             return False
-        except Exception as e:
-            raise ZabbixAPIException(
-                f"Unknown error when fetching host {name_or_id}: {e}"
-            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError(
+                f"Unknown error when fetching host {name_or_id}"
+            ) from e
         else:
             return True
 
@@ -802,10 +808,10 @@ class ZabbixAPI:
             self.get_hostgroup(hostgroup_name)
         except ZabbixNotFoundError:
             return False
-        except Exception as e:
-            raise ZabbixAPIException(
-                f"Unknown error when fetching host group {hostgroup_name}: {e}"
-            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError(
+                f"Failed to fetch host group {hostgroup_name}"
+            ) from e
         else:
             return True
 
@@ -841,7 +847,7 @@ class ZabbixAPI:
         try:
             resp = self.hostinterface.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to fetch host interfaces: {e}") from e
+            raise ZabbixAPICallError("Failed to fetch host interfaces") from e
         return [HostInterface(**iface) for iface in resp]
 
     def create_host_interface(
@@ -882,11 +888,11 @@ class ZabbixAPI:
         try:
             resp = self.hostinterface.create(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to create host interface for host {host.host!r}: {e}"
+            raise ZabbixAPICallError(
+                f"Failed to create host interface for host {host.host!r}"
             ) from e
         if not resp or not resp.get("interfaceids"):
-            raise ZabbixAPIException(
+            raise ZabbixAPICallError(
                 "Host interface creation returned no data. Unable to determine if interface was created."
             )
         return str(resp["interfaceids"][0])
@@ -920,8 +926,8 @@ class ZabbixAPI:
         try:
             self.hostinterface.update(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to update host interface with ID {interface.interfaceid}: {e}"
+            raise ZabbixAPICallError(
+                f"Failed to update host interface with ID {interface.interfaceid}"
             ) from e
 
     def delete_host_interface(self, interface_id: str) -> None:
@@ -929,8 +935,8 @@ class ZabbixAPI:
         try:
             self.hostinterface.delete(interface_id)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to delete host interface with ID {interface_id}: {e}"
+            raise ZabbixAPICallError(
+                f"Failed to delete host interface with ID {interface_id}"
             ) from e
 
     def get_usergroup(
@@ -992,7 +998,7 @@ class ZabbixAPI:
         try:
             res = self.usergroup.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Unknown error when fetching user groups: {e}")
+            raise ZabbixAPICallError("Unable to fetch user groups") from e
         else:
             return [Usergroup(**usergroup) for usergroup in res]
 
@@ -1010,11 +1016,11 @@ class ZabbixAPI:
                 gui_access=gui_access.as_api_value(),
             )
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to create user group {usergroup_name!r}: {e}"
+            raise ZabbixAPICallError(
+                f"Failed to create user group {usergroup_name!r}"
             ) from e
         if not resp or not resp.get("usrgrpids"):
-            raise ZabbixAPIException(
+            raise ZabbixAPICallError(
                 "User group creation returned no data. Unable to determine if group was created."
             )
         return str(resp["usrgrpids"][0])
@@ -1129,8 +1135,8 @@ class ZabbixAPI:
         try:
             self.usergroup.update(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to update usergroup rights for {usergroup_name!r}: {e}"
+            raise ZabbixAPICallError(
+                f"Failed to update usergroup rights for {usergroup_name!r}"
             ) from e
 
     def _get_updated_rights(
@@ -1173,8 +1179,8 @@ class ZabbixAPI:
         params.update(**kwargs)
         try:
             res = self.proxy.get(**params)
-        except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Unknown error when fetching proxies: {e}")
+        except ZabbixAPIException:
+            raise ZabbixAPICallError("Unknown error when fetching proxies")
         else:
             return [Proxy(**proxy) for proxy in res]
 
@@ -1187,7 +1193,7 @@ class ZabbixAPI:
             try:
                 re_pattern = re.compile(pattern)
             except re.error:
-                raise ZabbixAPIException(f"Invalid proxy regex pattern: {pattern!r}")
+                raise ZabbixAPICallError(f"Invalid proxy regex pattern: {pattern!r}")
             proxies = [proxy for proxy in proxies if re_pattern.match(proxy.name)]
             if not proxies:
                 raise ZabbixNotFoundError(f"No proxies matching pattern {pattern!r}")
@@ -1259,7 +1265,7 @@ class ZabbixAPI:
         try:
             result = self.usermacro.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException("Failed to retrieve macros") from e
+            raise ZabbixAPICallError("Failed to retrieve macros") from e
         return [Macro(**macro) for macro in result]
 
     def get_global_macro(
@@ -1303,7 +1309,7 @@ class ZabbixAPI:
         try:
             result = self.usermacro.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException("Failed to retrieve global macros") from e
+            raise ZabbixAPICallError("Failed to retrieve global macros") from e
 
         return [GlobalMacro(**macro) for macro in result]
 
@@ -1312,7 +1318,7 @@ class ZabbixAPI:
         try:
             resp = self.usermacro.create(hostid=host.hostid, macro=macro, value=value)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
+            raise ZabbixAPICallError(
                 f"Failed to create macro {macro!r} for host {host}"
             ) from e
         if not resp or not resp.get("hostmacroids"):
@@ -1326,7 +1332,7 @@ class ZabbixAPI:
         try:
             resp = self.usermacro.createglobal(macro=macro, value=value)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to create global macro {macro!r}.") from e
+            raise ZabbixAPICallError(f"Failed to create global macro {macro!r}.") from e
         if not resp or not resp.get("globalmacroids"):
             raise ZabbixNotFoundError(
                 f"No macro ID returned when creating global macro {macro!r}."
@@ -1338,7 +1344,7 @@ class ZabbixAPI:
         try:
             resp = self.usermacro.update(hostmacroid=macroid, value=value)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to update macro with ID {macroid}") from e
+            raise ZabbixAPICallError(f"Failed to update macro with ID {macroid}") from e
         if not resp or not resp.get("hostmacroids"):
             raise ZabbixNotFoundError(
                 f"No macro ID returned when updating macro with ID {macroid}"
@@ -1350,7 +1356,7 @@ class ZabbixAPI:
         try:
             resp = self.host.update(hostid=host.hostid, inventory=inventory)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
+            raise ZabbixAPICallError(
                 f"Failed to update host inventory for host {host.host!r} (ID {host.hostid})"
             ) from e
         if not resp or not resp.get("hostids"):
@@ -1368,7 +1374,7 @@ class ZabbixAPI:
         try:
             resp = self.host.update(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
+            raise ZabbixAPICallError(
                 f"Failed to update host proxy for host {host.host!r} (ID {host.hostid})"
             ) from e
         if not resp or not resp.get("hostids"):
@@ -1382,7 +1388,7 @@ class ZabbixAPI:
         try:
             resp = self.host.update(hostid=host.hostid, status=status.as_api_value())
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
+            raise ZabbixAPICallError(
                 f"Failed to update host status for host {host.host!r} (ID {host.hostid})"
             ) from e
         if not resp or not resp.get("hostids"):
@@ -1402,7 +1408,7 @@ class ZabbixAPI:
         try:
             self.host.massupdate(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
+            raise ZabbixAPICallError(
                 f"Failed to move hosts {[str(host) for host in hosts]} to proxy {proxy.name!r}"
             ) from e
 
@@ -1458,9 +1464,7 @@ class ZabbixAPI:
         try:
             templates = self.template.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Unknown error when fetching templates: {e}"
-            ) from e
+            raise ZabbixAPICallError("Unable to fetch templates") from e
         return [Template(**template) for template in templates]
 
     def add_templates_to_groups(
@@ -1476,7 +1480,7 @@ class ZabbixAPI:
                 groups=[{"groupid": group.groupid} for group in groups],
             )
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to add templates to group(s): {e}") from e
+            raise ZabbixAPICallError("Failed to add templates to group(s)") from e
 
     def link_templates_to_hosts(
         self, templates: List[Template], hosts: List[Host]
@@ -1496,7 +1500,7 @@ class ZabbixAPI:
         try:
             self.host.massadd(templates=template_ids, hosts=host_ids)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to link templates: {e}") from e
+            raise ZabbixAPICallError("Failed to link templates") from e
 
     def unlink_templates_from_hosts(
         self, templates: List[Template], hosts: List[Host], clear: bool = True
@@ -1524,9 +1528,7 @@ class ZabbixAPI:
         try:
             self.host.massremove(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to unlink and clear templates: {e}"
-            ) from e
+            raise ZabbixAPICallError("Failed to unlink and clear templates") from e
 
     def link_templates(
         self, source: List[Template], destination: List[Template]
@@ -1550,7 +1552,7 @@ class ZabbixAPI:
         try:
             self.template.massadd(templates=templates, templates_link=templates_link)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to link templates: {e}") from e
+            raise ZabbixAPICallError("Failed to link templates") from e
 
     def unlink_templates(
         self, source: List[Template], destination: List[Template], clear: bool = True
@@ -1582,7 +1584,7 @@ class ZabbixAPI:
         try:
             self.template.massremove(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to unlink template(s): {e}") from e
+            raise ZabbixAPICallError("Failed to unlink template(s)") from e
 
     def link_templates_to_groups(
         self,
@@ -1609,7 +1611,7 @@ class ZabbixAPI:
         try:
             self.template.massadd(templates=template_ids, groups=group_ids)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to link template(s): {e}") from e
+            raise ZabbixAPICallError("Failed to link template(s)") from e
 
     def remove_templates_from_groups(
         self,
@@ -1638,9 +1640,7 @@ class ZabbixAPI:
                 groupids=[group.groupid for group in groups],
             )
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
-                f"Failed to unlink template from groups: {e}"
-            ) from e
+            raise ZabbixAPICallError("Failed to unlink template from groups") from e
 
     def get_items(
         self,
@@ -1669,7 +1669,7 @@ class ZabbixAPI:
         try:
             items = self.item.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Unknown error when fetching items: {e}") from e
+            raise ZabbixAPICallError("Unable to fetch items") from e
         return [Item(**item) for item in items]
 
     def create_user(
@@ -1712,7 +1712,7 @@ class ZabbixAPI:
 
         resp = self.user.create(**params)
         if not resp or not resp.get("userids"):
-            raise ZabbixAPIException(f"Creating user {username!r} returned no user ID.")
+            raise ZabbixAPICallError(f"Creating user {username!r} returned no user ID.")
         return resp["userids"][0]
 
     def get_role(self, name_or_id: str) -> Role:
@@ -1771,7 +1771,7 @@ class ZabbixAPI:
         try:
             resp = self.user.delete(user.userid)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to delete user {username!r}") from e
+            raise ZabbixAPICallError(f"Failed to delete user {username!r}") from e
         if not resp or not resp.get("userids"):
             raise ZabbixNotFoundError(
                 f"No user ID returned when deleting user {username!r}"
@@ -1875,7 +1875,7 @@ class ZabbixAPI:
             params["maintenance_type"] = data_collection.as_api_value()
         resp = self.maintenance.create(**params)
         if not resp or not resp.get("maintenanceids"):
-            raise ZabbixAPIException(f"Creating maintenance {name!r} returned no ID.")
+            raise ZabbixAPICallError(f"Creating maintenance {name!r} returned no ID.")
         return resp["maintenanceids"][0]
 
     def delete_maintenance(self, *maintenance_ids: str) -> List[str]:
@@ -1885,7 +1885,7 @@ class ZabbixAPI:
         try:
             resp = self.maintenance.delete(*maintenance_ids)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(
+            raise ZabbixAPICallError(
                 f"Failed to delete maintenances {maintenance_ids}"
             ) from e
         if not resp or not resp.get("maintenanceids"):
@@ -1898,8 +1898,8 @@ class ZabbixAPI:
         self,
         *event_ids: str,
         message: Optional[str] = None,
+        acknowledge: bool = True,
         close: bool = False,
-        acknowledge: bool = False,
         change_severity: bool = False,
         unacknowledge: bool = False,
         suppress: bool = False,
@@ -1926,12 +1926,12 @@ class ZabbixAPI:
         try:
             resp = self.event.acknowledge(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to acknowledge events {event_ids}") from e
+            raise ZabbixAPICallError(f"Failed to acknowledge events {event_ids}") from e
         if not resp or not resp.get("eventids"):
             raise ZabbixNotFoundError(
                 f"No event IDs returned when acknowledging events {event_ids}"
             )
-        # For some reason this API method returns a list of ints instead of strings
+        # For some reason this API msethod returns a list of ints instead of strings
         # even though the API docs specify that it should be a list of strings.
         return [str(eventid) for eventid in resp["eventids"]]
 
@@ -2002,7 +2002,7 @@ class ZabbixAPI:
         try:
             resp = self.event.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException("Failed to fetch events") from e
+            raise ZabbixAPICallError("Failed to fetch events") from e
         return [Event(**event) for event in resp]
 
     def get_triggers(
@@ -2054,7 +2054,7 @@ class ZabbixAPI:
         try:
             resp = self.trigger.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException("Failed to fetch triggers") from e
+            raise ZabbixAPICallError("Failed to fetch triggers") from e
         return [Trigger(**trigger) for trigger in resp]
 
     def get_images(self, *image_names: str, select_image: bool = True) -> List[Image]:
@@ -2069,7 +2069,7 @@ class ZabbixAPI:
         try:
             resp = self.image.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException("Failed to fetch images") from e
+            raise ZabbixAPICallError("Failed to fetch images") from e
         return [Image(**image) for image in resp]
 
     def get_maps(self, *map_names: str) -> List[Map]:
@@ -2082,7 +2082,7 @@ class ZabbixAPI:
         try:
             resp = self.map.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException("Failed to fetch maps") from e
+            raise ZabbixAPICallError("Failed to fetch maps") from e
         return [Map(**m) for m in resp]
 
     def get_media_types(self, *names: str) -> List[MediaType]:
@@ -2095,7 +2095,7 @@ class ZabbixAPI:
         try:
             resp = self.mediatype.get(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException("Failed to fetch maps") from e
+            raise ZabbixAPICallError("Failed to fetch maps") from e
         return [MediaType(**m) for m in resp]
 
     def export_configuration(
@@ -2143,7 +2143,7 @@ class ZabbixAPI:
         try:
             resp = self.configuration.export(**params)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException("Failed to export configuration") from e
+            raise ZabbixAPICallError("Failed to export configuration") from e
         # TODO: validate response
         return str(resp)
 
@@ -2168,7 +2168,7 @@ class ZabbixAPI:
             )
             self.confimport(format=fmt, source=conf, rules=rules)
         except ZabbixAPIException as e:
-            raise ZabbixAPIException("Failed to import configuration") from e
+            raise ZabbixAPICallError("Failed to import configuration") from e
 
     def __getattr__(self, attr: str):
         """Dynamically create an object class (ie: host)"""

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 from typing import Any
+from typing import List
 from typing import NoReturn
 from typing import Optional
 from typing import Protocol
@@ -11,9 +12,12 @@ from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
+    from zabbix_cli.pyzabbix.types import ParamsType
+    from zabbix_cli.pyzabbix.types import ZabbixAPIResponse
     from pydantic import ValidationError
     from httpx import ConnectError
     from httpx import RequestError
+    from httpx import Response as HTTPResponse
 
 
 class ZabbixCLIError(Exception):
@@ -38,19 +42,59 @@ class AuthTokenError(ZabbixCLIError):  # NOTE: unused
 
 class ZabbixAPIException(ZabbixCLIError):
     # Extracted from pyzabbix, hence *Exception suffix instead of *Error
-    """generic zabbix api exception
-    code list:
-         -32602 - Invalid params (eg already exists)
-         -32500 - no permissions
-    """
+    """Base exception class for Zabbix API exceptions."""
 
-    def __init__(self, *args, code: int | None = None, params: Any = None) -> None:
-        self.code = code
-        self.params = params
+    def reason(self) -> str:
+        return ""
+
+
+class ZabbixAPIRequestError(ZabbixAPIException):
+    """Zabbix API response error."""
+
+    def __init__(
+        self,
+        *args,
+        params: Optional[ParamsType] = None,
+        api_response: Optional[ZabbixAPIResponse] = None,
+        response: Optional[HTTPResponse] = None,
+    ) -> None:
         super().__init__(*args)
+        self.params = params
+        self.api_response = api_response
+        self.response = response
+
+    def reason(self) -> str:
+        if self.api_response and self.api_response.error:
+            reason = (
+                f"({self.api_response.error.code}) {self.api_response.error.message}"
+            )
+            if self.api_response.error.data:
+                reason += f" {self.api_response.error.data}"
+        elif self.response and self.response.text:
+            reason = self.response.text
+        else:
+            reason = str(self)
+        return reason
+
+    def __str__(self) -> str:
+        return f"Error: {self.reason()}"
 
 
-class ZabbixNotFoundError(ZabbixAPIException):
+class ZabbixAPIResponseParsingError(ZabbixAPIRequestError):
+    """Zabbix API request error."""
+
+
+class ZabbixAPICallError(ZabbixAPIException):
+    """Zabbix API request error."""
+
+    def __str__(self) -> str:
+        msg = super().__str__()
+        if self.__cause__ and isinstance(self.__cause__, ZabbixAPIRequestError):
+            msg = f"{msg}: {self.__cause__.reason()}"
+        return msg
+
+
+class ZabbixNotFoundError(ZabbixAPICallError):
     """A Zabbix API resource was not found."""
 
 
@@ -86,6 +130,16 @@ class HandleFunc(Protocol):
         ...
 
 
+def get_cause_args(e: BaseException) -> List[Any]:
+    """Retrieves all args from all exceptions in the cause chain.
+    Flattens the args into a single list."""
+    args = []  # type: list[Any]
+    args.extend(e.args)
+    if hasattr(e, "__cause__") and e.__cause__ is not None:
+        args.extend(get_cause_args(e.__cause__))
+    return args
+
+
 def handle_notraceback(e: Exception) -> NoReturn:
     """Handles an exception with no traceback in console.
     The exception is logged with a traceback in the log file."""
@@ -116,6 +170,24 @@ def handle_connect_error(e: ConnectError) -> NoReturn:
     get_exit_err()(msg, exception=e, exc_info=False)
 
 
+# def handle_zabbix_api_call_error(e: ZabbixAPICallError) -> NoReturn:
+#     """Handles a ZabbixAPIException."""
+#     msg = str(e)
+#     if e.__cause__:
+#         cause = e.__cause__
+#         if isinstance(cause, ZabbixAPIRequestError):
+#             if cause.api_response and cause.api_response.error:
+#                 reason = f"({cause.api_response.error.code}) {cause.api_response.error.message}"
+#                 if cause.api_response.error.data:
+#                     reason += f" {cause.api_response.error.data}"
+#             elif cause.response and cause.response.text:
+#                 reason = cause.response.text
+#             else:
+#                 reason = str(cause)
+#             msg = f"{msg}: {reason}"
+#     get_exit_err()(msg, exception=e, exc_info=False)
+
+
 def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
     """Handles a ZabbixAPIException."""
     from zabbix_cli.state import get_state
@@ -126,7 +198,7 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
     if (
         state.is_config_loaded
         and state.config.app.use_auth_token_file
-        and "re-login" in e.args[0]
+        and any("re-login" in arg for arg in get_cause_args(e))
     ):
         from zabbix_cli.auth import clear_auth_token_file
 
@@ -149,6 +221,7 @@ def get_exception_handler(type_: Type[Exception]) -> Optional[HandleFunc]:
     from pydantic import ValidationError
 
     EXC_HANDLERS = {
+        # ZabbixAPICallError: handle_zabbix_api_call_error,  # NOTE: use different strategy for this?
         ZabbixAPIException: handle_zabbix_api_exception,  # NOTE: use different strategy for this?
         ZabbixCLIError: handle_notraceback,
         ValidationError: handle_validation_error,
