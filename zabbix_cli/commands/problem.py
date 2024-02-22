@@ -7,6 +7,7 @@ import typer
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
+from zabbix_cli.app import Example
 from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import str_prompt
@@ -74,20 +75,37 @@ def acknowledge_event(
     )
 
 
-@app.command(name="acknowledge_trigger_last_event", rich_help_panel=HELP_PANEL)
+@app.command(
+    name="acknowledge_trigger_last_event",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Acknowledge the last event for trigger 12345",
+            "acknowledge_trigger_last_event 12345",
+        ),
+        Example(
+            "Acknowledge the last event for trigger 12345 with a message and close it",
+            "acknowledge_trigger_last_event 12345 --message 'Acked via CLI' --close",
+        ),
+        Example(
+            "Acknowledge multiple triggers",
+            "acknowledge_trigger_last_event 12345,12346",
+        ),
+    ],
+)
 def acknowledge_trigger_last_event(
     ctx: typer.Context,
     trigger_ids: str,
     message: Optional[str] = typer.Option(
         None,
         "--message",
-        help="Message to include in acknowledgement",
+        help="Acknowledgement message",
     ),
     close: bool = typer.Option(
         False,
         "--close",
         "-c",
-        help="Close the event after acknowledging it",
+        help="Close event",
     ),
     # Legacy positional args
     args: Optional[List[str]] = ARGS_POSITIONAL,
@@ -128,7 +146,24 @@ def acknowledge_trigger_last_event(
     )
 
 
-@app.command(name="show_trigger_events", rich_help_panel=HELP_PANEL)
+@app.command(
+    name="show_trigger_events",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Show recent events for host foo.example.com",
+            "show_trigger_events --host foo.example.com",
+        ),
+        Example(
+            "Show recent events for hosts in host group 'Linux servers'",
+            "show_trigger_events --hostgroup 'Linux servers'",
+        ),
+        Example(
+            "Show 20 most recent events for triggers 12345 & 12346",
+            "show_trigger_events --trigger-id 12345,12346 --limit 20",
+        ),
+    ],
+)
 def show_trigger_events(
     ctx: typer.Context,
     trigger_id: Optional[str] = typer.Option(
