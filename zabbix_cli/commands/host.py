@@ -599,7 +599,9 @@ def define_host_monitoring_status(
     host = app.state.client.get_host(hostname)
     app.state.client.update_host_status(host, new_status)
     render_result(
-        Result(message=f"Updated host {hostname!r}. New status: {new_status}")
+        Result(
+            message=f"Updated host {hostname!r}. New monitoring status: {new_status}"
+        )
     )
 
 
@@ -683,6 +685,11 @@ def show_hosts(
         "--monitored/--unmonitored",
         help="Monitoring status.",
     ),
+    limit: Optional[int] = typer.Option(
+        None,
+        "--limit",
+        help="Limit number of results.",
+    ),
     # V2 Legacy filter argument
     filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
     # TODO: add sorting mode?
@@ -709,7 +716,8 @@ def show_hosts(
         monitored=args.status,
         agent_status=args.available,
     )
-
+    if limit:
+        hosts = hosts[: abs(limit)]
     render_result(AggregateResult(result=hosts))
 
 

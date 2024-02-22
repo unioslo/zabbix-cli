@@ -52,7 +52,8 @@
     - `--agent [available | unavailable | unknown ]`: Filter by agent availability
     - Old positional filter argument syntax is deprecated.
   - `show_hosts`:
-    - Same options as `show_host`
+    - `--limit`: Limit number of hosts to show.
+    - + same options as `show_host`
   - `show_hostgroup`:
     - `--hosts/--no-hosts`: Show hosts in the group
   - `show_hostgroups`:
