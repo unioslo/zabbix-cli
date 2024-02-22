@@ -390,7 +390,7 @@ class Host(ZabbixAPIBaseModel):
         cols = [
             "HostID",
             "Name",
-            "HostGroups",
+            "Host groups",
             "Templates",
             "Zabbix agent",
             "Maintenance",
