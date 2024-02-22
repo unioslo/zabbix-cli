@@ -26,31 +26,37 @@ class APIStr(str, Generic[T]):
     carrying an API value associated with the string."""
 
     api_value: T
+    value: str
     metadata: Mapping[str, Any]
 
     def __new__(
         cls,
         s: str,
-        api_value: T,
+        api_value: T = None,  # type: ignore
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> APIStr[T]:
+        if isinstance(s, APIStr):
+            return s
+        if api_value is None:
+            raise ZabbixCLIError("API value must be provided for APIStr.")
         obj = str.__new__(cls, s)
+        obj.value = s
         obj.api_value = api_value
         obj.metadata = metadata or {}
         return obj
 
 
-MixinType = TypeVar("MixinType", bound="ChoiceMixin")
+MixinType = TypeVar("MixinType", bound="Choice")
 
 
-class ChoiceMixin(Generic[T]):
+class Choice(Enum):
     """Mixin that allows for an Enum to have APIStr values, which
     enables it to be instantiated with either the name of the option
     or the Zabbix API value of the option.
 
     We can instantiate the enum with either the name or the API value:
         * `AgentAvailable("available")`
-        * `AgentAvailable("1")`
+        * `AgentAvailable(1)`
         * `AgentAvailable(1)`
 
     Since the API is inconsistent with usage of strings and ints, we support
@@ -64,11 +70,17 @@ class ChoiceMixin(Generic[T]):
     with the `as_api_value()` method.
     """
 
-    value: APIStr[T]
+    value: APIStr[int]
     __choice_name__: str = ""  # default (falls back to class name)
 
     def __init__(self, *args, **kwargs) -> None:
         pass
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def casefold(self) -> str:
+        return str(self.value).casefold()
 
     @classmethod
     def __fmt_name__(cls) -> str:
@@ -127,7 +139,7 @@ class ChoiceMixin(Generic[T]):
         """Choices including API values."""
         return [str(e) for e in cls] + [str(e.as_api_value()) for e in cls]  # type: ignore # how do we stipulate that the class requires __iter__?
 
-    def as_api_value(self) -> T:
+    def as_api_value(self) -> int:
         """Return the equivalent Zabbix API value."""
         return self.value.api_value
 
@@ -151,28 +163,7 @@ class ChoiceMixin(Generic[T]):
         raise ZabbixCLIError(f"Invalid {cls.__fmt_name__()}: {value!r}.")
 
 
-# class EnumChoice(NamedTuple):
-#     """Enum choice."""
-
-#     name: str
-#     value: str
-
-
-# class ChoiceMeta(EnumMeta):
-#     """Metaclass for APIStrEnum Enums."""
-
-#     # HACK: doing something very illegal with the iterator here
-#     def __iter__(cls) -> Iterator[EnumChoice]:
-#         """Iterate over the enum members."""
-#         items = []
-#         for name, member in cls._member_map_.items():
-#             items.append(member)
-#             member_api_value = copy(member)
-#             items.append(EnumChoice(name=str(name), value=str(member.as_api_value())))  # type: ignore
-#         return iter(items)
-
-
-class APIStrEnum(Enum):
+class APIStrEnum(Choice):
     """Enum that returns value of member as str."""
 
     # FIXME: should inherit from string somehow!
@@ -188,7 +179,7 @@ class APIStrEnum(Enum):
         return str(self.value).casefold()
 
 
-class OnOffChoice(ChoiceMixin[str], APIStrEnum):
+class OnOffChoice(Choice):
     """On/Off choice."""
 
     # TODO: find a way to create subclasses/different enums from this,
@@ -197,21 +188,21 @@ class OnOffChoice(ChoiceMixin[str], APIStrEnum):
     # Currently, we can't subclass enums with members, so just creating a
     # new enum with the same members is the only way to do it.
 
-    ON = APIStr("on", "0")  # Yes, 0 is on, 1 is off...
-    OFF = APIStr("off", "1")
+    ON = APIStr("on", 0)  # Yes, 0 is on, 1 is off...
+    OFF = APIStr("off", 1)
 
 
-class UserRole(ChoiceMixin[str], APIStrEnum):
+class UserRole(APIStrEnum):
     __choice_name__ = "User role"
 
     # Match casing from Zabbix API
-    USER = APIStr("user", "1")
-    ADMIN = APIStr("admin", "2")
-    SUPERADMIN = APIStr("superadmin", "3")
-    GUEST = APIStr("guest", "4")
+    USER = APIStr("user", 1)
+    ADMIN = APIStr("admin", 2)
+    SUPERADMIN = APIStr("superadmin", 3)
+    GUEST = APIStr("guest", 4)
 
 
-class UsergroupPermission(ChoiceMixin[int], APIStrEnum):
+class UsergroupPermission(APIStrEnum):
     """Usergroup permission levels."""
 
     DENY = APIStr("deny", 0)
@@ -219,83 +210,83 @@ class UsergroupPermission(ChoiceMixin[int], APIStrEnum):
     READ_WRITE = APIStr("rw", 3)
 
 
-class AgentAvailable(ChoiceMixin[str], APIStrEnum):
+class AgentAvailable(APIStrEnum):
     """Agent availability status."""
 
     __choice_name__ = "Agent availability status"
 
-    UNKNOWN = APIStr("unknown", "0")
-    AVAILABLE = APIStr("available", "1")
-    UNAVAILABLE = APIStr("unavailable", "2")
+    UNKNOWN = APIStr("unknown", 0)
+    AVAILABLE = APIStr("available", 1)
+    UNAVAILABLE = APIStr("unavailable", 2)
 
 
 # See: zabbix_cli.utils.args.OnOffChoice for why we re-define on/off enum here
-class MonitoringStatus(ChoiceMixin[str], APIStrEnum):
+class MonitoringStatus(APIStrEnum):
     """Host monitoring status."""
 
-    ON = APIStr("on", "0")  # Yes, 0 is on, 1 is off...
-    OFF = APIStr("off", "1")
+    ON = APIStr("on", 0)  # Yes, 0 is on, 1 is off...
+    OFF = APIStr("off", 1)
 
 
-class MaintenanceStatus(ChoiceMixin[str], APIStrEnum):
+class MaintenanceStatus(APIStrEnum):
     """Host maintenance status."""
 
     # API values are inverted here compared to monitoring status...
-    ON = APIStr("on", "1")
-    OFF = APIStr("off", "0")
+    ON = APIStr("on", 1)
+    OFF = APIStr("off", 0)
 
 
-class InventoryMode(ChoiceMixin[str], APIStrEnum):
+class InventoryMode(APIStrEnum):
     """Host inventory mode."""
 
-    DISABLED = APIStr("disabled", "-1")
-    MANUAL = APIStr("manual", "0")
-    AUTOMATIC = APIStr("automatic", "1")
+    DISABLED = APIStr("disabled", -1)
+    MANUAL = APIStr("manual", 0)
+    AUTOMATIC = APIStr("automatic", 1)
 
 
-class GUIAccess(ChoiceMixin[str], APIStrEnum):
+class GUIAccess(APIStrEnum):
     """GUI Access for a user group."""
 
     __choice_name__ = "GUI Access"
 
-    DEFAULT = APIStr("default", "0")
-    INTERNAL = APIStr("internal", "1")
-    LDAP = APIStr("ldap", "2")
-    DISABLE = APIStr("disable", "3")
+    DEFAULT = APIStr("default", 0)
+    INTERNAL = APIStr("internal", 1)
+    LDAP = APIStr("ldap", 2)
+    DISABLE = APIStr("disable", 3)
 
 
-class DataCollectionMode(ChoiceMixin[str], APIStrEnum):
+class DataCollectionMode(APIStrEnum):
     """Maintenance type."""
 
-    ON = APIStr("on", "0")
-    OFF = APIStr("off", "1")
+    ON = APIStr("on", 0)
+    OFF = APIStr("off", 1)
 
 
-class TriggerPriority(ChoiceMixin[str], APIStrEnum):
-    UNCLASSIFIED = APIStr("unclassified", "0")
-    INFORMATION = APIStr("information", "1")
-    WARNING = APIStr("warning", "2")
-    AVERAGE = APIStr("average", "3")
+class TriggerPriority(APIStrEnum):
+    UNCLASSIFIED = APIStr("unclassified", 0)
+    INFORMATION = APIStr("information", 1)
+    WARNING = APIStr("warning", 2)
+    AVERAGE = APIStr("average", 3)
     HIGH = APIStr("high", "4")
-    DISASTER = APIStr("disaster", "5")
+    DISASTER = APIStr("disaster", 5)
 
 
-class InterfaceConnectionMode(ChoiceMixin[str], APIStrEnum):
+class InterfaceConnectionMode(APIStrEnum):
     """Interface connection mode.
 
     Controls the value of `useip` when creating interfaces in the API."""
 
-    DNS = APIStr("DNS", "0")
-    IP = APIStr("IP", "1")
+    DNS = APIStr("DNS", 0)
+    IP = APIStr("IP", 1)
 
 
-class InterfaceType(ChoiceMixin[int], APIStrEnum):
+class InterfaceType(APIStrEnum):
     """Interface type."""
 
-    AGENT = APIStr("Agent", 1, metadata={"port": 10050})
-    SNMP = APIStr("SNMP", 2, metadata={"port": 161})
-    IPMI = APIStr("IPMI", 3, metadata={"port": 623})
-    JMX = APIStr("JMX", 4, metadata={"port": 12345})
+    AGENT = APIStr("Agent", 1, metadata={"port": "10050"})
+    SNMP = APIStr("SNMP", 2, metadata={"port": "161"})
+    IPMI = APIStr("IPMI", 3, metadata={"port": "623"})
+    JMX = APIStr("JMX", 4, metadata={"port": "12345"})
 
     # TODO: test to ensure we always catch all cases (i.e. error should never be thrown)
     def get_port(self: InterfaceType) -> str:
@@ -306,7 +297,7 @@ class InterfaceType(ChoiceMixin[int], APIStrEnum):
             raise ZabbixCLIError(f"Unknown interface type: {self}")
 
 
-class SNMPSecurityLevel(ChoiceMixin[int], APIStrEnum):
+class SNMPSecurityLevel(APIStrEnum):
     __choice_name__ = "SNMPv3 security level"
 
     # Match casing from Zabbix API
@@ -315,7 +306,7 @@ class SNMPSecurityLevel(ChoiceMixin[int], APIStrEnum):
     AUTH_PRIV = APIStr("authPriv", 2)
 
 
-class SNMPAuthProtocol(ChoiceMixin[int], APIStrEnum):
+class SNMPAuthProtocol(APIStrEnum):
     """Authentication protocol for SNMPv3."""
 
     __choice_name__ = "SNMPv3 auth protocol"
@@ -329,7 +320,7 @@ class SNMPAuthProtocol(ChoiceMixin[int], APIStrEnum):
     SHA512 = APIStr("SHA512", 5)
 
 
-class SNMPPrivProtocol(ChoiceMixin[int], APIStrEnum):
+class SNMPPrivProtocol(APIStrEnum):
     """Privacy protocol for SNMPv3."""
 
     __choice_name__ = "SNMPv3 privacy protocol"
