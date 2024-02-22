@@ -272,7 +272,7 @@ class ResultBase(TableRenderable):
     """Field that signals that the result should be printed as a message, not a table."""
     errors: List[str] = Field(default_factory=list)
     return_code: ReturnCode = ReturnCode.DONE
-    table: bool = True
+    table: bool = Field(default=True, exclude=True)
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True, validate_assignment=True, extra="allow"
