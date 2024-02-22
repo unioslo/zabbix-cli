@@ -1,9 +1,7 @@
 """Commands to view and manage macros."""
 from __future__ import annotations
 
-import hashlib
 import logging
-import random
 from contextlib import suppress
 from typing import List
 from typing import Optional
@@ -49,6 +47,9 @@ HELP_PANEL = "User"
 
 
 def get_random_password() -> str:
+    import hashlib
+    import random
+
     x = hashlib.md5()
     x.update(str(random.randint(1, 1000000)).encode("ascii"))
     return x.hexdigest()

@@ -18,8 +18,6 @@ from typing import Optional
 from typing import Tuple
 from typing import TYPE_CHECKING
 
-from pydantic import SecretStr
-
 from zabbix_cli._v2_compat import AUTH_FILE as AUTH_FILE_LEGACY
 from zabbix_cli._v2_compat import AUTH_TOKEN_FILE as AUTH_TOKEN_FILE_LEGACY
 from zabbix_cli.config.constants import ConfigEnvVars
@@ -105,6 +103,8 @@ def configure_auth(config: Config) -> None:
 
 
 def configure_auth_token(config: Config) -> None:
+    from pydantic import SecretStr
+
     contents = load_auth_token_file(config)
     username, auth_token = _parse_auth_file_contents(contents)
     # If we have a mismatch between username in config and auth token, we
@@ -129,6 +129,8 @@ def configure_auth_username_password(config: Config) -> None:
     2. Auth file
     3. Prompt for it
     """
+    from pydantic import SecretStr
+
     funcs = [_get_username_password_env, _get_username_password_auth_file]  # type: list[AuthFunc]
     for func in funcs:
         username, password = func(config)
