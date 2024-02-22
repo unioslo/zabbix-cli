@@ -14,6 +14,7 @@ from zabbix_cli.pyzabbix.enums import ExportFormat
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
+    from zabbix_cli.models import RowsType  # noqa: F401
 
 
 class ExportResult(TableRenderable):
