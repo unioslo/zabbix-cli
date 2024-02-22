@@ -41,7 +41,7 @@ APISTR_ENUMS = [
 @pytest.mark.parametrize("enum", APISTR_ENUMS)
 def test_apistrenum(enum: APIStrEnum) -> None:
     assert enum.__members__
-    members = list(enum)  # type: List[APIStrEnum]
+    members = list(enum)  # type: list[APIStrEnum]
     assert members
     for member in members:
         assert isinstance(member, enum)
