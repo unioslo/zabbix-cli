@@ -58,7 +58,8 @@ def show_last_values(
     if not item_name:
         item_name = str_prompt("Item name")
 
-    items = app.state.client.get_items(item_name, select_hosts=True, monitored=True)
+    with app.status("Fetching items..."):
+        items = app.state.client.get_items(item_name, select_hosts=True, monitored=True)
 
     # HACK: not super elegant, but this allows us to match V2 output while
     # with and without the --group flag, as well as ALSO rendering the entire

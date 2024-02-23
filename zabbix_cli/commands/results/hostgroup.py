@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
 from typing import List
+from typing import Optional
 from typing import TYPE_CHECKING
 
-from pydantic import Field
-from pydantic import field_validator
+from pydantic import computed_field
 from typing_extensions import TypedDict
 
 from zabbix_cli.models import TableRenderable
@@ -117,19 +116,16 @@ class HostGroupResult(TableRenderable):
     groupid: str
     name: str
     hosts: List[HostGroupHost] = []
-    flags: str
-    internal: str = Field(
-        get_hostgroup_type(0),
-        serialization_alias="type",  # Dumped as "type" to mimick V2 behavior
-    )
+    flags: int
+    internal: Optional[int] = None  # <6.2
 
     @classmethod
     def from_hostgroup(cls, hostgroup: HostGroup) -> HostGroupResult:
         return cls(
             groupid=hostgroup.groupid,
             name=hostgroup.name,
-            flags=hostgroup.flags,  # type: ignore # validator
-            internal=hostgroup.internal,  # type: ignore # validator
+            flags=hostgroup.flags,
+            internal=hostgroup.internal,  # <6.2
             hosts=[
                 HostGroupHost(hostid=host.hostid, host=host.host)
                 for host in hostgroup.hosts
@@ -138,33 +134,33 @@ class HostGroupResult(TableRenderable):
 
     # Mimicks old behavior by also writing the string representation of the
     # flags and internal fields to the serialized output.
-    @field_validator("flags", mode="before")
-    @classmethod
-    def _get_flag_str(cls, v: Any) -> Any:
-        if isinstance(v, int):
-            return get_hostgroup_flag(v)
-        else:
-            return v
+    @computed_field()  # type: ignore[misc]
+    @property
+    def flags_str(self) -> str:
+        return get_hostgroup_flag(self.flags, with_code=False)
 
-    @field_validator("internal", mode="before")
-    @classmethod
-    def _get_type_str(cls, v: Any) -> Any:
-        if isinstance(v, int):
-            return get_hostgroup_type(v)
-        else:
-            return v
+    @computed_field()  # type: ignore[misc]
+    @property
+    def type(self) -> str:
+        # LEGACY: Drop this when we drop support for <=6.0
+        # Internal groups are not a thing in Zabbix >=6.2
+        return get_hostgroup_type(self.internal, with_code=True)
 
     def __cols_rows__(self) -> ColsRowsType:
-        cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
+        cols = ["ID", "Name", "Flag", "Hosts"]
         rows = [
             [
                 self.groupid,
                 self.name,
-                self.flags,
-                self.internal,
+                self.flags_str,
                 ", ".join([host["host"] for host in self.hosts]),
             ]
         ]  # type: RowsType
+        # LEGACY: Drop this when we drop support for <=6.0
+        if self.zabbix_version.release < (6, 2):
+            cols.insert(3, "Type")
+            t = get_hostgroup_type(self.internal, with_code=False)
+            rows[0].insert(3, t)  # without code in table
         return cols, rows
 
 

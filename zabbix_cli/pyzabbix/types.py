@@ -39,6 +39,8 @@ from zabbix_cli.pyzabbix.enums import InterfaceType
 from zabbix_cli.utils.utils import get_ack_status
 from zabbix_cli.utils.utils import get_event_status
 from zabbix_cli.utils.utils import get_gui_access
+from zabbix_cli.utils.utils import get_host_interface_connection_mode
+from zabbix_cli.utils.utils import get_host_interface_type
 from zabbix_cli.utils.utils import get_hostgroup_flag
 from zabbix_cli.utils.utils import get_hostgroup_type
 from zabbix_cli.utils.utils import get_item_type
@@ -290,12 +292,12 @@ class HostGroup(ZabbixAPIBaseModel):
     groupid: str
     name: str
     hosts: List[Host] = []
-    # FIXME: Use Optional[str] and None default?
     flags: int = 0
-    internal: int = 0  # should these be ints?
-    templates: List[Template] = []  # <6.2.0
+    internal: Optional[int] = None  # <6.2
+    templates: List[Template] = []  # <6.2
 
     def __cols_rows__(self) -> ColsRowsType:
+        # FIXME: is this ever used? Can we remove?
         cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
         rows = [
             [
@@ -425,8 +427,20 @@ class HostInterface(ZabbixAPIBaseModel):
     hostid: Optional[str] = None
     bulk: Optional[int] = None
 
+    @computed_field  # type: ignore[misc]
+    @property
+    def connection_mode(self) -> str:
+        """Returns the connection mode as a formatted string."""
+        return get_host_interface_connection_mode(self.useip)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def type_str(self) -> str:
+        """Returns the interface type as a formatted string."""
+        return get_host_interface_type(self.type)
+
     def __cols_rows__(self) -> ColsRowsType:
-        cols = ["ID", "Type", "IP", "DNS", "Port", "Use IP", "Main", "Available"]
+        cols = ["ID", "Type", "IP", "DNS", "Port", "Mode", "Default", "Available"]
         rows = [
             [
                 self.interfaceid or "",
@@ -434,7 +448,7 @@ class HostInterface(ZabbixAPIBaseModel):
                 self.ip,
                 self.dns or "",
                 self.port,
-                str(bool(self.useip)),
+                self.connection_mode,
                 str(bool(self.main)),
                 get_zabbix_agent_status(self.available),
             ]

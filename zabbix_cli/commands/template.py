@@ -194,7 +194,7 @@ def link_template_to_host(
     rich_help_panel=HELP_PANEL,
     examples=[
         Example(
-            "Unlink one template from one host",
+            "Unlink a template from a host",
             "unlink_template_from_host 'Apache by HTTP' foo.example.com",
         ),
         Example(
@@ -204,6 +204,10 @@ def link_template_to_host(
         Example(
             "Unlink one template from all hosts",
             "unlink_template_from_host 'Apache by HTTP' '*'",
+        ),
+        Example(
+            "Unlink templates starting with 'Apache' from hosts starting with 'Web'",
+            "unlink_template_from_host 'Apache*' 'Web-*'",
         ),
         Example(
             "Unlink template from host without clearing items and triggers",
@@ -229,7 +233,10 @@ def unlink_template_from_host(
         True, "--clear/--no-clear", help="Unlink and clear templates."
     ),
 ) -> None:
-    """Unlinks templates from hosts."""
+    """Unlinks templates from hosts.
+
+    Unlinks and clears by default. Use `--no-clear` to unlink without clearing.
+    """
     from zabbix_cli.models import AggregateResult
     from zabbix_cli.commands.results.template import UnlinkTemplateFromHostResult
 
@@ -340,7 +347,7 @@ def link_template_to_template(
         ),
         Example(
             "Unlink all templates containing 'HTTP' from a subset of templates",
-            "unlink_template_from_template '*HTTP*' 'Webserver-*'",
+            "unlink_template_from_template '*HTTP*' 'Web-*'",
         ),
         Example(
             "Unlink a template without clearing items and triggers",
@@ -440,7 +447,24 @@ def add_template_to_group(
 
 
 # Changed in V3: Changed name to reflect introduction of template groups in >=6.2
-@app.command("remove_template_from_group", rich_help_panel=HELP_PANEL)
+@app.command(
+    "remove_template_from_group",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Remove one template from one group",
+            "remove_template_from_group 'Apache by HTTP' foo_group",
+        ),
+        Example(
+            "Remove many templates from many groups",
+            "remove_template_from_group 'Apache by HTTP,HAProxy by Zabbix agent' foo_group,bar_group",
+        ),
+        Example(
+            "Remove all templates starting with 'Apache' from a group",
+            "remove_template_from_group 'Apache*' foo_group",
+        ),
+    ],
+)
 @app.command(
     # old name for backwards compatibility
     "unlink_template_from_hostgroup",
@@ -487,13 +511,11 @@ def remove_template_from_group(
 @app.command("show_template", rich_help_panel=HELP_PANEL)
 def show_template(
     ctx: typer.Context,
-    template_name: Optional[str] = typer.Argument(
-        None, help="Template name or ID. Names support wildcards."
+    template_name: str = typer.Argument(
+        ..., help="Template name or ID. Names support wildcards."
     ),
 ) -> None:
     """Show a template."""
-    if not template_name:
-        template_name = str_prompt("Template")
     template = app.state.client.get_template(
         template_name,
         select_hosts=True,
@@ -527,18 +549,25 @@ def show_templates(
     render_result(AggregateResult(result=tmpls))
 
 
-@app.command("show_items", rich_help_panel=HELP_PANEL)
+@app.command(
+    "show_items",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Show items for a template",
+            "show_items 'Apache by HTTP'",
+        ),
+    ],
+)
 def show_items(
     ctx: typer.Context,
-    template_name: Optional[str] = typer.Argument(
-        None, help="Template name or ID. Supports wildcards."
+    template_name: str = typer.Argument(
+        ..., help="Template name or ID. Supports wildcards."
     ),
 ) -> None:
     """Show items that belong to a template."""
     from zabbix_cli.models import AggregateResult
 
-    if not template_name:
-        template_name = str_prompt("Template")
     template = app.state.client.get_template(template_name)
     items = app.state.client.get_items(templates=[template])
     render_result(AggregateResult(result=items))

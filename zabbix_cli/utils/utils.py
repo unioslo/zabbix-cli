@@ -99,24 +99,16 @@ def get_usergroup_status(code: int) -> str:
     return _format_code(code, usergroup_status)
 
 
-def get_hostgroup_flag(code: int) -> str:
+def get_hostgroup_flag(code: int | None, with_code: bool = False) -> str:
     """Get hostgroup flag from code."""
     hostgroup_flag = {0: "Plain", 4: "Discover"}
-
-    if code in hostgroup_flag:
-        return hostgroup_flag[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
+    return _format_code(code, hostgroup_flag, with_code=with_code)
 
 
-def get_hostgroup_type(code: int) -> str:
+def get_hostgroup_type(code: int | None, with_code: bool = False) -> str:
     """Get hostgroup type from code."""
     hostgroup_type = {0: "Not internal", 1: "Internal"}
-
-    if code in hostgroup_type:
-        return hostgroup_type[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
+    return _format_code(code, hostgroup_type, with_code=with_code)
 
 
 def get_user_type(code: int | None) -> str:
@@ -286,6 +278,26 @@ def get_permission_code(permission: str) -> int:
         return permission_code[permission]
 
     return 0
+
+
+def get_host_interface_type(code: int | None) -> str:
+    """Get host interface type from code."""
+    host_interface_type = {
+        1: "Agent",
+        2: "SNMP",
+        3: "IPMI",
+        4: "JMX",
+    }
+    return _format_code(code, host_interface_type, with_code=False)
+
+
+def get_host_interface_connection_mode(code: int | None) -> str:
+    """Get host interface connectio mode from code."""
+    host_interface_type = {
+        0: "DNS",
+        1: "IP",
+    }
+    return _format_code(code, host_interface_type, with_code=False)
 
 
 def get_item_type(code: int | None) -> str:

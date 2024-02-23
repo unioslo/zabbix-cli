@@ -217,7 +217,7 @@ class TableRenderable(BaseModel):
         return [list(fields.values())]  # must be a list of lists
 
     def __cols_rows__(self) -> ColsRowsType:
-        """Returns the columns and row for the table representation of the object.
+        """Returns the columns and rows for the table representation of the object.
 
         Example:
 

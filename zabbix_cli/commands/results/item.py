@@ -111,7 +111,6 @@ def group_items(items: List[Item]) -> List[ItemResult]:
     for item in items:
         if not item.name or not item.lastvalue or not item.key or not item.hosts:
             continue
-
         key = item.key + item.lastvalue
         for host in item.hosts:
             if key in item_map:

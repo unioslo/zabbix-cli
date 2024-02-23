@@ -28,6 +28,17 @@ class ShowTemplateGroupResult(TableRenderable):
     templates: List[Template] = []
     show_templates: bool = Field(True, exclude=True)
 
+    @classmethod
+    def from_result(
+        cls, group: Union[HostGroup, TemplateGroup], show_templates: bool
+    ) -> ShowTemplateGroupResult:
+        return cls(
+            groupid=group.groupid,
+            name=group.name,
+            templates=group.templates,
+            show_templates=show_templates,
+        )
+
     @computed_field()  # type: ignore # mypy bug
     @property
     def template_count(self) -> int:

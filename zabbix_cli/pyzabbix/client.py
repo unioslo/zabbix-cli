@@ -509,6 +509,8 @@ class ZabbixAPI:
         search: bool = False,
         search_union: bool = True,
         select_templates: bool = False,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[SortOrder] = None,
     ) -> List[TemplateGroup]:
         """Fetches a list of template groups, optionally filtered by name(s).
 
@@ -520,7 +522,10 @@ class ZabbixAPI:
         Args:
             name_or_id (str): Name or ID of the template group.
             search (bool, optional): Search for template groups using the given pattern instead of filtering. Defaults to False.
-            search (bool, optional): Union searching. Has no effect if `search` is False. Defaults to True.
+            search_union (bool, optional): Union searching. Has no effect if `search` is False. Defaults to True.
+            select_templates (bool, optional): Fetch templates in each group. Defaults to False.
+            sort_order (SortOrder, optional): Sort order. Defaults to None.
+            sort_field (str, optional): Sort field. Defaults to None.
 
         Raises:
             ZabbixNotFoundError: Group is not found.
@@ -551,8 +556,15 @@ class ZabbixAPI:
 
         if select_templates:
             params["selectTemplates"] = "extend"
+        if sort_order:
+            params["sortorder"] = sort_order
+        if sort_field:
+            params["sortfield"] = sort_field
 
-        resp = self.templategroup.get(**params) or []
+        try:
+            resp = self.templategroup.get(**params) or []
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError("Failed to fetch template groups") from e
         return [TemplateGroup(**tgroup) for tgroup in resp]
 
     def create_templategroup(self, name: str) -> str:

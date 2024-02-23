@@ -154,10 +154,12 @@ def create_hostgroup(
 ) -> None:
     """Create a new host group.
 
-    Assigns permissions for user groups defined in configuration file
-    unless --no-usergroup-permissions is specified.
+    Assigns permissions for user groups defined in configuration file if no user groups are specified.
 
-    The user groups can be overridden with the --rw-groups and --ro-groups.
+    --rw-groups uses the default admin user groups if not specified.
+    --ro-groups uses the default create user groups if not specified.
+
+    Use --no-usergroup-permissions to create a group without assigning user group permissions.
     """
     from zabbix_cli.models import Result
 
@@ -196,6 +198,7 @@ def create_hostgroup(
         error(f"Failed to assign permissions to host group {hostgroup!r}: {e}")
         info("Deleting host group...")
         app.state.client.delete_hostgroup(hostgroup_id)
+        exit_err(f"Failed to create host group {hostgroup!r}.")
 
     render_result(Result(message=f"Created host group {hostgroup} ({hostgroup_id})."))
 

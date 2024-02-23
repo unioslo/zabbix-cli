@@ -14,7 +14,6 @@ from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.console import success
-from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.utils.args import parse_list_arg
@@ -54,14 +53,35 @@ def create_templategroup(
         None,
         help="User group(s) to give read-only permissions. Comma-separated.",
     ),
+    no_usergroup_permissions: bool = typer.Option(
+        False,
+        "--no-usergroup-permissions",
+        help="Do not assign user group permissions.",
+    ),
 ) -> None:
     """Create a new template group.
 
     Assigns permissions for user groups defined in configuration file if no user groups are specified.
 
-    The user groups can be overridden with the --rw-groups and --ro-groups.
+    --rw-groups uses the default admin user groups if not specified.
+    --ro-groups uses the default create user groups if not specified.
+
+    Use --no-usergroup-permissions to create a group without assigning user group permissions.
+
+    NOTE: Calls [green]create_hostgroup[/] for Zabbix versions < 6.2.0.
     """
     from zabbix_cli.models import Result
+
+    if app.state.client.version.release < (6, 2, 0):
+        from zabbix_cli.commands.hostgroup import create_hostgroup
+
+        create_hostgroup(
+            hostgroup=templategroup,
+            rw_groups=rw_groups,
+            ro_groups=ro_groups,
+            no_usergroup_permissions=no_usergroup_permissions,
+        )
+        return
 
     groupid = app.state.client.create_templategroup(templategroup)
 
@@ -69,9 +89,9 @@ def create_templategroup(
 
     rw_grps = []  # type: list[str]
     ro_grps = []  # type: list[str]
-
-    rw_grps = parse_list_arg(rw_groups) or app_config.default_admin_usergroups
-    ro_grps = parse_list_arg(ro_groups) or app_config.default_create_user_usergroups
+    if not no_usergroup_permissions:
+        rw_grps = parse_list_arg(rw_groups) or app_config.default_admin_usergroups
+        ro_grps = parse_list_arg(ro_groups) or app_config.default_create_user_usergroups
 
     try:
         # Admin group(s) gets Read/Write
@@ -97,6 +117,7 @@ def create_templategroup(
         error(f"Failed to assign permissions to template group {templategroup!r}: {e}")
         info("Deleting template group...")
         app.state.client.delete_templategroup(groupid)
+        exit_err(f"Failed to create template group {templategroup!r}.")
 
     render_result(
         Result(message=f"Created template group {templategroup} ({groupid}).")
@@ -108,8 +129,16 @@ def delete_templategroup(
     ctx: typer.Context,
     templategroup: str = typer.Argument(..., help="Name of the group to delete."),
 ) -> None:
-    """Delete a template group."""
+    """Delete a template group.
+
+    NOTE: Calls [green]delete_hostgroup[/] for Zabbix versions < 6.2.0."""
     from zabbix_cli.models import Result
+
+    if app.state.client.version.release < (6, 2, 0):
+        from zabbix_cli.commands.hostgroup import delete_hostgroup
+
+        delete_hostgroup(hostgroup=templategroup)
+        return
 
     app.state.client.delete_templategroup(templategroup)
     render_result(Result(message=f"Deleted template group {templategroup!r}."))
@@ -118,8 +147,8 @@ def delete_templategroup(
 @app.command("show_templategroup", rich_help_panel=HELP_PANEL)
 def show_templategroup(
     ctx: typer.Context,
-    templategroup: Optional[str] = typer.Argument(
-        None, help="Name of the group to show. Supports wildcards."
+    templategroup: str = typer.Argument(
+        ..., help="Name of the group to show. Supports wildcards."
     ),
     templates: bool = typer.Option(
         True,
@@ -127,44 +156,82 @@ def show_templategroup(
         help="Show/hide templates associated with the group.",
     ),
 ) -> None:
-    """Show details for all template groups."""
+    """Show details for a template groups."""
     from zabbix_cli.commands.results.templategroup import ShowTemplateGroupResult
 
-    if not templategroup:
-        templategroup = str_prompt("Template group")
-    tg = app.state.client.get_templategroup(
-        templategroup, search=True, select_templates=templates
-    )
-    render_result(ShowTemplateGroupResult(**tg.model_dump()))
+    tg: HostGroup | TemplateGroup
+    if app.state.client.version.release < (6, 2, 0):
+        tg = app.state.client.get_hostgroup(
+            templategroup, search=True, select_templates=templates
+        )
+    else:
+        tg = app.state.client.get_templategroup(
+            templategroup, search=True, select_templates=templates
+        )
+    render_result(ShowTemplateGroupResult.from_result(tg, show_templates=templates))
 
 
-@app.command("show_templategroups", rich_help_panel=HELP_PANEL)
+@app.command(
+    "show_templategroups",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Show all template groups",
+            "show_templategroups",
+        ),
+        Example(
+            "Show all template groups starting with 'Web-'",
+            "show_templategroups 'Web-*'",
+        ),
+        Example(
+            "Show template groups with 'web' in the name",
+            "show_templategroups '*web*'",
+        ),
+    ],
+)
 def show_templategroups(
     ctx: typer.Context,
+    name: Optional[str] = typer.Argument(
+        None, help="Name of template group(s). Comma-separated. Supports wildcards."
+    ),
     templates: bool = typer.Option(
         True,
         "--templates/--no-templates",
         help="Show/hide templates associated with each group.",
     ),
 ) -> None:
-    """Show details for all template groups."""
+    """Show details for template groups.
+
+    Fetches all groups by default, but can be filtered by name."""
     from zabbix_cli.commands.results.templategroup import ShowTemplateGroupResult
     from zabbix_cli.models import AggregateResult
 
-    try:
-        templategroups = app.state.client.get_templategroups(select_templates=True)
-    except Exception as e:
-        exit_err(f"Failed to get all template groups: {e}")
+    names = parse_list_arg(name)
+
+    groups: list[HostGroup] | list[TemplateGroup]
+    if app.state.client.version.release < (6, 2, 0):
+        groups = app.state.client.get_hostgroups(
+            *names,
+            search=True,
+            select_templates=True,
+            sort_field="name",
+            sort_order="ASC",
+        )
+    else:
+        groups = app.state.client.get_templategroups(
+            *names,
+            search=True,
+            select_templates=True,
+            sort_field="name",
+            sort_order="ASC",
+        )
 
     # Sort by name before rendering
-    templategroups = sorted(templategroups, key=lambda tg: tg.name)
+    groups = sorted(groups, key=lambda tg: tg.name)  # type: ignore # unable to infer that type doesn't change?
 
     render_result(
         AggregateResult(
-            result=[
-                ShowTemplateGroupResult(**tg.model_dump(), show_templates=templates)
-                for tg in templategroups
-            ]
+            result=[ShowTemplateGroupResult.from_result(tg, templates) for tg in groups]
         )
     )
 
