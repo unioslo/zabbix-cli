@@ -81,3 +81,6 @@ def test_exportformat() -> None:
     assert ExportFormat("json") == ExportFormat("JSON")
     assert ExportFormat("xml") == ExportFormat("XML")
     assert ExportFormat("yaml") == ExportFormat("YAML")
+    assert ExportFormat.JSON in ExportFormat.get_importables()
+    assert ExportFormat.XML in ExportFormat.get_importables()
+    assert ExportFormat.YAML in ExportFormat.get_importables()
