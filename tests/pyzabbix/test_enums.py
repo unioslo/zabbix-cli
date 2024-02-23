@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Type
+
 import pytest
 
 from zabbix_cli.pyzabbix.enums import AgentAvailable
@@ -39,7 +41,7 @@ APISTR_ENUMS = [
 
 
 @pytest.mark.parametrize("enum", APISTR_ENUMS)
-def test_apistrenum(enum: APIStrEnum) -> None:
+def test_apistrenum(enum: Type[APIStrEnum]) -> None:
     assert enum.__members__
     members = list(enum)  # type: list[APIStrEnum]
     assert members
@@ -76,3 +78,6 @@ def test_interfacetype() -> None:
 
 def test_exportformat() -> None:
     assert ExportFormat.PHP not in ExportFormat.get_importables()
+    assert ExportFormat("json") == ExportFormat("JSON")
+    assert ExportFormat("xml") == ExportFormat("XML")
+    assert ExportFormat("yaml") == ExportFormat("YAML")
