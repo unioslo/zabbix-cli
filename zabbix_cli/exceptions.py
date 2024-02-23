@@ -135,8 +135,10 @@ def get_cause_args(e: BaseException) -> List[Any]:
     Flattens the args into a single list."""
     args = []  # type: list[Any]
     args.extend(e.args)
-    if hasattr(e, "__cause__") and e.__cause__ is not None:
+    if e.__cause__ is not None:
         args.extend(get_cause_args(e.__cause__))
+    if isinstance(e, ZabbixAPIRequestError):
+        args.append(e.reason())
     return args
 
 
@@ -168,24 +170,6 @@ def handle_connect_error(e: ConnectError) -> NoReturn:
         reason = str(e)
     msg = _fmt_request_error(e, "Connection error", reason)
     get_exit_err()(msg, exception=e, exc_info=False)
-
-
-# def handle_zabbix_api_call_error(e: ZabbixAPICallError) -> NoReturn:
-#     """Handles a ZabbixAPIException."""
-#     msg = str(e)
-#     if e.__cause__:
-#         cause = e.__cause__
-#         if isinstance(cause, ZabbixAPIRequestError):
-#             if cause.api_response and cause.api_response.error:
-#                 reason = f"({cause.api_response.error.code}) {cause.api_response.error.message}"
-#                 if cause.api_response.error.data:
-#                     reason += f" {cause.api_response.error.data}"
-#             elif cause.response and cause.response.text:
-#                 reason = cause.response.text
-#             else:
-#                 reason = str(cause)
-#             msg = f"{msg}: {reason}"
-#     get_exit_err()(msg, exception=e, exc_info=False)
 
 
 def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
