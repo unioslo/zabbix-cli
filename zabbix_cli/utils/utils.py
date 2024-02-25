@@ -14,6 +14,7 @@ from typing import Dict
 from typing import Final
 from typing import Iterable
 from typing import List
+from typing import Literal
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
@@ -339,6 +340,39 @@ def get_value_type(code: int | None) -> str:
         4: "Text",
     }
     return _format_code(code, value_type)
+
+
+def get_proxy_mode_pre_7_0(code: int | None) -> str:
+    """Get proxy mode from code. (pre 7.0)"""
+    proxy_mode = {
+        5: "Active",
+        6: "Passive",
+    }
+    return _format_code(code, proxy_mode, with_code=False)
+
+
+def get_proxy_mode(code: int | None) -> str:
+    """Get proxy mode from code."""
+    proxy_mode = {
+        0: "Active",
+        1: "Passive",
+    }
+    return _format_code(code, proxy_mode, with_code=False)
+
+
+def get_proxy_compatibility(
+    code: int | None,
+) -> Literal["Undefined", "Current", "Outdated", "Unsupported"]:
+    """Get proxy compatibility from code."""
+    proxy_compatibility = {
+        0: "Undefined",
+        1: "Current",
+        2: "Outdated",
+        3: "Unsupported",
+    }
+    # HACK: using a Literal annotation gives better auto-complete when using these values to determine styling
+    #       but we don't have a way to tell the type checker that we always return dict values
+    return _format_code(code, proxy_compatibility, with_code=False)  # type: ignore
 
 
 def compile_pattern(pattern: str) -> re.Pattern[str]:

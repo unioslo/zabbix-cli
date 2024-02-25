@@ -29,12 +29,15 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_serializer
 from pydantic import field_validator
-from pydantic import model_validator
 from pydantic import ValidationInfo
 from typing_extensions import Literal
 from typing_extensions import TypedDict
 
 from zabbix_cli.models import TableRenderable
+from zabbix_cli.output.style.color import error_color
+from zabbix_cli.output.style.color import info_color
+from zabbix_cli.output.style.color import success_color
+from zabbix_cli.output.style.color import warning_color
 from zabbix_cli.pyzabbix.enums import InterfaceType
 from zabbix_cli.utils.utils import get_ack_status
 from zabbix_cli.utils.utils import get_event_status
@@ -52,6 +55,9 @@ from zabbix_cli.utils.utils import get_maintenance_period_type
 from zabbix_cli.utils.utils import get_maintenance_status
 from zabbix_cli.utils.utils import get_monitoring_status
 from zabbix_cli.utils.utils import get_permission
+from zabbix_cli.utils.utils import get_proxy_compatibility
+from zabbix_cli.utils.utils import get_proxy_mode
+from zabbix_cli.utils.utils import get_proxy_mode_pre_7_0
 from zabbix_cli.utils.utils import get_trigger_severity
 from zabbix_cli.utils.utils import get_user_type
 from zabbix_cli.utils.utils import get_usergroup_status
@@ -236,7 +242,7 @@ class Usergroup(ZabbixAPIBaseModel):
     @computed_field  # type: ignore[misc]
     @property
     def status(self) -> str:
-        """LEGACY COMPATIBILITY: 'users_status' is called 'status' in V2.
+        """LEGACY: 'users_status' is called 'status' in V2.
         Ensures serialized output contains the field."""
         return self.users_status_str
 
@@ -268,14 +274,14 @@ class Template(ZabbixAPIBaseModel):
     """The visible name of the template."""
 
     def __cols_rows__(self) -> ColsRowsType:
-        cols = ["ID", "Name", "Hosts", "Children", "Parents"]
+        cols = ["ID", "Name", "Hosts", "Parents", "Children"]
         rows = [
             [
                 self.templateid,
                 self.name or self.host,  # prefer name, fall back on host
                 "\n".join([host.host for host in self.hosts]),
-                "\n".join([template.host for template in self.templates]),
                 "\n".join([parent.host for parent in self.parent_templates]),
+                "\n".join([template.host for template in self.templates]),
             ]
         ]  # type: RowsType
         return cols, rows
@@ -350,6 +356,13 @@ class Host(ZabbixAPIBaseModel):
 
     def __str__(self) -> str:
         return f"{self.host!r} ({self.hostid})"
+
+    def model_simple_dump(self) -> Dict[str, Any]:
+        """Dump the model with minimal fields for simple output."""
+        return {
+            "host": self.host,
+            "hostid": self.hostid,
+        }
 
     # Legacy V2 JSON format compatibility
     @field_serializer("maintenance_status")
@@ -488,18 +501,46 @@ class Proxy(ZabbixAPIBaseModel):
     proxyid: str
     name: str = Field(..., validation_alias=AliasChoices("host", "name"))
     hosts: List[Host] = Field(default_factory=list)
+    status: Optional[int] = None
+    operating_mode: Optional[int] = None
+    address: str = Field(
+        validation_alias=AliasChoices(
+            "address",  # >=7.0.0
+            "proxy_address",  # <7.0.0
+        )
+    )
+    compatibility: Optional[int] = None  # >= 7.0
+    version: Optional[int] = None  # >= 7.0
 
-    @model_validator(mode="after")
-    def _set_name_field(self) -> Proxy:
-        """Ensures the name field is set to the correct value given the current Zabbix API version."""
-        # NOTE: should we use compat.proxy_name here to determine attr names?
-        if (
-            self.zabbix_version.release < (7, 0, 0)
-            and hasattr(self, "host")
-            and not self.name
-        ):
-            self.name = self.host
-        return self
+    @computed_field  # type: ignore[misc]
+    @property
+    def mode(self) -> str:
+        """Returns the proxy mode as a formatted string."""
+        if self.zabbix_version.release >= (7, 0, 0):
+            return get_proxy_mode(self.operating_mode)
+        else:
+            return get_proxy_mode_pre_7_0(self.status)
+
+    @computed_field  # type: ignore[misc]
+    @property
+    def compatibility_str(
+        self,
+    ) -> Literal["Undefined", "Current", "Outdated", "Unsupported"]:
+        """Returns the proxy compatibility as a formatted string."""
+        return get_proxy_compatibility(self.compatibility)
+
+    @property
+    def compatibility_rich(self) -> str:
+        """Returns the proxy compatibility as a Rich markup formatted string."""
+        compat = self.compatibility_str
+        if compat == "Current":
+            return success_color(compat)
+        elif compat == "Outdated":
+            return warning_color(compat)
+        elif compat == "Outdated":
+            return error_color(compat)
+        else:
+            return info_color(compat)
 
 
 class MacroBase(ZabbixAPIBaseModel):

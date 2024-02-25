@@ -12,9 +12,9 @@ from zabbix_cli.logs import logger
 from zabbix_cli.output.formatting.path import path_link
 from zabbix_cli.output.style import Icon
 from zabbix_cli.output.style.color import bold
-from zabbix_cli.output.style.color import green
-from zabbix_cli.output.style.color import red
-from zabbix_cli.output.style.color import yellow
+from zabbix_cli.output.style.color import error_color
+from zabbix_cli.output.style.color import success_color
+from zabbix_cli.output.style.color import warning_color
 from zabbix_cli.state import get_state
 
 
@@ -70,19 +70,19 @@ def debug(message: str, icon: str = "", *args, **kwargs) -> None:
 def info(message: str, icon: str = Icon.INFO, *args, **kwargs) -> None:
     """Log with INFO level and print an informational message."""
     logger.info(message, extra=get_extra_dict(**kwargs))
-    err_console.print(f"{green(icon)} {message}")
+    err_console.print(f"{success_color(icon)} {message}")
 
 
 def success(message: str, icon: str = Icon.OK, **kwargs) -> None:
     """Log with INFO level and print a success message."""
     logger.info(message, extra=get_extra_dict(**kwargs))
-    err_console.print(f"{green(icon)} {message}")
+    err_console.print(f"{success_color(icon)} {message}")
 
 
 def warning(message: str, icon: str = Icon.WARNING, **kwargs) -> None:
     """Log with WARNING level and optionally print a warning message."""
     logger.warning(message, extra=get_extra_dict(**kwargs))
-    err_console.print(bold(yellow(f"{icon} {message}")))
+    err_console.print(bold(warning_color(f"{icon} {message}")))
 
 
 def error(
@@ -95,7 +95,7 @@ def error(
     """Log with ERROR level and print an error message."""
     if log:  # we can disable logging when the logger isn't set up yet
         logger.error(message, extra=get_extra_dict(**kwargs), exc_info=exc_info)
-    err_console.print(bold(red(f"{icon} ERROR: {message}")))
+    err_console.print(bold(error_color(f"{icon} ERROR: {message}")))
 
 
 def print_help(ctx: typer.Context) -> None:

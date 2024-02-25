@@ -8,6 +8,7 @@ from typing import Optional
 import typer
 
 from zabbix_cli.app import app
+from zabbix_cli.app import Example
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import success
@@ -54,29 +55,37 @@ def update_host_proxy(
     )
 
 
-@app.command(name="move_proxy_hosts", rich_help_panel=HELP_PANEL)
+@app.command(
+    name="move_proxy_hosts",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Move all hosts from one proxy to another",
+            "move_proxy_hosts proxy1 proxy2",
+        ),
+        Example(
+            "Move all hosts with names matching a regex pattern",
+            "move_proxy_hosts proxy1 proxy2 --filter '$www.*'",
+        ),
+    ],
+)
 def move_proxy_hosts(
     ctx: typer.Context,
-    proxy_src: Optional[str] = typer.Argument(None, help="Proxy to move hosts from."),
-    proxy_dst: Optional[str] = typer.Argument(None, help="Proxy to move hosts to."),
-    # Hidden arg to match V2 (legacy) command signature
-    host_filter_arg: Optional[str] = typer.Argument(
-        None, help="Filter hosts to move.", hidden=True
-    ),
+    proxy_src: str = typer.Argument(None, help="Proxy to move hosts from."),
+    proxy_dst: str = typer.Argument(None, help="Proxy to move hosts to."),
     # Prefer --filter over positional arg
     host_filter: Optional[str] = typer.Option(
-        None, "--filter", help="Pattern to filter hosts to move by."
+        None, "--filter", help="Regex pattern of hosts to move."
+    ),
+    # LEGACY: matches old command signature (deprecated)
+    host_filter_arg: Optional[str] = typer.Argument(
+        None, help="Filter hosts to move.", hidden=True
     ),
 ) -> None:
     """Move hosts from one proxy to another."""
     from zabbix_cli.models import Result
     from zabbix_cli.commands.results.proxy import MoveProxyHostsResult
 
-    if not proxy_src:
-        proxy_src = str_prompt("Source proxy")
-    if not proxy_dst:
-        proxy_dst = str_prompt("Destination proxy")
-    # We don't prompt for host filter, because it's optional
     hfilter = host_filter_arg or host_filter
     if hfilter:  # Compile before we fetch to fail fast
         filter_pattern = compile_pattern(hfilter)
@@ -90,7 +99,7 @@ def move_proxy_hosts(
     if not hosts:
         exit_err(f"Source proxy {source_proxy.name!r} has no hosts.")
 
-    # Do filtering client-side
+    # Do filtering client-side to get full regex support
     if filter_pattern:
         hosts = [host for host in hosts if filter_pattern.match(host.host)]
         if not hosts:
@@ -110,46 +119,53 @@ def move_proxy_hosts(
     )
 
 
-@app.command(name="load_balance_proxy_hosts", rich_help_panel=HELP_PANEL)
+@app.command(
+    name="load_balance_proxy_hosts",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Load balance hosts evenly between two proxies",
+            "load_balance_proxy_hosts proxy1,proxy2",
+        ),
+        Example(
+            "Place twice as many hosts on proxy1 as proxy2",
+            "load_balance_proxy_hosts proxy1,proxy2 2,1",
+        ),
+        Example(
+            "Load balance hosts evenly between three proxies",
+            "load_balance_proxy_hosts proxy1,proxy2,proxy3",
+        ),
+        Example(
+            "Load balance hosts unevenly between three proxies",
+            "load_balance_proxy_hosts proxy1,proxy2,proxy3 1,1,2",
+        ),
+    ],
+)
 def load_balance_proxy_hosts(
     ctx: typer.Context,
-    proxies: Optional[str] = typer.Argument(
-        None,
+    proxies: str = typer.Argument(
+        ...,
         help="Comma delimited list of proxies to share hosts between.",
-        metavar="[proxy1,proxy2,...]",
+        metavar="<proxy1,proxy2,...>",
         show_default=False,
     ),
     weight: Optional[str] = typer.Argument(
         None,
-        help="Optional comma delimited list of weights for each proxy.",
+        help="Weights for each proxy. Comma-separated. Defaults to equal weights.",
         metavar="[weight1,weight2,...]",
         show_default=False,
     ),
 ) -> None:
     """Spreads hosts between multiple proxies.
 
-    Hosts are determined based on the hosts assigned to the given proxies.
+    Hosts are determined by the hosts monitored by the given proxies
+    Hosts monitored by other proxies or not monitored at all are not affected.
+
     Weighting for the load balancing is optional, and defaults to equal weights.
-
-    To load balance hosts evenly between two proxies:
-        [green]load_balance_proxy_hosts proxy1,proxy2[/green]
-
-    To place twice as many hosts on proxy1 as proxy2:
-        [green]load_balance_proxy_hosts proxy1,proxy2 2,1[/green]
-
-    Multiple proxies and weights can be specified:
-        [green]load_balance_proxy_hosts proxy1,proxy2,proxy3 1,1,2[/green]
+    Number of proxies must match number of weights if specified.
     """
     from zabbix_cli.commands.results.proxy import LBProxy
     from zabbix_cli.commands.results.proxy import LBProxyResult
-
-    if not proxies:
-        # TODO: add some sort of multi prompt for this
-        proxies = str_prompt("Proxies")
-    if not weight:
-        weight = str_prompt(
-            "Weights (optional)", empty_ok=True, default="", show_default=False
-        )
 
     proxy_names = [p.strip() for p in proxies.split(",")]
     if weight:
@@ -157,7 +173,6 @@ def load_balance_proxy_hosts(
     else:
         weights = [1] * len(proxy_names)  # default to equal weights
 
-    # Ensure arguments are valid
     if len(proxy_names) != len(weights):
         exit_err("Number of proxies must match number of weights.")
     elif len(proxy_names) < 2:
@@ -168,10 +183,7 @@ def load_balance_proxy_hosts(
     # *_list` var are ugly, but we already have proxies, so...
     proxy_list = [app.state.client.get_proxy(p, select_hosts=True) for p in proxy_names]
 
-    # Make sure list of proxies is in same order we specified them
-    if not all(p.name == n for p, n in zip(proxy_list, proxy_names)):
-        # TODO: Manually sort list and try again here (it shouldn't happen though!)
-        exit_err("Returned list of proxies does not match specified list.")
+    # TODO: Make sure list of proxies is in same order we specified them?
 
     all_hosts = list(itertools.chain.from_iterable(p.hosts for p in proxy_list))
     if not all_hosts:
@@ -212,3 +224,22 @@ def load_balance_proxy_hosts(
     render_result(LBProxyResult(proxies=list(lb_proxies.values())))
     # HACK: render_result doesn't print a message for table results
     success(f"Load balanced {len(all_hosts)} hosts between {len(proxy_list)} proxies.")
+
+
+@app.command(name="show_proxies", rich_help_panel=HELP_PANEL)
+def show_proxies(
+    ctx: typer.Context,
+    hosts: bool = typer.Option(
+        False, "--hosts/--no-hosts", help="Include hosts monitored by each proxy."
+    ),
+) -> None:
+    """Show all proxies."""
+    from zabbix_cli.commands.results.proxy import ShowProxiesResult
+    from zabbix_cli.models import AggregateResult
+
+    proxies = app.state.client.get_proxies(select_hosts=True)
+    render_result(
+        AggregateResult(
+            result=[ShowProxiesResult.from_result(p, show_hosts=hosts) for p in proxies]
+        )
+    )

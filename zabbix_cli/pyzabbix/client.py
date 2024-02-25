@@ -1191,8 +1191,8 @@ class ZabbixAPI:
         params.update(**kwargs)
         try:
             res = self.proxy.get(**params)
-        except ZabbixAPIException:
-            raise ZabbixAPICallError("Unknown error when fetching proxies")
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError("Unknown error when fetching proxies") from e
         else:
             return [Proxy(**proxy) for proxy in res]
 
