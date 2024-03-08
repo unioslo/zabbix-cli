@@ -185,8 +185,9 @@ class AppConfig(BaseModel):
             self.history_file.parent.mkdir(parents=True, exist_ok=True)
             self.history_file.touch(exist_ok=True)
         except OSError as e:
+            # TODO: print path to config file in error message
             raise ConfigError(
-                f"Unable to create history file {self.history_file}. Disable history or specify a different file."
+                f"Unable to create history file {self.history_file}. Disable history or specify a different path in the configuration file."
             ) from e
         return self
 
