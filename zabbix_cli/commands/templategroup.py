@@ -124,8 +124,8 @@ def create_templategroup(
     )
 
 
-@app.command("delete_templategroup", rich_help_panel=HELP_PANEL)
-def delete_templategroup(
+@app.command("remove_templategroup", rich_help_panel=HELP_PANEL)
+def remove_templategroup(
     ctx: typer.Context,
     templategroup: str = typer.Argument(..., help="Name of the group to delete."),
 ) -> None:
