@@ -82,11 +82,11 @@ class ShowProxiesResult(TableRenderable):
         return cls(proxy=proxy, show_hosts=show_hosts)
 
     @property
-    def hostnames(self) -> str:
+    def hosts_fmt(self) -> str:
         if self.show_hosts:
             return ", ".join(f"{host.host}" for host in self.proxy.hosts)
         else:
-            return "..."
+            return str(len(self.proxy.hosts))
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = [
@@ -94,7 +94,6 @@ class ShowProxiesResult(TableRenderable):
             "Address",
             "Mode",
             "Hosts",
-            "# Hosts",
         ]
 
         rows = [
@@ -102,8 +101,7 @@ class ShowProxiesResult(TableRenderable):
                 self.proxy.name,
                 str(self.proxy.address),
                 self.proxy.mode,
-                self.hostnames,
-                str(len(self.proxy.hosts)),
+                self.hosts_fmt,
             ]
         ]  # type: RowsType
         if self.zabbix_version.release >= (7, 0, 0):
