@@ -313,7 +313,7 @@ def move_hosts(
 
     # TODO: calculate the number of hosts that would be added like the other commands
     if dryrun:
-        info(f"Would copy {len(src.hosts)} hosts from {src.name!r}:")
+        info(f"Would move {len(src.hosts)} hosts to {dest.name!r}:")
     else:
         app.state.client.add_hosts_to_hostgroups(src.hosts, [dest])
         info(f"Added hosts to {dest.name!r}")
