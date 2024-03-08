@@ -56,19 +56,19 @@ class State:
     """Running in bulk mode."""
 
     _client = None  # type: ZabbixAPI | None
-    """Current Zabbix API client object."""
+    """Zabbix API client object."""
 
     _config = None  # type: Config | None
-    """Current configuration object."""
+    """Current Config object (may have overrides)."""
 
     _config_repl_original = None  # type: Config | None
-    """The config object when the REPL was first launched."""
+    """Config object when the REPL was first launched."""
 
     _console = None  # type: Console | None
-    """Lazy-loaded Rich console object."""
+    """Stdout Rich console object."""
 
     token = None  # type: str | None
-    """The current active Zabbix API auth token."""
+    """Active Zabbix API auth token."""
 
     _history = None  # type: History | None
 
@@ -114,16 +114,24 @@ class State:
 
     @property
     def history(self) -> History:
-        """Prompt history."""
+        """Prompt history.
+
+        Lazily instantiates the history object if it doesn't exist."""
+        from prompt_toolkit.history import FileHistory
+        from prompt_toolkit.history import InMemoryHistory
+
         if not self._history:
-            from prompt_toolkit.history import InMemoryHistory
+            if self.config.app.history and self.config.app.history_file:
+                try:
+                    self._history = FileHistory(str(self.config.app.history_file))
+                except Exception as e:
+                    from zabbix_cli.output.console import error
 
-            self._history = InMemoryHistory()
+                    error(f"Failed to instantiate CLI history: {e}")
+                    self._history = InMemoryHistory()
+            else:
+                self._history = InMemoryHistory()
         return self._history
-
-    @history.setter
-    def history(self, history: History) -> None:
-        self._history = history
 
     def configure(self, config: Config) -> None:
         """Bootstrap the state object with the config and Zabbix API
@@ -192,21 +200,11 @@ class State:
             return
 
         try:
-            self.client.user.logout()
             # Technically this API endpoint might return "false", which
             # would signify that that the logout somehow failed, but it's
             # not documented in the API docs.
-
-            # In case we have an existing auth token file, we want to clear
-            # its contents, so that we don't try to re-use it if we re-enable
-            # auth token file usage.
-            #
-            # NOTE: Is this actually a good idea?
-            #
-            # The rationale is that we might not want to keep it around in case
-            # a user temporarily switches to a different account, disables auth token,
-            # then re-enables it with their original account?
-            # Seems like a contrived use-case...
+            self.client.user.logout()
+            # Token is now expired - delete it
             clear_auth_token_file()
         except Exception as e:
             from zabbix_cli.output.console import exit_err

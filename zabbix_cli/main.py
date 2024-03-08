@@ -47,7 +47,6 @@ bootstrap_commands()
 
 
 def run_repl(ctx: typer.Context) -> None:
-    from prompt_toolkit.history import FileHistory
     from rich.console import Group
     from rich.panel import Panel
     from zabbix_cli.output.console import console
@@ -83,11 +82,7 @@ def run_repl(ctx: typer.Context) -> None:
             state.repl = True
         state.revert_config_overrides()
 
-    prompt_kwargs = {"pre_run": pre_run}  # type: dict[str, Any]
-    if state.config.app.history:
-        state.history = FileHistory(str(state.config.app.history_file))
-
-    prompt_kwargs["history"] = state.history
+    prompt_kwargs = {"pre_run": pre_run, "history": state.history}  # type: dict[str, Any]
     start_repl(ctx, prompt_kwargs=prompt_kwargs)
 
 
