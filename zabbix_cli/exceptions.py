@@ -76,9 +76,6 @@ class ZabbixAPIRequestError(ZabbixAPIException):
             reason = str(self)
         return reason
 
-    def __str__(self) -> str:
-        return f"Error: {self.reason()}"
-
 
 class ZabbixAPIResponseParsingError(ZabbixAPIRequestError):
     """Zabbix API request error."""
@@ -185,14 +182,16 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
         and any("re-login" in arg for arg in get_cause_args(e))
     ):
         from zabbix_cli.auth import clear_auth_token_file
+        from zabbix_cli.output.console import error
 
         # Clear token file and from the config object
+        error("Auth token expired. You must re-authenticate.")
         clear_auth_token_file(state.config)
         if state.repl:  # kinda hacky
             state.configure(state.config)
         # NOTE: ideally we automatically re-run the command here, but that's
         # VERY hacky and could lead to unexpected behavior.
-        get_exit_err()("Auth token expired. Re-run the command to re-authenticate.")
+        raise SystemExit(1)  # Exit without a message
     else:
         # TODO: extract the reason for the error from the exception here
         # and add it to the message.
