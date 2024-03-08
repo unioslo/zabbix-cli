@@ -230,10 +230,15 @@ def load_balance_proxy_hosts(
 def show_proxies(
     ctx: typer.Context,
     hosts: bool = typer.Option(
-        False, "--hosts/--no-hosts", help="Include hosts monitored by each proxy."
+        False,
+        "--hosts",
+        help="Show hostnames of each host.",
+        is_flag=True,
     ),
 ) -> None:
-    """Show all proxies."""
+    """Show all proxies.
+
+    Shows number of hosts for each proxy unless --hosts is passed in."""
     from zabbix_cli.commands.results.proxy import ShowProxiesResult
     from zabbix_cli.models import AggregateResult
 
