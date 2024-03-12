@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from zabbix_cli.config.constants import CONFIG_PRIORITY
 from zabbix_cli.config.constants import DEFAULT_CONFIG_FILE
+from zabbix_cli.dirs import mkdir_if_not_exists
 from zabbix_cli.exceptions import ConfigError
 
 if TYPE_CHECKING:
@@ -68,16 +69,23 @@ def get_config(filename: Optional[Path] = None) -> Config:
     return Config.from_file(find_config(filename))
 
 
-def create_config_file(filename: Optional[Path] = None) -> Path:
+def create_config_file(
+    config: Optional[Config] = None,
+    filename: Optional[Path] = None,
+    overwrite: bool = False,
+) -> Path:
     """Create a default config file."""
     if filename is None:
         filename = DEFAULT_CONFIG_FILE
-    if filename.exists():
+    if filename.exists() and not overwrite:
         raise ConfigError(f"File {filename} already exists")
-    config = Config.sample_config()
+    mkdir_if_not_exists(filename.parent)
+
+    if not config:
+        config = Config.sample_config()
+
     try:
         config.dump_to_file(filename)
     except OSError:
         raise ConfigError(f"unable to create config file {filename}")
-    logging.info("Created default config file %r", filename)
     return filename

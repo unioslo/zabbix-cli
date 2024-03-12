@@ -80,6 +80,28 @@ no-cov = "cov --no-cov {args}"
 [[tool.hatch.envs.test.matrix]]
 python = ["38", "39", "310", "311"]
 
+[tool.hatch.envs.docs]
+dependencies = [
+  "mkdocs>=1.5.3",
+  "mkdocs-material>=9.5.13",
+  "mkdocs-include-markdown-plugin>=6.0.4",
+  "pymdown-extensions>=9.11",
+  "mdx-gh-links>=0.3",
+  "mkdocs-simple-hooks>=0.1.5",
+  "mkdocs-version-annotations>=1.0.0",
+  "mkdocstrings[python]",
+  "mkdocs-macros-plugin",
+  "mkdocs-literate-nav",
+  "mkdocs-simple-hooks",
+  "mkdocs-gen-files",
+  "sanitize-filename",
+  "jinja2",
+  "pyyaml",
+]
+[tool.hatch.envs.docs.scripts]
+build = "mkdocs build --clean --strict"
+serve = "mkdocs serve --dev-addr localhost:8001"
+
 [tool.coverage.run]
 branch = true
 parallel = true

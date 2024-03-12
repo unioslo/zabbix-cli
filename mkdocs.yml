@@ -1,0 +1,110 @@
+site_name: zabbix-cli
+
+repo_url: https://github.com/unioslo/zabbix-cli
+repo_name: unioslo/zabbix-cli
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: blue
+    accent: orange
+  language: en
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+    - content.action.edit
+    - toc.integrate
+    - toc.follow
+    - navigation.path
+    - navigation.top
+    - navigation.tabs
+    - navigation.footer
+
+watch:
+  - zabbix_cli
+
+plugins:
+  - autorefs
+  - include-markdown
+  - search
+  - mkdocs-simple-hooks:
+      hooks:
+        on_pre_build: docs.scripts.run:main
+  - literate-nav: # enhanced nav section (enables wildcards)
+  - include-markdown:
+      preserve_includer_indent: true
+  - gen-files:
+      scripts:
+        - docs/scripts/gen_ref_pages.py
+  - macros:
+      on_error_fail: true
+      include_dir: docs/data
+      include_yaml:
+        - commandlist: docs/data/commandlist.yaml
+        - formats: docs/data/formats.yaml
+        - options: docs/data/options.yaml
+  - mkdocstrings:
+      enable_inventory: true
+      handlers:
+        python:
+          import:
+            - https://docs.python.org/3/objects.inv
+          options:
+            docstring_style: numpy
+            members_order: source
+            docstring_section_style: table
+            heading_level: 1
+            show_source: true
+            show_if_no_docstring: true
+            show_signature_annotations: true
+            show_root_heading: true
+            show_category_heading: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.keys
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - mdx_gh_links:
+      user: astral-sh
+      repo: rye
+
+nav:
+  - Home:
+      - index.md
+  - User Guide:
+    - Introduction: guide/introduction.md
+    - Installation: guide/installation.md
+    - Configuration:
+      - configuration/introduction.md
+      - configuration/config-file.md
+      - configuration/auth.md
+      - configuration/formats.md
+    - Usage:
+      - usage/basic-usage.md
+      - usage/options.md
+      - usage/repl.md
+      - usage/tui.md
+      - usage/terminology.md
+      # TODO: formats
+    - Commands:
+      - guide/commands/*.md
+  - Reference:
+    - reference/*.md
+  - contributing.md

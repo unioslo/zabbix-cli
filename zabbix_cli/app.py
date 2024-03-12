@@ -25,6 +25,7 @@ from typer.models import CommandFunctionType
 from typer.models import CommandInfo as TyperCommandInfo
 from typer.models import Default
 
+from zabbix_cli.commands import bootstrap_commands
 from zabbix_cli.state import get_state
 from zabbix_cli.state import State
 
@@ -193,3 +194,4 @@ app = StatefulApp(
     add_completion=True,
     rich_markup_mode="rich",
 )
+bootstrap_commands()  # must be called after app is defined

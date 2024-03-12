@@ -5,20 +5,26 @@ from typing import Optional
 
 import typer
 
-from zabbix_cli.config.constants import DEFAULT_CONFIG_FILE
 from zabbix_cli.config.model import Config
+from zabbix_cli.config.utils import create_config_file
 from zabbix_cli.dirs import init_directories
-from zabbix_cli.dirs import mkdir_if_not_exists
 from zabbix_cli.logs import configure_logging
-from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 
 
 def main(
     zabbix_url: str = typer.Option(
         "https://zabbix.example.com",
+        "--url",
         "--zabbix-url",
+        "-z",
         help="Zabbix API URL to use",
+    ),
+    zabbix_user: Optional[str] = typer.Option(
+        None,
+        "--user",
+        "--zabbix-user",
+        help="Zabbix API username to use",
     ),
     config_file: Optional[Path] = typer.Option(
         None,
@@ -37,25 +43,22 @@ def main(
 
     # Create required directories
     init_directories()
-    if config_file:
-        # If a custom config file was passed in, we have to ensure we
-        # create its directory too
-        mkdir_if_not_exists(config_file.parent)
-    else:
-        config_file = DEFAULT_CONFIG_FILE
-
-    if config_file.exists() and not overwrite:
-        exit_err(f"Configuration file already exists: {config_file}")
-
     config = Config.sample_config()
     config.api.url = zabbix_url
-    config.dump_to_file(config_file)
+    if zabbix_user:
+        config.api.username = zabbix_user
+    config_file = create_config_file(config, config_file)
     info(f"Configuration file created: {config_file}")
 
 
 def run() -> None:
-    configure_logging()
-    typer.run(main)
+    try:
+        configure_logging()
+        typer.run(main)
+    except Exception as e:
+        from zabbix_cli.exceptions import handle_exception
+
+        handle_exception(e)
 
 
 if __name__ == "__main__":

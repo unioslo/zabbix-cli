@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from rich.theme import Theme
 from strenum import StrEnum
 
 
@@ -19,12 +20,7 @@ STYLE_CLI_COMMAND = "bold green"
 """Used to signify a CLI command e.g. 'artifact get'."""
 
 STYLE_TABLE_HEADER = "bold green"
-STYLE_COMMAND = "bold italic green"
 STYLE_WARNING = "yellow"
-
-
-EMOJI_YES = ":white_check_mark:"
-EMOJI_NO = ":cross_mark:"
 
 ####################
 # Colors
@@ -32,6 +28,79 @@ EMOJI_NO = ":cross_mark:"
 # Colors should be used to colorize output and help define styles,
 # but they should not contain any formatting (e.g. bold, italic, `x` on `y`, etc.)
 ####################
+
+
+class Color(StrEnum):
+    INFO = "default"
+    SUCCESS = "green"
+    WARNING = "yellow"
+    ERROR = "red"
+
+
+def blue(message: str) -> str:
+    return f"[blue]{message}[/]"
+
+
+def cyan(message: str) -> str:
+    return f"[cyan]{message}[/]"
+
+
+def green(message: str) -> str:
+    return f"[green]{message}[/]"
+
+
+def magenta(message: str) -> str:
+    return f"[magenta]{message}[/]"
+
+
+def red(message: str) -> str:
+    return f"[red]{message}[/]"
+
+
+def yellow(message: str) -> str:
+    return f"[yellow]{message}[/]"
+
+
+def bold(message: str) -> str:
+    return f"[bold]{message}[/]"
+
+
+def warning(message: str) -> str:
+    return f"[warning]{message}[/]"
+
+
+def error(message: str) -> str:
+    return f"[error]{message}[/]"
+
+
+def success(message: str) -> str:
+    return f"[success]{message}[/]"
+
+
+def info(message: str) -> str:
+    return f"[info]{message}[/]"
+
+
+RICH_THEME = Theme(
+    {
+        "command": STYLE_CLI_COMMAND,
+        "option": STYLE_CLI_OPTION,
+        "value": STYLE_CLI_VALUE,
+        "configopt": STYLE_CONFIG_OPTION,
+        "success": Color.SUCCESS,
+        "warning": f"bold {Color.WARNING}",
+        "error": f"bold {Color.ERROR}",
+        "info": Color.SUCCESS,
+    }
+)
+
+####################
+# Emojis
+####################
+
+
+EMOJI_YES = ":white_check_mark:"
+EMOJI_NO = ":cross_mark:"
 
 
 class Icon(StrEnum):
@@ -47,10 +116,6 @@ class Icon(StrEnum):
 class Emoji(StrEnum):
     YES = EMOJI_YES
     NO = EMOJI_NO
-
-
-def render_warning(msg: str) -> str:
-    return f"[{STYLE_WARNING}]WARNING: {msg}[/]"
 
 
 def render_config_option(option: str) -> str:

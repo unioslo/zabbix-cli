@@ -1,0 +1,111 @@
+{# Template takes in a list of CommandSummary objects #}
+
+{% macro render_param(param) -%}
+{% if param.is_argument -%}
+**`{{ param.human_readable_name }}`**
+{% else %}
+{% if param.opts | length > 0 -%}
+{% for param in param.opts %} **`{{ param }}`**{% if not loop.last %}, {% endif %}{% endfor -%}
+{% endif -%}
+{% if param.secondary_opts | length > 0 -%}
+/{% for param in param.secondary_opts -%} **`{{ param }}`**{% if not loop.last %}, {% endif %}{% endfor -%}
+{% endif -%}
+{%- if not param.is_flag %}
+    `{{ param.metavar }}`
+{% endif -%}
+{% endif %}<br />
+
+{%- if param.help -%}
+{{ param.help_md }}
+{%- endif -%}
+{%- if param.multiple -%}
+<br />*Separate multiple values with commas
+{%- if param.opts%}, or use `{{ param.opts | first }}` multiple times{% endif %}.*
+{%- endif -%}<br />
+
+{#- bandaid to patch in harborapi query usage -#}
+{%- if not param.is_argument and param.name == "query" -%}
+See [harborapi docs](https://unioslo.github.io/harborapi/usage/methods/read/#query) for more information.<br />
+{%- endif -%}
+
+**Type:** `{{ param.type}}` {% if param.is_flag %}(flag){% endif %}<br />
+
+{%- if param.type == "choice" -%}
+**Choices:** {% for element in param.choices -%}{{ "`" + element + "`" if loop.first else ", `" + element + "`" }}{% endfor %}<br />
+{%- endif -%}
+
+{%- if param.min is not none -%}
+**Min:** `{{ param.min }}`<br />
+{%- endif -%}
+
+{%- if param.max is not none -%}
+**Max:** `{{ param.max }}`<br />
+{%- endif -%}
+
+{%- if param.default is not none -%}
+**Default:** `{{ param.default }}`<br />
+{%- endif -%}
+
+{%- if param.required -%}
+**Required:** ✅<br />
+{%- endif -%}
+{%- endmacro %}
+
+{% if category | length > 0 %}
+# {{ category }}
+
+{% else %}
+
+# Top-level commands
+
+{% endif %}
+
+{% for command in commands %}
+## {{ command.name }}
+
+
+{% if command.deprecated -%}
+!!! warning "Deprecated"
+    This command is deprecated and will be unsupported in the future.
+{% endif -%}
+
+```
+{{ command.usage }}
+```
+
+{{ command.help_md }}
+
+{# Only show this section if we have arguments #}
+{% set argument_params = command.params | selectattr('is_argument', 'equalto', true) | list %}
+{% if argument_params | length > 0 %}
+**Arguments**
+
+{% for param in command.params if param.is_argument %}
+{{ render_param(param) }}
+{# End param loop #}
+{% endfor %}
+
+{# End argument listing #}
+{% endif %}
+
+{# Only show this section if we have options #}
+{% set option_params = command.params | selectattr('is_argument', 'equalto', false) | list %}
+
+{# Start params listing #}
+{% if option_params | length > 0 %}
+
+**Options**
+
+{# Opts. Example (--wizard/--no-wizard) #}
+{% for param in command.params if not param.is_argument and not param.hidden %}
+{{ render_param(param) }}
+{# End param loop #}
+{% endfor %}
+
+{# End params listing #}
+{% endif %}
+
+----
+
+{# End category commands loop #}
+{% endfor %}

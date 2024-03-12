@@ -70,6 +70,11 @@ class APIConfig(BaseModel):
         # Changed in V3: zabbix_api_url -> url
         validation_alias=AliasChoices("url", "zabbix_api_url"),
     )
+    username: str = Field(
+        default="",
+        # Changed in V3: system_id -> username
+        validation_alias=AliasChoices("username", "system_id"),
+    )
     verify_ssl: bool = Field(
         default=True,
         # Changed in V3: cert_verify -> verify_ssl
@@ -79,9 +84,10 @@ class APIConfig(BaseModel):
 
 class AppConfig(BaseModel):
     username: str = Field(
-        default="zabbix-ID",
-        # Changed in V3: system_id -> username
+        default="",
         validation_alias=AliasChoices("username", "system_id"),
+        # DEPRECATED: Use `api.username` instead
+        exclude=True,
     )
     password: Optional[SecretStr] = Field(default=None, exclude=True)
     auth_token: Optional[SecretStr] = Field(default=None, exclude=True)
@@ -246,12 +252,16 @@ class Config(BaseModel):
         validation_alias=AliasChoices("app", "zabbix_config"),
     )
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
-    config_path: Optional[Path] = None
+    config_path: Optional[Path] = Field(default=None, exclude=True)
 
     @classmethod
     def sample_config(cls) -> Config:
         """Get a sample configuration."""
-        return cls(api=APIConfig(url="https://zabbix.example.com/api_jsonrpc.php"))
+        return cls(
+            api=APIConfig(
+                url="https://zabbix.example.com/api_jsonrpc.php", username="Admin"
+            )
+        )
 
     @classmethod
     def from_file(cls, filename: Optional[Path] = None) -> Config:
@@ -274,10 +284,25 @@ class Config(BaseModel):
                 )
             else:
                 # Failed to find both .toml and .conf files
-                raise FileNotFoundError("No configuration file found.")
+                raise ConfigError(
+                    "No configuration file found. Run [green]zabbix-cli-init[/] to create one."
+                )
         else:
             conf = _load_config_toml(fp)
         return cls(**conf, config_path=fp)
+
+    @model_validator(mode="after")
+    def _ensure_username(self) -> Config:
+        """Ensures that the legacy `app.username` is copied to `api.username`."""
+        # Only override if `api.username` is not set
+        if self.app.username and not self.api.username:
+            logging.warning(
+                "Config option `app.username` is deprecated and will be removed. Use `api.username` instead."
+            )
+            self.api.username = self.app.username
+        if not self.api.username:
+            raise ConfigError("No username specified in the configuration file.")
+        return self
 
     def as_toml(self) -> str:
         """Dump the configuration to a TOML string."""

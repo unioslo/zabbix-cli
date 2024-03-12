@@ -33,7 +33,6 @@ import typer
 
 from zabbix_cli.__about__ import __version__
 from zabbix_cli.app import app
-from zabbix_cli.commands import bootstrap_commands
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
 
@@ -42,8 +41,6 @@ if TYPE_CHECKING:
     from typing import Any  # noqa: F401
 
 logger = logging.getLogger("zabbix-cli")
-
-bootstrap_commands()
 
 
 def run_repl(ctx: typer.Context) -> None:
@@ -126,6 +123,9 @@ def main_callback(
     from zabbix_cli.logs import LogContext
     from zabbix_cli.state import get_state
 
+    if should_skip_configuration(ctx):
+        return
+
     state = get_state()
     if state.is_config_loaded:
         conf = state.config
@@ -162,6 +162,17 @@ def main_callback(
         else:
             # If no command is passed in, we enter the REPL
             run_repl(ctx)
+
+
+# TODO: Add a decorator for skipping or some sort of parameter to the existing
+#       StatefulApp.command method that marks a command as not requiring
+#       an existing configuration file.
+SKIPPABLE_COMMANDS = ["open", "sample_config"]
+
+
+def should_skip_configuration(ctx: typer.Context) -> bool:
+    """Check if the command should skip loading the configuration file."""
+    return ctx.invoked_subcommand in SKIPPABLE_COMMANDS
 
 
 def main() -> None:

@@ -1,3 +1,5 @@
+<!-- released start -->
+
 ## 3.0.0
 
 ### Added
@@ -105,10 +107,11 @@
   - `logging.logging` → `logging.enabled`
   - The original names are still usable, but are deprecated and slated for removal in a future version.
 - **Configuration file defaults:**
-  - `app.export_timestamps` defaults to `false`
-    - Exports are automatically overwritten if the file already exists.
   - `app.default_admin_usergroups` defaults to `[]` (empty list)
   - `app.default_create_user_usergroups` defaults to `[]` (empty list)
+  - `app.export_timestamps` defaults to `false`
+    - Exports are automatically overwritten if the file already exists.
+  - `app.export_format` defaults to `json` (was `xml`)
 - Application now creates a config file on launch if it doesn't exist.
 - Command changes:
   - `create_host_interface`
@@ -118,7 +121,7 @@
       - IPMI: 623
       - JMX: 12345
   - `show_host_inventory`
-    - Now shows shows any inventory field that is set in the table.
+    - Now shows shows any inventory field that is set for the host in the table output.
     - Includes _all_ inventory fields in JSON output.
   - `unlink_templates_from_hostgroups`:
     - Renamed to `remove_template_from_group`.
@@ -136,6 +139,8 @@
 ### Deprecated
 
 - `zabbix-cli.conf` format. Prefer the new TOML configuration file format.
+- Config file options:
+  - `zabbix_config.system_id` → `api.username`
 
 ### Removed
 

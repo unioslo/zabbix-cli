@@ -1,0 +1,26 @@
+# Commands
+
+There are currently {{ commandlist | length }} available commands.
+
+For more information about a specific command, use:
+
+```
+zabbix-cli <command> --help
+```
+
+See [Commands](../commands/index.md) for usage info of each command.
+
+
+
+
+## List of commands
+
+```
+{% for command in commandlist -%}
+{{ command }}
+{% endfor %}
+```
+
+{% for category, path in pages.items() -%}
+* [{{ category }}]({{ path }})
+{% endfor %}

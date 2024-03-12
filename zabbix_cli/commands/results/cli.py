@@ -60,6 +60,8 @@ class DebugInfo(TableRenderable):
     @classmethod
     def from_debug_data(cls, state: State, with_auth: bool = False) -> DebugInfo:
         # So far we only use state, but we can expand this in the future
+        from zabbix_cli.exceptions import ZabbixCLIError
+
         obj = cls(
             python={
                 "version": sys.version,
@@ -76,7 +78,7 @@ class DebugInfo(TableRenderable):
         # Config might not be configured
         try:
             obj.config_path = state.config.config_path
-        except RuntimeError:
+        except ZabbixCLIError:
             pass
 
         # We might not be connected to the API
@@ -87,7 +89,7 @@ class DebugInfo(TableRenderable):
             if with_auth:
                 obj.auth_token = state.client.auth
             obj.connected_to_zabbix = True
-        except RuntimeError:
+        except ZabbixCLIError:
             error("Unable to retrieve API info: Not connected to Zabbix API. ")
         except Exception as e:
             error(f"Unable to retrieve API info: {e}")

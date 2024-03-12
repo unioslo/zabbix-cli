@@ -582,7 +582,7 @@ def open_directory(
         directory = directory.resolve(strict=True)
     except FileNotFoundError:
         raise ZabbixCLIError(f"Directory {directory} does not exist")
-    except RuntimeError:
+    except OSError:
         raise ZabbixCLIError(f"Unable to resolve symlinks for {directory}")
     if not directory.is_dir():
         raise ZabbixCLIError(f"{directory} is not a directory")

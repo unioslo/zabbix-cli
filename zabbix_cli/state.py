@@ -76,8 +76,10 @@ class State:
     def client(self) -> ZabbixAPI:
         """Zabbix API client object.
         Fails if the client is not configured."""
+        from zabbix_cli.exceptions import ZabbixCLIError
+
         if self._client is None:
-            raise RuntimeError("Not connected to the Zabbix API.")
+            raise ZabbixCLIError("Not connected to the Zabbix API.")
         return self._client
 
     @client.setter
@@ -90,8 +92,10 @@ class State:
 
     @property
     def config(self) -> Config:
+        from zabbix_cli.exceptions import ZabbixCLIError
+
         if self._config is None:
-            raise RuntimeError("Config not configured")
+            raise ZabbixCLIError("Config not configured")
         return self._config
 
     @config.setter

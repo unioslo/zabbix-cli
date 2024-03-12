@@ -6,10 +6,10 @@ from functools import cmp_to_key
 
 from rich.text import Text
 
-from .style import STYLE_CLI_COMMAND
-from .style import STYLE_CLI_OPTION
-from .style import STYLE_CLI_VALUE
-from .style import STYLE_CONFIG_OPTION
+from zabbix_cli.output.style import STYLE_CLI_COMMAND
+from zabbix_cli.output.style import STYLE_CLI_OPTION
+from zabbix_cli.output.style import STYLE_CLI_VALUE
+from zabbix_cli.output.style import STYLE_CONFIG_OPTION
 
 CODEBLOCK_STYLES = [
     STYLE_CLI_OPTION,

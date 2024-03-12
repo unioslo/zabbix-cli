@@ -63,13 +63,13 @@ class DirectoryType(Enum):
         return d
 
 
-def get_directory(directory_type: DirectoryType, config: Config) -> Path:
-    if directory_type == DirectoryType.CONFIG and config.config_path:
-        return config.config_path.parent
-    elif directory_type == DirectoryType.EXPORTS:
-        return config.app.export_directory
-    else:
-        return directory_type.as_path()
+def get_directory(directory_type: DirectoryType, config: Optional[Config]) -> Path:
+    if config:
+        if directory_type == DirectoryType.CONFIG and config.config_path:
+            return config.config_path.parent
+        elif directory_type == DirectoryType.EXPORTS:
+            return config.app.export_directory
+    return directory_type.as_path()
 
 
 @app.command("open", rich_help_panel=HELP_PANEL)
@@ -102,7 +102,13 @@ def open_config_dir(
     """Opens an app directory in the system's file manager.
 
     Use --force to attempt to open when no DISPLAY env var is set."""
-    directory = get_directory(directory_type, app.state.config)
+    # Try to load the config, but don't fail if it's not available
+    try:
+        config = app.state.config
+    except ZabbixCLIError:
+        config = None
+
+    directory = get_directory(directory_type, config)
     if path:
         print_path(directory)
     else:
@@ -166,3 +172,13 @@ def show_history(
     history = list(app.state.history.get_strings())
     history = history[-limit:]
     render_result(HistoryResult(commands=history))
+
+
+@app.command("sample_config", rich_help_panel=HELP_PANEL)
+def sample_config(ctx: typer.Context) -> None:
+    """Print a sample configuration file."""
+    # Load the entire history, then limit afterwards
+    from zabbix_cli.config.model import Config
+
+    conf = Config.sample_config()
+    print_toml(conf.as_toml())
