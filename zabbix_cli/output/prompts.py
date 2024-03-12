@@ -23,9 +23,9 @@ from .console import err_console
 from .console import error
 from .console import exit_err
 from .formatting.path import path_link
+from .style import green
 from .style import Icon
-from .style.color import green
-from .style.color import yellow
+from .style import yellow
 from zabbix_cli._types import EllipsisType
 from zabbix_cli.exceptions import ZabbixCLIError
 
