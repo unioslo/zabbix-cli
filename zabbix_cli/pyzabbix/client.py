@@ -233,6 +233,7 @@ class ZabbixAPI:
         # We don't have to pass the auth token if asking for the apiinfo.version
         if self.auth and method != "apiinfo.version":
             request_json["auth"] = self.auth
+        # TODO: ensure we have auth token if method requires it
 
         logger.debug("Sending %s to %s", method, self.url)
 

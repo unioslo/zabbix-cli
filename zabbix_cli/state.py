@@ -152,11 +152,13 @@ class State:
         """
         from zabbix_cli.pyzabbix.client import ZabbixAPI
         from zabbix_cli.models import TableRenderable
+        from zabbix_cli import auth
 
         self.config = config
 
         # Create the Zabbix API client object and log in
         self.client = ZabbixAPI.from_config(config)
+        auth.login(self.client, config)
 
         TableRenderable.zabbix_version = self.client.version
         TableRenderable.legacy_json_format = config.app.legacy_json_format
