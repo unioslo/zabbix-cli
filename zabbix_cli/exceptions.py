@@ -28,6 +28,10 @@ class ConfigError(ZabbixCLIError):
     """Error with configuration file."""
 
 
+class ConfigExistsError(ConfigError):
+    """Configuration file already exists."""
+
+
 class CommandFileError(ZabbixCLIError):
     """Error running bulk commands from a file."""
 
@@ -127,13 +131,13 @@ class HandleFunc(Protocol):
         ...
 
 
-def get_cause_args(e: BaseException) -> List[Any]:
-    """Retrieves all args from all exceptions in the cause chain.
+def get_cause_args(e: BaseException) -> List[str]:
+    """Retrieves all args as strings from all exceptions in the cause chain.
     Flattens the args into a single list."""
-    args = []  # type: list[Any]
+    args = []  # type: list[str]
     args.extend(e.args)
     if e.__cause__ is not None:
-        args.extend(get_cause_args(e.__cause__))
+        args.extend(str(get_cause_args(e.__cause__)))
     if isinstance(e, ZabbixAPIRequestError):
         args.append(e.reason())
     return args

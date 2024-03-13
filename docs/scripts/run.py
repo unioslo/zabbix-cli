@@ -5,11 +5,11 @@ from pathlib import Path
 
 sys.path.append(Path(__file__).parent.as_posix())
 
-from . import gen_cli_data  # noqa
-from . import gen_cli_options  # noqa
-from . import gen_command_list  # noqa
-from . import gen_command_pages  # noqa
-from . import gen_formats  # noqa
+import gen_cli_data  # noqa
+import gen_cli_options  # noqa
+import gen_command_list  # noqa
+import gen_command_pages  # noqa
+import gen_formats  # noqa
 
 
 # NOTE: for some reason putting this logic into a main() function causes the first

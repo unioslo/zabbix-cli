@@ -85,7 +85,7 @@ class DebugInfo(TableRenderable):
         try:
             obj.api_version = state.client.version
             obj.url = state.client.url
-            obj.user = state.config.app.username
+            obj.user = state.config.api.username
             if with_auth:
                 obj.auth_token = state.client.auth
             obj.connected_to_zabbix = True

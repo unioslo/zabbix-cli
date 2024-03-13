@@ -6,6 +6,7 @@ from typing import Optional
 import typer
 
 from zabbix_cli.app import app
+from zabbix_cli.app import Example
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
@@ -30,29 +31,35 @@ def fmt_macro_name(macro: str) -> str:
     return macro
 
 
-@app.command(name="define_host_usermacro", rich_help_panel=HELP_PANEL)
+@app.command(
+    name="define_host_usermacro",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Create a macro named {$SNMP_COMMUNITY} for a host",
+            "define_host_usermacro 'foo.example.com' '{$SNMP_COMMUNITY}' 'public'",
+        ),
+        Example(
+            "Create a macro named {$SITE_URL} for a host (automatic name conversion)",
+            "define_host_usermacro 'foo.example.com' 'site_url' 'https://example.com'",
+        ),
+    ],
+)
 def define_host_usermacro(
     # NOTE: should this use old style args?
-    hostname: Optional[str] = typer.Argument(None, help="Host to define macro for."),
-    macro_name: Optional[str] = typer.Argument(
-        None,
+    hostname: str = typer.Argument(..., help="Host to define macro for."),
+    macro_name: str = typer.Argument(
+        ...,
         help=(
             "Name of macro. "
             "Names will be converted to the Zabbix format, "
-            "i.e. `site_url` becomes {$SITE_URL}."
+            "i.e. [value]site_url[/] becomes [code]{$SITE_URL}[/]."
         ),
     ),
-    macro_value: Optional[str] = typer.Argument(None, help="Default value of macro."),
+    macro_value: str = typer.Argument(..., help="Default value of macro."),
 ) -> None:
     """Create or update a host usermacro."""
     from zabbix_cli.models import Result
-
-    if not hostname:
-        hostname = str_prompt("Hostname")
-    if not macro_name:
-        macro_name = str_prompt("Macro name")
-    if not macro_value:
-        macro_value = str_prompt("Macro value")
 
     host = app.state.client.get_host(hostname)
     macro_name = fmt_macro_name(macro_name)

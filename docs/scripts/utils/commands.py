@@ -8,6 +8,8 @@ from typing import Optional
 import click
 import typer
 from pydantic import BaseModel
+from pydantic import computed_field
+from pydantic import Field
 from pydantic import model_validator
 from typer.core import TyperArgument
 from typer.core import TyperCommand
@@ -119,6 +121,15 @@ class ParamSummary(BaseModel):
         data["metavar"] = new_metavar
         return data
 
+    @computed_field  # type: ignore[misc]
+    @property
+    def show(self) -> bool:
+        if self.hidden:
+            return False
+        if "deprecated" in self.help.lower():
+            return False
+        return True
+
 
 # TODO: split up CommandSummary into CommandSummary and CommandSearchResult
 # so that the latter can have the score field
@@ -132,7 +143,7 @@ class CommandSummary(BaseModel):
     hidden: bool
     name: str
     options_metavar: str
-    params: List[ParamSummary] = []
+    params: List[ParamSummary] = Field([], exclude=True)
     score: int = 0  # match score (not part of TyperCommand)
     short_help: Optional[str]
 
@@ -161,6 +172,7 @@ class CommandSummary(BaseModel):
     def help_md(self) -> str:
         return markup_to_markdown(self.help)
 
+    @computed_field
     @property
     def usage(self) -> str:
         parts = [self.name]
@@ -192,13 +204,29 @@ class CommandSummary(BaseModel):
 
         return " ".join(parts)
 
+    @computed_field  # type: ignore[misc]
     @property
     def options(self) -> List[ParamSummary]:
-        return [p for p in self.params if not p.is_argument]
+        return [p for p in self.params if _include_opt(p)]
 
+    @computed_field  # type: ignore[misc]
     @property
     def arguments(self) -> List[ParamSummary]:
-        return [p for p in self.params if p.is_argument]
+        return [p for p in self.params if _include_arg(p)]
+
+
+def _include_arg(arg: ParamSummary) -> bool:
+    """Determine if an argument or option should be included in the help output."""
+    if not arg.is_argument:
+        return False
+    return arg.show
+
+
+def _include_opt(opt: ParamSummary) -> bool:
+    """Determine if an argument or option should be included in the help output."""
+    if opt.is_argument:
+        return False
+    return opt.show
 
 
 def get_parent_ctx(

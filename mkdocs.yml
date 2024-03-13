@@ -91,18 +91,7 @@ nav:
   - User Guide:
     - Introduction: guide/introduction.md
     - Installation: guide/installation.md
-    - Configuration:
-      - configuration/introduction.md
-      - configuration/config-file.md
-      - configuration/auth.md
-      - configuration/formats.md
-    - Usage:
-      - usage/basic-usage.md
-      - usage/options.md
-      - usage/repl.md
-      - usage/tui.md
-      - usage/terminology.md
-      # TODO: formats
+    - Configuration: guide/configuration.md
     - Commands:
       - guide/commands/*.md
   - Reference:

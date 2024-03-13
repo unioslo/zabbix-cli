@@ -15,6 +15,7 @@ from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
 from zabbix_cli.dirs import SITE_CONFIG_DIR
+from zabbix_cli.exceptions import ConfigExistsError
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.logs import logger
 from zabbix_cli.output.console import info
@@ -32,7 +33,7 @@ HELP_PANEL = "CLI"
 
 
 @app.command("show_zabbixcli_config", rich_help_panel=HELP_PANEL)
-def show_zabbixcli_version(ctx: typer.Context) -> None:
+def show_zabbixcli_config(ctx: typer.Context) -> None:
     """Show the current application configuration."""
     config = app.state.config
     print_toml(config.as_toml())
@@ -130,7 +131,7 @@ def debug_cmd(
 
 
 @app.command(name="login", rich_help_panel=HELP_PANEL)
-def import_configuration(
+def login(
     ctx: typer.Context,
 ) -> None:
     """Reauthenticate with the Zabbix API.
@@ -153,7 +154,7 @@ def import_configuration(
         logger.debug("Failed to log out: %s", e)
 
     auth.login(client, config)
-    success(f"Logged in to {config.api.url} as {config.app.username}.")
+    success(f"Logged in to {config.api.url} as {config.api.username}.")
 
 
 @app.command("show_history", rich_help_panel=HELP_PANEL)
@@ -182,3 +183,29 @@ def sample_config(ctx: typer.Context) -> None:
 
     conf = Config.sample_config()
     print_toml(conf.as_toml())
+
+
+@app.command("init", rich_help_panel=HELP_PANEL)
+def init(
+    ctx: typer.Context,
+    config_file: Optional[Path] = typer.Option(
+        None, "--config-file", "-c", help="Location of the config file."
+    ),
+    overwrite: bool = typer.Option(
+        False, "--overwrite", help="Overwrite existing config"
+    ),
+) -> None:
+    """Create and initialize config file."""
+    from zabbix_cli.config.utils import init_config
+
+    try:
+        init_config(config_file=config_file, overwrite=overwrite)
+    except ConfigExistsError as e:
+        raise ZabbixCLIError(f"{e}. Use [option]--overwrite[/] to overwrite it") from e
+
+    # try:
+    #     login(ctx)  # is this too hacky?
+    # except Exception as e:
+    #     from zabbix_cli.exceptions import handle_exception
+
+    #     handle_exception(e)

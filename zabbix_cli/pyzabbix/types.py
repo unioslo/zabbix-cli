@@ -34,10 +34,7 @@ from typing_extensions import Literal
 from typing_extensions import TypedDict
 
 from zabbix_cli.models import TableRenderable
-from zabbix_cli.output.style.color import error_color
-from zabbix_cli.output.style.color import info_color
-from zabbix_cli.output.style.color import success_color
-from zabbix_cli.output.style.color import warning_color
+from zabbix_cli.output.style import Color
 from zabbix_cli.pyzabbix.enums import InterfaceType
 from zabbix_cli.utils.utils import get_ack_status
 from zabbix_cli.utils.utils import get_event_status
@@ -534,13 +531,14 @@ class Proxy(ZabbixAPIBaseModel):
         """Returns the proxy compatibility as a Rich markup formatted string."""
         compat = self.compatibility_str
         if compat == "Current":
-            return success_color(compat)
+            style = Color.SUCCESS
         elif compat == "Outdated":
-            return warning_color(compat)
+            style = Color.WARNING
         elif compat == "Outdated":
-            return error_color(compat)
+            style = Color.ERROR
         else:
-            return info_color(compat)
+            style = Color.INFO
+        return style(compat)
 
 
 class MacroBase(ZabbixAPIBaseModel):

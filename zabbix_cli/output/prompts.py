@@ -23,9 +23,9 @@ from .console import err_console
 from .console import error
 from .console import exit_err
 from .formatting.path import path_link
+from .style import Color
 from .style import green
 from .style import Icon
-from .style import yellow
 from zabbix_cli._types import EllipsisType
 from zabbix_cli.exceptions import ZabbixCLIError
 
@@ -304,7 +304,7 @@ def _number_prompt(
         elif max is not None:
             _prompt_add = f"x<={max}"
         if _prompt_add:
-            _prompt_add = yellow(_prompt_add)
+            _prompt_add = Color.YELLOW(_prompt_add)
     msg = prompt_msg(prompt, _prompt_add)
 
     while True:

@@ -13,6 +13,7 @@ from typing import Callable
 from typing import cast
 from typing import Iterable
 from typing import Type
+from typing import TYPE_CHECKING
 from typing import Union
 from uuid import UUID
 
@@ -23,6 +24,10 @@ from typer.models import ParameterInfo
 
 from zabbix_cli._patches.common import get_patcher
 from zabbix_cli.pyzabbix.enums import APIStrEnum
+
+if TYPE_CHECKING:
+    from typing import Dict
+    from rich.style import Style
 
 patcher = get_patcher(f"Typer version: {typer.__version__}")
 
@@ -257,9 +262,51 @@ def patch_get_click_type() -> None:
         typer.main.get_click_type = get_click_type
 
 
+def patch__get_rich_console() -> None:
+    from typer.rich_utils import STYLE_OPTION
+    from typer.rich_utils import STYLE_SWITCH
+    from typer.rich_utils import STYLE_NEGATIVE_OPTION
+    from typer.rich_utils import STYLE_NEGATIVE_SWITCH
+    from typer.rich_utils import STYLE_METAVAR
+    from typer.rich_utils import STYLE_METAVAR_SEPARATOR
+    from typer.rich_utils import STYLE_USAGE
+    from typer.rich_utils import highlighter
+    from typer.rich_utils import FORCE_TERMINAL
+    from typer.rich_utils import COLOR_SYSTEM
+    from typer.rich_utils import MAX_WIDTH
+    from zabbix_cli.output.style import RICH_THEME
+    from rich.console import Console
+
+    theme: Dict[str, Union[str, Style]] = RICH_THEME.styles.copy()  # type: ignore[assignment]
+    theme.update(
+        {
+            "option": STYLE_OPTION,
+            "switch": STYLE_SWITCH,
+            "negative_option": STYLE_NEGATIVE_OPTION,
+            "negative_switch": STYLE_NEGATIVE_SWITCH,
+            "metavar": STYLE_METAVAR,
+            "metavar_sep": STYLE_METAVAR_SEPARATOR,
+            "usage": STYLE_USAGE,
+        },
+    )
+
+    def _get_rich_console(stderr: bool = False) -> Console:
+        return Console(
+            theme=RICH_THEME,
+            highlighter=highlighter,
+            color_system=COLOR_SYSTEM,
+            force_terminal=FORCE_TERMINAL,
+            width=MAX_WIDTH,
+            stderr=stderr,
+        )
+
+    typer.rich_utils._get_rich_console = _get_rich_console
+
+
 def patch() -> None:
     """Apply all patches."""
     patch_help_text_style()
     patch_help_text_spacing()
     patch_generate_enum_convertor()
     patch_get_click_type()
+    patch__get_rich_console()

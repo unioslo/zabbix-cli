@@ -90,13 +90,9 @@ Use APIStr enums in functions that take in a code and return a string representa
 * `show_alarms`
   * Color severity levels.
 
-* New command: `help`: Show help for a command or category.
-  * `zabbix-cli help host`
-  * `zabbix-cli help show_host`
 
-* New command: `show_host_interface`: Details about a specific host interface.
-  * `zabbix-cli show_host_interface <hid>`
-  * Shows more details about the interface than `show_host_interfaces`
+* `remove_template_from_group`:
+  * Add `--dryrun` option.
 
 ## Config
 
@@ -128,6 +124,14 @@ Use APIStr enums in functions that take in a code and return a string representa
 * Don't log traceback of "expected" errors such as `ZabbixNotFound`.
   * Perhaps add some sort of base class we handle for this such as `ZabbixStatusError`?
 
+
+* Handle connection errors more gracefully. Example: if we try to connect to UIO Zabbix without SOCKS proxy, we  get a `HTTPStatusError` with a 403 status code. We should catch this and raise a more meaningful error.
+
+```
+HTTPStatusError: Client error '403 Forbidden' for url 'https://example.com/api_jsonrpc.php'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403
+```
+
 ### Pydantic Exceptions
 
 * Log all data and API version whenever we get a validation error.
@@ -147,11 +151,15 @@ Use APIStr enums in functions that take in a code and return a string representa
   * Maybe toggle normal console messages when this is set?
 * Either only use root logger OR add a logger for each module.
   * Currently we have a mix of both.
-
+* Log record markup normalizer. Remove Rich formattings from log records.
 
 ## Prompts
 
-* Add a `--no-prompt` flag that doesn't prompt for missing values.
+* Remove most prompts
+  * Huge offenders:
+    * `_handle_hostgroup_args`
+    * `_handle_templategroup_args`
+    * `_handle_template_arg `
 * Turn some text prompts into arrow key selection prompts:
   * `create_notification_user`: `mediatype`
     * Fetch all media types then display them in a list.
@@ -215,12 +223,30 @@ We only need runtime typing on the functions that typer use for type inference. 
 
 ## New command ideas
 
-### Assign unproxied hosts to proxies
+### Assign unproxied hosts to proxies: `assign_host_to_proxy`
 
 * Allow for pattern matching in host names.
   * E.g. `assign_host_to_proxy "proxy-prod01.example.com" "*.example.com"`
 
-### Assign all hosts in host group to proxy
+### Assign all hosts in host group to proxy: `assign_hostgroup_to_proxy`
 
 * Allow for pattern matching in host names.
   * E.g. `assign_hostgroup_to_proxy "proxy-prod01.example.com" "Siteadmin-iti-*"`
+
+
+### Show help for a command or category: `help`
+
+Usage:
+  * `zabbix-cli help host`
+  * `zabbix-cli help show_host`
+
+### Details about a specific host interface: `show_host_interface`
+
+Usage:
+  * `zabbix-cli show_host_interface <hid>`
+  * Shows more details about the interface than `show_host_interfaces`
+
+### Create template: `create_template`
+
+
+....

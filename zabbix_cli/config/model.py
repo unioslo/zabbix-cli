@@ -31,6 +31,7 @@ from pydantic import AliasChoices
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import field_serializer
 from pydantic import field_validator
 from pydantic import model_validator
 from pydantic import SecretStr
@@ -38,9 +39,9 @@ from pydantic import ValidationInfo
 
 from zabbix_cli._v2_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
 from zabbix_cli.config.constants import OutputFormat
-from zabbix_cli.config.utils import _load_config_conf
-from zabbix_cli.config.utils import _load_config_toml
 from zabbix_cli.config.utils import find_config
+from zabbix_cli.config.utils import load_config_conf
+from zabbix_cli.config.utils import load_config_toml
 from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
@@ -75,11 +76,26 @@ class APIConfig(BaseModel):
         # Changed in V3: system_id -> username
         validation_alias=AliasChoices("username", "system_id"),
     )
+    password: Optional[SecretStr] = Field(default=None, exclude=True)
     verify_ssl: bool = Field(
         default=True,
         # Changed in V3: cert_verify -> verify_ssl
         validation_alias=AliasChoices("verify_ssl", "cert_verify"),
     )
+    timeout: Optional[int] = 0
+    auth_token: Optional[SecretStr] = Field(default=None, exclude=True)
+
+    @model_validator(mode="after")
+    def _validate_model(self) -> APIConfig:
+        # Convert 0 timeout to None
+        if self.timeout == 0:
+            self.timeout = None
+        return self
+
+    @field_serializer("timeout", when_used="json")
+    def _serialize_timeout(self, timeout: Optional[int]) -> int:
+        """Represent None timeout as 0 in serialized output."""
+        return timeout if timeout is not None else 0
 
 
 class AppConfig(BaseModel):
@@ -89,8 +105,7 @@ class AppConfig(BaseModel):
         # DEPRECATED: Use `api.username` instead
         exclude=True,
     )
-    password: Optional[SecretStr] = Field(default=None, exclude=True)
-    auth_token: Optional[SecretStr] = Field(default=None, exclude=True)
+
     default_hostgroups: List[str] = Field(
         default=["All-hosts"],
         # Changed in V3: default_hostgroup -> default_hostgroups
@@ -140,7 +155,7 @@ class AppConfig(BaseModel):
         ),
     )
     use_colors: bool = True
-    use_auth_token_file: bool = False
+    use_auth_token_file: bool = True
     use_paging: bool = False
     output_format: OutputFormat = OutputFormat.TABLE
     history: bool = True
@@ -257,11 +272,7 @@ class Config(BaseModel):
     @classmethod
     def sample_config(cls) -> Config:
         """Get a sample configuration."""
-        return cls(
-            api=APIConfig(
-                url="https://zabbix.example.com/api_jsonrpc.php", username="Admin"
-            )
-        )
+        return cls(api=APIConfig(url="https://zabbix.example.com", username="Admin"))
 
     @classmethod
     def from_file(cls, filename: Optional[Path] = None) -> Config:
@@ -277,18 +288,23 @@ class Config(BaseModel):
             fp = find_config(filename, CONFIG_PRIORITY_LEGACY)
             if fp:
                 logging.warning("Using legacy config file (%s)", fp)
-                conf = _load_config_conf(fp)
+                conf = load_config_conf(fp)
                 # Use legacy JSON format if we find a legacy config file
                 conf.setdefault("zabbix_config", {}).setdefault(
                     "legacy_json_format", True
                 )
             else:
                 # Failed to find both .toml and .conf files
-                raise ConfigError(
-                    "No configuration file found. Run [green]zabbix-cli-init[/] to create one."
-                )
+                from zabbix_cli.config.utils import init_config
+
+                fp = init_config()
+                if not fp.exists():
+                    raise ConfigError(
+                        "Failed to create configuration file. Run [command]zabbix-cli-init[/] to create one."
+                    )
+                return cls.from_file(fp)
         else:
-            conf = _load_config_toml(fp)
+            conf = load_config_toml(fp)
         return cls(**conf, config_path=fp)
 
     @model_validator(mode="after")

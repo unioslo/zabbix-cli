@@ -47,7 +47,7 @@ def run_repl(ctx: typer.Context) -> None:
     from rich.console import Group
     from rich.panel import Panel
     from zabbix_cli.output.console import console
-    from zabbix_cli.output.style.color import green
+    from zabbix_cli.output.style import green
     from zabbix_cli.state import get_state
 
     # Patch click-repl THEN import it
@@ -145,7 +145,7 @@ def main_callback(
     state.configure(conf)
 
     # NOTE: LogContext is kept from V2. Do we still need it?
-    with LogContext(logger, user=conf.app.username):
+    with LogContext(logger, user=conf.api.username):
         # TODO: look at order of evaluation here. What takes precedence?
         # Should passing both --input-file and --command be an error? probably
         if zabbix_command:

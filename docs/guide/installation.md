@@ -4,32 +4,13 @@ The application is primarily distributed with `pip`, but other installation meth
 
 ## Installing Zabbix CLI
 
+{% set install_expand = true %}
 {% include-markdown ".includes/quick-install.md" %}
 
 
-### Multiple versions with pipx
-
-pipx supports installing multiple versions of the same package by giving each installation a custom suffix. For example, if we wish to install Zabbix CLI version 3 alongside an existing previous version, we can do so:
-
-```bash
-pipx install zabbix-cli>=3.0.0 --suffix @v3
-```
-
-This installs Zabbix CLI >= 3.0.0 with the suffix `@v3`, and we can run it with:
-
-```bash
-zabbix-cli@v3
-```
-
-and the existing version can be run with:
-
-```bash
-zabbix-cli
-```
-
 ## Creating a configuration file
 
-The application requires a configuration file. Normally, this file is created on first time startup, but it can also be created with the command `zabbix-cli-init`.
+The application requires a configuration file. It can be created with the command `zabbix-cli-init`.
 
 ```
 zabbix-cli-init
@@ -41,7 +22,7 @@ The application will print the location of the created config file:
 ! Configuration file created: /Users/pederhan/Library/Application Support/zabbix-cli/zabbix-cli.toml
 ```
 
-To specify a URL and username, use the options `--url` and `--user`:
+To bootstrap the config with a URL and username, use the options `--url` and `--user`:
 
 ```
 zabbix-cli-init --url https://zabbix.example.com --user Admin

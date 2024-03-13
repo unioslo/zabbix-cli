@@ -43,7 +43,7 @@ class Example(NamedTuple):
     return_value: Optional[str] = None
 
     def __str__(self) -> str:
-        return f"  [i]{self.description}[/]\n\n    [green]{self.command}[/]"
+        return f"  [i]{self.description}[/]\n\n    [example]{self.command}[/]"
 
 
 # TODO: Trigger example rendering only when user calls --help, so we don't build
@@ -71,6 +71,7 @@ class CommandInfo(TyperCommandInfo):
             return
         examples = [str(e) for e in self.examples]
         examples.insert(0, "\n\n[bold underline]Examples[/]")
+
         self.help = self.help.strip()
         self.help += "\n\n".join(examples)
 

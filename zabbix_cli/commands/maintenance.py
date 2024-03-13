@@ -5,6 +5,7 @@ from typing import Optional
 import typer
 
 from zabbix_cli.app import app
+from zabbix_cli.app import Example
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.prompts import str_prompt_optional
@@ -17,28 +18,54 @@ from zabbix_cli.utils.utils import convert_time_to_interval
 HELP_PANEL = "Maintenance"
 
 
-@app.command(name="create_maintenance_definition", rich_help_panel=HELP_PANEL)
+@app.command(
+    name="create_maintenance_definition",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Create a maintenance for a host from now for 1 hour (default)",
+            "create_maintenance_definition 'My maintenance' --host 'My host'",
+        ),
+        Example(
+            "Create a maintenance for a host group in a specific time period",
+            "create_maintenance_definition 'My maintenance' --hostgroup 'Linux servers' --period '2022-12-31T23:00 to 2023-01-01T01:00'",
+        ),
+        Example(
+            "Create a maintenance definition with all options",
+            "create_maintenance_definition 'My maintenance' --hostgroup 'Linux servers' --period '2 hours 30 minutes 15 seconds' --description 'Maintenance for Linux servers' --data-collection ON",
+        ),
+    ],
+)
 def create_maintenance_definition(
     ctx: typer.Context,
-    name: Optional[str] = typer.Argument(
-        None, help="Name of the maintenance definition."
+    name: str = typer.Argument(
+        ...,
+        help="Maintenance name.",
     ),
     description: Optional[str] = typer.Option(
-        None, "--description", help="Description"
+        None,
+        "--description",
+        help="Description.",
     ),
     hosts: Optional[str] = typer.Option(
-        None, "--host", help="Comma-separated list of hosts."
+        None,
+        "--host",
+        help="Hosts. Comma-separated.",
     ),
     hostgroups: Optional[str] = typer.Option(
-        None, "--hostgroups", help="Comma-separated list of host groups."
-    ),
-    period: Optional[str] = typer.Option(
         None,
+        "--hostgroups",
+        help="Host groups. Comma-separated.",
+    ),
+    period: str = typer.Option(
+        "1 hour",
         "--period",
         help="Time period in seconds, minutes, hours, days, or as ISO timestamp.",
     ),
-    data_collection: Optional[DataCollectionMode] = typer.Option(
-        None, "--data-collection", help="Enable or disable data collection."
+    data_collection: DataCollectionMode = typer.Option(
+        DataCollectionMode.ON.value,
+        "--data-collection",
+        help="Enable or disable data collection.",
     ),
 ) -> None:
     """
@@ -46,45 +73,16 @@ def create_maintenance_definition(
 
     One can define an interval between two timestamps in ISO format
     or a time period in minutes, hours or days from the moment the
-    definition is created
-
-    [bold]From 22:00 until 23:00 on 2016-11-21:[/]
-
-        [green]--period '2016-11-21T22:00 to 2016-11-21T23:00'[/]
-
-
-    [bold]From now for 2 hours:[/]
-
-        [green]--period '2 hours'[/]
-
-    [bold]Seconds are assumed if no unit is specified:[/]
-
-        [green]--period 3600[/]
+    definition is created. Periods are assumed to be in seconds if no unit is
+    specified. If no period is specified, the default is 1 hour.
     """
     from zabbix_cli.commands.results.maintenance import (
         CreateMaintenanceDefinitionResult,
     )
     from zabbix_cli.models import Result
 
-    if not name:
-        name = str_prompt("Name")
-    if not description:
-        description = str_prompt_optional("Description")
-    if not hosts:
-        hosts = str_prompt_optional("Hosts")
     hosts_arg = parse_list_arg(hosts)
-
-    if not hostgroups:
-        hostgroups = str_prompt_optional("Host groups")
     hgs_arg = parse_list_arg(hostgroups)
-
-    if not period:
-        period = str_prompt("Period", default="1 hour")
-
-    if not data_collection:
-        data_collection = DataCollectionMode.from_prompt(
-            "Data collection", default=DataCollectionMode.ON
-        )
 
     start, end = convert_time_to_interval(period)
     hostlist = app.state.client.get_hosts(*hosts_arg) if hosts_arg else []
@@ -115,15 +113,12 @@ def create_maintenance_definition(
 @app.command(name="remove_maintenance_definition", rich_help_panel=HELP_PANEL)
 def remove_maintenance_definition(
     ctx: typer.Context,
-    maintenance_id: Optional[str] = typer.Argument(
-        None, help="ID of maintenance to remove"
-    ),
+    maintenance_id: str = typer.Argument(..., help="ID of maintenance to remove"),
 ) -> None:
     """Remove a maintenance definition."""
     from zabbix_cli.models import Result
 
-    if not maintenance_id:
-        maintenance_id = str_prompt("Maintenance ID(s)")
+    maintenance_id = str_prompt("Maintenance ID(s)")
 
     maintenance_ids = parse_list_arg(maintenance_id)
     if not maintenance_ids:

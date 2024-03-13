@@ -6,17 +6,14 @@ from functools import cmp_to_key
 
 from rich.text import Text
 
-from zabbix_cli.output.style import STYLE_CLI_COMMAND
-from zabbix_cli.output.style import STYLE_CLI_OPTION
-from zabbix_cli.output.style import STYLE_CLI_VALUE
-from zabbix_cli.output.style import STYLE_CONFIG_OPTION
+from zabbix_cli.output.style import CodeBlockStyle
+from zabbix_cli.output.style import CodeStyle
 
-CODEBLOCK_STYLES = [
-    STYLE_CLI_OPTION,
-    STYLE_CONFIG_OPTION,
-    STYLE_CLI_VALUE,
-    STYLE_CLI_COMMAND,
-]
+CODEBLOCK_STYLES = list(CodeBlockStyle)
+CODE_STYLES = list(CodeStyle)
+CODEBLOCK_LANGS = {
+    "python": "py",
+}
 
 
 @dataclass
@@ -26,15 +23,12 @@ class MarkdownSpan:
     italic: bool = False
     bold: bool = False
     code: bool = False
+    codeblock: bool = False
+    language: str = ""
 
     def to_symbols(self) -> tuple[MarkdownSymbol, MarkdownSymbol]:
-        kwargs = {
-            "italic": self.italic,
-            "bold": self.bold,
-            "code": self.code,
-        }
-        start = MarkdownSymbol(position=self.start, **kwargs)
-        end = MarkdownSymbol(position=self.end, end=True, **kwargs)
+        start = MarkdownSymbol.from_span(self, end=False)
+        end = MarkdownSymbol.from_span(self, end=True)
         return start, end
 
 
@@ -44,21 +38,41 @@ class MarkdownSymbol:
     italic: bool = False
     bold: bool = False
     code: bool = False
+    codeblock: bool = False
     end: bool = False
+    language: str = ""
 
     @property
     def symbol(self) -> str:
         symbol = []
-        if self.italic:
-            symbol.append("*")
-        if self.bold:
-            symbol.append("**")
-        if self.code:
-            symbol.append("`")
+        if self.codeblock:
+            # Only insert language when opening codeblock
+            lang = self.language if not self.end else ""
+            symbol.append(f"```{lang}\n")
+            # TODO: add support for language in fences (codeblock)
+        else:
+            if self.italic:
+                symbol.append("*")
+            if self.bold:
+                symbol.append("**")
+            if self.code:
+                symbol.append("`")
         s = "".join(symbol)
         if self.end:
             s = f"{s[::-1]}"
         return s
+
+    @classmethod
+    def from_span(cls, span: MarkdownSpan, end: bool = False) -> MarkdownSymbol:
+        return cls(
+            position=span.end if end else span.start,
+            italic=span.italic,
+            bold=span.bold,
+            code=span.code,
+            codeblock=span.codeblock,
+            end=end,
+            language=span.language,
+        )
 
 
 # Easier than implementing rich comparison methods on MarkdownSymbol
@@ -87,20 +101,24 @@ def markup_to_markdown(s: str) -> str:
     This is a very naive implementation that only supports a subset of Rich markup, but it's
     good enough for our purposes.
     """
-    t = Text.from_markup(s)
+    t = Text.from_markup(normalize_spaces(s))
     spans = []  # list[MarkdownSpan]
     # Markdown has more limited styles than Rich markup, so we just
     # identify the ones we care about and ignore the rest.
     for span in t.spans:
         new_span = MarkdownSpan(span.start, span.end)
-        span_style = str(span.style)
-        # Code block styles ignore other styles
-        if span_style in CODEBLOCK_STYLES:
+        styles = str(span.style).lower().split(" ")
+        # Code (block) styles ignore other styles
+        if any(s in CODEBLOCK_STYLES for s in styles):
+            new_span.codeblock = True
+            lang = next((s for s in styles if s in CODEBLOCK_LANGS), "")
+            new_span.language = CODEBLOCK_LANGS.get(lang, "")
+        elif any(s in CODE_STYLES for s in styles):
             new_span.code = True
         else:
-            if "italic" in span_style:
+            if "italic" in styles:
                 new_span.italic = True
-            if "bold" in span_style:
+            if "bold" in styles:
                 new_span.bold = True
         spans.append(new_span)
 
@@ -113,13 +131,25 @@ def markup_to_markdown(s: str) -> str:
     symbols = sorted(symbols, key=cmp_to_key(mdsymbol_cmp))
 
     # List of characters that make up string
-    plaintext = list(str(t.plain))
+    plaintext = list(str(t.plain.strip()))  # remove leading and trailing whitespace
     offset = 0
     for symbol in symbols:
         plaintext.insert(symbol.position + offset, symbol.symbol)
         offset += 1
 
     return "".join(plaintext)
+
+
+def normalize_spaces(s: str) -> str:
+    """Normalizes spaces in a string while keeping newlines intact."""
+    split = filter(None, s.split(" "))
+    parts = []
+    for part in split:
+        if part.endswith("\n"):
+            parts.append(part)
+        else:
+            parts.append(f"{part} ")
+    return "".join(parts)
 
 
 def markup_as_plain_text(s: str) -> str:

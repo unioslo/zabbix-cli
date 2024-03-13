@@ -5,11 +5,10 @@ from typing import Optional
 
 import typer
 
-from zabbix_cli.config.model import Config
-from zabbix_cli.config.utils import create_config_file
-from zabbix_cli.dirs import init_directories
+from zabbix_cli.config.utils import init_config
+from zabbix_cli.exceptions import ConfigExistsError
+from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.logs import configure_logging
-from zabbix_cli.output.console import info
 
 
 def main(
@@ -41,14 +40,15 @@ def main(
 ) -> None:
     # TODO: support creating directory for custom file locations
 
-    # Create required directories
-    init_directories()
-    config = Config.sample_config()
-    config.api.url = zabbix_url
-    if zabbix_user:
-        config.api.username = zabbix_user
-    config_file = create_config_file(config, config_file)
-    info(f"Configuration file created: {config_file}")
+    try:
+        init_config(
+            config_file=config_file,
+            overwrite=overwrite,
+            url=zabbix_url,
+            username=zabbix_user,
+        )
+    except ConfigExistsError as e:
+        raise ZabbixCLIError(f"{e}. Use [option]--overwrite[/] to overwrite it") from e
 
 
 def run() -> None:

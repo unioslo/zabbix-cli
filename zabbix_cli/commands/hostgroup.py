@@ -124,15 +124,15 @@ def remove_host_from_hostgroup(
     examples=[
         Example(
             "Create a host group with default user group permissions",
-            "zabbix-cli create_hostgroup 'My Host Group'",
+            "create_hostgroup 'My Host Group'",
         ),
         Example(
             "Create a host group with specific RO and RW groups",
-            "zabbix-cli create_hostgroup 'My Host Group' --ro-groups users --rw-groups admins",
+            "create_hostgroup 'My Host Group' --ro-groups users --rw-groups admins",
         ),
         Example(
             "Create a host group with no user group permissions",
-            "zabbix-cli create_hostgroup 'My Host Group' --no-usergroup-permissions",
+            "create_hostgroup 'My Host Group' --no-usergroup-permissions",
         ),
     ],
 )

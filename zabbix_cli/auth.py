@@ -56,14 +56,13 @@ def login(client: ZabbixAPI, config: Config) -> None:
 
     configure_auth(config)  # must bootstrap config first
 
-    ca = config.app
-    username = ca.username
+    username = config.api.username
     config_token = None
     password = None
-    if ca.use_auth_token_file and ca.auth_token:
-        config_token = ca.auth_token.get_secret_value()
-    elif ca.password:
-        password = ca.password.get_secret_value()
+    if config.app.use_auth_token_file and config.api.auth_token:
+        config_token = config.api.auth_token.get_secret_value()
+    elif config.api.password:
+        password = config.api.password.get_secret_value()
     else:
         # Should never happen due to running configure_auth() first
         raise ZabbixCLIError("No password or auth token configured.")
@@ -74,12 +73,12 @@ def login(client: ZabbixAPI, config: Config) -> None:
     token = client.login(user=username, password=password, auth_token=config_token)
     # Write the token file if it's new and we are configured to save it
     if (
-        ca.use_auth_token_file
-        and ca.username  # we need a username in the token file
+        config.app.use_auth_token_file
+        and config.api.username  # we need a username in the token file
         and token  # must be not None and not empty
         and token != config_token  # must be a new token
     ):
-        write_auth_token_file(ca.username, token)
+        write_auth_token_file(config.app.username, token)
 
 
 def configure_auth(config: Config) -> None:
@@ -91,12 +90,12 @@ def configure_auth(config: Config) -> None:
     if config.app.use_auth_token_file:
         configure_auth_token(config)
     # Always fall back on username/password if token cannot be loaded or is disabled
-    if not config.app.auth_token:
+    if not config.api.auth_token:
         configure_auth_username_password(config)
 
     # Sanity checks to ensure our auth functions set the required info
     # This should never happen.
-    if not (config.app.username and config.app.password) and not config.app.auth_token:
+    if not (config.api.username and config.api.password) and not config.api.auth_token:
         raise ZabbixCLIError(
             "No authentication method configured. Cannot continue. Please check your configuration file."
         )
@@ -112,14 +111,14 @@ def configure_auth_token(config: Config) -> None:
     # loaded by us as long as the usernames don't match.
     # When we prompt for username and password and store the new auth token,
     # the old auth token will be overwritten.
-    if username and username != config.app.username:
+    if username and username != config.api.username:
         warning(
             "Ignoring existing auth token. "
-            f"Username {username!r} does not match configured username {config.app.username!r}."
+            f"Username {username!r} does not match configured username {config.api.username!r}."
         )
         return
     if auth_token:  # technically not needed, but might as well
-        config.app.auth_token = SecretStr(auth_token)
+        config.api.auth_token = SecretStr(auth_token)
 
 
 def configure_auth_username_password(config: Config) -> None:
@@ -139,8 +138,8 @@ def configure_auth_username_password(config: Config) -> None:
     else:
         # Found no auth methods, prompt for it
         username, password = _prompt_username_password(config)
-    config.app.username = username
-    config.app.password = SecretStr(password)
+    config.api.username = username
+    config.api.password = SecretStr(password)
 
 
 def load_auth_token_file(config: Config) -> Optional[str]:
@@ -191,7 +190,7 @@ def clear_auth_token_file(config: Optional[Config] = None) -> None:
             # Only happens if file exists and we fail to write to it.
             error(f"Unable to clear auth token file {file}: {e}")
     if config:
-        config.app.auth_token = None
+        config.api.auth_token = None
 
 
 def _do_clear_auth_token_file(file: Path) -> None:
@@ -204,7 +203,7 @@ def _do_clear_auth_token_file(file: Path) -> None:
 
 def _prompt_username_password(config: Config) -> Tuple[str, str]:
     """Prompt for username and password."""
-    username = str_prompt("Username", default=config.app.username)
+    username = str_prompt("Username", default=config.api.username)
     password = str_prompt("Password", password=True)
     return username, password
 

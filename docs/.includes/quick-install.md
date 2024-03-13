@@ -1,6 +1,6 @@
 === "Cross-platform (pipx)"
 
-    It is highly recommended to install the package with `pipx` to avoid conflicts with other Python packages.
+    It is highly recommended to install the package with [`pipx`](https://pipx.pypa.io/stable/) to avoid conflicts with other Python packages on your system.
 
     ```bash
     pip install pipx
@@ -8,6 +8,11 @@
     ```
 
     This will install `zabbix-cli` in an isolated environment, and make it available on your system path.
+
+    {% if install_expand is defined and install_expand == true %}
+    ### Multiple installed versions
+    {% include-markdown ".includes/pipx-multiple.md" %}
+    {% endif %}
 
 === "pip"
 

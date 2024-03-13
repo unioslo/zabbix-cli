@@ -5,22 +5,64 @@ from typing import Any
 
 from rich.theme import Theme
 from strenum import StrEnum
+from typer.rich_utils import STYLE_OPTION
 
 
-STYLE_CONFIG_OPTION = "italic yellow"
-"""Used to signify a configuration file option/key/entry."""
+# NOTE: we define these enums to allow us to parse the markup text and
+#       correctly convert it to markdown in the docs. Without this, we would
+#       have to hard-code each style to correspond to a specific markdown formatting
+#       in the docs generator, which would be error-prone and difficult to maintain.
+#       E.g. [command]zabbix-cli hostgroup_remove foo[/] becomes `zabbix-cli hostgroup_remove foo`
+#       while [example]zabbix-cli --version[/] becomes ```\nzabbix-cli --version\n``` (code block)
 
-STYLE_CLI_OPTION = "green"
-"""Used to signify a CLI option, e.g. --verbose."""
 
-STYLE_CLI_VALUE = "bold magenta"
-"""Used to signify a CLI value e.g. 'FILE'."""
+class CodeBlockStyle(StrEnum):
+    """Names of styles for text representing code blocks.
 
-STYLE_CLI_COMMAND = "bold green"
-"""Used to signify a CLI command e.g. 'artifact get'."""
+    Displayed as a code block in markdown."""
 
-STYLE_TABLE_HEADER = "bold green"
-STYLE_WARNING = "yellow"
+    EXAMPLE = "example"
+    """An example command."""
+
+    # TODO: add language style here or as separate enum? if so, how to parse in docs?
+
+    # NOTE: add "code" style here or in CodeStyle?
+
+
+class CodeStyle(StrEnum):
+    """Names of styles for text representing code, configuration or commands.
+
+    Displayed as inline code-formatted text in markdown."""
+
+    CONFIG_OPTION = "configopt"
+    """Configuration file option/key/entry."""
+
+    CLI_OPTION = "option"
+    """CLI option, e.g. --verbose."""
+
+    CLI_VALUE = "value"
+    """CLI value, arg or metavar e.g. 'FILE'."""
+
+    CLI_COMMAND = "command"
+    """CLI command e.g. 'hostgroup_remove'."""
+
+    CODE = "code"
+
+
+class TextStyle(StrEnum):
+    """Names of styles for non-code text"""
+
+    WARNING = "warning"
+    ERROR = "error"
+    INFO = "info"
+    SUCCESS = "success"
+
+
+class TableStyle(StrEnum):
+    """Names of styles for table headers, rows, etc."""
+
+    HEADER = "table_header"
+
 
 ####################
 # Colors
@@ -30,11 +72,22 @@ STYLE_WARNING = "yellow"
 ####################
 
 
+# TODO: refactor and define info, success, warning, error as STYLES, not COLORS.
+#       Having multiple members with the same value is bad
 class Color(StrEnum):
     INFO = "default"
     SUCCESS = "green"
     WARNING = "yellow"
     ERROR = "red"
+    YELLOW = "yellow"
+    GREEN = "green"
+    RED = "red"
+    MAGENTA = "magenta"
+    CYAN = "cyan"
+    BLUE = "blue"
+
+    def __call__(self, message: str) -> str:
+        return f"[{self.value}]{message}[/]"
 
 
 def blue(message: str) -> str:
@@ -81,16 +134,21 @@ def info(message: str) -> str:
     return f"[info]{message}[/]"
 
 
+# TODO: define primary, secondary, tertiary colors, then replace
+#       green with primary, magenta with secondary, yellow with tertiary, etc.
 RICH_THEME = Theme(
     {
-        "command": STYLE_CLI_COMMAND,
-        "option": STYLE_CLI_OPTION,
-        "value": STYLE_CLI_VALUE,
-        "configopt": STYLE_CONFIG_OPTION,
-        "success": Color.SUCCESS,
-        "warning": f"bold {Color.WARNING}",
-        "error": f"bold {Color.ERROR}",
-        "info": Color.SUCCESS,
+        CodeBlockStyle.EXAMPLE.value: "bold green",
+        CodeStyle.CLI_COMMAND.value: "bold green",
+        CodeStyle.CLI_OPTION.value: STYLE_OPTION,
+        CodeStyle.CLI_VALUE.value: "bold magenta",
+        CodeStyle.CONFIG_OPTION.value: "italic yellow",
+        CodeStyle.CODE.value: "bold green",
+        TextStyle.SUCCESS.value: Color.SUCCESS,
+        TextStyle.WARNING.value: f"bold {Color.WARNING}",
+        TextStyle.ERROR.value: f"bold {Color.ERROR}",
+        TextStyle.INFO.value: Color.SUCCESS,
+        TableStyle.HEADER.value: "bold green",
     }
 )
 
@@ -120,19 +178,19 @@ class Emoji(StrEnum):
 
 def render_config_option(option: str) -> str:
     """Render a configuration file option/key/entry."""
-    return f"[{STYLE_CONFIG_OPTION}]{option}[/]"
+    return f"[{CodeStyle.CONFIG_OPTION}]{option}[/]"
 
 
 def render_cli_option(option: str) -> str:
     """Render a CLI option."""
-    return f"[{STYLE_CLI_OPTION}]{option}[/]"
+    return f"[{CodeStyle.CLI_OPTION}]{option}[/]"
 
 
 def render_cli_value(value: Any) -> str:
     """Render a CLI value/argument."""
-    return f"[{STYLE_CLI_VALUE}]{value!r}[/]"
+    return f"[{CodeStyle.CLI_VALUE}]{value!r}[/]"
 
 
 def render_cli_command(value: str) -> str:
     """Render a CLI command."""
-    return f"[{STYLE_CLI_COMMAND}]{value}[/]"
+    return f"[{CodeStyle.CLI_COMMAND}]{value}[/]"

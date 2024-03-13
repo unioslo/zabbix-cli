@@ -4,7 +4,8 @@ import sys
 from pathlib import Path
 
 import yaml  # type: ignore
-from harbor_cli.format import OutputFormat
+
+from zabbix_cli.config.constants import OutputFormat
 
 sys.path.append(Path(__file__).parent.as_posix())
 

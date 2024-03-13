@@ -22,15 +22,15 @@ HELP_PANEL = "Item"
     examples=[
         Example(
             "Get items starting with 'MongoDB'",
-            "zabbix-cli show_last_values 'MongoDB*'",
+            "show_last_values 'MongoDB*'",
         ),
         Example(
             "Get items containing 'memory'",
-            "zabbix-cli show_last_values '*memory*'",
+            "show_last_values '*memory*'",
         ),
         Example(
             "Get all items (WARNING: slow!)",
-            "zabbix-cli show_last_values '*'",
+            "show_last_values '*'",
         ),
     ],
 )

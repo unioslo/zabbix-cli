@@ -76,11 +76,11 @@ See [harborapi docs](https://unioslo.github.io/harborapi/usage/methods/read/#que
 {{ command.help_md }}
 
 {# Only show this section if we have arguments #}
-{% set argument_params = command.params | selectattr('is_argument', 'equalto', true) | list %}
-{% if argument_params | length > 0 %}
+
+{% if command.arguments | length > 0 %}
 **Arguments**
 
-{% for param in command.params if param.is_argument %}
+{% for param in command.arguments %}
 {{ render_param(param) }}
 {# End param loop #}
 {% endfor %}
@@ -89,15 +89,12 @@ See [harborapi docs](https://unioslo.github.io/harborapi/usage/methods/read/#que
 {% endif %}
 
 {# Only show this section if we have options #}
-{% set option_params = command.params | selectattr('is_argument', 'equalto', false) | list %}
-
-{# Start params listing #}
-{% if option_params | length > 0 %}
+{% if command.options | length > 0 %}
 
 **Options**
 
 {# Opts. Example (--wizard/--no-wizard) #}
-{% for param in command.params if not param.is_argument and not param.hidden %}
+{% for param in command.options %}
 {{ render_param(param) }}
 {# End param loop #}
 {% endfor %}

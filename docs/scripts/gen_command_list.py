@@ -26,7 +26,7 @@ def main() -> None:
         if category not in categories:
             categories[category] = []
         cmd_dict = command.model_dump(mode="json")
-        cmd_dict["usage"] = command.usage
+        # cmd_dict["usage"] = command.usage
         categories[category].append(cmd_dict)
 
     with open(DATA_DIR / "commands.yaml", "w") as f:

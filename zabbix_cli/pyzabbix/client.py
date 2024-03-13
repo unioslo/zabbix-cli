@@ -83,12 +83,15 @@ if TYPE_CHECKING:
     from packaging.version import Version
     from typing_extensions import TypedDict
     from httpx._types import TimeoutTypes
+    from zabbix_cli.config.model import Config
 
     class HTTPXClientKwargs(TypedDict, total=False):
         timeout: TimeoutTypes
 
 
 logger = logging.getLogger(__name__)
+
+RPC_ENDPOINT = "/api_jsonrpc.php"
 
 
 class ZabbixAPI:
@@ -102,9 +105,9 @@ class ZabbixAPI:
         Parameters:
             server: Base URI for zabbix web interface (omitting /api_jsonrpc.php)
             session: optional pre-configured requests.Session instance
-            timeout: optional connect and read timeout in seconds, default: None (if you're using Requests >= 2.4 you can set it as tuple: "(connect, read)" which is used to set individual connect and read timeouts.)
+            timeout: optional connect and read timeout in seconds.
         """
-        self.timeout = timeout
+        self.timeout = timeout if timeout else None
 
         if session:
             self.session = session
@@ -114,7 +117,8 @@ class ZabbixAPI:
         self.auth = ""
         self.id = 0
 
-        self.url = server + "/api_jsonrpc.php"
+        server, _, _ = server.partition(RPC_ENDPOINT)
+        self.url = f"{server}/api_jsonrpc.php"
         logger.info("JSON-RPC Server Endpoint: %s", self.url)
 
         # Cache
@@ -122,6 +126,15 @@ class ZabbixAPI:
 
         # Attributes for properties
         self._version = None  # type: Version | None
+
+    @classmethod
+    def from_config(cls, config: Config) -> ZabbixAPI:
+        """Create a ZabbixAPI instance from a Config object and logs in."""
+        client = cls(
+            server=config.api.url,
+            timeout=config.api.timeout,
+        )
+        return client
 
     def _get_client(
         self, verify_ssl: bool, timeout: Union[float, int, None] = None
@@ -167,11 +180,16 @@ class ZabbixAPI:
         self.auth = ""  # clear auth before trying to (re-)login
 
         if not auth_token:
-            auth = self.user.login(**user_kwarg, password=password)
+            try:
+                auth = self.user.login(**user_kwarg, password=password)
+            except Exception as e:
+                raise ZabbixAPIRequestError(
+                    f"Failed to log in to Zabbix API: {e}"
+                ) from e
         else:
             auth = auth_token
             # TODO: confirm we are logged in here
-            self.api_version()  # NOTE: useless? can we remove this?
+            # self.api_version()  # NOTE: useless? can we remove this?
         self.auth = str(auth) if auth else ""  # ensure str
         return self.auth
 
@@ -230,6 +248,7 @@ class ZabbixAPI:
 
         # NOTE: Getting a 412 response code means the headers are not in the
         # list of allowed headers.
+        # OR we didnt pass an auth token
         response.raise_for_status()
 
         if not len(response.text):
@@ -252,46 +271,11 @@ class ZabbixAPI:
             # some errors don't contain 'data': workaround for ZBX-9340
             if not resp.error.data:
                 resp.error.data = "No data"
-            # if (
-            #     resp.error.data
-            #     in (
-            #         "Login name or password is incorrect.",
-            #         "Incorrect user name or password or account is temporarily blocked.",  # >=6.4
-            #     )
-            # ):
             raise ZabbixAPIRequestError(
                 f"Error: {resp.error.message}",
                 api_response=resp,
                 response=response,
             )
-            #     # We do not want to get the password value in the error
-            #     # message if the user uses a not valid username or
-            #     # password.
-            #     msg = "Error {code}: {message}: {data}".format(
-            #         code=resp.error.code,
-            #         message=resp.error.message,
-            #         data=resp.error.data,
-            #     )
-
-            # elif resp.error.data == "Not authorized":
-            #     msg = "Error {code}: {data}: {message}".format(
-            #         code=resp.error.code,
-            #         data=resp.error.data,
-            #         message=resp.error.message
-            #         + "\n\n* Your API-auth-token has probably expired.\n"
-            #         + "* Try to login again with your username and password",
-            #     )
-
-            # else:
-            #     msg = "Error {code}: {message}: {data} while sending {json}".format(
-            #         code=resp.error.code,
-            #         message=resp.error.message,
-            #         data=resp.error.data,
-            #         json=str(request_json),
-            #     )
-
-            # raise ZabbixAPIRequestError(msg, code=resp.error.code, params=params)
-
         return resp
 
     def populate_cache(self) -> None:
