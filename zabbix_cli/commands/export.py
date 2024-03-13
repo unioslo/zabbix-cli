@@ -418,17 +418,17 @@ def export_configuration(
 
     Uses defaults from Zabbix-CLI configuration file if not specified.
 
-    [b]NOTE:[/] --name arguments are not regex-patterns, but more akin to glob-patterns.
+    [b]NOTE:[/] [option]--name[/] arguments are globs, not regex patterns.
 
-    Filename scheme is as follows:
+    [b]Filename scheme is as follows:[/]
 
-        [i]<directory>/<object_type>/<name>_<id>_\[timestamp].<format>[/]
+        [code]DIRECTORY/OBJECT_TYPE/NAME_ID_\[timestamp].FORMAT[/]
 
-    But it can be changed to the legacy scheme with --legacy-filenames:
+    [b]But it can be changed to the legacy scheme with [option]--legacy-filenames[/option]:[/b]
 
-        [i]<directory>/<object_type>/zabbix_export_<object_type>_<name>_<id>_\[timestamp].<format>[/]
+        [code]DIRECTORY/OBJECT_TYPE/zabbix_export_OBJECT_TYPE_NAME_ID_\[timestamp].FORMAT[/]
 
-    Timestamps are disabled by default, but can be enabled with the [green i]app.export_timestamps[/]
+    Timestamps are disabled by default, but can be enabled with the [configopt]app.export_timestamps[/]
     configuration option.
     """
     from zabbix_cli.models import Result
