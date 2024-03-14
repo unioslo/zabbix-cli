@@ -20,16 +20,11 @@ def main(
     filename: Optional[Path] = None,
 ):
     """Print current or default config to stdout."""
+    from zabbix_cli.logs import configure_logging
+
+    configure_logging()
     if arg == RunMode.SHOW:
         config = get_config(filename)
     else:
         config = Config.sample_config()
     print(config.as_toml())
-
-
-if __name__ == "__main__":
-    # logging.basicConfig(level=logging.DEBUG)
-    from zabbix_cli.logs import configure_logging
-
-    configure_logging()
-    typer.run(main)
