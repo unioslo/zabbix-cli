@@ -72,7 +72,7 @@ class APIConfig(BaseModel):
         validation_alias=AliasChoices("url", "zabbix_api_url"),
     )
     username: str = Field(
-        default="",
+        default="Admin",
         # Changed in V3: system_id -> username
         validation_alias=AliasChoices("username", "system_id"),
     )
