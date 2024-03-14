@@ -53,6 +53,7 @@ SECURE_PERMISSIONS_STR = format(SECURE_PERMISSIONS, "o")
 def login(client: ZabbixAPI, config: Config) -> None:
     """Log the client in to the Zabbix API using the configured credentials
     and stores the API session token in an auth token file if configured."""
+    from pydantic import SecretStr
 
     configure_auth(config)  # must bootstrap config first
 
@@ -79,6 +80,7 @@ def login(client: ZabbixAPI, config: Config) -> None:
         and token != config_token  # must be a new token
     ):
         write_auth_token_file(config.app.username, token)
+    config.api.auth_token = SecretStr(token)
 
 
 def configure_auth(config: Config) -> None:
