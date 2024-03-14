@@ -2,7 +2,7 @@ site_name: zabbix-cli
 
 repo_url: https://github.com/unioslo/zabbix-cli
 repo_name: unioslo/zabbix-cli
-edit_uri: edit/main/docs/
+edit_uri: edit/master/docs/
 
 theme:
   name: material
@@ -82,8 +82,8 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
   - mdx_gh_links:
-      user: astral-sh
-      repo: rye
+      user: unioslo
+      repo: zabbix-cli
 
 nav:
   - Home:
