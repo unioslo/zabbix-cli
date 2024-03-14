@@ -2,13 +2,13 @@
 
 The application is primarily distributed with `pip`, but other installation methods are available.
 
-## Installing Zabbix CLI
+## Install Zabbix CLI
 
 {% set install_expand = true %}
 {% include-markdown ".includes/quick-install.md" %}
 
 
-## Creating a configuration file
+## Create a configuration file
 
 The application requires a configuration file. It can be created with the command `zabbix-cli-init`.
 
