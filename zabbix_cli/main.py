@@ -94,7 +94,8 @@ def main_callback(
     ),
     input_file: Optional[Path] = typer.Option(
         None,
-        "--input-file",
+        "--file",
+        "--input-file",  # DEPRECATED: V2 name for compatibility
         "-f",
         help="File with Zabbix-CLI commands to be executed in bulk mode.",
     ),
