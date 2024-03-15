@@ -14,7 +14,7 @@
     {% include-markdown ".includes/pipx-multiple.md" %}
     {% endif %}
 
-=== "pip"
+=== "Cross-platform (pip)"
 
     If you prefer to install the package with `pip`, you can do so with the following command:
 
