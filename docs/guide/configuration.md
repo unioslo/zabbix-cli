@@ -100,6 +100,7 @@ Type: `str`
 Username for the Zabbix API.
 
 Type: `str`
+
 Default: `Admin`
 
 ----
@@ -109,6 +110,7 @@ Default: `Admin`
 Whether to verify SSL certificates.
 
 Type: `bool`
+
 Default: `true`
 
 ----
@@ -124,6 +126,7 @@ The `app` section contains the configuration for the application, such as defaul
 Default host groups to assign to hosts created with `create_host`.
 
 Type: `List[str]`
+
 Default: `["All-hosts"]`
 
 ----
@@ -133,6 +136,7 @@ Default: `["All-hosts"]`
 Default user groups to give read/write permissions to groups created with `create_hostgroup` and `create_templategroup` commands when no `--rw-groups` option is given.
 
 Type: `List[str]`
+
 Default: `[]`
 
 ----
@@ -142,6 +146,7 @@ Default: `[]`
 Default user groups to add users created with `create_user` to when `--usergroups` is not given.
 
 Type: `List[str]`
+
 Default: `[]`
 
 ----
@@ -151,6 +156,7 @@ Default: `[]`
 Default user groups to add notification users created with `create_notification_user` to when `--usergroups` is not given.
 
 Type: `List[str]`
+
 Default: `["All-notification-users"]`
 
 ----
@@ -160,6 +166,7 @@ Default: `["All-notification-users"]`
 Directory for exports.
 
 Type: `str`
+
 Default: `"<DATA_DIR>/zabbix-cli/exports"`
 
 ----
@@ -169,6 +176,7 @@ Default: `"<DATA_DIR>/zabbix-cli/exports"`
 Format for exports.
 
 Type: `str`
+
 Default: `"json"`
 
 ----
@@ -178,6 +186,7 @@ Default: `"json"`
 Whether to include timestamps in export filenames.
 
 Type: `bool`
+
 Default: `false`
 
 ----
@@ -187,6 +196,7 @@ Default: `false`
 Whether to use colors in the output.
 
 Type: `bool`
+
 Default: `true`
 
 ----
@@ -196,6 +206,7 @@ Default: `true`
 Whether to use an auth token file.
 
 Type: `bool`
+
 Default: `true`
 
 ----
@@ -205,6 +216,7 @@ Default: `true`
 Whether to use paging in the output.
 
 Type: `bool`
+
 Default: `false`
 
 ----
@@ -214,6 +226,7 @@ Default: `false`
 Format for the output.
 
 Type: `str`
+
 Default: `"table"`
 
 ----
@@ -223,6 +236,7 @@ Default: `"table"`
 Whether to keep a history of commands.
 
 Type: `bool`
+
 Default: `true`
 
 ----
@@ -232,6 +246,7 @@ Default: `true`
 File for storing the history of commands.
 
 Type: `str`
+
 Default: `"<DATA_DIR>/zabbix-cli/history"`
 
 ----
@@ -241,6 +256,7 @@ Default: `"<DATA_DIR>/zabbix-cli/history"`
 Whether to allow insecure auth files.
 
 Type: `bool`
+
 Default: `true`
 
 ----
@@ -250,6 +266,7 @@ Default: `true`
 Whether to use the legacy JSON format (pre-Zabbix CLI 3.0), where the output is a JSON mapping with numeric string keys for each result. See the [migration guide](/guide/migration) for more information.
 
 Type: `bool`
+
 Default: `false`
 
 ### `logging`
@@ -263,6 +280,7 @@ The `logging` section contains the configuration for logging.
 Whether logging is enabled.
 
 Type: `bool`
+
 Default: `true`
 
 ----
@@ -272,6 +290,7 @@ Default: `true`
 Level for logging.
 
 Type: `str`
+
 Default: `"ERROR"`
 
 ----
@@ -281,4 +300,5 @@ Default: `"ERROR"`
 File for storing logs.
 
 Type: `str`
+
 Default: `"<LOG_DIR>/zabbix-cli.log"`
