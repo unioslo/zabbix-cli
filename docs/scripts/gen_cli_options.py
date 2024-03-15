@@ -1,3 +1,4 @@
+"""Generates a YAML file containing all the global options for the CLI."""
 from __future__ import annotations
 
 import sys

@@ -752,7 +752,7 @@ def update_host_inventory(
 ) -> None:
     """Update a host inventory field.
 
-    Inventory field do not always match Web GUI field names.
+    Inventory fields in the API do not always match Web GUI field names.
     Use `zabbix-cli -o json show_host_inventory <hostname>` to see the available fields.
     """
     from zabbix_cli.models import Result

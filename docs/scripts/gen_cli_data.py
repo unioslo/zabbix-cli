@@ -11,6 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import NamedTuple
+from typing import Optional
+from typing import Protocol
 
 import tomli
 import tomli_w
@@ -27,19 +29,15 @@ env["COLUMNS"] = "90"  # limit width so it looks nicer in MD code blocks
 env["TERM"] = "dumb"  # disable color output (color codes mangle it)
 
 
+class CommandCallback(Protocol):
+    def __call__(self, output: str) -> str:
+        ...
+
+
 class Command(NamedTuple):
     command: list[str]
     filename: str
-
-
-COMMAND_HELP = Command(["zabbix-cli", "--help"], "help.txt")
-COMMAND_SAMPLE_CONFIG = Command(["zabbix-cli", "sample_config"], "sample_config.toml")
-
-# List of commands to run
-COMMANDS = [
-    COMMAND_HELP,
-    COMMAND_SAMPLE_CONFIG,
-]
+    callback: Optional[CommandCallback] = None
 
 
 def add_config_bogus_defaults(output: str) -> str:
@@ -49,12 +47,26 @@ def add_config_bogus_defaults(output: str) -> str:
     return tomli_w.dumps(config)
 
 
+COMMAND_HELP = Command(["zabbix-cli", "--help"], "help.txt")
+COMMAND_SAMPLE_CONFIG = Command(
+    ["zabbix-cli", "sample_config"],
+    "sample_config.toml",
+    callback=add_config_bogus_defaults,
+)
+
+# List of commands to run
+COMMANDS = [
+    COMMAND_HELP,
+    COMMAND_SAMPLE_CONFIG,
+]
+
+
 def main() -> None:
     """Run the commands and save the output to files."""
     for cmd in COMMANDS:
         output = subprocess.check_output(cmd.command, env=env).decode("utf-8")
-        if cmd == COMMAND_SAMPLE_CONFIG:
-            output = add_config_bogus_defaults(output)
+        if cmd.callback:
+            output = cmd.callback(output)
 
         with open(DATA_DIR / cmd.filename, "w") as f:
             f.write(output)

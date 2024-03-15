@@ -367,6 +367,7 @@ def export_configuration(
     ctx: typer.Context,
     directory: Optional[str] = typer.Option(
         None,
+        "--directory",
         help="Directory to export configuration to. Overrides directory in config.",
     ),
     # NOTE: We can't accept comma-separated values AND multiple values when using enums!
@@ -574,7 +575,9 @@ def import_configuration(
         None,
         help="Path to file or directory to import configuration from. Accepts glob pattern. Uses default export directory if not specified.",
     ),
-    dry_run: bool = typer.Option(False, "--dryrun", is_flag=True),
+    dry_run: bool = typer.Option(
+        False, "--dryrun", is_flag=True, help="Preview files to import."
+    ),
     create_missing: bool = typer.Option(
         True, "--create-missing/--no-create-missing", help="Create missing objects."
     ),

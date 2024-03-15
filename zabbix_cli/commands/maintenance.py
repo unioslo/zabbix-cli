@@ -137,18 +137,18 @@ def remove_maintenance_definition(
 def show_maintenance_definitions(
     ctx: typer.Context,
     maintenance_id: Optional[str] = typer.Option(
-        None, "--maintenance-id", help="Comma-separated list of maintenance IDs."
+        None, "--maintenance-id", help="Maintenance IDs. Comma-separated."
     ),
     hostgroup: Optional[str] = typer.Option(
-        None, "--hostgroup", help="Comma-separated list of host groups."
+        None, "--hostgroup", help="Host group names. Comma-separated."
     ),
     host: Optional[str] = typer.Option(
-        None, "--host", help="Comma-separated list of hosts."
+        None, "--host", help="Host names. Comma-separated."
     ),
 ) -> None:
     """Show maintenance definitions for IDs, host groups or hosts.
 
-    At least one of --maintenance-id, --hostgroup, or --host is required."""
+    At least one of [option]--maintenance-id[/], [option]--hostgroup[/], or [option]--host[/] is required."""
     from zabbix_cli.models import AggregateResult
     from zabbix_cli.commands.results.maintenance import ShowMaintenanceDefinitionsResult
 

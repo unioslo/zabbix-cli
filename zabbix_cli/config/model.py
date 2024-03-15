@@ -308,8 +308,9 @@ class Config(BaseModel):
         return cls(**conf, config_path=fp)
 
     @model_validator(mode="after")
-    def _ensure_username(self) -> Config:
-        """Ensures that the legacy `app.username` is copied to `api.username`."""
+    def _assign_legacy_options(self) -> Config:
+        """Ensures that options that have moved from one section to another are copied
+        to the new section. I.e. `app.username` -> `api.username`."""
         # Only override if `api.username` is not set
         if self.app.username and not self.api.username:
             logging.warning(

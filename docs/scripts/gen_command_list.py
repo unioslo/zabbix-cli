@@ -1,3 +1,11 @@
+"""Generate documentation of commands and categories.
+
+Generates the following files:
+
+- `commandlist.yaml`: List with names of all commands.
+- `commands.yaml`: Mapping of all categories to detailed information
+                   about each command.
+"""
 from __future__ import annotations
 
 import sys

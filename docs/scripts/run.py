@@ -8,7 +8,7 @@ sys.path.append(Path(__file__).parent.as_posix())
 import gen_cli_data  # noqa
 import gen_cli_options  # noqa
 import gen_command_list  # noqa
-import gen_command_pages  # noqa
+import docs.scripts.gen_commands as gen_commands  # noqa
 import gen_formats  # noqa
 
 
@@ -21,7 +21,7 @@ for mod in [
     gen_cli_data,
     gen_cli_options,
     gen_command_list,
-    gen_command_pages,
+    gen_commands,
     gen_formats,
 ]:
     mod.main()

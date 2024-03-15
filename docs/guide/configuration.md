@@ -1,11 +1,11 @@
 # Configuration
 
-The application is configured with a TOML file. To create a config file, see [Installation](installation.md#create-a-configuration-file).
+The application is configured with a TOML file. The default location is platform-dependent.
 
 {% include ".includes/config-locations.md" %}
 
 
-## Configuration directory
+## Open configuration directory
 
 The default configuration directory can be opened in the system's file manager with the `open` command:
 
@@ -19,9 +19,44 @@ To print the path instead of opening it, use the `--path` option:
 zabbix-cli open config --path
 ```
 
+## Create a configuration file
+
+Before using the application, a configuration file must be created. This can be done with the `zabbix-cli-init` command:
+
+```
+zabbix-cli-init
+```
+
+The application will print the location of the created config file:
+
+```
+! Configuration file created: /Users/pederhan/Library/Application Support/zabbix-cli/zabbix-cli.toml
+```
+
+To bootstrap the config with a URL and username, use the options `--url` and `--user`:
+
+```
+zabbix-cli-init --url https://zabbix.example.com --user Admin
+```
+
+### Create a sample config
+
+A sample configuration file can be printed to the terminal with the `sample_config` command. This can be redirected to a file to create a configuration file in an arbitrary location:
+
+```
+zabbix-cli sample_config > /path/to/config.toml
+```
+
+A more convoluted way of creating a default config file in the default location would be:
+
+```
+zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
+```
+
+
 ## Show configuration file contents
 
-The contents of the configuration file can be displayed with `show_zabbixcli_config`:
+The contents of the current configuration file can be displayed with `show_zabbixcli_config`:
 
 ```bash
 zabbix-cli show_zabbixcli_config
@@ -212,7 +247,7 @@ Default: `true`
 
 #### `legacy_json_format`
 
-Whether to use the legacy JSON format.
+Whether to use the legacy JSON format (pre-Zabbix CLI 3.0), where the output is a JSON mapping with numeric string keys for each result. See the [migration guide](/guide/migration) for more information.
 
 Type: `bool`
 Default: `false`
