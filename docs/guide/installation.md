@@ -8,7 +8,7 @@ The application is primarily distributed with `pip`, but other installation meth
 {% include-markdown ".includes/quick-install.md" %}
 
 
-## Upgrading Zabbix CLI
+## Upgrade Zabbix CLI
 
 The upgrade process depends on the chosen installation method.
 
