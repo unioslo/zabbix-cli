@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 
 import typer
 
+from zabbix_cli.exceptions import ZabbixCLIError
+
 if TYPE_CHECKING:
     import click
 
@@ -28,6 +30,20 @@ def get_command_help(command: typer.models.CommandInfo) -> str:
     if command.short_help:
         return command.short_help
     return ""
+
+
+def get_command_by_name(ctx: typer.Context, name: str) -> click.core.Command:
+    """Get a CLI command given its name."""
+    if not isinstance(ctx.command, typer.core.TyperGroup):
+        # NOTE: ideally we shouldn't leak this error to the user, but
+        # can this even happen? Isn't it always a command group?
+        raise ZabbixCLIError(f"Command {ctx.command.name} is not a command group.")
+    if not ctx.command.commands:
+        raise ZabbixCLIError(f"Command group {ctx.command.name} has no commands.")
+    command = ctx.command.commands.get(name)
+    if not command:
+        raise ZabbixCLIError(f"Command {name} not found.")
+    return command
 
 
 # NOTE: This arg should probably get a custom parser or callback to prompt for missing value

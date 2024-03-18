@@ -38,7 +38,7 @@ Zabbix CLI also supports running commands sourced from a file with the `--file` 
 The file should contain one command per line, with arguments separated by spaces. Comments can be added with `#`.
 
 ```
-# /path/to/commands.txt
+$ cat /path/to/commands.txt
 # This is a comment
 show_hostgroup "Linux servers"
 create_host --host "foo.example.com" --hostgroups "Linux servers,Applications" --proxy .+ --status on --no-default-hostgroup --description "Added in bulk mode"
@@ -47,5 +47,18 @@ add_host_to_hostgroup foo.example.com "My new group"
 ```
 
 ```
-zabbix-cli --file /path/to/commands.txt
+$ zabbix-cli --file /path/to/commands.txt
+╭────┬───────────────┬───────┬───────╮
+│ ID │ Name          │ Flag  │ Hosts │
+├────┼───────────────┼───────┼───────┤
+│ 2  │ Linux servers │ Plain │       │
+╰────┴───────────────┴───────┴───────╯
+✓ Created host 'foobarbaz.example.com' (10634)
+✓ Created host group My new group (31).
+╭──────────────┬───────────────────────╮
+│ Hostgroup    │ Hosts                 │
+├──────────────┼───────────────────────┤
+│ My new group │ foobarbaz.example.com │
+╰──────────────┴───────────────────────╯
+✓ Added 1 host to 1 host group.
 ```

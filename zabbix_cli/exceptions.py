@@ -24,6 +24,10 @@ class ZabbixCLIError(Exception):
     """Base exception class for ZabbixCLI exceptions."""
 
 
+class ZabbixCLIFileError(ZabbixCLIError):
+    """Errors related to reading/writing files."""
+
+
 class ConfigError(ZabbixCLIError):
     """Error with configuration file."""
 

@@ -64,6 +64,9 @@ def add_host_to_hostgroup(
     total_hosts = len(set(chain.from_iterable((r.hosts) for r in result)))
     total_hgs = len(result)
 
+    if not total_hosts:
+        exit_err("No hosts to add.")
+
     render_result(AggregateResult(result=result))
     base_msg = f"{p('host', total_hosts)} to {p('host group', total_hgs)}"
     if dryrun:
@@ -335,6 +338,7 @@ def move_hosts(
 
 @app.command("show_hostgroup", rich_help_panel=HELP_PANEL)
 def show_hostgroup(
+    ctx: typer.Context,
     hostgroup: str = typer.Argument(..., help="Name of host group."),
 ) -> None:
     """Show details of a host group."""

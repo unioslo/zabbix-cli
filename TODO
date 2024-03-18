@@ -112,7 +112,24 @@ Use APIStr enums in functions that take in a code and return a string representa
 
 * Add examples to all commands.
 * Render examples in documentation. Extract rich-formatted text and render it as markdown.
-  * Append `zabbix-cli` to the beginning of each example (we omit this in the app since the REPL is the primary use case).
+  * Append `zabbix-cli` to the beginning of each example (we omit this in the app since the REPL is the primary use case). Should we?
+* Define examples in own mapping in a separate module. This module is not imported on runtime and is only used when --help is invoked. The command looks up its own examples based on name. I.e.
+
+```python
+EXAMPLES = {
+  "show_host": [
+    Example(
+      "Show a host by name",
+      "show_host foo.example.com"
+    ),
+    Example(
+      "Show first host with a name that starts with 'foo'",
+      "show_host 'foo*'"
+    )
+  ]
+}
+```
+This way we can have an arbitrary number of examples without impacting startup time. Need to override the the way the help is looked up to make this work.
 
 ## Exceptions
 
@@ -171,6 +188,10 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
   * **Performance implications?**
 
 * Add some sort of converting of iterable values to newline separated strings in `__rows__`
+
+
+* Prevent "no results found" from being printed when we are trying to render the result of a create/modify action that created/modified 0 objects.
+  * Example: `add_host_to_hostgroup` when host is already in the host group.
 
 ## Legacy
 

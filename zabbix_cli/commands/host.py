@@ -55,10 +55,10 @@ def create_host(
         help="Host monitoring status.",
     ),
     # Options below are new in V3:
-    no_default_hostgroup: bool = typer.Option(
-        False,
-        "--no-default-hostgroup",
-        help="Do not add host to default host group.",
+    default_hostgroup: bool = typer.Option(
+        True,
+        "--default-hostgroup/--no-default-hostgroup",
+        help="Add host to default host group(s).",
     ),
     name: Optional[str] = typer.Option(
         None,
@@ -119,7 +119,7 @@ def create_host(
 
     # Determine host group IDs
     hg_args = []  # type: List[str]
-    if not no_default_hostgroup and app.state.config.app.default_hostgroups:
+    if default_hostgroup and app.state.config.app.default_hostgroups:
         info(
             f"Will add host to default host group(s): {', '.join(app.state.config.app.default_hostgroups)}"
         )
