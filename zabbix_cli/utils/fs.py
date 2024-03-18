@@ -6,7 +6,7 @@ from zabbix_cli.exceptions import ZabbixCLIFileError
 
 
 def read_file(file: Path) -> str:
-    """Attempts to read the contents of a command file."""
+    """Attempts to read the contents of a file."""
     if not file.exists():
         raise ZabbixCLIFileError(f"File {file} does not exist")
     if not file.is_file():
