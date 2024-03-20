@@ -7,12 +7,11 @@ import pytest
 import typer
 
 from zabbix_cli.bulk import BulkCommand, BulkRunner
-from zabbix_cli.bulk import CommandFileNotFoundError
 from zabbix_cli.bulk import CommentLineError
 from zabbix_cli.bulk import EmptyLineError
 
 # from zabbix_cli.bulk import load_command_file
-from zabbix_cli.exceptions import CommandFileError
+from zabbix_cli.exceptions import ZabbixCLIFileNotFoundError
 
 
 @pytest.mark.parametrize(
@@ -177,14 +176,14 @@ show_templategroup mygroup --no-templates
 
 @pytest.mark.parametrize(
     "exc_type",
-    [FileNotFoundError, CommandFileError, CommandFileNotFoundError],
+    [FileNotFoundError, ZabbixCLIFileNotFoundError],
 )
 def test_load_command_file_not_found(
     tmp_path: Path, ctx: typer.Context, exc_type: Type[Exception]
 ) -> None:
     """Test loading a command file that does not exist.
 
-    Can be caught with built-in FileNotFoundError or with our own exception types."""
+    Can be caught with built-in FileNotFoundError or with our own exception type."""
     file = tmp_path / "commands.txt"
     b = BulkRunner(ctx, file)
     with pytest.raises(exc_type):

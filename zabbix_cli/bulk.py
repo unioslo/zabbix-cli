@@ -42,10 +42,6 @@ class CommentLineError(LineParseError):
     """Raised when a line is a comment."""
 
 
-class CommandFileNotFoundError(FileNotFoundError, CommandFileError):
-    """Raised when a command file is not found."""
-
-
 KwargType = Union[str, bool, int, float, None]
 
 
