@@ -1,4 +1,5 @@
 """Commands to view and manage macros."""
+
 from __future__ import annotations
 
 import logging
@@ -58,17 +59,16 @@ def get_random_password() -> str:
 @app.command("create_user", rich_help_panel=HELP_PANEL)
 def create_user(
     ctx: typer.Context,
-    username: Optional[str] = typer.Argument(
-        None, help="Username of the user to create."
-    ),
-    first_name: Optional[str] = typer.Option(
+    username: str = typer.Argument(..., help="Username of the user to create."),
+    first_name: Optional[str] = typer.Argument(
         None, help="First name of the user to create."
     ),
-    last_name: Optional[str] = typer.Option(
+    last_name: Optional[str] = typer.Argument(
         None, help="Last name of the user to create."
     ),
     password: Optional[str] = typer.Option(
         None,
+        "--passwd",
         help="Password of the user to create. Set to '-' to prompt for password. Generates random password if omitted.",
     ),
     role: Optional[UserRole] = typer.Option(
@@ -98,10 +98,6 @@ def create_user(
     from zabbix_cli.models import Result
     from zabbix_cli.pyzabbix.types import User
 
-    # TODO: add new options
-    if not username:
-        username = str_prompt("Username")
-
     try:
         app.state.client.get_user(username)
         exit_err(f"User {username!r} already exists.")
@@ -124,12 +120,6 @@ def create_user(
         autologin = parse_bool_arg(args[4])
         autologout = args[5]
         groups = args[6]
-
-    if not first_name:
-        first_name = str_prompt("First name", default="", empty_ok=True)
-
-    if not last_name:
-        last_name = str_prompt("Last name", default="", empty_ok=True)
 
     if password == "-":
         password = str_prompt("Password", password=True)

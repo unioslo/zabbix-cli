@@ -3,6 +3,7 @@
 The functions in this module are intended to ease the transition by
 providing fallbacks to deprecated functionality in Zabbix-CLI v2.
 """
+
 from __future__ import annotations
 
 import os

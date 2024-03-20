@@ -11,6 +11,7 @@ It's not type-safe, but it's better than nothing. In the future, we might
 want to look into defining Pydantic models that can accommodate multiple
 Zabbix versions.
 """
+
 from __future__ import annotations
 
 from datetime import datetime

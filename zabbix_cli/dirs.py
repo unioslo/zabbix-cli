@@ -3,6 +3,7 @@
 Follows the XDG Base Directory Specification Linux: <https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html>
 See <https://pypi.org/project/platformdirs/> for other platforms.
 """
+
 from __future__ import annotations
 
 import logging

@@ -1,5 +1,6 @@
 # TODO: move into pyzabbix module
 """Utility functions."""
+
 from __future__ import annotations
 
 import os

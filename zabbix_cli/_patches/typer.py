@@ -2,6 +2,7 @@
 styling of its output.
 
 Will probably break for some version of Typer at some point."""
+
 from __future__ import annotations
 
 import inspect

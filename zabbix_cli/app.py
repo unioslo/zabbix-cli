@@ -2,6 +2,7 @@
 app object here, which we share between the different command modules.
 
 Thus, every command is part of the same command group."""
+
 from __future__ import annotations
 
 import inspect
@@ -89,8 +90,7 @@ class StatusCallable(Protocol):
         spinner_style: StyleType = "status.spinner",
         speed: float = 1.0,
         refresh_per_second: float = 12.5,
-    ) -> Status:
-        ...
+    ) -> Status: ...
 
 
 class StatefulApp(typer.Typer):

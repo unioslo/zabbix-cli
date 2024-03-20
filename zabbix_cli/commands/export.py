@@ -97,8 +97,7 @@ class ExportType(StrEnum):
 
 
 class ExporterFunc(Protocol):
-    def __call__(self) -> Iterator[Optional[Path]]:
-        ...
+    def __call__(self) -> Iterator[Optional[Path]]: ...
 
 
 class Exporter(NamedTuple):

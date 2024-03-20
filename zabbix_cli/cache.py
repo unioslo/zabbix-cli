@@ -1,4 +1,5 @@
 """Simple in-memory caching of frequently used Zabbix objects."""
+
 # TODO: add on/off toggle for caching
 from __future__ import annotations
 

@@ -706,9 +706,9 @@ class ZabbixAPI:
         if monitored is not None:
             filter_params["status"] = monitored.as_api_value()
         if agent_status is not None:
-            filter_params[
-                compat.host_available(self.version)
-            ] = agent_status.as_api_value()
+            filter_params[compat.host_available(self.version)] = (
+                agent_status.as_api_value()
+            )
 
         if filter_params:  # Only add filter if we actually have filter params
             params["filter"] = filter_params

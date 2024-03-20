@@ -1,4 +1,5 @@
 """Compatibility functions to support different Zabbix API versions."""
+
 from __future__ import annotations
 
 from typing import Literal

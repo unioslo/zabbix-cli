@@ -1,4 +1,4 @@
-""""Module for loading/storing Zabbix API authentication info.
+""" "Module for loading/storing Zabbix API authentication info.
 
 Manages the following:
 - Loading and saving auth token files (file containing API session token)
@@ -7,6 +7,7 @@ Manages the following:
 - Prompting for username and password
 - Updating the Config object with the loaded authentication information
 """
+
 from __future__ import annotations
 
 import logging

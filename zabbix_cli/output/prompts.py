@@ -263,8 +263,7 @@ def _number_prompt(
     max: int | float | None = ...,
     show_range: bool = ...,
     **kwargs: Any,
-) -> int:
-    ...
+) -> int: ...
 
 
 @overload
@@ -277,8 +276,7 @@ def _number_prompt(
     max: int | float | None = ...,
     show_range: bool = ...,
     **kwargs: Any,
-) -> float:
-    ...
+) -> float: ...
 
 
 def _number_prompt(

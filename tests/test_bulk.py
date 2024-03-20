@@ -4,12 +4,14 @@ from pathlib import Path
 from typing import Type
 
 import pytest
+import typer
 
-from zabbix_cli.bulk import BulkCommand
+from zabbix_cli.bulk import BulkCommand, BulkRunner
 from zabbix_cli.bulk import CommandFileNotFoundError
 from zabbix_cli.bulk import CommentLineError
 from zabbix_cli.bulk import EmptyLineError
-from zabbix_cli.bulk import load_command_file
+
+# from zabbix_cli.bulk import load_command_file
 from zabbix_cli.exceptions import CommandFileError
 
 
@@ -18,40 +20,33 @@ from zabbix_cli.exceptions import CommandFileError
     [
         pytest.param(
             "show_zabbixcli_config",
-            BulkCommand(command="show_zabbixcli_config", args=[], kwargs={}),
+            BulkCommand(command="show_zabbixcli_config", kwargs={}),
             id="simple",
         ),
         pytest.param(
-            "create_user username name surname passwd type autologin autologout groups",
+            "create_user username name surname passwd role autologin autologout groups",
             BulkCommand(
                 command="create_user",
-                args=[
-                    "username",
-                    "name",
-                    "surname",
-                    "passwd",
-                    "type",
-                    "autologin",
-                    "autologout",
-                    "groups",
-                ],
-                kwargs={},
+                kwargs={
+                    "username": "username",
+                    "first_name": "name",
+                    "last_name": "surname",
+                    "args": ["passwd", "role", "autologin", "autologout", "groups"],
+                },
             ),
-            id="with_args",
+            id="Legacy positional args",
         ),
         pytest.param(
-            "create_user username name surname --passwd mypass --type 1  --autologin 0 --autologout 86400 --groups '1,2'",
+            "create_user username name surname --passwd mypass --role 1  --autologin --autologout 86400 --groups '1,2'",
             BulkCommand(
                 command="create_user",
-                args=[
-                    "username",
-                    "name",
-                    "surname",
-                ],
                 kwargs={
-                    "passwd": "mypass",
-                    "type": "1",
-                    "autologin": "0",
+                    "username": "username",
+                    "first_name": "name",
+                    "last_name": "surname",
+                    "password": "mypass",
+                    "role": "1",
+                    "autologin": True,
                     "autologout": "86400",
                     "groups": "1,2",
                 },
@@ -59,26 +54,28 @@ from zabbix_cli.exceptions import CommandFileError
             id="args and kwargs",
         ),
         pytest.param(
-            "create_user username --name myname surname --passwd mypass",
+            "create_user username myname --passwd mypass surname",
             BulkCommand(
                 command="create_user",
-                args=[
-                    "username",
-                    "surname",
-                ],
                 kwargs={
-                    "name": "myname",
-                    "passwd": "mypass",
+                    "username": "username",
+                    "first_name": "myname",
+                    "last_name": "surname",
+                    "password": "mypass",
                 },
             ),
             id="kwarg between args",
         ),
         pytest.param(
-            "create_user myuser myname mypasswd --type 1 # comment here --option value",
+            "create_user myuser myname --passwd mypasswd --role 1 # comment here --option value",
             BulkCommand(
                 command="create_user",
-                args=["myuser", "myname", "mypasswd"],
-                kwargs={"type": "1"},
+                kwargs={
+                    "username": "myuser",
+                    "first_name": "myname",
+                    "password": "mypasswd",
+                    "role": "1",
+                },
             ),
             id="Trailing comment",
         ),
@@ -95,28 +92,30 @@ from zabbix_cli.exceptions import CommandFileError
             marks=pytest.mark.xfail(raises=CommentLineError, strict=True),
         ),
         pytest.param(
-            "# create_user myuser myname mypasswd --type 1",
+            "# create_user myuser myname mypasswd --role 1",
             BulkCommand(command=""),
             id="fails (commented out line)",
             marks=pytest.mark.xfail(raises=CommentLineError, strict=True),
         ),
     ],
 )
-def test_bulk_command_from_line(line: str, expect: BulkCommand) -> None:
-    assert BulkCommand.from_line(line) == expect
+def test_bulk_command_from_line(
+    ctx: typer.Context, line: str, expect: BulkCommand
+) -> None:
+    assert BulkCommand.from_line(line, ctx) == expect
 
 
-def test_load_command_file(tmp_path: Path) -> None:
+def test_load_command_file(tmp_path: Path, ctx: typer.Context) -> None:
     """Test loading a command file."""
     file = tmp_path / "commands.txt"
     file.write_text(
         """# comment
 show_zabbixcli_config # next line will be blank
 
-create_user username name surname passwd type autologin autologout groups
-create_user username name surname --passwd mypass --type 1  --autologin 0 --autologout 86400 --groups '1,2'
+create_user username name surname mypass 1 1 86400 1,2
+create_user username name surname --passwd mypass --role 1  --autologin --autologout 86400 --groups '1,2'
 # comment explaining the next command
-create_user username --name myname surname --passwd mypass # trailing comment
+create_user username myname surname --passwd mypass # trailing comment
 # Command with flag
 acknowledge_event 123,456,789 --message "foo message" --close
 # Command with negative flag
@@ -124,99 +123,69 @@ show_templategroup mygroup --no-templates
 # we will end with a blank line
 """
     )
-
-    commands = load_command_file(file)
-    assert commands == [
-        BulkCommand(command="show_zabbixcli_config", args=[], kwargs={}),
-        BulkCommand(
-            command="create_user",
-            args=[
-                "username",
-                "name",
-                "surname",
-                "passwd",
-                "type",
-                "autologin",
-                "autologout",
-                "groups",
-            ],
-            kwargs={},
-        ),
-        BulkCommand(
-            command="create_user",
-            args=[
-                "username",
-                "name",
-                "surname",
-            ],
-            kwargs={
-                "passwd": "mypass",
-                "type": "1",
-                "autologin": "0",
-                "autologout": "86400",
-                "groups": "1,2",
-            },
-        ),
-        BulkCommand(
-            command="create_user",
-            args=[
-                "username",
-                "surname",
-            ],
-            kwargs={
-                "name": "myname",
-                "passwd": "mypass",
-            },
-        ),
-        BulkCommand(
-            command="acknowledge_event",
-            args=[
-                "123,456,789",
-            ],
-            kwargs={
-                "message": "foo message",
-                "close": True,
-            },
-        ),
-        BulkCommand(
-            command="show_templategroup",
-            args=[
-                "mygroup",
-            ],
-            kwargs={
-                "templates": False,
-            },
-        ),
-    ]
+    b = BulkRunner(ctx, file)
+    commands = b.load_command_file()
+    assert len(commands) == 6
+    assert commands[0] == BulkCommand(command="show_zabbixcli_config")
+    assert commands[1] == BulkCommand(
+        command="create_user",
+        kwargs={
+            "username": "username",
+            "first_name": "name",
+            "last_name": "surname",
+            "args": ["mypass", "1", "1", "86400", "1,2"],
+        },
+    )
+    assert commands[2] == BulkCommand(
+        command="create_user",
+        kwargs={
+            "username": "username",
+            "first_name": "name",
+            "last_name": "surname",
+            "password": "mypass",
+            "role": "1",
+            "autologin": True,
+            "autologout": "86400",
+            "groups": "1,2",
+        },
+    )
+    assert commands[3] == BulkCommand(
+        command="create_user",
+        kwargs={
+            "username": "username",
+            "first_name": "myname",
+            "last_name": "surname",
+            "password": "mypass",
+        },
+    )
+    assert commands[4] == BulkCommand(
+        command="acknowledge_event",
+        kwargs={
+            "event_ids": "123,456,789",
+            "message": "foo message",
+            "close": True,
+        },
+    )
+    assert commands[5] == BulkCommand(
+        command="show_templategroup",
+        kwargs={
+            "templategroup": "mygroup",
+            "templates": False,
+        },
+    )
 
 
 @pytest.mark.parametrize(
     "exc_type",
     [FileNotFoundError, CommandFileError, CommandFileNotFoundError],
 )
-def test_load_command_file_not_found(tmp_path: Path, exc_type: Type[Exception]) -> None:
+def test_load_command_file_not_found(
+    tmp_path: Path, ctx: typer.Context, exc_type: Type[Exception]
+) -> None:
     """Test loading a command file that does not exist.
 
     Can be caught with built-in FileNotFoundError or with our own exception types."""
     file = tmp_path / "commands.txt"
+    b = BulkRunner(ctx, file)
     with pytest.raises(exc_type):
-        load_command_file(file)
-
-
-def test_load_command_file_shortform_fails(tmp_path: Path) -> None:
-    """Test that a command file with a short-form option fails."""
-    file = tmp_path / "commands.txt"
-    file.write_text(
-        """# comment
-show_zabbixcli_config # next line will be blank
-
-create_user username name surname -P passwd
-"""
-    )
-    with pytest.raises(CommandFileError) as exc_info:
-        load_command_file(file)
-
-    msg = exc_info.exconly()
-    assert "short-form" in msg.casefold()
-    assert "line 4" in msg.casefold()
-    assert "create_user username name surname -P passwd" in msg  # test casing too
+        b.load_command_file()

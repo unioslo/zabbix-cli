@@ -2,6 +2,7 @@
 
 Uses a very rudimentary parser to parse commands from a file, then
 passes them to typer.Context.invoke() to run them."""
+
 from __future__ import annotations
 
 import logging
@@ -52,7 +53,6 @@ class BulkCommand(BaseModel):
     """A command to be run in bulk."""
 
     command: str
-    args: List[str] = Field(default_factory=list)
     kwargs: Dict[str, Union[KwargType, List[KwargType]]] = Field(default_factory=dict)
 
     @classmethod
@@ -76,6 +76,9 @@ class BulkCommand(BaseModel):
         next_is_kwarg = False  # next token is a value for an option
         next_param = None  # type: typer.core.TyperOption | click.core.Parameter | None # param for next token
         for token in tokens:
+            if token.startswith("#"):
+                break  # encountered comment, no more tokens
+
             # If we are expecting a keyword argument, set it
             if next_is_kwarg and next_param:
                 if not next_param.name:
@@ -113,8 +116,16 @@ class BulkCommand(BaseModel):
         for param in cmd.params:
             if isinstance(param, typer.core.TyperArgument):
                 if param.name and args:
-                    # assume the first argument is the first positional argument (???)
-                    kwargs[param.name] = args.pop(0)
+                    # Check if param takes a single argument
+                    if param.nargs == 1:
+                        # assume the first argument is the first positional argument (???)
+                        kwargs[param.name] = args.pop(0)
+                    # Param takes multiple arguments
+                    else:
+                        if param.name not in kwargs:
+                            kwargs[param.name] = []
+                        kwargs[param.name].extend(args)
+                        args = []
                 elif param.required:
                     raise CommandFileError(
                         f"Missing required positional argument {param.human_readable_name} for command {cmd.name}"
@@ -126,10 +137,13 @@ class BulkCommand(BaseModel):
                         f"Missing required option {opts} for command {cmd.name}"
                     )
 
-        return cls(command=cmd.name, args=args, kwargs=kwargs)
+        return cls(command=cmd.name, kwargs=kwargs)
 
-    def __str__(self) -> str:
-        return f"{self.command} {' '.join(self.args)} {' '.join(f'--{k} {v}' for k, v in self.kwargs.items())}"
+    # def __str__(self) -> str:
+    #     # NOTE: flags are printed incorrectly here
+    #     return (
+    #         f"{self.command} {' '.join(f'--{k} {v}' for k, v in self.kwargs.items())}"
+    #     )
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self}>"
@@ -171,8 +185,6 @@ class BulkRunner:
                 # TODO: get the command here
                 cmd = get_command_by_name(self.ctx, command.command)
                 self.ctx.invoke(cmd, **command.kwargs)
-
-                # ctx.invoke(cmd, *command.args, **command.kwargs)
             except (SystemExit, typer.Exit) as e:  # others?
                 logger.debug("Bulk command %s exited: %s", command, e)
             except Exception as e:

@@ -1,4 +1,5 @@
 """Commands that interact with the application itself."""
+
 from __future__ import annotations
 
 from enum import Enum

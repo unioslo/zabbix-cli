@@ -3,6 +3,7 @@
 The global state object is a singleton that holds the current state of the
 application. It is used to store the current configuration, Zabbix client,
 and other stateful objects."""
+
 # This module re-treads all the sins of Harbor CLI's state module.
 #
 # The lazy-loading, properties with setters/getters, and the singleton pattern

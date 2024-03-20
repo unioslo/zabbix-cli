@@ -110,11 +110,19 @@ omit = ["zabbix_cli/__about__.py"]
 [tool.coverage.report]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
-[tool.ruff.pydocstyle]
-convention = "google"
 
 [tool.mypy]
 python_version = "3.8"
 ignore_missing_imports = true
 strict = false
 exclude = ["tests", "zabbix_cli/commands/_dev.py"]
+
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+# Force one line per import to simplify diffing and merging
+force-single-line = true
+# Add annotations import to every file
+required-imports = ["from __future__ import annotations"]

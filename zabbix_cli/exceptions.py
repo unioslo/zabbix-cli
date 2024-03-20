@@ -118,8 +118,7 @@ class Exiter(Protocol):
         code: int = ...,
         exception: Optional[Exception] = ...,
         **kwargs: Any,
-    ) -> NoReturn:
-        ...
+    ) -> NoReturn: ...
 
 
 @runtime_checkable
@@ -131,8 +130,7 @@ class HandleFunc(Protocol):
     cleanup and/or logging.
     """
 
-    def __call__(self, e: Any) -> NoReturn:
-        ...
+    def __call__(self, e: Any) -> NoReturn: ...
 
 
 def get_cause_args(e: BaseException) -> List[str]:
