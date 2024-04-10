@@ -12,7 +12,6 @@ from zabbix_cli.app import Example
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import success
-from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.args import parse_int_list_arg
 from zabbix_cli.utils.utils import compile_pattern
@@ -24,19 +23,13 @@ HELP_PANEL = "Proxy"
 @app.command(name="update_host_proxy", rich_help_panel=HELP_PANEL)
 def update_host_proxy(
     ctx: typer.Context,
-    hostname_or_id: Optional[str] = typer.Argument(None, help="Hostname or ID"),
-    proxy_name: Optional[str] = typer.Argument(
-        None, help="Name of new proxy for host."
-    ),
+    hostname_or_id: str = typer.Argument(..., help="Hostname or ID"),
+    proxy_name: str = typer.Argument(..., help="Name of new proxy for host."),
 ) -> None:
     """Change the proxy for a host."""
     from zabbix_cli.models import Result
     from zabbix_cli.commands.results.proxy import UpdateHostProxyResult
 
-    if not hostname_or_id:
-        hostname_or_id = str_prompt("Hostname or ID")
-    if not proxy_name:
-        proxy_name = str_prompt("Proxy name")
     proxy = app.state.client.get_proxy(proxy_name)
     host = app.state.client.get_host(hostname_or_id)
 

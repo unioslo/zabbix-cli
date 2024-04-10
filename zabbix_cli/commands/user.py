@@ -20,7 +20,6 @@ from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import success
 from zabbix_cli.output.console import warning
-from zabbix_cli.output.prompts import bool_prompt
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import GUIAccess
@@ -60,28 +59,26 @@ def get_random_password() -> str:
 def create_user(
     ctx: typer.Context,
     username: str = typer.Argument(..., help="Username of the user to create."),
-    first_name: Optional[str] = typer.Argument(
-        None, help="First name of the user to create."
+    first_name: Optional[str] = typer.Option(
+        None, "--firstname", help="First name of the user to create."
     ),
-    last_name: Optional[str] = typer.Argument(
-        None, help="Last name of the user to create."
+    last_name: Optional[str] = typer.Option(
+        None, "--lastname", help="Last name of the user to create."
     ),
     password: Optional[str] = typer.Option(
         None,
         "--passwd",
         help="Password of the user to create. Set to '-' to prompt for password. Generates random password if omitted.",
     ),
-    role: Optional[UserRole] = typer.Option(
-        None,
+    role: UserRole = typer.Option(
+        UserRole.USER,
         "--role",
         help="Role of the user.",
         case_sensitive=False,
     ),
-    autologin: Optional[bool] = typer.Option(
-        None, help="Enable auto-login for the user."
-    ),
-    autologout: Optional[str] = typer.Option(
-        None,
+    autologin: bool = typer.Option(False, help="Enable auto-login for the user."),
+    autologout: str = typer.Option(
+        "86400",
         help="User session lifetime in seconds. Set to 0 to never expire. Can be a time unit with suffix (0s, 15m, 1h, 1d, etc.)",
     ),
     groups: Optional[str] = typer.Option(
@@ -90,11 +87,7 @@ def create_user(
     # Legacy V2 positional args
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
-    """Create a user.
-
-    Prompts for missing values.
-    Leave prompt values empty to not set values.
-    """
+    """Create a user."""
     from zabbix_cli.models import Result
     from zabbix_cli.pyzabbix.types import User
 
@@ -126,18 +119,7 @@ def create_user(
     elif not password:
         # Generate random password
         password = get_random_password()
-    if not role:
-        role = UserRole.from_prompt(default=UserRole.USER.value)
 
-    if autologin is None:
-        autologin = bool_prompt("Enable auto-login", default=False)
-
-    if autologout is None:
-        # Can also be time unit with suffix (0s, 15m, 1h, 1d, etc.)
-        autologout = str_prompt("User session lifetime", default="86400")
-
-    if not groups:
-        groups = str_prompt("Groups (comma-separated)", default="", empty_ok=True)
     grouplist = parse_list_arg(groups)
     # FIXME: add to default user group if no user group passed in
     ugroups = [app.state.client.get_usergroup(ug) for ug in grouplist]
@@ -160,6 +142,102 @@ def create_user(
     )
 
 
+@app.command(
+    "update_user",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Assign new first and last name",
+            "update_user jdoe --firstname John --lastname Doe",
+        ),
+        Example(
+            "Promote user to admin",
+            "update_user jdoe --role Admin",
+        ),
+        Example(
+            "Update user's password, prompt for passwords",
+            "update_user jdoe --passwd - --old-passwd -",
+        ),
+        Example(
+            "Update user's password, generate random new password",
+            "update_user jdoe --passwd ? --old-passwd -",
+        ),
+        Example(
+            "Disable autologin for user",
+            "update_user jdoe --no-autologin",
+        ),
+    ],
+)
+def update_user(
+    ctx: typer.Context,
+    username: str = typer.Argument(..., help="Username of the user to update"),
+    first_name: Optional[str] = typer.Option(
+        None, "--firstname", help="New first name."
+    ),
+    last_name: Optional[str] = typer.Option(None, "--lastname", help="New last name."),
+    new_password: Optional[str] = typer.Option(
+        None,
+        "--passwd",
+        "--new-passwd",
+        help="New password for user. Set to '-' to prompt for password, '?' to generate a random password.",
+    ),
+    old_password: Optional[str] = typer.Option(
+        None,
+        "--old-passwd",
+        help="Existing password, required if --passwd is used. Set to '-' to prompt for password.",
+    ),
+    role: Optional[UserRole] = typer.Option(
+        None,
+        "--role",
+        help="User role.",
+        case_sensitive=False,
+    ),
+    autologin: Optional[bool] = typer.Option(
+        None, "--autologin/--no-autologin", help="Enable/disable auto-login"
+    ),
+    autologout: Optional[str] = typer.Option(
+        None,
+        help="User session lifetime in seconds. Set to 0 to never expire. Can be a time unit with suffix (0s, 15m, 1h, 1d, etc.)",
+    ),
+    # Legacy V2 positional args
+    args: Optional[List[str]] = ARGS_POSITIONAL,
+) -> None:
+    """Update a user.
+
+    Use [command]add_user_to_usergroup[/command] and [command]remove_user_from_usergroup[/command] to manage user groups."""
+    from zabbix_cli.models import Result
+
+    user = app.state.client.get_user(username)
+
+    if new_password == "-":
+        new_password = str_prompt("New password", password=True)
+    elif new_password == "?":
+        new_password = get_random_password()
+
+    if new_password:
+        if not old_password:
+            exit_err("Old password is required when changing password.")
+        if old_password == "-":
+            old_password = str_prompt("Old password", password=True)
+
+    app.state.client.update_user(
+        user,
+        current_password=old_password,
+        new_password=new_password,
+        first_name=first_name,
+        last_name=last_name,
+        role=role,
+        autologin=autologin,
+        autologout=autologout,
+    )
+    render_result(
+        Result(
+            message=f"Updated user {user.name!r} ({user.userid}).",
+            result=user,
+        ),
+    )
+
+
 @app.command("remove_user", rich_help_panel=HELP_PANEL)
 def remove_user(
     ctx: typer.Context,
@@ -167,13 +245,13 @@ def remove_user(
 ) -> None:
     """Remove a user."""
     from zabbix_cli.models import Result
-    from zabbix_cli.pyzabbix.types import User
 
-    userid = app.state.client.delete_user(username)
+    user = app.state.client.get_user(username)
+    app.state.client.delete_user(user)
     render_result(
         Result(
-            message=f"Deleted user {username!r} ({userid}).",
-            result=User(userid=str(userid), username=username),
+            message=f"Deleted user {user.name!r} ({user.userid}).",
+            result=user,
         ),
     )
 

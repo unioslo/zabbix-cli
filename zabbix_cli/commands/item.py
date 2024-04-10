@@ -9,7 +9,6 @@ from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
 from zabbix_cli.output.console import exit_err
-from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 
 
@@ -36,8 +35,8 @@ HELP_PANEL = "Item"
 )
 def show_last_values(
     ctx: typer.Context,
-    item_name: Optional[str] = typer.Argument(
-        None,
+    item_name: str = typer.Argument(
+        ...,
         help="Name of item(s) to get. Supports wildcards.",
     ),
     group: bool = typer.Option(
@@ -55,8 +54,6 @@ def show_last_values(
             exit_err("Invalid number of positional arguments. Use options instead.")
         group = args[0] == "1"
         # No format arg in V2...
-    if not item_name:
-        item_name = str_prompt("Item name")
 
     with app.status("Fetching items..."):
         items = app.state.client.get_items(item_name, select_hosts=True, monitored=True)

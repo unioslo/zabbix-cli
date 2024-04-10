@@ -13,7 +13,6 @@ from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.console import success
 from zabbix_cli.output.formatting.grammar import pluralize as p
-from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.utils.args import parse_hostgroups_arg
@@ -140,13 +139,15 @@ def remove_host_from_hostgroup(
     ],
 )
 def create_hostgroup(
-    hostgroup: str = typer.Argument(None, help="Name of host group."),
+    hostgroup: str = typer.Argument(..., help="Name of host group."),
     rw_groups: Optional[str] = typer.Option(
         None,
+        "--rw-groups",
         help="User group(s) to give read/write permissions. Comma-separated.",
     ),
     ro_groups: Optional[str] = typer.Option(
         None,
+        "--ro-groups",
         help="User group(s) to give read-only permissions. Comma-separated.",
     ),
     no_usergroup_permissions: bool = typer.Option(
@@ -165,9 +166,6 @@ def create_hostgroup(
     Use --no-usergroup-permissions to create a group without assigning user group permissions.
     """
     from zabbix_cli.models import Result
-
-    if not hostgroup:
-        hostgroup = str_prompt("Host group name")
 
     if app.state.client.hostgroup_exists(hostgroup):
         exit_err(f"Host group {hostgroup!r} already exists.")

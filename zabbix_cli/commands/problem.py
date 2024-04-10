@@ -10,7 +10,6 @@ from zabbix_cli.app import app
 from zabbix_cli.app import Example
 from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import exit_err
-from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import TriggerPriority
 from zabbix_cli.utils.args import parse_bool_arg
@@ -24,9 +23,7 @@ HELP_PANEL = "Problem"
 @app.command(name="acknowledge_event", rich_help_panel=HELP_PANEL)
 def acknowledge_event(
     ctx: typer.Context,
-    event_ids: Optional[str] = typer.Argument(
-        None, help="Comma-separated list of event ID(s)"
-    ),
+    event_ids: str = typer.Argument(..., help="Comma-separated list of event ID(s)"),
     message: str = typer.Option(
         "[Zabbix-CLI] Acknowledged via acknowledge_events",
         "--message",
@@ -46,8 +43,6 @@ def acknowledge_event(
     from zabbix_cli.models import Result
     from zabbix_cli.commands.results.problem import AcknowledgeEventResult
 
-    if not event_ids:
-        event_ids = str_prompt("Event ID(s)")
     eids = parse_list_arg(event_ids)
     if not eids:
         exit_err("No event IDs specified.")

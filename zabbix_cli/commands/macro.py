@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
 
 import typer
 
@@ -11,9 +10,7 @@ from zabbix_cli.app import Example
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
-from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
-from zabbix_cli.utils.commands import ARG_HOSTNAME_OR_ID
 
 
 HELP_PANEL = "Macro"
@@ -88,13 +85,13 @@ def define_host_usermacro(
 
 # @macro_cmd.command(name="list", rich_help_panel=HELP_PANEL)
 @app.command(name="show_host_usermacros", rich_help_panel=HELP_PANEL, hidden=False)
-def show_host_usermacros(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
+def show_host_usermacros(
+    hostname_or_id: str = typer.Argument(..., help="Hostname or ID to show macros for"),
+) -> None:
     """Shows all macros defined for a host."""
     from zabbix_cli.commands.results.macro import ShowHostUserMacrosResult
     from zabbix_cli.models import AggregateResult
 
-    if not hostname_or_id:
-        hostname_or_id = str_prompt("Hostname or ID")
     # By getting the macros via the host, we also ensure the host exists.
     host = app.state.client.get_host(hostname_or_id, select_macros=True)
 
@@ -123,8 +120,8 @@ def show_host_usermacros(hostname_or_id: str = ARG_HOSTNAME_OR_ID) -> None:
 # @macro_cmd.command(name="find", rich_help_panel=HELP_PANEL)
 @app.command(name="show_usermacro_host_list", rich_help_panel=HELP_PANEL, hidden=False)
 def show_usermacro_host_list(
-    usermacro: Optional[str] = typer.Argument(
-        None,
+    usermacro: str = typer.Argument(
+        ...,
         help=(
             "Name of macro to find hosts with. "
             "Application will automatically format macro names, e.g. `site_url` becomes `{$SITE_URL}`."
@@ -138,8 +135,6 @@ def show_usermacro_host_list(
     from zabbix_cli.commands.results.macro import MacroHostListV2
     from zabbix_cli.commands.results.macro import MacroHostListV3
 
-    if not usermacro:
-        usermacro = str_prompt("Macro name")
     usermacro = fmt_macro_name(usermacro)
     macros = app.state.client.get_macros(macro_name=usermacro, select_hosts=True)
 
@@ -168,17 +163,13 @@ def show_usermacro_host_list(
 @app.command("define_global_macro", rich_help_panel=HELP_PANEL)
 def define_global_macro(
     ctx: typer.Context,
-    name: Optional[str] = typer.Argument(None, help="Name of the macro"),
-    value: Optional[str] = typer.Argument(None, help="Value of the macro"),
+    name: str = typer.Argument(..., help="Name of the macro"),
+    value: str = typer.Argument(..., help="Value of the macro"),
 ) -> None:
     """Create a global macro."""
     from zabbix_cli.models import Result
     from zabbix_cli.commands.results.macro import GlobalMacroResult
 
-    if not name:
-        name = str_prompt("Macro name")
-    if not value:
-        value = str_prompt("Macro value")
     name = fmt_macro_name(name)
 
     try:
@@ -219,16 +210,14 @@ def show_global_macros(ctx: typer.Context) -> None:
 @app.command("show_usermacro_template_list", rich_help_panel=HELP_PANEL)
 def show_usermacro_template_list(
     ctx: typer.Context,
-    macro_name: Optional[str] = typer.Argument(
-        None, help="Name of the macro to find templates with. Automatically formatted."
+    macro_name: str = typer.Argument(
+        ..., help="Name of the macro to find templates with. Automatically formatted."
     ),
 ) -> None:
     """Find all templates with a user macro of the given name."""
     from zabbix_cli.models import AggregateResult
     from zabbix_cli.commands.results.macro import ShowUsermacroTemplateListResult
 
-    if not macro_name:
-        macro_name = str_prompt("Macro name")
     macro_name = fmt_macro_name(macro_name)
     macro = app.state.client.get_macro(macro_name=macro_name, select_templates=True)
     render_result(

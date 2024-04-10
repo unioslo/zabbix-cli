@@ -7,7 +7,6 @@ import typer
 from zabbix_cli.app import app
 from zabbix_cli.app import Example
 from zabbix_cli.output.console import exit_err
-from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.prompts import str_prompt_optional
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import DataCollectionMode
@@ -113,12 +112,12 @@ def create_maintenance_definition(
 @app.command(name="remove_maintenance_definition", rich_help_panel=HELP_PANEL)
 def remove_maintenance_definition(
     ctx: typer.Context,
-    maintenance_id: str = typer.Argument(..., help="ID of maintenance to remove"),
+    maintenance_id: str = typer.Argument(
+        ..., help="ID(s) of maintenance(s) to remove. Comma-separated."
+    ),
 ) -> None:
     """Remove a maintenance definition."""
     from zabbix_cli.models import Result
-
-    maintenance_id = str_prompt("Maintenance ID(s)")
 
     maintenance_ids = parse_list_arg(maintenance_id)
     if not maintenance_ids:
