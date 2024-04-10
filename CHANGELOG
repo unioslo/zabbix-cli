@@ -29,6 +29,7 @@
   - `show_user`: Show details for a single user.
   - `unlink_template_from_template`: Unlink template(s) from template(s).
   - `update_host_interface`: Update a host interface.
+  - `update_user`: Update a user.
 - **New command options:**
   - `add_host_to_hostgroup`:
     - `--dryrun`: Preview changes without making them.

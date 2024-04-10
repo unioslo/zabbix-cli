@@ -1760,18 +1760,61 @@ class ZabbixAPI:
         users = self.user.get(**params)
         return [User(**user) for user in users]
 
-    def delete_user(self, username: str) -> str:
-        """Deletes a user given its username.
+    def delete_user(self, user: User) -> str:
+        """Delete a user given its username.
 
         Returns ID of deleted user."""
-        user = self.get_user(username)
+
         try:
             resp = self.user.delete(user.userid)
         except ZabbixAPIException as e:
-            raise ZabbixAPICallError(f"Failed to delete user {username!r}") from e
+            raise ZabbixAPICallError(
+                f"Failed to delete user {user.username!r} ({user.userid})"
+            ) from e
         if not resp or not resp.get("userids"):
             raise ZabbixNotFoundError(
-                f"No user ID returned when deleting user {username!r}"
+                f"No user ID returned when deleting user {user.username!r} ({user.userid})"
+            )
+        return resp["userids"][0]
+
+    def update_user(
+        self,
+        user: User,
+        current_password: Optional[str] = None,
+        new_password: Optional[str] = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        role: Optional[UserRole] = None,
+        autologin: Optional[bool] = None,
+        autologout: Union[str, int, None] = None,
+    ) -> str:
+        """Update a user. Returns ID of updated user."""
+        query = {"userid": user.userid}  # type: ParamsType
+        if current_password and new_password:
+            query["current_passwd"] = current_password
+            query["passwd"] = new_password
+        if first_name:
+            query["name"] = first_name
+        if last_name:
+            query["surname"] = last_name
+        if role:
+            query[compat.role_id(self.version)] = role.as_api_value()
+        if autologin is not None:
+            query["autologin"] = int(autologin)
+        if autologout is not None:
+            query["autologout"] = str(autologout)
+
+        # Media and user groups are not supported in this method
+
+        try:
+            resp = self.user.update(**query)
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError(
+                f"Failed to update user {user.username!r} ({user.userid})"
+            ) from e
+        if not resp or not resp.get("userids"):
+            raise ZabbixNotFoundError(
+                f"No user ID returned when updating user {user.username!r} ({user.userid})"
             )
         return resp["userids"][0]
 
