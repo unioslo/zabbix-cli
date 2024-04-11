@@ -116,10 +116,10 @@ def test_load_command_file(tmp_path: Path, ctx: typer.Context) -> None:
         """# comment
 show_zabbixcli_config # next line will be blank
 
-create_user username name surname mypass 1 1 86400 1,2
-create_user username name surname --passwd mypass --role 1  --autologin --autologout 86400 --groups '1,2'
+create_user username --firstname name --lastname surname mypass 1 1 86400 1,2
+create_user username --firstname name --lastname surname --passwd mypass --role 1  --autologin --autologout 86400 --groups '1,2'
 # comment explaining the next command
-create_user username myname surname --passwd mypass # trailing comment
+create_user username --firstname name --lastname surname --passwd mypass # trailing comment
 # Command with flag
 acknowledge_event 123,456,789 --message "foo message" --close
 # Command with negative flag
@@ -157,7 +157,7 @@ show_templategroup mygroup --no-templates
         command="create_user",
         kwargs={
             "username": "username",
-            "first_name": "myname",
+            "first_name": "name",
             "last_name": "surname",
             "password": "mypass",
         },
