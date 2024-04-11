@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from enum import Enum
 from typing import cast
 from typing import ClassVar
@@ -189,6 +190,12 @@ class TableRenderable(BaseModel):
             if isinstance(value, TableRenderable):
                 fields[field_name] = value.as_table()
             elif isinstance(value, BaseModel):
+                # Fall back to rendering as JSON string
+                logging.warning(
+                    "Cannot render %s as a table.",
+                    value.__class__.__name__,
+                    stack_info=True,  # we want to know how we got here
+                )
                 fields[field_name] = value.model_dump_json(indent=2)
             elif isinstance(value, list):
                 # A list either contains TableRenderable objects or stringable objects
