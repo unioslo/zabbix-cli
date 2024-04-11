@@ -63,7 +63,7 @@ def create_user(
         None, "--firstname", help="First name of the user to create."
     ),
     last_name: Optional[str] = typer.Option(
-        None, "--lastname", help="Last name of the user to create."
+        None, "--lastname", "--surname", help="Last name of the user to create."
     ),
     password: Optional[str] = typer.Option(
         None,

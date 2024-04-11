@@ -28,15 +28,21 @@ from zabbix_cli.exceptions import ZabbixCLIFileNotFoundError
                 command="create_user",
                 kwargs={
                     "username": "username",
-                    "first_name": "name",
-                    "last_name": "surname",
-                    "args": ["passwd", "role", "autologin", "autologout", "groups"],
+                    "args": [
+                        "name",
+                        "surname",
+                        "passwd",
+                        "role",
+                        "autologin",
+                        "autologout",
+                        "groups",
+                    ],
                 },
             ),
             id="Legacy positional args",
         ),
         pytest.param(
-            "create_user username name surname --passwd mypass --role 1  --autologin --autologout 86400 --groups '1,2'",
+            "create_user username --firstname name --lastname surname --passwd mypass --role 1  --autologin --autologout 86400 --groups '1,2'",
             BulkCommand(
                 command="create_user",
                 kwargs={
@@ -58,15 +64,14 @@ from zabbix_cli.exceptions import ZabbixCLIFileNotFoundError
                 command="create_user",
                 kwargs={
                     "username": "username",
-                    "first_name": "myname",
-                    "last_name": "surname",
                     "password": "mypass",
+                    "args": ["myname", "surname"],
                 },
             ),
             id="kwarg between args",
         ),
         pytest.param(
-            "create_user myuser myname --passwd mypasswd --role 1 # comment here --option value",
+            "create_user myuser --firstname myname --passwd mypasswd --role 1 # comment here --option value",
             BulkCommand(
                 command="create_user",
                 kwargs={
