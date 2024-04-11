@@ -18,7 +18,6 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import JsonValue
-from pydantic import RootModel
 from pydantic.fields import ComputedFieldInfo
 from pydantic.fields import FieldInfo
 from strenum import StrEnum
@@ -62,14 +61,7 @@ def fmt_field_name(field_name: str) -> str:
     return field_name.capitalize().replace("_", " ")
 
 
-# FIXME: this suddenly became a HUGE mess with the introduction of
-# the RootModel type (TableRenderableDict), which necessitated implementing
-# the table rendering protocol to declare that both it and TableRenderable
-# can be rendered as a table. However, for a lot of methods just annotating
-# with TableRenderableProto is not enough, because we often need to access
-# pydantic methods and attributes that are not part of the protocol.
-#
-# Furthermore, we also wrap the results of commands in a Result object,
+# We wrap the results of commands in a Result object,
 # but ONLY if we are rendering it as JSON. This makes the logic in the
 # `render` module a bit of a mess, since the function type annotations
 # are all over the place.
@@ -95,16 +87,19 @@ class TableRenderable(BaseModel):
     )  # assume latest released version
     """Zabbix API version the data stems from.
     This is a class variable that can be overridden, which causes all
-    subclasses to use the new value when accessed.
+    subclasses to use the new value.
 
     This class variable is set by `State.configure` based on the connected
     Zabbix server API version. Assumes latest released version by default.
     """
     legacy_json_format: ClassVar[bool] = False
-    """Whether to use the legacy JSON format for rendering objects.
+    """Use the legacy JSON format when rendered as JSON.
 
     This class variable is set by `State.configure` based on the
     current configuration. Assumes new JSON format by default."""
+
+    empty_ok: bool = Field(default=False, exclude=True)
+    """Don't print a message if table is empty when rendered as Table."""
 
     def _get_extra(self, field: str, key: str, default: T) -> T:
         f = self.model_fields.get(field, None)
@@ -117,7 +112,7 @@ class TableRenderable(BaseModel):
         #
         # If need be, we can add some sort of model validator that ensures
         # all JSON schema extra keys have the correct type.
-        # But that will only happen once we have a problem with this.
+        # But that will only happen once we actually encounter such a bug.
         return cast(T, f.json_schema_extra.get(key, default))
 
     def __all_fields__(self) -> Dict[str, Union[FieldInfo, ComputedFieldInfo]]:
@@ -169,7 +164,6 @@ class TableRenderable(BaseModel):
 
         Render types in the following way:
             - TableRenderable: render as a table
-            - TableRenderableDict: render as a table
             - BaseModel: render as JSON string
             - list: render as newline delimited string
         Everything else is rendered as a string.
@@ -189,17 +183,13 @@ class TableRenderable(BaseModel):
             for field_name in self.__all_fields__()
         }
         for field_name, value in fields.items():
-            if isinstance(value, (TableRenderable, TableRenderableDict)):
+            if isinstance(value, TableRenderable):
                 fields[field_name] = value.as_table()
             elif isinstance(value, BaseModel):
                 fields[field_name] = value.model_dump_json(indent=2)
             elif isinstance(value, list):
                 # A list either contains TableRenderable objects or stringable objects
-                if value and all(
-                    # Aggregating TableRenderableDict is not yet supported
-                    isinstance(v, TableRenderable)
-                    for v in value
-                ):
+                if value and all(isinstance(v, TableRenderable) for v in value):
                     # TableRenderables are wrapped in an AggregateResult to render them
                     # as a single table instead of a table per item.
                     # NOTE: we assume list contains items of the same type
@@ -244,26 +234,6 @@ class TableRenderable(BaseModel):
     # We should implement the rich renderable protocol...
 
 
-class TableRenderableDict(RootModel[Dict[str, str]]):
-    """Root model that can be used to render a dict as a table.
-    Render the table vertically rather than horizontally, with
-    keys as the first column and values as the second column.
-    Only includes keys that have a non-empty value."""
-
-    root: Dict[str, str] = {}
-
-    def __cols_rows__(self) -> ColsRowsType:
-        # only returns the keys that have a value
-        cols = ["Key", "Value"]
-        rows = [[k, str(v)] for k, v in self.root.items() if v]  # type: RowsType
-        return cols, rows
-
-    def as_table(self) -> Table:
-        """Renders a Rich table given the rows and cols generated for the object."""
-        cols, rows = self.__cols_rows__()
-        return get_table(cols, rows)
-
-
 DataT = TypeVar("DataT")
 
 
@@ -284,7 +254,6 @@ class Result(ResultBase, Generic[DataT]):
 
 
 TableRenderableT = TypeVar("TableRenderableT", bound=TableRenderable)
-TableRenderableProto = Union["TableRenderable", "TableRenderableDict"]
 
 
 class AggregateResult(ResultBase, Generic[TableRenderableT]):

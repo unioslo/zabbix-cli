@@ -16,8 +16,6 @@ from zabbix_cli.state import get_state
 if TYPE_CHECKING:
     from zabbix_cli.models import ResultBase
     from zabbix_cli.models import TableRenderable
-    from zabbix_cli.models import TableRenderableDict
-    from zabbix_cli.models import TableRenderableProto
     from pydantic import BaseModel
 
 
@@ -38,7 +36,7 @@ def wrap_result(result: BaseModel) -> ResultBase:
 
 
 def render_result(
-    result: TableRenderable | TableRenderableDict,
+    result: TableRenderable,
     ctx: typer.Context | None = None,
     **kwargs: Any,
 ) -> None:
@@ -46,10 +44,8 @@ def render_result(
 
     Parameters
     ----------
-    result: TableRenderable | TableRenderableDict,
-        The result of a command. All commands produce a TableRenderable (BaseModel)
-        or a TableRenderableDict (RootModel).
-        Both of these types implement the `TableRenderableProto` protocol.
+    result: TableRenderable,
+        The result of a command. All commands produce a TableRenderable (BaseModel).
     ctx : typer.Context, optional
         The typer context from the command invocation, by default None
     **kwargs
@@ -76,7 +72,7 @@ def render_result(
 
 
 def render_table(
-    result: TableRenderableProto, ctx: typer.Context | None = None, **kwargs: Any
+    result: TableRenderable, ctx: typer.Context | None = None, **kwargs: Any
 ) -> None:
     """Render the result of a command as a table if possible.
     If result contains a message, print success message instead.
@@ -94,13 +90,14 @@ def render_table(
     else:
         tbl = result.as_table()
         if not tbl.rows:
-            console.print("No results found.")
+            if not result.empty_ok:
+                console.print("No results found.")
         else:
             console.print(tbl)
 
 
 def render_json(
-    result: TableRenderable | TableRenderableDict,
+    result: TableRenderable,
     ctx: typer.Context | None = None,
     **kwargs: Any,
 ) -> None:
@@ -118,7 +115,7 @@ def render_json(
 
 
 def render_json_legacy(
-    result: TableRenderable | TableRenderableDict,
+    result: TableRenderable,
     ctx: typer.Context | None = None,
     **kwargs: Any,
 ) -> None:
