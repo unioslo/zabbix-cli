@@ -98,3 +98,25 @@ class TemplateGroupResult(TableRenderable):
             templates=[t.host for t in templates],
             groups=[h.name for h in groups],
         )
+
+
+class RemoveTemplateFromGroupResult(TableRenderable):
+    group: str
+    templates: List[str]
+
+    @classmethod
+    def from_result(
+        cls,
+        templates: List[Template],
+        group: Union[TemplateGroup, HostGroup],
+    ) -> RemoveTemplateFromGroupResult:
+        to_remove = set()
+        for template in group.templates:
+            for t in templates:
+                if t.host == template.host:
+                    to_remove.add(t.host)
+                    break
+        return cls(
+            templates=list(to_remove),
+            group=group.name,
+        )

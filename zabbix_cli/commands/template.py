@@ -51,6 +51,7 @@ def _handle_hostnames_args(
 def _handle_hostgroups_args(
     hgroup_names_or_ids: str | None,
     strict: bool = False,
+    select_templates: bool = False,
 ) -> List[HostGroup]:
     if not hgroup_names_or_ids:
         hgroup_names_or_ids = str_prompt("Host group(s)")
@@ -59,7 +60,9 @@ def _handle_hostgroups_args(
     if not hg_args:
         exit_err("At least one host group name/ID is required.")
 
-    hostgroups = app.state.client.get_hostgroups(*hg_args, search=True)
+    hostgroups = app.state.client.get_hostgroups(
+        *hg_args, search=True, select_templates=select_templates
+    )
     if not hostgroups:
         exit_err(f"No host groups found matching {hgroup_names_or_ids}")
     if strict and len(hostgroups) != len(hg_args):
@@ -70,6 +73,7 @@ def _handle_hostgroups_args(
 def _handle_templategroup_args(
     tgroup_names_or_ids: str | None,
     strict: bool = False,
+    select_templates: bool = False,
 ) -> List[TemplateGroup]:
     if not tgroup_names_or_ids:
         tgroup_names_or_ids = str_prompt("Template group(s)")
@@ -78,7 +82,9 @@ def _handle_templategroup_args(
     if not tg_args:
         exit_err("At least one template group name/ID is required.")
 
-    templategroups = app.state.client.get_templategroups(*tg_args, search=True)
+    templategroups = app.state.client.get_templategroups(
+        *tg_args, search=True, select_templates=select_templates
+    )
     if not templategroups:
         exit_err(f"No template groups found matching {tgroup_names_or_ids}")
     if strict and len(templategroups) != len(tg_args):
@@ -262,7 +268,7 @@ def unlink_template_from_host(
     render_result(AggregateResult(result=result))
     base_msg = f"{p('template', total_templates)} from {p('host', total_hosts)}"
     if dryrun:
-        info(f"Would {action.lower()} {base_msg}:")
+        info(f"Would {action.lower()} {base_msg}.")
     else:
         action_success = "Unlinked and cleared" if clear else "Unlinked"
         success(f"{action_success} {base_msg}.")
@@ -463,6 +469,10 @@ def add_template_to_group(
             "Remove all templates starting with 'Apache' from a group",
             "remove_template_from_group 'Apache*' foo_group",
         ),
+        Example(
+            "Remove all templates containing 'HTTP' from all groups",
+            "remove_template_from_group '*HTTP*' '*'",
+        ),
     ],
 )
 @app.command(
@@ -482,30 +492,55 @@ def remove_template_from_group(
         "--strict",
         help="Fail if any host groups or templates aren't found. Should not be used in conjunction with wildcards.",
     ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Preview changes.",
+    ),
     # TODO: add toggle for NOT clearing when unlinking?
 ) -> None:
     """Remove templates from groups."""
-    from zabbix_cli.commands.results.template import TemplateGroupResult
+    from zabbix_cli.commands.results.template import RemoveTemplateFromGroupResult
+    from zabbix_cli.models import AggregateResult
 
     groups: Union[List[HostGroup], List[TemplateGroup]]
     if app.state.client.version.release >= (6, 2, 0):
-        groups = _handle_templategroup_args(group_names_or_ids, strict)
-    else:
-        groups = _handle_hostgroups_args(group_names_or_ids, strict)
-
-    templates = _handle_template_arg(template_names_or_ids, strict)
-
-    with app.state.console.status("Removing templates from groups..."):
-        # LEGACY: This used to also pass the templateids to templateids_clear,
-        # which would unlink and clear all the templates from each other
-        # This was a mistake, and has been removed in V3.
-        # Users should use `unlink_templates_from_templates` for that.
-        app.state.client.remove_templates_from_groups(
-            templates,
-            groups,
+        groups = _handle_templategroup_args(
+            group_names_or_ids, strict=strict, select_templates=True
         )
-    render_result(TemplateGroupResult.from_result(templates, groups))
-    success(f"Removed {len(templates)} templates from {len(groups)} groups.")
+    else:
+        groups = _handle_hostgroups_args(
+            group_names_or_ids, strict=strict, select_templates=True
+        )
+
+    templates = _handle_template_arg(template_names_or_ids, strict=strict)
+
+    if not dryrun:
+        with app.state.console.status("Removing templates from groups..."):
+            # LEGACY: This used to also pass the templateids to templateids_clear,
+            # which would unlink and clear all the templates from each other
+            # This was a mistake, and has been removed in V3.
+            # Users should use `unlink_templates_from_templates` for that.
+            app.state.client.remove_templates_from_groups(
+                templates,
+                groups,
+            )
+    result = []  # type: list[RemoveTemplateFromGroupResult]
+    for group in groups:
+        r = RemoveTemplateFromGroupResult.from_result(templates, group)
+        if not r.templates:
+            continue
+        result.append(r)
+
+    total_templates = len(set(chain.from_iterable((r.templates) for r in result)))
+    total_groups = len(result)
+
+    render_result(AggregateResult(result=result, empty_ok=True))
+    base_msg = f"{p('template', total_templates)} from {p('group', total_groups)}"
+    if dryrun:
+        info(f"Would remove {base_msg}.")
+    else:
+        success(f"Removed {base_msg}.")
 
 
 @app.command("show_template", rich_help_panel=HELP_PANEL)
