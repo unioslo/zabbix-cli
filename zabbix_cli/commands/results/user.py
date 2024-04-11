@@ -13,7 +13,7 @@ from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_serializer
 
-from zabbix_cli.models import META_KEY_JOIN_CHAR
+from zabbix_cli.models import MetaKey
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.pyzabbix.types import HostGroup
@@ -75,12 +75,12 @@ class GroupRights(TableRenderable):
 
 
 class ShowUsergroupResult(TableRenderable):
-    usrgrpid: str = Field(..., json_schema_extra={"header": "ID"})
+    usrgrpid: str = Field(..., json_schema_extra={MetaKey.HEADER: "ID"})
     name: str
-    gui_access: str = Field(..., json_schema_extra={"header": "GUI Access"})
+    gui_access: str = Field(..., json_schema_extra={MetaKey.HEADER: "GUI Access"})
     status: str
     users: List[str] = Field(
-        default_factory=list, json_schema_extra={META_KEY_JOIN_CHAR: ", "}
+        default_factory=list, json_schema_extra={MetaKey.JOIN_CHAR: ", "}
     )
 
     @classmethod

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum
 from typing import cast
 from typing import ClassVar
 from typing import Dict
@@ -49,11 +50,13 @@ ColsRowsType = Tuple[ColsType, RowsType]
 # Values used in the `json_schema_extra` dict for fields
 # to customize how they are rendered as a table.
 
-META_KEY_JOIN_CHAR = "join_char"
-"""Overrides join character when converting iterables to strings."""
 
-META_KEY_HEADER = "header"
-"""Overrides the default header for a table column."""
+class MetaKey(str, Enum):
+    """Keys used in the `json_schema_extra` dict of a field to customize
+    its rendering."""
+
+    JOIN_CHAR = "join_char"
+    HEADER = "header"
 
 
 def fmt_field_name(field_name: str) -> str:
@@ -149,9 +152,9 @@ class TableRenderable(BaseModel):
             if (
                 field.json_schema_extra
                 and isinstance(field.json_schema_extra, dict)
-                and field.json_schema_extra.get(META_KEY_HEADER, None)
+                and field.json_schema_extra.get(MetaKey.HEADER, None)
             ):
-                cols.append(str(field.json_schema_extra[META_KEY_HEADER]))
+                cols.append(str(field.json_schema_extra[MetaKey.HEADER]))
             else:
                 cols.append(fmt_field_name(field_name))
         return cols
@@ -200,7 +203,7 @@ class TableRenderable(BaseModel):
                     # Other lists are rendered as newline delimited strings.
                     # The delimiter can be modified with the `join_char` key in
                     # the field's `json_schema_extra`.
-                    join_char = self._get_extra(field_name, META_KEY_JOIN_CHAR, "\n")
+                    join_char = self._get_extra(field_name, MetaKey.JOIN_CHAR, "\n")
                     fields[field_name] = join_char.join(str(v) for v in value)
             else:
                 fields[field_name] = str(value)
