@@ -1022,46 +1022,6 @@ class ZabbixAPI:
             )
         return str(resp["usrgrpids"][0])
 
-    # TODO: do any commands update both rights and users?
-    # Can we split this into two methods?
-    # The only benefit of combining them is to avoid multiple API calls
-    # to fetch the usergroup and its users.
-    def update_usergroup(
-        self,
-        usergroup_name: str,
-        rights: Optional[List[ZabbixRight]] = None,
-        userids: Optional[List[str]] = None,
-    ) -> Optional[list]:
-        """
-        Merge update a usergroup.
-
-        Updating usergroups without replacing current state (i.e. merge update) is hard.
-        This function simplifies the process.
-
-        The rights and userids provided are merged into the usergroup.
-        """
-        usergroup = self.get_usergroup(usergroup_name)
-
-        if rights:
-            # Get the current rights with ids from new rights filtered
-            new_rights = [
-                current_right
-                for current_right in usergroup.rights
-                if current_right.id not in [right.id for right in rights]
-            ]  # type: list[ZabbixRight]
-            new_rights.extend(rights)
-            return self.usergroup.update(usrgrpid=usergroup.usrgrpid, rights=new_rights)
-
-        if userids:
-            current_userids = [user.userid for user in usergroup.users]  # type: list[str]
-            # Make sure we only have unique ids
-            new_userids = list(set(current_userids + userids))
-            return self.usergroup.update(
-                usrgrpid=usergroup.usrgrpid, userids=new_userids
-            )
-
-        return None
-
     def add_usergroup_users(self, usergroup_name: str, users: List[User]) -> None:
         """Add users to a user group. Ignores users already in the group."""
         self._update_usergroup_users(usergroup_name, users, remove=False)
@@ -1575,7 +1535,7 @@ class ZabbixAPI:
         # NOTE: despite what the docs say, we need to pass both templateids_link and templateids_clear
         # in order to unlink and clear templates. Only passing in templateids_clear will just
         # unlink the templates but not clear them (????) Absurd behavior.
-        # This is NOT the case for host.massremove, where `templateids_clear` is enough...
+        # This is NOT the case for host.massremove, where `templateids_clear` is sufficient...
         if clear:
             params["templateids_clear"] = params["templateids_link"]
         try:
