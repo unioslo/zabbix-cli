@@ -179,19 +179,6 @@ class APIStrEnum(Choice):
         return str(self.value).casefold()
 
 
-class OnOffChoice(Choice):
-    """On/Off choice."""
-
-    # TODO: find a way to create subclasses/different enums from this,
-    # so that we can re-use these members, but with different a
-    # class names  or __choice__name__
-    # Currently, we can't subclass enums with members, so just creating a
-    # new enum with the same members is the only way to do it.
-
-    ON = APIStr("on", 0)  # Yes, 0 is on, 1 is off...
-    OFF = APIStr("off", 1)
-
-
 class UserRole(APIStrEnum):
     __choice_name__ = "User role"
 
@@ -220,7 +207,6 @@ class AgentAvailable(APIStrEnum):
     UNAVAILABLE = APIStr("unavailable", 2)
 
 
-# See: zabbix_cli.utils.args.OnOffChoice for why we re-define on/off enum here
 class MonitoringStatus(APIStrEnum):
     """Host monitoring status."""
 

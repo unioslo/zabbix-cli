@@ -51,12 +51,12 @@ def run_repl(ctx: typer.Context) -> None:
     from zabbix_cli.state import get_state
 
     # Patch click-repl THEN import it
+    # Apply patches here to avoid impacting startup time of the CLI
     from zabbix_cli._patches.click_repl import patch
 
     patch()
     from click_repl import repl as start_repl
 
-    # Apply patches here to avoid impacting startup time of the CLI
     state = get_state()
 
     def print_intro() -> None:

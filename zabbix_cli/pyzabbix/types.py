@@ -105,7 +105,7 @@ E.g. `[{"hostid": "123"}, {"hostid": "456"}]`
 
 
 class ModifyGroupItem(TypedDict):
-    """Argument for a host ID in an API request."""
+    """Argument for a group ID in an API request."""
 
     groupid: Union[str, int]
 
@@ -158,7 +158,7 @@ class ZabbixAPIBaseModel(TableRenderable):
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
     def model_dump_api(self) -> Dict[str, Any]:
-        """Dump the model with fields used as parameters in API requests."""
+        """Dump the model as a JSON-serializable dict used in API calls."""
         return self.model_dump(mode="json", exclude_none=True)
 
 
@@ -190,8 +190,8 @@ class User(ZabbixAPIBaseModel):
     roleid: Optional[int] = Field(
         default=None, validation_alias=AliasChoices("roleid", "type")
     )
-    # NOTE: Not adding properties we don't use, since Zabbix have a habit of breaking
-    # their own API by changing names and types of properties.
+    # NOTE: Not adding properties we don't use, since Zabbix has a habit of breaking
+    # its own API by changing names and types of properties between versions.
 
     @computed_field  # type: ignore[misc]
     @property
