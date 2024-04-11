@@ -1721,7 +1721,7 @@ class ZabbixAPI:
         return [User(**user) for user in users]
 
     def delete_user(self, user: User) -> str:
-        """Delete a user given its username.
+        """Delete a user.
 
         Returns ID of deleted user."""
 
