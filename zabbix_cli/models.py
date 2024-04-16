@@ -105,7 +105,7 @@ class TableRenderable(BaseModel):
     empty_ok: bool = Field(default=False, exclude=True)
     """Don't print a message if table is empty when rendered as Table."""
 
-    def _get_extra(self, field: str, key: str, default: T) -> T:
+    def _get_extra(self, field: str, key: MetaKey, default: T) -> T:
         f = self.model_fields.get(field, None)
         if not f:
             raise ValueError(f"Field {field!r} does not exist.")
