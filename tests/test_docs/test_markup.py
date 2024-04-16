@@ -156,7 +156,10 @@ MarkdownSymbol = markup.MarkdownSymbol  # type: ignore
         ),
     ],
 )
-def test_markdownsymbol_symbol(inp: MarkdownSymbol, expect: str) -> None:
+def test_markdownsymbol_symbol(
+    inp: MarkdownSymbol,  # type: ignore
+    expect: str,
+) -> None:
     assert inp.symbol == expect  # type: ignore
 
 
@@ -170,27 +173,27 @@ def test_markdownsymbol_symbol(inp: MarkdownSymbol, expect: str) -> None:
         ),
         pytest.param(
             "[example]zabbix-cli --version[/example]",
-            "```\nzabbix-cli --version\n```",
-            id="Example (long end)",
+            "```\nzabbix-cli --version\n```",  # Same result as above
+            id="Example (explicit end style)",
         ),
         pytest.param(
             "[bold example]zabbix-cli --version[/bold example]",
-            "```\nzabbix-cli --version\n```",
+            "```\nzabbix-cli --version\n```",  # Ignoring bold
             id="Example + bold",
         ),
         pytest.param(
             "[example python]zabbix-cli --version[/example python]",
-            "```py\nzabbix-cli --version\n```",
+            "```py\nzabbix-cli --version\n```",  # Adding language
             id="Example with language",
         ),
         pytest.param(
             "     [example]zabbix-cli --version[/example]",
-            "```\nzabbix-cli --version\n```",
+            "```\nzabbix-cli --version\n```",  # Ignoring leading spaces
             id="Leading spaces outside style",
         ),
         pytest.param(
             "[example]      zabbix-cli --version[/example]",
-            "```\nzabbix-cli --version\n```",
+            "```\nzabbix-cli --version\n```",  # Ignoring leading spaces inside
             id="Leading spaces inside style",
         ),
     ],
