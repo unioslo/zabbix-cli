@@ -148,8 +148,6 @@ class TableRenderable(BaseModel):
         cols = []
 
         for field_name, field in self.__all_fields__().items():
-            if getattr(field, "exclude", False):  # computed fields can't be excluded
-                continue
             if (
                 field.json_schema_extra
                 and isinstance(field.json_schema_extra, dict)
