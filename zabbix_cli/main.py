@@ -176,7 +176,7 @@ def should_skip_configuration(ctx: typer.Context) -> bool:
     return ctx.invoked_subcommand in SKIPPABLE_COMMANDS
 
 
-def main() -> None:
+def main() -> int:
     """Main entry point for the CLI."""
     try:
         app()
@@ -192,6 +192,7 @@ def main() -> None:
         state = get_state()
         state.logout()
         logger.debug("Zabbix-CLI stopped.")
+    return 0
 
 
 if __name__ == "__main__":

@@ -24,3 +24,6 @@ zabbix_cli/commands/_dev.py
 # Auto-generated docs files
 docs/guide/commands/
 docs/data
+
+# Pyinstaller
+*.spec

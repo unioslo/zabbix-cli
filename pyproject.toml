@@ -51,7 +51,7 @@ Source = "https://github.com/unioslo/zabbix-cli"
 
 [project.scripts]
 zabbix-cli = "zabbix_cli.main:main"
-zabbix-cli-init = "zabbix_cli.scripts.init:run"
+zabbix-cli-init = "zabbix_cli.scripts.init:main"
 zabbix-cli-bulk-execution = "zabbix_cli.scripts.bulk_execution:main"
 
 [project.optional-dependencies]

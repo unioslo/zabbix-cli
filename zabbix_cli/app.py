@@ -26,7 +26,6 @@ from typer.models import CommandFunctionType
 from typer.models import CommandInfo as TyperCommandInfo
 from typer.models import Default
 
-from zabbix_cli.commands import bootstrap_commands
 from zabbix_cli.state import get_state
 from zabbix_cli.state import State
 
@@ -195,4 +194,16 @@ app = StatefulApp(
     add_completion=True,
     rich_markup_mode="rich",
 )
-bootstrap_commands()  # must be called after app is defined
+
+from zabbix_cli.commands import cli  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import export  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import host  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import hostgroup  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import item  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import macro  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import maintenance  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import problem  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import proxy  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import template  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import templategroup  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import user  # type: ignore # noqa: E402, F401
