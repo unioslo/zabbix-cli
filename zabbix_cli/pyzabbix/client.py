@@ -692,6 +692,7 @@ class ZabbixAPI:
                 # Logical AND for multiple unique identifiers is not possible
                 if search and not is_id:
                     params["searchWildcardsEnabled"] = True
+                    params["searchByAny"] = True
                     params.setdefault("search", {}).setdefault("host", []).append(
                         name_or_id
                     )
@@ -1116,15 +1117,21 @@ class ZabbixAPI:
         rights.extend(new_rights)
         return rights
 
-    def get_proxy(self, name: str, select_hosts: bool = False) -> Proxy:
+    def get_proxy(
+        self, name: str, select_hosts: bool = False, search: bool = True
+    ) -> Proxy:
         """Fetches a single proxy matching the given name."""
-        proxies = self.get_proxies(name=name, select_hosts=select_hosts)
+        proxies = self.get_proxies(name=name, select_hosts=select_hosts, search=search)
         if not proxies:
             raise ZabbixNotFoundError(f"Proxy {name!r} not found")
         return proxies[0]
 
     def get_proxies(
-        self, name: Optional[str] = None, select_hosts: bool = False, **kwargs: Any
+        self,
+        name: Optional[str] = None,
+        select_hosts: bool = False,
+        search: bool = True,
+        **kwargs: Any,
     ) -> List[Proxy]:
         """Fetches all proxies."""
         params = {"output": "extend"}  # type: ParamsType
@@ -1132,6 +1139,8 @@ class ZabbixAPI:
             params.setdefault("search", {})[compat.proxy_name(self.version)] = name
         if select_hosts:
             params["selectHosts"] = "extend"
+        if search and params.get("search"):
+            params["searchWildcardsEnabled"] = True
 
         params.update(**kwargs)
         try:

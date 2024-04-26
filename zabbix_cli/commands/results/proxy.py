@@ -17,18 +17,34 @@ if TYPE_CHECKING:
     from zabbix_cli.models import RowsType  # noqa: F401
 
 
-class UpdateHostProxyResult(BaseModel):
+class UpdateHostProxyResult(TableRenderable):
     """Result type for `update_host_proxy` command."""
+
+    source: Optional[str] = None
+    """ID of the old proxy."""
+    destination: Optional[str] = None
+    """ID of the new proxy"""
+    hosts: List[str] = []
+    """Name of the host."""
+
+    @classmethod
+    def from_result(
+        cls, hosts: List[Host], source_proxyid: str, dest_proxyid: str
+    ) -> UpdateHostProxyResult:
+        return cls(
+            source=source_proxyid,
+            destination=dest_proxyid,
+            hosts=[h.host for h in hosts],
+        )
+
+
+class MoveProxyHostsResult(TableRenderable):
+    """Result type for `move_proxy_hosts` command."""
 
     source: Optional[str] = None
     """ID of the source (old) proxy."""
     destination: Optional[str] = None
     """ID of the destination (new) proxy."""
-
-
-class MoveProxyHostsResult(UpdateHostProxyResult):
-    """Result type for `move_proxy_hosts` command."""
-
     hosts: List[str] = []
 
 

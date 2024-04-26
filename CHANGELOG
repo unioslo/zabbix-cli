@@ -134,6 +134,10 @@
     - Old name is still supported, but hidden and deprecated.
   - `show_hostgroup_permissions`:
     - Shows permissions for all host groups by default.
+  - `update_host_proxy`
+    - Supports setting proxy for multiple hosts at once using wildcards.
+    - Output format is changed.
+      - Now groups hosts by previous proxy.
 - Use Hatch for building and publishing
 - Switch from setup.py to pyproject.toml
 

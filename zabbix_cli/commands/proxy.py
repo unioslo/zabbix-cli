@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import itertools
 import logging
-import random
+from typing import Dict
+from typing import List
 from typing import Optional
 
 import typer
@@ -14,6 +14,7 @@ from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import success
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.args import parse_int_list_arg
+from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.utils import compile_pattern
 
 HELP_PANEL = "Proxy"
@@ -22,27 +23,58 @@ HELP_PANEL = "Proxy"
 @app.command(name="update_host_proxy", rich_help_panel=HELP_PANEL)
 def update_host_proxy(
     ctx: typer.Context,
-    hostname_or_id: str = typer.Argument(..., help="Hostname or ID"),
-    proxy_name: str = typer.Argument(..., help="Name of new proxy for host."),
+    hostname: str = typer.Argument(
+        ..., help="Hostnames. Comma-separated Supports wildcards."
+    ),
+    proxy: str = typer.Argument(..., help="Proxy name. Supports wildcards."),
+    # TODO: add dryrun option
 ) -> None:
-    """Change the proxy for a host."""
+    """Assign one or more hosts to a proxy. Supports wildcards for both hosts and proxy.
+
+    If multiple proxies match the proxy name, the first match is used."""
     from zabbix_cli.commands.results.proxy import UpdateHostProxyResult
-    from zabbix_cli.models import Result
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.output.console import error
+    from zabbix_cli.output.console import info
+    from zabbix_cli.pyzabbix.types import Host
 
-    proxy = app.state.client.get_proxy(proxy_name)
-    host = app.state.client.get_host(hostname_or_id)
+    hostnames = parse_list_arg(hostname)
+    hosts = app.state.client.get_hosts(*hostnames, search=True)
+    proxy_ = app.state.client.get_proxy(proxy)
 
-    if host.proxyid and host.proxyid == proxy.proxyid:
-        exit_err(f"Host {host} already has proxy {proxy.name!r}")
+    updated: List[Host] = []
+    fail: List[Host] = []
+    with app.status("Updating host proxies...") as status:
+        for host in hosts:
+            status.update(f"Updating {host.host}...")
+            if host.proxyid and host.proxyid == proxy_.proxyid:
+                info(f"Host {host.host!r} already has proxy {proxy_.name!r}")
+                continue
+            try:
+                app.state.client.update_host_proxy(host, proxy_)
+                updated.append(host)
+            except Exception as e:
+                fail.append(host)
+                error(f"Failed to update host {host.host!r}: {e}")
 
-    app.state.client.update_host_proxy(host, proxy)
+    # TODO: report failed hosts
+
+    # Group results by previous proxy
+    proxy_map: Dict[str, List[Host]] = {}
+    for host in updated:
+        proxy_map.setdefault(host.proxyid or "0", []).append(host)
+
     render_result(
-        Result(
-            message=f"Updated proxy for host {host} to {proxy.name!r}",
-            result=UpdateHostProxyResult(
-                source=host.proxyid,
-                destination=proxy.proxyid,
-            ),
+        AggregateResult(
+            message=f"Updated proxy for {len(hosts)}.",
+            result=[
+                UpdateHostProxyResult.from_result(
+                    hosts=hosts,
+                    source_proxyid=prev_proxy,
+                    dest_proxyid=proxy_.proxyid,
+                )
+                for prev_proxy, hosts in proxy_map.items()
+            ],
         )
     )
 
@@ -156,6 +188,9 @@ def load_balance_proxy_hosts(
     Weighting for the load balancing is optional, and defaults to equal weights.
     Number of proxies must match number of weights if specified.
     """
+    import itertools
+    import random
+
     from zabbix_cli.commands.results.proxy import LBProxy
     from zabbix_cli.commands.results.proxy import LBProxyResult
 
