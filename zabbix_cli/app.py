@@ -185,7 +185,7 @@ class StatefulApp(typer.Typer):
 
     @property
     def status(self) -> StatusCallable:
-        return self.state.console.status
+        return self.state.err_console.status
 
 
 app = StatefulApp(

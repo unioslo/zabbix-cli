@@ -69,6 +69,9 @@ class State:
     _console = None  # type: Console | None
     """Stdout Rich console object."""
 
+    _err_console = None  # type: Console | None
+    """Stderr Rich console object."""
+
     token = None  # type: str | None
     """Active Zabbix API auth token."""
 
@@ -116,6 +119,16 @@ class State:
             from .output.console import console
             self._console = console
         return self._console
+        # fmt: on
+
+    @property
+    def err_console(self) -> Console:
+        """Rich console object."""
+        # fmt: off
+        if not self._err_console:
+            from .output.console import err_console
+            self._err_console = err_console
+        return self._err_console
         # fmt: on
 
     @property
