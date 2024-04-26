@@ -6,7 +6,8 @@ from typing import Type
 import pytest
 import typer
 
-from zabbix_cli.bulk import BulkCommand, BulkRunner
+from zabbix_cli.bulk import BulkCommand
+from zabbix_cli.bulk import BulkRunner
 from zabbix_cli.bulk import CommentLineError
 from zabbix_cli.bulk import EmptyLineError
 

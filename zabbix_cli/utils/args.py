@@ -2,17 +2,17 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Optional
 
 import typer
 
 from zabbix_cli.exceptions import ZabbixCLIError
 
 if TYPE_CHECKING:
+    from zabbix_cli.app import StatefulApp
     from zabbix_cli.pyzabbix.types import Host
     from zabbix_cli.pyzabbix.types import HostGroup
-    from zabbix_cli.app import StatefulApp
 
 
 def is_set(ctx: typer.Context, option: str) -> bool:
@@ -64,8 +64,8 @@ def parse_hostgroups_arg(
     strict: bool = False,
     select_hosts: bool = False,
 ) -> list[HostGroup]:
-    from zabbix_cli.output.prompts import str_prompt
     from zabbix_cli.output.console import exit_err
+    from zabbix_cli.output.prompts import str_prompt
 
     if not hgroup_names_or_ids:
         hgroup_names_or_ids = str_prompt("Host group(s)")
@@ -89,8 +89,8 @@ def parse_hostnames_arg(
     hostnames_or_ids: Optional[str],
     strict: bool = False,
 ) -> list[Host]:
-    from zabbix_cli.output.prompts import str_prompt
     from zabbix_cli.output.console import exit_err
+    from zabbix_cli.output.prompts import str_prompt
 
     if not hostnames_or_ids:
         hostnames_or_ids = str_prompt("Host(s)")

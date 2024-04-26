@@ -6,6 +6,7 @@ Thus, every command is part of the same command group."""
 from __future__ import annotations
 
 import inspect
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -16,7 +17,6 @@ from typing import Optional
 from typing import Protocol
 from typing import Tuple
 from typing import Type
-from typing import TYPE_CHECKING
 from typing import Union
 
 import typer
@@ -26,12 +26,12 @@ from typer.models import CommandFunctionType
 from typer.models import CommandInfo as TyperCommandInfo
 from typer.models import Default
 
-from zabbix_cli.state import get_state
 from zabbix_cli.state import State
+from zabbix_cli.state import get_state
 
 if TYPE_CHECKING:
-    from rich.status import Status  # noqa: F401
     from rich.console import RenderableType  # noqa: F401
+    from rich.status import Status  # noqa: F401
     from rich.style import StyleType  # noqa: F401
 
 

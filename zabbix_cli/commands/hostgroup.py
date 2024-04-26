@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
 import typer
 
-from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.app import app
 from zabbix_cli.commands.host import HELP_PANEL
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err

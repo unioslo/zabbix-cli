@@ -4,15 +4,14 @@ from typing import Optional
 
 import typer
 
-from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.app import app
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import str_prompt_optional
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import DataCollectionMode
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.utils import convert_time_to_interval
-
 
 HELP_PANEL = "Maintenance"
 
@@ -148,8 +147,8 @@ def show_maintenance_definitions(
     """Show maintenance definitions for IDs, host groups or hosts.
 
     At least one of [option]--maintenance-id[/], [option]--hostgroup[/], or [option]--host[/] is required."""
-    from zabbix_cli.models import AggregateResult
     from zabbix_cli.commands.results.maintenance import ShowMaintenanceDefinitionsResult
+    from zabbix_cli.models import AggregateResult
 
     if not any((maintenance_id, hostgroup, host)):
         maintenance_id = str_prompt_optional("Maintenance ID")
@@ -210,8 +209,8 @@ def show_maintenance_periods(
 
     Shows all maintenance definitions by default.
     """
-    from zabbix_cli.models import AggregateResult
     from zabbix_cli.commands.results.maintenance import ShowMaintenancePeriodsResult
+    from zabbix_cli.models import AggregateResult
 
     mids = parse_list_arg(maintenance_id)
     maintenances = app.state.client.get_maintenances(maintenance_ids=mids)

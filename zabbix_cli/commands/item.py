@@ -6,11 +6,10 @@ from typing import Optional
 import typer
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
-from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.app import app
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.render import render_result
-
 
 HELP_PANEL = "Item"
 

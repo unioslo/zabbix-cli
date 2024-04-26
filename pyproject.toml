@@ -117,6 +117,8 @@ ignore_missing_imports = true
 strict = false
 exclude = ["tests", "zabbix_cli/commands/_dev.py"]
 
+[tool.ruff.lint]
+extend-select = ["I"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

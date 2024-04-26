@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import List, Set
-from typing import Optional
 from typing import TYPE_CHECKING
+from typing import List
+from typing import Optional
+from typing import Set
 
 from pydantic import computed_field
 from typing_extensions import TypedDict

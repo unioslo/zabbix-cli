@@ -127,6 +127,7 @@ def configure_logging(config: LoggingConfig | None = None):
 
 def main(inargs=None):
     import argparse
+
     from zabbix_cli.config import get_config
 
     parser = argparse.ArgumentParser("test log settings")

@@ -1,7 +1,12 @@
+from __future__ import annotations
+
 from typing import List
-from pydantic import Field
+
 import pytest
-from zabbix_cli.models import TableRenderable, MetaKey
+from pydantic import Field
+
+from zabbix_cli.models import MetaKey
+from zabbix_cli.models import TableRenderable
 
 
 @pytest.mark.parametrize(

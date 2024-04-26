@@ -19,13 +19,14 @@ import random
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Literal
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Union
+from typing import cast
 
 from pydantic import ValidationError
 
@@ -74,16 +75,17 @@ from zabbix_cli.pyzabbix.types import ZabbixRight
 from zabbix_cli.utils.utils import get_acknowledge_action_value
 
 if TYPE_CHECKING:
-    from zabbix_cli.pyzabbix.types import ParamsType  # noqa: F401
-    from zabbix_cli.pyzabbix.types import SortOrder  # noqa: F401
-    from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
-    from zabbix_cli.pyzabbix.types import ModifyGroupParams  # noqa: F401
-    from zabbix_cli.pyzabbix.types import ModifyTemplateParams  # noqa: F401
     import httpx
+    from httpx._types import TimeoutTypes
     from packaging.version import Version
     from typing_extensions import TypedDict
-    from httpx._types import TimeoutTypes
+
     from zabbix_cli.config.model import Config
+    from zabbix_cli.pyzabbix.types import ModifyGroupParams  # noqa: F401
+    from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
+    from zabbix_cli.pyzabbix.types import ModifyTemplateParams  # noqa: F401
+    from zabbix_cli.pyzabbix.types import ParamsType  # noqa: F401
+    from zabbix_cli.pyzabbix.types import SortOrder  # noqa: F401
 
     class HTTPXClientKwargs(TypedDict, total=False):
         timeout: TimeoutTypes

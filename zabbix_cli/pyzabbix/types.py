@@ -16,21 +16,22 @@ from __future__ import annotations
 
 from datetime import datetime
 from datetime import timedelta
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Union
 
-from pydantic import AliasChoices, FieldSerializationInfo
+from pydantic import AliasChoices
 from pydantic import BaseModel
-from pydantic import computed_field
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import FieldSerializationInfo
+from pydantic import ValidationInfo
+from pydantic import computed_field
 from pydantic import field_serializer
 from pydantic import field_validator
-from pydantic import ValidationInfo
 from typing_extensions import Literal
 from typing_extensions import TypedDict
 
@@ -62,10 +63,9 @@ from zabbix_cli.utils.utils import get_usergroup_status
 from zabbix_cli.utils.utils import get_value_type
 from zabbix_cli.utils.utils import get_zabbix_agent_status
 
-
 if TYPE_CHECKING:
-    from zabbix_cli.models import ColsType  # noqa: F401
     from zabbix_cli.models import ColsRowsType
+    from zabbix_cli.models import ColsType  # noqa: F401
     from zabbix_cli.models import RowsType  # noqa: F401
 
 SortOrder = Literal["ASC", "DESC"]

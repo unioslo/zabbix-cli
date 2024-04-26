@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Mapping
-from typing import TYPE_CHECKING
 from typing import Union
 
 import rich
 import rich.box
-from pydantic import computed_field
 from pydantic import Field
+from pydantic import computed_field
 from pydantic import field_validator
 from pydantic import model_serializer
 
@@ -27,8 +27,8 @@ from zabbix_cli.utils.utils import get_usergroup_status
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
-    from zabbix_cli.models import RowsType  # noqa: F401
     from zabbix_cli.models import RowContent  # noqa: F401
+    from zabbix_cli.models import RowsType  # noqa: F401
 
 
 class UgroupUpdateUsersResult(TableRenderable):

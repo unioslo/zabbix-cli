@@ -5,7 +5,6 @@ import unittest
 
 import zabbix_cli.logs
 
-
 logger = logging.getLogger(__name__)
 
 

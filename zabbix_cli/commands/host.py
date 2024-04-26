@@ -7,8 +7,8 @@ from typing import Optional
 import typer
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
-from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
@@ -23,7 +23,6 @@ from zabbix_cli.pyzabbix.enums import SNMPAuthProtocol
 from zabbix_cli.pyzabbix.enums import SNMPPrivProtocol
 from zabbix_cli.pyzabbix.enums import SNMPSecurityLevel
 from zabbix_cli.utils.args import parse_list_arg
-
 
 HELP_PANEL = "Host"
 
@@ -699,8 +698,8 @@ def show_hosts(
     Hosts can be filtered by agent, monitoring and maintenance status.
     Hosts are sorted by name.
     """
-    from zabbix_cli.models import AggregateResult
     from zabbix_cli.commands.results.host import HostFilterArgs
+    from zabbix_cli.models import AggregateResult
 
     args = HostFilterArgs.from_command_args(
         filter_legacy, agent, maintenance, monitored

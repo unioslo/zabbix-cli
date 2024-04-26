@@ -7,7 +7,6 @@ from rich.theme import Theme
 from strenum import StrEnum
 from typer.rich_utils import STYLE_OPTION
 
-
 # NOTE: we define these enums to allow us to parse the markup text and
 #       correctly convert it to markdown in the docs. Without this, we would
 #       have to hard-code each style to correspond to a specific markdown formatting

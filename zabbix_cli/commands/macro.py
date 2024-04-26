@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-
 import typer
 
-from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.app import app
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.render import render_result
-
 
 HELP_PANEL = "Macro"
 
@@ -131,9 +129,9 @@ def show_usermacro_host_list(
     """Find all hosts with a user macro of the given name.
 
     Renders a list of the complete macro object and its hosts in JSON mode."""
-    from zabbix_cli.models import AggregateResult
     from zabbix_cli.commands.results.macro import MacroHostListV2
     from zabbix_cli.commands.results.macro import MacroHostListV3
+    from zabbix_cli.models import AggregateResult
 
     usermacro = fmt_macro_name(usermacro)
     macros = app.state.client.get_macros(macro_name=usermacro, select_hosts=True)
@@ -167,8 +165,8 @@ def define_global_macro(
     value: str = typer.Argument(..., help="Value of the macro"),
 ) -> None:
     """Create a global macro."""
-    from zabbix_cli.models import Result
     from zabbix_cli.commands.results.macro import GlobalMacroResult
+    from zabbix_cli.models import Result
 
     name = fmt_macro_name(name)
 
@@ -191,8 +189,8 @@ def define_global_macro(
 @app.command("show_global_macros", rich_help_panel=HELP_PANEL)
 def show_global_macros(ctx: typer.Context) -> None:
     """Show all global macros."""
-    from zabbix_cli.models import AggregateResult
     from zabbix_cli.commands.results.macro import GlobalMacroResult
+    from zabbix_cli.models import AggregateResult
 
     macros = app.state.client.get_global_macros()
     render_result(
@@ -215,8 +213,8 @@ def show_usermacro_template_list(
     ),
 ) -> None:
     """Find all templates with a user macro of the given name."""
-    from zabbix_cli.models import AggregateResult
     from zabbix_cli.commands.results.macro import ShowUsermacroTemplateListResult
+    from zabbix_cli.models import AggregateResult
 
     macro_name = fmt_macro_name(macro_name)
     macro = app.state.client.get_macro(macro_name=macro_name, select_templates=True)

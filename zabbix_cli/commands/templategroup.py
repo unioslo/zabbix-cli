@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Union
 
 import typer
 
-from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.app import app
 from zabbix_cli.commands.template import HELP_PANEL  # combine with template commands
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
@@ -17,7 +17,6 @@ from zabbix_cli.output.console import success
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.utils.args import parse_list_arg
-
 
 if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import HostGroup

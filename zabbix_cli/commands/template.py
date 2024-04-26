@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from itertools import chain
+from typing import TYPE_CHECKING
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Union
 
 import typer
 
-from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.app import app
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.console import success
@@ -169,8 +169,8 @@ def link_template_to_host(
     ),
 ) -> None:
     """Link template(s) to host(s)."""
-    from zabbix_cli.models import AggregateResult
     from zabbix_cli.commands.results.template import LinkTemplateToHostResult
+    from zabbix_cli.models import AggregateResult
 
     templates = _handle_template_arg(template_names_or_ids, strict, select_hosts=True)
     hosts = _handle_hostnames_args(hostnames_or_ids, strict)
@@ -243,8 +243,8 @@ def unlink_template_from_host(
 
     Unlinks and clears by default. Use `--no-clear` to unlink without clearing.
     """
-    from zabbix_cli.models import AggregateResult
     from zabbix_cli.commands.results.template import UnlinkTemplateFromHostResult
+    from zabbix_cli.models import AggregateResult
 
     templates = _handle_template_arg(template_names_or_ids, strict, select_hosts=True)
     hosts = _handle_hostnames_args(hostnames_or_ids, strict)

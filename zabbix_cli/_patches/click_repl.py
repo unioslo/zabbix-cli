@@ -6,9 +6,9 @@ import sys
 import click
 import click_repl
 from click.exceptions import Exit as ClickExit
+from click_repl import ExitReplException
 from click_repl import bootstrap_prompt
 from click_repl import dispatch_repl_commands
-from click_repl import ExitReplException
 from click_repl import handle_internal_commands
 from prompt_toolkit.shortcuts import prompt
 

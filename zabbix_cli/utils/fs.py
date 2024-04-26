@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from zabbix_cli.exceptions import ZabbixCLIFileError, ZabbixCLIFileNotFoundError
+from zabbix_cli.exceptions import ZabbixCLIFileError
+from zabbix_cli.exceptions import ZabbixCLIFileNotFoundError
 
 
 def read_file(file: Path) -> str:

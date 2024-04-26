@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 
 import typer
 
@@ -46,9 +46,9 @@ AUTH_TOKEN_FILE = Path.home() / ".zabbix-cli_auth_token"
 
 def run_command_from_option(ctx: typer.Context, command: str) -> None:
     """Runs a command via old-style --command/-C option."""
-    from zabbix_cli.output.console import warning
     from zabbix_cli.output.console import error
     from zabbix_cli.output.console import exit_err
+    from zabbix_cli.output.console import warning
 
     warning(
         "The [i]--command/-C[/] option is deprecated and will be removed in a future release. "

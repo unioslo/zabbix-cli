@@ -6,11 +6,13 @@ import os
 from functools import lru_cache
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING
+from typing import Any
 from typing import Callable
 from typing import List
-from typing import overload
 from typing import Type
+from typing import cast
+from typing import overload
 
 from rich.prompt import Confirm
 from rich.prompt import FloatPrompt
@@ -19,15 +21,15 @@ from rich.prompt import Prompt
 from typing_extensions import ParamSpec
 from typing_extensions import TypeVar
 
+from zabbix_cli.exceptions import ZabbixCLIError
+
 from .console import err_console
 from .console import error
 from .console import exit_err
 from .formatting.path import path_link
 from .style import Color
-from .style import green
 from .style import Icon
-from zabbix_cli.exceptions import ZabbixCLIError
-
+from .style import green
 
 if TYPE_CHECKING:
     from types import EllipsisType

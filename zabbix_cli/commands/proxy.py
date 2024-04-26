@@ -7,15 +7,14 @@ from typing import Optional
 
 import typer
 
-from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import success
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.args import parse_int_list_arg
 from zabbix_cli.utils.utils import compile_pattern
-
 
 HELP_PANEL = "Proxy"
 
@@ -27,8 +26,8 @@ def update_host_proxy(
     proxy_name: str = typer.Argument(..., help="Name of new proxy for host."),
 ) -> None:
     """Change the proxy for a host."""
-    from zabbix_cli.models import Result
     from zabbix_cli.commands.results.proxy import UpdateHostProxyResult
+    from zabbix_cli.models import Result
 
     proxy = app.state.client.get_proxy(proxy_name)
     host = app.state.client.get_host(hostname_or_id)
@@ -76,8 +75,8 @@ def move_proxy_hosts(
     ),
 ) -> None:
     """Move hosts from one proxy to another."""
-    from zabbix_cli.models import Result
     from zabbix_cli.commands.results.proxy import MoveProxyHostsResult
+    from zabbix_cli.models import Result
 
     hfilter = host_filter_arg or host_filter
     if hfilter:  # Compile before we fetch to fail fast

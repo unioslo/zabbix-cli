@@ -1,23 +1,23 @@
 from __future__ import annotations
 
 import functools
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import List
 from typing import NoReturn
 from typing import Optional
 from typing import Protocol
-from typing import runtime_checkable
 from typing import Type
-from typing import TYPE_CHECKING
-
+from typing import runtime_checkable
 
 if TYPE_CHECKING:
-    from zabbix_cli.pyzabbix.types import ParamsType
-    from zabbix_cli.pyzabbix.types import ZabbixAPIResponse
-    from pydantic import ValidationError
     from httpx import ConnectError
     from httpx import RequestError
     from httpx import Response as HTTPResponse
+    from pydantic import ValidationError
+
+    from zabbix_cli.pyzabbix.types import ParamsType
+    from zabbix_cli.pyzabbix.types import ZabbixAPIResponse
 
 
 class ZabbixCLIError(Exception):

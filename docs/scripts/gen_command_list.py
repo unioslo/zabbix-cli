@@ -19,10 +19,9 @@ import yaml  # type: ignore
 
 from zabbix_cli.app import app
 
-
 sys.path.append(Path(__file__).parent.as_posix())
-from utils.commands import get_app_commands  # noqa: E402
 from common import DATA_DIR  # noqa
+from utils.commands import get_app_commands  # noqa: E402
 
 
 def main() -> None:

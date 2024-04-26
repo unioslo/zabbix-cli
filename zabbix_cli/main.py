@@ -26,8 +26,8 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Optional
 
 import typer
 
@@ -35,7 +35,6 @@ from zabbix_cli.__about__ import __version__
 from zabbix_cli.app import app
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
-
 
 if TYPE_CHECKING:
     from typing import Any  # noqa: F401
@@ -46,16 +45,18 @@ logger = logging.getLogger("zabbix-cli")
 def run_repl(ctx: typer.Context) -> None:
     from rich.console import Group
     from rich.panel import Panel
-    from zabbix_cli.output.console import console
-    from zabbix_cli.output.style import green
-    from zabbix_cli.state import get_state
 
     # Patch click-repl THEN import it
     # Apply patches here to avoid impacting startup time of the CLI
     from zabbix_cli._patches.click_repl import patch
+    from zabbix_cli.output.console import console
+    from zabbix_cli.output.style import green
+    from zabbix_cli.state import get_state
 
     patch()
-    from click_repl import repl as start_repl  # pyright: ignore[reportUnknownVariableType, reportMissingTypeStubs]
+    from click_repl import (
+        repl as start_repl,  # pyright: ignore[reportUnknownVariableType, reportMissingTypeStubs]
+    )
 
     state = get_state()
 
@@ -120,8 +121,8 @@ def main_callback(
     if "--help" in sys.argv:
         return
 
-    from zabbix_cli.logs import configure_logging
     from zabbix_cli.logs import LogContext
+    from zabbix_cli.logs import configure_logging
     from zabbix_cli.state import get_state
 
     if should_skip_configuration(ctx):

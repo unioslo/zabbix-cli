@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import TYPE_CHECKING
 
 from packaging.version import Version
-from pydantic import ConfigDict, FieldSerializationInfo
+from pydantic import ConfigDict
+from pydantic import FieldSerializationInfo
 from pydantic import field_serializer
 from rich.box import SIMPLE_HEAD
 from rich.table import Table

@@ -1,20 +1,19 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import TYPE_CHECKING
 from typing import Union
 
-from pydantic import computed_field
 from pydantic import Field
+from pydantic import computed_field
 from pydantic import field_serializer
 
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import Template
 from zabbix_cli.pyzabbix.types import TemplateGroup
-
 
 if TYPE_CHECKING:
     from zabbix_cli.models import RowsType

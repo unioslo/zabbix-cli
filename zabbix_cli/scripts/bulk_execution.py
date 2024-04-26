@@ -4,7 +4,6 @@ import typer
 
 from zabbix_cli.logs import configure_logging
 
-
 app = typer.Typer(
     name="zabbix-cli-bulk-execution", help="Bulk execution of Zabbix commands"
 )

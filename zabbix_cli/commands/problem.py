@@ -6,8 +6,8 @@ from typing import Optional
 import typer
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
-from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.app import app
 from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.render import render_result
@@ -15,7 +15,6 @@ from zabbix_cli.pyzabbix.enums import TriggerPriority
 from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_int_arg
 from zabbix_cli.utils.args import parse_list_arg
-
 
 HELP_PANEL = "Problem"
 
@@ -40,8 +39,8 @@ def acknowledge_event(
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Acknowledge event(s) by ID."""
-    from zabbix_cli.models import Result
     from zabbix_cli.commands.results.problem import AcknowledgeEventResult
+    from zabbix_cli.models import Result
 
     eids = parse_list_arg(event_ids)
     if not eids:
@@ -106,8 +105,8 @@ def acknowledge_trigger_last_event(
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Acknowledges the the last event for the given trigger(s)."""
-    from zabbix_cli.models import Result
     from zabbix_cli.commands.results.problem import AcknowledgeTriggerLastEventResult
+    from zabbix_cli.models import Result
 
     tids = parse_list_arg(trigger_ids)
     if not tids:

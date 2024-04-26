@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 from typing import Dict
 from typing import Optional
-from typing import TYPE_CHECKING
 
 from zabbix_cli.exceptions import ZabbixCLIError
 

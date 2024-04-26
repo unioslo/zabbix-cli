@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import logging
 from contextlib import suppress
+from typing import TYPE_CHECKING
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import TypeVar
 
 import typer
 from strenum import StrEnum
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
-from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
@@ -27,7 +27,6 @@ from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.pyzabbix.enums import UserRole
 from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_list_arg
-
 
 if TYPE_CHECKING:
     from typing import Protocol

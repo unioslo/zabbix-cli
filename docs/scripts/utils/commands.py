@@ -8,8 +8,8 @@ from typing import Optional
 import click
 import typer
 from pydantic import BaseModel
-from pydantic import computed_field
 from pydantic import Field
+from pydantic import computed_field
 from pydantic import model_validator
 from typer.core import TyperArgument
 from typer.core import TyperCommand

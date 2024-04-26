@@ -25,15 +25,16 @@ and other stateful objects."""
 # in this one place is convenient.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
+from typing import TYPE_CHECKING
+from typing import Any
 
 # This module should not import from other local modules because it's widely
 # used throughout the application, and we don't want to create circular imports.
 # Imports from other modules should be done inside functions, or in TYPE_CHECKING:
 if TYPE_CHECKING:
-    from rich.console import Console
     from prompt_toolkit.history import History  # noqa: F401
+    from rich.console import Console
+
     from zabbix_cli.config.model import Config
     from zabbix_cli.pyzabbix.client import ZabbixAPI
 
@@ -151,9 +152,9 @@ class State:
         Finally, the API version is set on the ZabbixAPIBaseModel class, so that
         we know how to render the results for the given version of the API.
         """
-        from zabbix_cli.pyzabbix.client import ZabbixAPI
-        from zabbix_cli.models import TableRenderable
         from zabbix_cli import auth
+        from zabbix_cli.models import TableRenderable
+        from zabbix_cli.pyzabbix.client import ZabbixAPI
 
         self.config = config
 

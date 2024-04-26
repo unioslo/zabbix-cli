@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Optional
 
 import typer
 

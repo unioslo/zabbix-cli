@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from typing import Iterator
+
 import pytest
 import typer
-from typer.testing import CliRunner
 from typer import Typer
-
+from typer.testing import CliRunner
 
 from zabbix_cli.main import app
 

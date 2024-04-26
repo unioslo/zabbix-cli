@@ -6,7 +6,8 @@ from rich import box
 from rich.table import Table
 
 if TYPE_CHECKING:
-    from zabbix_cli.models import ColsType, RowsType
+    from zabbix_cli.models import ColsType
+    from zabbix_cli.models import RowsType
 
 
 def get_table(

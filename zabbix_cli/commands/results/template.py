@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import List, Set
+from typing import List
 from typing import Literal
+from typing import Set
 from typing import Union
 
 from zabbix_cli.models import TableRenderable

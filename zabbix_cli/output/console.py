@@ -10,10 +10,9 @@ from rich.console import Console
 
 from zabbix_cli.logs import logger
 from zabbix_cli.output.formatting.path import path_link
-from zabbix_cli.output.style import Icon
 from zabbix_cli.output.style import RICH_THEME
+from zabbix_cli.output.style import Icon
 from zabbix_cli.state import get_state
-
 
 # stdout console used to print results
 console = Console(theme=RICH_THEME)
@@ -140,8 +139,9 @@ def exit_err(
 
     # Render JSON-formatted error message if output format is JSON
     if state.is_config_loaded and state.config.app.output_format == "json":
+        from zabbix_cli.models import Result
+        from zabbix_cli.models import ReturnCode
         from zabbix_cli.output.render import render_json
-        from zabbix_cli.models import Result, ReturnCode
 
         errors = []  # type: list[str]
         if exception:

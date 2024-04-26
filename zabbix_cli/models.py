@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, cast
+from typing import TYPE_CHECKING
+from typing import Any
 from typing import ClassVar
 from typing import Dict
 from typing import Generic
@@ -10,8 +11,8 @@ from typing import List
 from typing import MutableSequence
 from typing import Optional
 from typing import Tuple
-from typing import TYPE_CHECKING
 from typing import Union
+from typing import cast
 
 import rich.box
 from packaging.version import Version

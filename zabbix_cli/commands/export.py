@@ -4,21 +4,21 @@ import time
 from datetime import datetime
 from functools import partial
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Iterator
 from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Protocol
-from typing import TYPE_CHECKING
 from typing import Union
 
 import typer
 from strenum import StrEnum
 
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
-from zabbix_cli.app import app
 from zabbix_cli.app import Example
+from zabbix_cli.app import app
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.logs import logger
@@ -38,8 +38,12 @@ from zabbix_cli.utils.utils import convert_seconds_to_duration
 from zabbix_cli.utils.utils import open_directory
 from zabbix_cli.utils.utils import sanitize_filename
 
-
 if TYPE_CHECKING:
+    from typing_extensions import TypedDict
+    from typing_extensions import Unpack
+
+    from zabbix_cli.config.model import Config
+    from zabbix_cli.pyzabbix.client import ZabbixAPI
     from zabbix_cli.pyzabbix.types import Host
     from zabbix_cli.pyzabbix.types import HostGroup
     from zabbix_cli.pyzabbix.types import Image
@@ -47,10 +51,6 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import MediaType
     from zabbix_cli.pyzabbix.types import Template
     from zabbix_cli.pyzabbix.types import TemplateGroup
-    from typing_extensions import TypedDict
-    from typing_extensions import Unpack
-    from zabbix_cli.pyzabbix.client import ZabbixAPI
-    from zabbix_cli.config.model import Config
 
     class ExportKwargs(TypedDict, total=False):
         hosts: List[Host]
@@ -430,8 +430,8 @@ def export_configuration(
     Timestamps are disabled by default, but can be enabled with the [configopt]app.export_timestamps[/]
     configuration option.
     """
-    from zabbix_cli.models import Result
     from zabbix_cli.commands.results.export import ExportResult
+    from zabbix_cli.models import Result
 
     if args:
         if not len(args) == 3:
@@ -602,9 +602,10 @@ def import_configuration(
     Determines format to import based on file extensions.
     """
     import glob
+
+    from zabbix_cli.commands.results.export import ImportResult
     from zabbix_cli.models import Result
     from zabbix_cli.models import ReturnCode
-    from zabbix_cli.commands.results.export import ImportResult
 
     if args:
         if not len(args) == 2:

@@ -2,17 +2,16 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Tuple
-from typing import TYPE_CHECKING
 
 from zabbix_cli.config.constants import CONFIG_PRIORITY
 from zabbix_cli.config.constants import DEFAULT_CONFIG_FILE
 from zabbix_cli.dirs import mkdir_if_not_exists
 from zabbix_cli.exceptions import ConfigError
-
 
 if TYPE_CHECKING:
     from zabbix_cli.config.model import Config
@@ -94,13 +93,14 @@ def init_config(
 ) -> Path:
     """Creates required directories and boostraps config with
     options required to connect to the Zabbix API."""
+    from pydantic import SecretStr
+
+    from zabbix_cli import auth
     from zabbix_cli.config.model import Config
     from zabbix_cli.dirs import init_directories
     from zabbix_cli.output.console import info
     from zabbix_cli.output.prompts import str_prompt
-    from zabbix_cli import auth
     from zabbix_cli.pyzabbix.client import ZabbixAPI
-    from pydantic import SecretStr
 
     # Create required directories
     init_directories()

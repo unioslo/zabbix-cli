@@ -17,11 +17,11 @@ from zabbix_cli.app import app
 sys.path.append(Path(__file__).parent.as_posix())
 sys.path.append(Path(__file__).parent.parent.parent.as_posix())
 
-from utils.commands import get_app_commands  # noqa: E402
-from utils.commands import CommandSummary  # noqa: E402
 from common import COMMANDS_DIR  # noqa
 from common import DATA_DIR  # noqa
 from common import TEMPLATES_DIR  # noqa
+from utils.commands import CommandSummary  # noqa: E402
+from utils.commands import get_app_commands  # noqa: E402
 
 
 def gen_command_list(commands: list[CommandSummary]) -> None:

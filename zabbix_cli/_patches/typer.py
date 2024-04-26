@@ -9,13 +9,13 @@ import inspect
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
-from typing import cast
 from typing import Iterable
 from typing import Type
-from typing import TYPE_CHECKING
 from typing import Union
+from typing import cast
 from uuid import UUID
 
 import click
@@ -28,6 +28,7 @@ from zabbix_cli.pyzabbix.enums import APIStrEnum
 
 if TYPE_CHECKING:
     from typing import Dict
+
     from rich.style import Style
 
 patcher = get_patcher(f"Typer version: {typer.__version__}")
@@ -52,13 +53,13 @@ def patch_help_text_spacing() -> None:
     from rich.console import group
     from rich.markdown import Markdown
     from rich.text import Text
-    from typer.rich_utils import MarkupMode
     from typer.rich_utils import DEPRECATED_STRING
-    from typer.rich_utils import STYLE_DEPRECATED
-    from typer.rich_utils import STYLE_HELPTEXT_FIRST_LINE
-    from typer.rich_utils import MARKUP_MODE_RICH
     from typer.rich_utils import MARKUP_MODE_MARKDOWN
+    from typer.rich_utils import MARKUP_MODE_RICH
+    from typer.rich_utils import STYLE_DEPRECATED
     from typer.rich_utils import STYLE_HELPTEXT
+    from typer.rich_utils import STYLE_HELPTEXT_FIRST_LINE
+    from typer.rich_utils import MarkupMode
     from typer.rich_utils import _make_rich_rext
 
     @group()
@@ -264,19 +265,20 @@ def patch_get_click_type() -> None:
 
 
 def patch__get_rich_console() -> None:
-    from typer.rich_utils import STYLE_OPTION
-    from typer.rich_utils import STYLE_SWITCH
-    from typer.rich_utils import STYLE_NEGATIVE_OPTION
-    from typer.rich_utils import STYLE_NEGATIVE_SWITCH
+    from rich.console import Console
+    from typer.rich_utils import COLOR_SYSTEM
+    from typer.rich_utils import FORCE_TERMINAL
+    from typer.rich_utils import MAX_WIDTH
     from typer.rich_utils import STYLE_METAVAR
     from typer.rich_utils import STYLE_METAVAR_SEPARATOR
+    from typer.rich_utils import STYLE_NEGATIVE_OPTION
+    from typer.rich_utils import STYLE_NEGATIVE_SWITCH
+    from typer.rich_utils import STYLE_OPTION
+    from typer.rich_utils import STYLE_SWITCH
     from typer.rich_utils import STYLE_USAGE
     from typer.rich_utils import highlighter
-    from typer.rich_utils import FORCE_TERMINAL
-    from typer.rich_utils import COLOR_SYSTEM
-    from typer.rich_utils import MAX_WIDTH
+
     from zabbix_cli.output.style import RICH_THEME
-    from rich.console import Console
 
     theme: Dict[str, Union[str, Style]] = RICH_THEME.styles.copy()  # type: ignore[assignment]
     theme.update(

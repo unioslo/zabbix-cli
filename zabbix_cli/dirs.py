@@ -15,7 +15,6 @@ from platformdirs import PlatformDirs
 from .__about__ import APP_NAME
 from .__about__ import AUTHOR
 
-
 _PLATFORM_DIR = PlatformDirs(APP_NAME, AUTHOR)
 
 CONFIG_DIR = _PLATFORM_DIR.user_config_path
@@ -70,8 +69,8 @@ def mkdir_if_not_exists(path: Path) -> None:
 
 def init_directories() -> None:
     """Create required directories."""
-    from .output.console import exit_err
     from .output.console import error
+    from .output.console import exit_err
 
     for directory in DIRS:
         if directory.path.exists() or not directory.create:

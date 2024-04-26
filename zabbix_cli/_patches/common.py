@@ -4,10 +4,10 @@ from abc import ABC
 from abc import abstractmethod
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING:
     from types import TracebackType
-    from typing import Optional, Type
+    from typing import Optional
+    from typing import Type
 
 
 class BasePatcher(ABC):
@@ -33,8 +33,10 @@ class BasePatcher(ABC):
         if not exc_type:
             return True
         import sys
+
         import rich
         from rich.table import Table
+
         from zabbix_cli.__about__ import __version__
 
         # Rudimentary, but provides enough info to debug and fix the issue

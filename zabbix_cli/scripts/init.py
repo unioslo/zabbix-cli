@@ -10,7 +10,6 @@ from zabbix_cli.exceptions import ConfigExistsError
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.logs import configure_logging
 
-
 app = typer.Typer(name="zabbix-cli-init", help="Set up Zabbix-CLI configuration")
 
 

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 from contextlib import nullcontext
-from typing import Any
 from typing import TYPE_CHECKING
+from typing import Any
 
 import typer
 
@@ -14,9 +14,10 @@ from zabbix_cli.output.console import success
 from zabbix_cli.state import get_state
 
 if TYPE_CHECKING:
+    from pydantic import BaseModel
+
     from zabbix_cli.models import ResultBase
     from zabbix_cli.models import TableRenderable
-    from pydantic import BaseModel
 
 
 def wrap_result(result: BaseModel) -> ResultBase:
@@ -26,8 +27,8 @@ def wrap_result(result: BaseModel) -> ResultBase:
 
     Does nothing if the function argument is already a ResultBase instance."""
 
-    from zabbix_cli.models import ResultBase
     from zabbix_cli.models import Result
+    from zabbix_cli.models import ResultBase
 
     if isinstance(result, ResultBase):
         return result

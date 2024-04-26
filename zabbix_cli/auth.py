@@ -13,11 +13,11 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Callable
 from typing import Final
 from typing import Optional
 from typing import Tuple
-from typing import TYPE_CHECKING
 
 from zabbix_cli._v2_compat import AUTH_FILE as AUTH_FILE_LEGACY
 from zabbix_cli._v2_compat import AUTH_TOKEN_FILE as AUTH_TOKEN_FILE_LEGACY
@@ -29,10 +29,9 @@ from zabbix_cli.output.console import error
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.prompts import str_prompt
 
-
 if TYPE_CHECKING:
-    from zabbix_cli.pyzabbix.client import ZabbixAPI
     from zabbix_cli.config.model import Config
+    from zabbix_cli.pyzabbix.client import ZabbixAPI
 
     AuthFunc = Callable[[Config], Tuple[Optional[str], Optional[str]]]
     """Function that returns a username/password tuple or None if not available."""

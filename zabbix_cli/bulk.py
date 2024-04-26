@@ -21,7 +21,6 @@ from zabbix_cli.exceptions import CommandFileError
 from zabbix_cli.utils.commands import get_command_by_name
 from zabbix_cli.utils.fs import read_file
 
-
 logger = logging.getLogger(__name__)
 
 
