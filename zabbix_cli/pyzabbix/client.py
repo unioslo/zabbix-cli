@@ -19,7 +19,7 @@ import random
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from typing import Dict
 from typing import List
 from typing import Literal
@@ -393,7 +393,7 @@ class ZabbixAPI:
                 if search and not is_id:
                     params["searchWildcardsEnabled"] = True
                     params["searchByAny"] = search_union
-                    params.setdefault("search", {}).setdefault("name", []).append(  # type: ignore # bad annotation
+                    params.setdefault("search", {}).setdefault("name", []).append(
                         name_or_id
                     )
                 else:
@@ -407,7 +407,7 @@ class ZabbixAPI:
         if sort_field:
             params["sortfield"] = sort_field
 
-        resp = self.hostgroup.get(**params) or []
+        resp: List[Any] = self.hostgroup.get(**params) or []
         return [HostGroup(**hostgroup) for hostgroup in resp]
 
     def create_hostgroup(self, name: str) -> str:
@@ -533,7 +533,7 @@ class ZabbixAPI:
                 if search and not is_id:
                     params["searchWildcardsEnabled"] = True
                     params["searchByAny"] = search_union
-                    params.setdefault("search", {}).setdefault("name", []).append(  # type: ignore # bad annotation
+                    params.setdefault("search", {}).setdefault("name", []).append(
                         name_or_id
                     )
                 else:
@@ -547,7 +547,7 @@ class ZabbixAPI:
             params["sortfield"] = sort_field
 
         try:
-            resp = self.templategroup.get(**params) or []
+            resp: List[Any] = self.templategroup.get(**params) or []
         except ZabbixAPIException as e:
             raise ZabbixAPICallError("Failed to fetch template groups") from e
         return [TemplateGroup(**tgroup) for tgroup in resp]
@@ -690,13 +690,13 @@ class ZabbixAPI:
                 # Logical AND for multiple unique identifiers is not possible
                 if search and not is_id:
                     params["searchWildcardsEnabled"] = True
-                    params.setdefault("search", {}).setdefault("host", []).append(  # type: ignore # bad annotation
+                    params.setdefault("search", {}).setdefault("host", []).append(
                         name_or_id
                     )
                 elif is_id:
-                    params.setdefault("hostids", []).append(name_or_id)  # type: ignore
+                    params.setdefault("hostids", []).append(name_or_id)
                 else:
-                    filter_params.setdefault("host", []).append(name_or_id)  # type: ignore # bad annotation
+                    filter_params.setdefault("host", []).append(name_or_id)
 
         # Filters are applied with a logical AND (narrows down)
         if proxyid:
@@ -731,7 +731,7 @@ class ZabbixAPI:
         if sort_order:
             params["sortorder"] = sort_order
 
-        resp = self.host.get(**params) or []
+        resp: List[Any] = self.host.get(**params) or []
         # TODO add result to cache
         return [Host(**resp) for resp in resp]
 
@@ -976,9 +976,7 @@ class ZabbixAPI:
             for name in names:
                 name = name.strip()
                 if search:
-                    params.setdefault("search", {}).setdefault("name", []).append(  # type: ignore # bad annotation
-                        name
-                    )
+                    params.setdefault("search", {}).setdefault("name", []).append(name)
                 else:
                     params["filter"] = {"name": name}
 
@@ -1053,7 +1051,7 @@ class ZabbixAPI:
         if self.version.release >= (6, 0, 0):
             params["users"] = {"userid": uid for uid in new_userids}
         else:
-            params["userids"] = new_userids  # type: ignore # fix annotations
+            params["userids"] = new_userids
         self.usergroup.update(usrgrpid=usergroup.usrgrpid, userids=new_userids)
 
     def update_usergroup_rights(
@@ -1102,7 +1100,7 @@ class ZabbixAPI:
         permission: UsergroupPermission,
         groups: Union[List[HostGroup], List[TemplateGroup]],
     ) -> List[ZabbixRight]:
-        new_rights = []  # List[ZabbixRight] # list of new rights to add
+        new_rights = []  # type: List[ZabbixRight] # list of new rights to add
         rights = list(rights)  # copy rights (don't modify original)
         for group in groups:
             for right in rights:
@@ -1124,12 +1122,12 @@ class ZabbixAPI:
         return proxies[0]
 
     def get_proxies(
-        self, name: Optional[str] = None, select_hosts: bool = False, **kwargs
+        self, name: Optional[str] = None, select_hosts: bool = False, **kwargs: Any
     ) -> List[Proxy]:
         """Fetches all proxies."""
         params = {"output": "extend"}  # type: ParamsType
         if name:
-            params.setdefault("search", {})[compat.proxy_name(self.version)] = name  # type: ignore
+            params.setdefault("search", {})[compat.proxy_name(self.version)] = name
         if select_hosts:
             params["selectHosts"] = "extend"
 
@@ -1200,10 +1198,10 @@ class ZabbixAPI:
         params = {"output": "extend"}  # type: ParamsType
 
         if host:
-            params.setdefault("search", {})["hostids"] = host.hostid  # type: ignore
+            params.setdefault("search", {})["hostids"] = host.hostid
 
         if macro_name:
-            params.setdefault("search", {})["macro"] = macro_name  # type: ignore
+            params.setdefault("search", {})["macro"] = macro_name
 
         # Enable wildcard searching if we have one or more search terms
         if params.get("search"):
@@ -1253,7 +1251,7 @@ class ZabbixAPI:
         params = {"output": "extend", "globalmacro": True}  # type: ParamsType
 
         if macro_name:
-            params.setdefault("search", {})["macro"] = macro_name  # type: ignore
+            params.setdefault("search", {})["macro"] = macro_name
 
         # Enable wildcard searching if we have one or more search terms
         if params.get("search"):
@@ -1405,9 +1403,9 @@ class ZabbixAPI:
             name_or_id = name_or_id.strip()
             is_id = name_or_id.isnumeric()
             if is_id:
-                params.setdefault("templateids", []).append(name_or_id)  # type: ignore # bad annotation
+                params.setdefault("templateids", []).append(name_or_id)
             else:
-                params.setdefault("search", {}).setdefault("host", []).append(  # type: ignore # bad annotation
+                params.setdefault("search", {}).setdefault("host", []).append(
                     name_or_id
                 )
                 params.setdefault("searchWildcardsEnabled", True)
@@ -1957,7 +1955,7 @@ class ZabbixAPI:
             sort_order=sort_order,
         )
         if not events:
-            reasons = []
+            reasons: List[str] = []
             if event_id:
                 reasons.append(f"event ID {event_id!r}")
             if group_id:
@@ -2183,15 +2181,15 @@ class ZabbixAPIObjectClass:
     def __getattr__(self, attr: str) -> Any:
         """Dynamically create a method (ie: get)"""
 
-        def fn(*args, **kwargs):
+        def fn(*args: Any, **kwargs: Any) -> Any:
             if args and kwargs:
                 raise TypeError("Found both args and kwargs")
 
-            return self.parent.do_request(f"{self.name}.{attr}", args or kwargs).result
+            return self.parent.do_request(f"{self.name}.{attr}", args or kwargs).result  # type: ignore
 
         return fn
 
-    def get(self, *args, **kwargs):
+    def get(self, *args: Any, **kwargs: Any) -> Any:
         """Provides per-endpoint overrides for the 'get' method"""
         if self.name == "proxy":
             # The proxy.get method changed from "host" to "name" in Zabbix 7.0
@@ -2202,6 +2200,7 @@ class ZabbixAPIObjectClass:
             if isinstance(output_kwargs, list) and any(
                 p in output_kwargs for p in params
             ):
+                output_kwargs = cast(List[str], output_kwargs)
                 for param in params:
                     try:
                         output_kwargs.remove(param)

@@ -30,10 +30,6 @@ from zabbix_cli.utils.args import parse_list_arg
 
 
 if TYPE_CHECKING:
-    from typing import Any  # noqa: F401
-    from zabbix_cli.models import ColsRowsType  # noqa: F401
-    from zabbix_cli.models import RowContent  # noqa: F401
-    from zabbix_cli.models import RowsType  # noqa: F401
     from typing import Protocol
 
     class UsergroupLike(Protocol):
@@ -599,7 +595,7 @@ def show_usergroup(
     usergroups = app.state.client.get_usergroups(
         *ugs, select_users=True, select_rights=True, search=True
     )
-    res = []
+    res: List[ShowUsergroupResult] = []
     for ugroup in usergroups:
         res.append(ShowUsergroupResult.from_usergroup(ugroup))
 
@@ -615,7 +611,7 @@ def show_usergroups(
     from zabbix_cli.models import AggregateResult
 
     usergroups = app.state.client.get_usergroups(select_users=True, search=True)
-    res = []
+    res: List[ShowUsergroupResult] = []
     for ugroup in usergroups:
         res.append(ShowUsergroupResult.from_usergroup(ugroup))
     render_result(AggregateResult(result=sort_ugroups(res, sort)))

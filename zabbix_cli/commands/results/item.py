@@ -55,7 +55,7 @@ class ItemResult(Item):
     def from_item(cls, item: Item) -> ItemResult:
         return cls.model_validate(item, from_attributes=True)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def host(self) -> str:
         """LEGACY: serialize list of hosts as newline-delimited string."""

@@ -25,7 +25,7 @@ and other stateful objects."""
 # in this one place is convenient.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 
 # This module should not import from other local modules because it's widely
@@ -45,7 +45,7 @@ class State:
 
     _instance = None
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: Any, **kwargs: Any):
         if cls._instance is None:
             cls._instance = super().__new__(cls, *args, **kwargs)
         return cls._instance

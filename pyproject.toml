@@ -35,7 +35,7 @@ dependencies = [
   "click-repl==0.2.0",        # 0.3.0 has a bug that breaks the CLI
   "httpx>=0.26.0",
   "packaging>=22.0",
-  "pydantic>=2.4.0",
+  "pydantic>=2.7.0",
   "tomli>=2.0.1",
   "tomli-w>=1.0.0",
   "platformdirs>=2.5.4",

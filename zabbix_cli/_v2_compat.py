@@ -77,7 +77,7 @@ def args_callback(
     ctx: typer.Context, value: Optional[List[str]]
 ) -> Optional[List[str]]:
     if ctx.resilient_parsing:
-        return  # type: ignore # for auto-completion
+        return  # for auto-completion
     if value:
         from zabbix_cli.output.console import warning
 

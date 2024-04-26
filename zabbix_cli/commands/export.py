@@ -47,7 +47,6 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import MediaType
     from zabbix_cli.pyzabbix.types import Template
     from zabbix_cli.pyzabbix.types import TemplateGroup
-    from zabbix_cli.models import RowsType  # noqa: F401
     from typing_extensions import TypedDict
     from typing_extensions import Unpack
     from zabbix_cli.pyzabbix.client import ZabbixAPI

@@ -41,7 +41,7 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
     hosts: List[str]
     groups: List[str]
 
-    @computed_field()  # type: ignore # mypy bug
+    @computed_field
     @property
     def state(self) -> Literal["Active", "Expired"]:
         now_time = datetime.now(tz=self.active_till.tzinfo)
@@ -49,7 +49,7 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
             return "Active"
         return "Expired"
 
-    @computed_field()  # type: ignore # mypy bug
+    @computed_field
     @property
     def maintenance_type(self) -> str:
         return get_maintenance_type(self.type)

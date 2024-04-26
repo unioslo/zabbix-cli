@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Optional
+from typing import List, Optional
 
 import typer
 
@@ -418,9 +418,9 @@ def show_hostgroup_permissions(
         search=True,
     )
 
-    result = []
+    result: List[HostGroupPermissions] = []
     for hg in hgs:
-        permissions = []
+        permissions: List[str] = []
         for usergroup in usergroups:
             if app.api_version >= (6, 2, 0):
                 rights = usergroup.hostgroup_rights

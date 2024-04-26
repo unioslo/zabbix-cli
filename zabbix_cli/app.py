@@ -53,7 +53,7 @@ class Example(NamedTuple):
 #       the current typer/click API
 class CommandInfo(TyperCommandInfo):
     def __init__(
-        self, *args, examples: Optional[List[Example]] = None, **kwargs
+        self, *args: Any, examples: Optional[List[Example]] = None, **kwargs: Any
     ) -> None:
         super().__init__(*args, **kwargs)
         self.examples = examples or []
@@ -98,18 +98,18 @@ class StatefulApp(typer.Typer):
     parent: Optional[StatefulApp]
 
     # NOTE: might be a good idea to add a typing.Unpack definition for the kwargs?
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         self.parent = None
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
 
     # Methods for adding subcommands and keeping track of hierarchy
-    def add_typer(self, typer_instance: Typer, **kwargs) -> None:
+    def add_typer(self, typer_instance: Typer, **kwargs: Any) -> None:
         kwargs.setdefault("no_args_is_help", True)
         if isinstance(typer_instance, StatefulApp):
             typer_instance.parent = self
         return super().add_typer(typer_instance, **kwargs)
 
-    def add_subcommand(self, app: typer.Typer, *args, **kwargs) -> None:
+    def add_subcommand(self, app: typer.Typer, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("rich_help_panel", "Subcommands")
         self.add_typer(app, **kwargs)
 

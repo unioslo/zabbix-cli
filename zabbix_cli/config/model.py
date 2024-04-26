@@ -36,6 +36,7 @@ from pydantic import field_validator
 from pydantic import model_validator
 from pydantic import SecretStr
 from pydantic import ValidationInfo
+from typing_extensions import Self
 
 from zabbix_cli._v2_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
 from zabbix_cli.config.constants import OutputFormat
@@ -86,7 +87,7 @@ class APIConfig(BaseModel):
     auth_token: Optional[SecretStr] = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
-    def _validate_model(self) -> APIConfig:
+    def _validate_model(self) -> Self:
         # Convert 0 timeout to None
         if self.timeout == 0:
             self.timeout = None
@@ -197,7 +198,7 @@ class AppConfig(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def ensure_history_file(self) -> AppConfig:
+    def ensure_history_file(self) -> Self:
         if not self.history or self.history_file.exists():
             return self
         # If user passes in path to non-existent directory, we have to create that too
@@ -308,7 +309,7 @@ class Config(BaseModel):
         return cls(**conf, config_path=fp)
 
     @model_validator(mode="after")
-    def _assign_legacy_options(self) -> Config:
+    def _assign_legacy_options(self) -> Self:
         """Ensures that options that have moved from one section to another are copied
         to the new section. I.e. `app.username` -> `api.username`."""
         # Only override if `api.username` is not set

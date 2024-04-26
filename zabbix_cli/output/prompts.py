@@ -6,7 +6,7 @@ import os
 from functools import lru_cache
 from functools import wraps
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 from typing import Callable
 from typing import List
 from typing import overload
@@ -26,8 +26,11 @@ from .formatting.path import path_link
 from .style import Color
 from .style import green
 from .style import Icon
-from zabbix_cli._types import EllipsisType
 from zabbix_cli.exceptions import ZabbixCLIError
+
+
+if TYPE_CHECKING:
+    from types import EllipsisType
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -144,6 +147,7 @@ def str_prompt(
             choices=choices,
             **kwargs,
         )
+        inp = cast(str, inp)  # Passing in ellipsis means no default, so always a string
         if empty_ok:  # nothing else to check
             break
 
@@ -191,7 +195,7 @@ def list_prompt(
     # https://github.com/python/mypy/issues/3737
     # https://github.com/python/mypy/issues/3737#issuecomment-1446769973
     # Using this weird TypeConstructor type seems very hacky
-    type: TypeConstructor = str,
+    type: TypeConstructor[T] = str,
 ) -> List[T]:
     """Prompt user for a comma-separated list of values."""
     from zabbix_cli.utils.args import parse_list_arg
@@ -360,7 +364,7 @@ def path_prompt(
     if isinstance(default, Path):
         default_arg = str(default)
     elif default is None:
-        default_arg = ...  # type: ignore
+        default_arg = ...
     else:
         default_arg = default
 

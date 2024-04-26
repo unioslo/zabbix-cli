@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from typing import Union
 
 import rich
+import rich.box
 from pydantic import computed_field
 from pydantic import Field
 from pydantic import field_validator
@@ -128,7 +129,7 @@ class ShowUsergroupPermissionsResult(TableRenderable):
     def model_ser(self) -> Dict[str, Any]:
         """LEGACY: Include the permission strings in the serialized output if
         we have legacy JSON output enabled."""
-        d = {
+        d: Dict[str, Any] = {
             "usrgrpid": self.usrgrpid,
             "name": self.name,
             "hostgroup_rights": self.hostgroup_rights,
@@ -142,7 +143,7 @@ class ShowUsergroupPermissionsResult(TableRenderable):
     @property
     def permissions(self) -> List[str]:
         """LEGACY: The field `hostgroup_rights` was called `permissions` in V2."""
-        r = []
+        r: List[str] = []
 
         def permission_str(
             right: ZabbixRight, groups: Mapping[str, Union[HostGroup, TemplateGroup]]
@@ -207,7 +208,7 @@ class AddUsergroupPermissionsResult(TableRenderable):
     templategroups: List[str]
     permission: UsergroupPermission
 
-    @computed_field  # type: ignore # computed field on @property
+    @computed_field
     @property
     def permission_str(self) -> str:
         return get_permission(self.permission.as_api_value())

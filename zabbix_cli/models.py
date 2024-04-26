@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import cast
+from typing import Any, cast
 from typing import ClassVar
 from typing import Dict
 from typing import Generic
@@ -11,7 +11,6 @@ from typing import MutableSequence
 from typing import Optional
 from typing import Tuple
 from typing import TYPE_CHECKING
-from typing import TypeVar
 from typing import Union
 
 import rich.box
@@ -23,6 +22,7 @@ from pydantic import JsonValue
 from pydantic.fields import ComputedFieldInfo
 from pydantic.fields import FieldInfo
 from strenum import StrEnum
+from typing_extensions import TypeVar
 
 from zabbix_cli.table import get_table
 
@@ -121,7 +121,7 @@ class TableRenderable(BaseModel):
 
     def __all_fields__(self) -> Dict[str, Union[FieldInfo, ComputedFieldInfo]]:
         """Returns all fields for the model, including computed fields,
-        but excluding fields that have `exclude=True` set."""
+        but excluding excluded fields."""
         all_fields = {
             **self.model_fields,
             **self.model_computed_fields,
@@ -145,7 +145,7 @@ class TableRenderable(BaseModel):
         >>> User().__cols__()
         ["User ID", "Username"]
         """
-        cols = []
+        cols: List[str] = []
 
         for field_name, field in self.__all_fields__().items():
             if (
@@ -180,7 +180,7 @@ class TableRenderable(BaseModel):
         >>> User(userid="1", username="admin", groups=["foo", "bar", "baz"]).__rows__()
         [["1", "admin", "foo\nbar\nbaz"]]
         """
-        fields = {
+        fields: Dict[str, Any | str] = {
             field_name: getattr(self, field_name, "")
             for field_name in self.__all_fields__()
         }
@@ -196,6 +196,7 @@ class TableRenderable(BaseModel):
                 )
                 fields[field_name] = value.model_dump_json(indent=2)
             elif isinstance(value, list):
+                value = cast(List[Any], value)
                 # A list either contains TableRenderable objects or stringable objects
                 if value and all(isinstance(v, TableRenderable) for v in value):
                     # TableRenderables are wrapped in an AggregateResult to render them
@@ -203,6 +204,7 @@ class TableRenderable(BaseModel):
                     # NOTE: we assume list contains items of the same type
                     # Rendering an aggregate result with mixed types is not supported
                     # and will probably break.
+                    value = cast(List[TableRenderable], value)
                     fields[field_name] = AggregateResult(result=value).as_table()
                 else:
                     # Other lists are rendered as newline delimited strings.
@@ -242,7 +244,7 @@ class TableRenderable(BaseModel):
     # We should implement the rich renderable protocol...
 
 
-DataT = TypeVar("DataT")
+DataT = TypeVar("DataT", default=TableRenderable)
 
 
 class ResultBase(TableRenderable):
@@ -258,6 +260,8 @@ class ResultBase(TableRenderable):
 
 
 class Result(ResultBase, Generic[DataT]):
+    """A result wrapping a single data object."""
+
     result: Optional[Union[DataT, List[DataT]]] = None
 
 
@@ -265,7 +269,7 @@ TableRenderableT = TypeVar("TableRenderableT", bound=TableRenderable)
 
 
 class AggregateResult(ResultBase, Generic[TableRenderableT]):
-    """Aggregate result of multiple results.
+    """Resut wrapping multiple table renderables.
 
     Used for compatibility with the legacy JSON format,
     as well as implementing table rendering for multiple

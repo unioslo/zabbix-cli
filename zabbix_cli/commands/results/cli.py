@@ -9,7 +9,7 @@ from typing import Tuple
 from typing import TYPE_CHECKING
 
 from packaging.version import Version
-from pydantic import ConfigDict
+from pydantic import ConfigDict, FieldSerializationInfo
 from pydantic import field_serializer
 from rich.box import SIMPLE_HEAD
 from rich.table import Table
@@ -48,7 +48,7 @@ class DebugInfo(TableRenderable):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @field_serializer("api_version")
-    def ser_api_version(self, _info) -> str:
+    def ser_api_version(self, _info: FieldSerializationInfo) -> str:
         return str(self.api_version)
 
     @property

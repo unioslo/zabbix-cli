@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Set
 from typing import Optional
 from typing import TYPE_CHECKING
 
@@ -30,7 +30,7 @@ class AddHostsToHostGroup(TableRenderable):
         hosts: List[Host],
         hostgroup: HostGroup,
     ) -> AddHostsToHostGroup:
-        to_add = set()  # names of templates to link
+        to_add: Set[str] = set()  # names of templates to link
         for host in hosts:
             for hg_host in hostgroup.hosts:
                 if host.host == hg_host.host:
@@ -55,7 +55,7 @@ class RemoveHostsFromHostGroup(TableRenderable):
         hosts: List[Host],
         hostgroup: HostGroup,
     ) -> RemoveHostsFromHostGroup:
-        to_remove = set()  # names of templates to link
+        to_remove: Set[str] = set()  # names of templates to link
         for host in hosts:
             for hg_host in hostgroup.hosts:
                 if host.host == hg_host.host:
@@ -134,12 +134,12 @@ class HostGroupResult(TableRenderable):
 
     # Mimicks old behavior by also writing the string representation of the
     # flags and internal fields to the serialized output.
-    @computed_field()  # type: ignore[misc]
+    @computed_field
     @property
     def flags_str(self) -> str:
         return get_hostgroup_flag(self.flags, with_code=False)
 
-    @computed_field()  # type: ignore[misc]
+    @computed_field
     @property
     def type(self) -> str:
         # LEGACY: Drop this when we drop support for <=6.0

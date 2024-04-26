@@ -23,7 +23,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
 
-from pydantic import AliasChoices
+from pydantic import AliasChoices, FieldSerializationInfo
 from pydantic import BaseModel
 from pydantic import computed_field
 from pydantic import ConfigDict
@@ -167,7 +167,7 @@ class ZabbixRight(ZabbixAPIBaseModel):
     id: str
     name: Optional[str] = None  # name of group (injected by application)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def permission_str(self) -> str:
         """Returns the permission as a formatted string."""
@@ -193,7 +193,7 @@ class User(ZabbixAPIBaseModel):
     # NOTE: Not adding properties we don't use, since Zabbix has a habit of breaking
     # its own API by changing names and types of properties between versions.
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def role(self) -> Optional[str]:
         """Returns the role name, if available."""
@@ -225,19 +225,19 @@ class Usergroup(ZabbixAPIBaseModel):
     templategroup_rights: List[ZabbixRight] = []
     users: List[User] = []
 
-    @computed_field  # type: ignore[misc] # pydantic docs use decorators on top of property (https://docs.pydantic.dev/2.0/usage/computed_fields/)
+    @computed_field
     @property
     def gui_access_str(self) -> str:
         """GUI access code as a formatted string."""
         return get_gui_access(self.gui_access)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def users_status_str(self) -> str:
         """User status as a formatted string."""
         return get_usergroup_status(self.users_status)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def status(self) -> str:
         """LEGACY: 'users_status' is called 'status' in V2.
@@ -245,7 +245,9 @@ class Usergroup(ZabbixAPIBaseModel):
         return self.users_status_str
 
     @field_serializer("gui_access")
-    def _LEGACY_type_serializer(self, v: Optional[int], _info) -> Union[str, int, None]:
+    def _LEGACY_type_serializer(
+        self, v: Optional[int], _info: FieldSerializationInfo
+    ) -> Union[str, int, None]:
         """Serializes the GUI access status as a formatted string in legacy JSON mode"""
         if self.legacy_json_format:
             return self.gui_access
@@ -365,7 +367,7 @@ class Host(ZabbixAPIBaseModel):
     # Legacy V2 JSON format compatibility
     @field_serializer("maintenance_status")
     def _LEGACY_maintenance_status_serializer(
-        self, v: Optional[str], _info
+        self, v: Optional[str], _info: FieldSerializationInfo
     ) -> Optional[str]:
         """Serializes the maintenance status as a formatted string
         in legacy mode, and as-is in new mode."""
@@ -375,7 +377,7 @@ class Host(ZabbixAPIBaseModel):
 
     @field_serializer("zabbix_agent")
     def _LEGACY_zabbix_agent_serializer(
-        self, v: Optional[int], _info
+        self, v: Optional[int], _info: FieldSerializationInfo
     ) -> Optional[Union[int, str]]:
         """Serializes the zabbix agent status as a formatted string
         in legacy mode, and as-is in new mode."""
@@ -384,7 +386,9 @@ class Host(ZabbixAPIBaseModel):
         return v
 
     @field_serializer("status")
-    def _LEGACY_status_serializer(self, v: Optional[str], _info) -> Optional[str]:
+    def _LEGACY_status_serializer(
+        self, v: Optional[str], _info: FieldSerializationInfo
+    ) -> Optional[str]:
         """Serializes the monitoring status as a formatted string
         in legacy mode, and as-is in new mode."""
         if self.legacy_json_format:
@@ -438,13 +442,13 @@ class HostInterface(ZabbixAPIBaseModel):
     hostid: Optional[str] = None
     bulk: Optional[int] = None
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def connection_mode(self) -> str:
         """Returns the connection mode as a formatted string."""
         return get_host_interface_connection_mode(self.useip)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def type_str(self) -> str:
         """Returns the interface type as a formatted string."""
@@ -510,7 +514,7 @@ class Proxy(ZabbixAPIBaseModel):
     compatibility: Optional[int] = None  # >= 7.0
     version: Optional[int] = None  # >= 7.0
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def mode(self) -> str:
         """Returns the proxy mode as a formatted string."""
@@ -519,7 +523,7 @@ class Proxy(ZabbixAPIBaseModel):
         else:
             return get_proxy_mode_pre_7_0(self.status)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def compatibility_str(
         self,
@@ -535,7 +539,7 @@ class Proxy(ZabbixAPIBaseModel):
             style = Color.SUCCESS
         elif compat == "Outdated":
             style = Color.WARNING
-        elif compat == "Outdated":
+        elif compat == "Unsupported":
             style = Color.ERROR
         else:
             style = Color.INFO
@@ -549,7 +553,7 @@ class MacroBase(ZabbixAPIBaseModel):
     """Macro type. 0 - text, 1 - secret, 2 - vault secret (>=7.0)"""
     description: str
 
-    @computed_field  # type: ignore[misc] # pydantic docs use decorators on top of property (https://docs.pydantic.dev/2.0/usage/computed_fields/)
+    @computed_field
     @property
     def type_str(self) -> str:
         """Returns the macro type as a formatted string."""
@@ -587,20 +591,22 @@ class Item(ZabbixAPIBaseModel):
     lastvalue: Optional[str] = None
     hosts: List[Host] = []
 
-    @computed_field  # type: ignore[misc] # pydantic docs use decorators on top of property (https://docs.pydantic.dev/2.0/usage/computed_fields/)
+    @computed_field
     @property
     def type_str(self) -> str:
         """Returns the item type as a formatted string."""
         return get_item_type(self.type)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def value_type_str(self) -> str:
         """Returns the item type as a formatted string."""
         return get_value_type(self.value_type)
 
     @field_serializer("type")
-    def _LEGACY_type_serializer(self, v: Optional[int], _info) -> Union[str, int, None]:
+    def _LEGACY_type_serializer(
+        self, v: Optional[int], _info: FieldSerializationInfo
+    ) -> Union[str, int, None]:
         """Serializes the item type as a formatted string in legacy JSON mode"""
         if self.legacy_json_format:
             return self.type_str
@@ -608,7 +614,7 @@ class Item(ZabbixAPIBaseModel):
 
     @field_serializer("value_type")
     def _LEGACY_value_type_serializer(
-        self, v: Optional[int], _info
+        self, v: Optional[int], _info: FieldSerializationInfo
     ) -> Union[str, int, None]:
         """Serializes the item type as a formatted string in legacy JSON mode"""
         if self.legacy_json_format:
@@ -666,40 +672,40 @@ class TimePeriod(ZabbixAPIBaseModel):
     day: Optional[int] = None
     month: Optional[int] = None
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def timeperiod_type_str(self) -> str:
         """Returns the time period type as a formatted string."""
         return get_maintenance_period_type(self.timeperiod_type)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def period_str(self) -> str:
         return str(timedelta(seconds=self.period))
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def start_time_str(self) -> str:
         return str(timedelta(seconds=self.start_time or 0))
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def start_date_str(self) -> str:
         if self.start_date and self.start_date.year > 1970:  # hack to avoid 1970-01-01
             return self.start_date.strftime("%Y-%m-%d %H:%M")
         return ""
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def month_str(self) -> List[str]:
         return get_maintenance_active_months(self.month)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def dayofweek_str(self) -> List[str]:
         return get_maintenance_active_days(self.dayofweek)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def every_str(self) -> str:
         return get_maintenance_every_type(self.every)
@@ -814,7 +820,7 @@ class Event(ZabbixAPIBaseModel):
     # opdata
     # urls
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def age(self) -> str:
         """Returns the age of the event as a formatted string."""
@@ -823,12 +829,12 @@ class Event(ZabbixAPIBaseModel):
         # strip microseconds
         return str(age - timedelta(microseconds=age.microseconds))
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def status_str(self) -> str:
         return get_event_status(self.value)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def acknowledged_str(self) -> str:
         return get_ack_status(self.acknowledged)
@@ -853,7 +859,7 @@ class Event(ZabbixAPIBaseModel):
 
     @field_serializer("value")
     def _LEGACY_value_serializer(
-        self, v: Optional[int], _info
+        self, v: Optional[int], _info: FieldSerializationInfo
     ) -> Union[str, int, None]:
         """Serializes the value field as a formatted string in legacy JSON mode"""
         if self.legacy_json_format:
@@ -861,7 +867,9 @@ class Event(ZabbixAPIBaseModel):
         return v
 
     @field_serializer("acknowledged")
-    def _LEGACY_acknowledged_serializer(self, v: int, _info) -> Union[str, int]:
+    def _LEGACY_acknowledged_serializer(
+        self, v: int, _info: FieldSerializationInfo
+    ) -> Union[str, int]:
         """Serializes the acknowledged field as a formatted string in legacy JSON mode"""
         if self.legacy_json_format:
             return self.acknowledged_str
@@ -925,7 +933,7 @@ class Trigger(ZabbixAPIBaseModel):
     # discoveryRule
     # lastEvent
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def age(self) -> str:
         """Returns the age of the event as a formatted string."""
@@ -934,7 +942,7 @@ class Trigger(ZabbixAPIBaseModel):
         # strip microseconds
         return str(age - timedelta(microseconds=age.microseconds))
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def hostname(self) -> Optional[str]:
         """Returns the hostname of the trigger."""
@@ -942,7 +950,7 @@ class Trigger(ZabbixAPIBaseModel):
             return self.hosts[0].host
         return None
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def severity(self) -> str:
         return get_trigger_severity(self.priority)

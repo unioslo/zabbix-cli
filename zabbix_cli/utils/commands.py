@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import typer
+import typer.core
 
 from zabbix_cli.exceptions import ZabbixCLIError
 

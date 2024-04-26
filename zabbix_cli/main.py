@@ -55,7 +55,7 @@ def run_repl(ctx: typer.Context) -> None:
     from zabbix_cli._patches.click_repl import patch
 
     patch()
-    from click_repl import repl as start_repl
+    from click_repl import repl as start_repl  # pyright: ignore[reportUnknownVariableType, reportMissingTypeStubs]
 
     state = get_state()
 

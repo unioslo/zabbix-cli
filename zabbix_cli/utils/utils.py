@@ -60,7 +60,7 @@ def get_trigger_severity(code: int | None) -> str:
     return _format_code(code, trigger_severity, with_code=False)
 
 
-def get_trigger_status(code):
+def get_trigger_status(code: int) -> str:
     """Get trigger status from code."""
     trigger_status = {0: "Enable", 1: "Disable"}
 
@@ -158,7 +158,7 @@ def get_maintenance_active_days(schedule: int | None) -> List[str]:
     }
     # Bitwise AND schedule with each DoW's bit mask
     # If the result is non-zero, the DoW is active
-    active_days = []
+    active_days: List[str] = []
     for n, dow in days.items():
         if schedule & n:
             active_days.append(dow)
@@ -184,7 +184,7 @@ def get_maintenance_active_months(schedule: int | None) -> List[str]:
     }
     # Bitwise AND schedule with each month's bit mask
     # If the result is non-zero, the month is active
-    active_months = []
+    active_months: List[str] = []
     for n, month in months.items():
         if schedule & n:
             active_months.append(month)
@@ -245,14 +245,14 @@ def get_acknowledge_actions(code: int) -> List[str]:
     See: https://www.zabbix.com/documentation/current/en/manual/api/reference/event/acknowledge (action parameter)"""
     # Create reverse lookup for action bitmask
     acknowledge_actions = {v: k for k, v in ACKNOWLEDGE_ACTION_BITMASK.items()}
-    active_action = []
+    active_action: List[str] = []
     for n, action in acknowledge_actions.items():
         if code & n:
             active_action.append(action)
     return active_action
 
 
-def get_autologin_type(code):
+def get_autologin_type(code: int) -> str:
     """Get autologin type from code."""
     autologin_type = {0: "Disable", 1: "Enable"}
 

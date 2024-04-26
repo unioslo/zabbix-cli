@@ -110,18 +110,22 @@ class ParamSummary(BaseModel):
         return markup_to_markdown(self.help)
 
     @model_validator(mode="before")
-    def _fmt_metavar(cls, data: dict[str, Any]) -> dict[str, Any]:
-        metavar = data.get("metavar") or data.get("human_readable_name", "")
-        assert isinstance(metavar, str)
-        metavar = metavar.upper()
-        if data.get("multiple"):
-            new_metavar = f"<{metavar},[{metavar}...]>"
-        else:
-            new_metavar = f"<{metavar}>"
-        data["metavar"] = new_metavar
-        return data
+    @classmethod
+    def _fmt_metavar(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            metavar = data.get("metavar", "") or data.get(  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+                "human_readable_name", ""
+            )
+            assert isinstance(metavar, str), "metavar must be a string"
+            metavar = metavar.upper()
+            if data.get("multiple"):  # pyright: ignore[reportUnknownMemberType]
+                new_metavar = f"<{metavar},[{metavar}...]>"
+            else:
+                new_metavar = f"<{metavar}>"
+            data["metavar"] = new_metavar
+        return data  # pyright: ignore[reportUnknownVariableType]
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def show(self) -> bool:
         if self.hidden:
@@ -204,12 +208,12 @@ class CommandSummary(BaseModel):
 
         return " ".join(parts)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def options(self) -> List[ParamSummary]:
         return [p for p in self.params if _include_opt(p)]
 
-    @computed_field  # type: ignore[misc]
+    @computed_field
     @property
     def arguments(self) -> List[ParamSummary]:
         return [p for p in self.params if _include_arg(p)]

@@ -16,7 +16,7 @@ from strenum import StrEnum
 from zabbix_cli.exceptions import ZabbixCLIError
 
 if TYPE_CHECKING:
-    from zabbix_cli._types import EllipsisType
+    from types import EllipsisType
 
 T = TypeVar("T")
 
@@ -25,18 +25,19 @@ class APIStr(str, Generic[T]):
     """String type that can be used as an Enum choice while also
     carrying an API value associated with the string."""
 
-    api_value: T
-    value: str
-    metadata: Mapping[str, Any]
+    # Instance variables are set by __new__
+    api_value: T  # pyright: ignore[reportUninitializedInstanceVariable]
+    value: str  # pyright: ignore[reportUninitializedInstanceVariable]
+    metadata: Mapping[str, Any]  # pyright: ignore[reportUninitializedInstanceVariable]
 
     def __new__(
         cls,
         s: str,
-        api_value: T = None,  # type: ignore
+        api_value: T = None,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> APIStr[T]:
         if isinstance(s, APIStr):
-            return s
+            return s  # type: ignore # Type checker should be able to infer generic type
         if api_value is None:
             raise ZabbixCLIError("API value must be provided for APIStr.")
         obj = str.__new__(cls, s)
@@ -70,10 +71,10 @@ class Choice(Enum):
     with the `as_api_value()` method.
     """
 
-    value: APIStr[int]
+    value: APIStr[int]  # pyright: ignore[reportIncompatibleMethodOverride]
     __choice_name__: str = ""  # default (falls back to class name)
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
 
     def __str__(self) -> str:
@@ -132,12 +133,12 @@ class Choice(Enum):
     @classmethod
     def choices(cls) -> List[str]:
         """Return list of string values of the enum members."""
-        return [str(e) for e in cls]  # type: ignore # how do we stipulate that the class requires __iter__?
+        return [str(e) for e in cls]
 
     @classmethod
     def all_choices(cls) -> List[str]:
         """Choices including API values."""
-        return [str(e) for e in cls] + [str(e.as_api_value()) for e in cls]  # type: ignore # how do we stipulate that the class requires __iter__?
+        return [str(e) for e in cls] + [str(e.as_api_value()) for e in cls]
 
     def as_api_value(self) -> int:
         """Return the equivalent Zabbix API value."""
@@ -152,7 +153,7 @@ class Choice(Enum):
         1. Search for a member with the given string value (ignoring case)
         2. Search for a member with the given API value (converted to string)
         """
-        for v in cls:  # type: ignore # again with the cls.__iter__ problem
+        for v in cls:
             if v.value == value:
                 return v
             # kinda hacky. Should make sure we are dealing with strings here:
@@ -328,17 +329,17 @@ class ExportFormat(StrEnum):
     PHP = "php"
 
     @classmethod
-    def _missing_(cls, v: object) -> ExportFormat:
+    def _missing_(cls, value: object) -> ExportFormat:
         """Case-insensitive missing lookup.
 
         Allows for both `ExportFormat("JSON")` and `ExportFormat("json")`, etc."""
-        if not isinstance(v, str):
-            raise TypeError(f"Invalid format: {v!r}. Must be a string.")
-        v = v.lower()
+        if not isinstance(value, str):
+            raise TypeError(f"Invalid format: {value!r}. Must be a string.")
+        value = value.lower()
         for e in cls:
-            if e.value.lower() == v:
+            if e.value.lower() == value:
                 return e
-        raise ValueError(f"Invalid format: {v!r}.")
+        raise ValueError(f"Invalid format: {value!r}.")
 
     @classmethod
     def get_importables(cls) -> List[ExportFormat]:

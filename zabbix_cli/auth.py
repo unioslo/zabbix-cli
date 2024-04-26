@@ -140,7 +140,7 @@ def configure_auth_username_password(config: Config) -> None:
             break
     else:
         # Found no auth methods, prompt for it
-        username, password = _prompt_username_password(config)
+        username, password = prompt_username_password(config)
     config.api.username = username
     config.api.password = SecretStr(password)
 
@@ -204,7 +204,7 @@ def _do_clear_auth_token_file(file: Path) -> None:
         logger.debug(f"Auth token file {file} does not exist. Skipping...")
 
 
-def _prompt_username_password(config: Config) -> Tuple[str, str]:
+def prompt_username_password(config: Config) -> Tuple[str, str]:
     """Prompt for username and password."""
     username = str_prompt("Username", default=config.api.username)
     password = str_prompt("Password", password=True)

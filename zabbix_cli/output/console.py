@@ -59,25 +59,25 @@ def debug_kv(key: str, value: Any) -> None:
     err_console.print(msg)
 
 
-def debug(message: str, icon: str = "", *args, **kwargs) -> None:
+def debug(message: str, icon: str = "", *args: Any, **kwargs: Any) -> None:
     """Log with INFO level and print an informational message."""
     logger.debug(message, extra=get_extra_dict(**kwargs))
     err_console.print(message)
 
 
-def info(message: str, icon: str = Icon.INFO, *args, **kwargs) -> None:
+def info(message: str, icon: str = Icon.INFO, *args: Any, **kwargs: Any) -> None:
     """Log with INFO level and print an informational message."""
     logger.info(message, extra=get_extra_dict(**kwargs))
     err_console.print(f"[success]{icon}[/] {message}")
 
 
-def success(message: str, icon: str = Icon.OK, **kwargs) -> None:
+def success(message: str, icon: str = Icon.OK, **kwargs: Any) -> None:
     """Log with INFO level and print a success message."""
     logger.info(message, extra=get_extra_dict(**kwargs))
     err_console.print(f"[success]{icon}[/] {message}")
 
 
-def warning(message: str, icon: str = Icon.WARNING, **kwargs) -> None:
+def warning(message: str, icon: str = Icon.WARNING, **kwargs: Any) -> None:
     """Log with WARNING level and optionally print a warning message."""
     logger.warning(message, extra=get_extra_dict(**kwargs))
     err_console.print(f"[warning]{icon} {message}[/]")
@@ -88,7 +88,7 @@ def error(
     icon: str = Icon.ERROR,
     exc_info: bool = False,
     log: bool = True,
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Log with ERROR level and print an error message."""
     if log:  # we can disable logging when the logger isn't set up yet
@@ -101,7 +101,7 @@ def print_help(ctx: typer.Context) -> None:
     raise SystemExit(1)
 
 
-def exit_ok(message: Optional[str] = None, code: int = 0, **kwargs) -> NoReturn:
+def exit_ok(message: Optional[str] = None, code: int = 0, **kwargs: Any) -> NoReturn:
     """Logs a message with INFO level and exits with the given code (default: 0)
 
     Parameters

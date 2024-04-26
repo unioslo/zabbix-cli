@@ -39,7 +39,7 @@ class ShowTemplateGroupResult(TableRenderable):
             show_templates=show_templates,
         )
 
-    @computed_field()  # type: ignore # mypy bug
+    @computed_field
     @property
     def template_count(self) -> int:
         return len(self.templates)

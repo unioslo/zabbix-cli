@@ -65,7 +65,7 @@ class ZabbixAPIRequestError(ZabbixAPIException):
 
     def __init__(
         self,
-        *args,
+        *args: Any,
         params: Optional[ParamsType] = None,
         api_response: Optional[ZabbixAPIResponse] = None,
         response: Optional[HTTPResponse] = None,

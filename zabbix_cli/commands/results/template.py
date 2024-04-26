@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Set
 from typing import Literal
 from typing import Union
 
@@ -23,7 +23,7 @@ class LinkTemplateToHostResult(TableRenderable):
         host: Host,
         action: str,
     ) -> LinkTemplateToHostResult:
-        to_link = set()  # names of templates to link
+        to_link: Set[str] = set()  # names of templates to link
         for t in templates:
             for h in t.hosts:
                 if h.host == host.host:
@@ -50,7 +50,7 @@ class UnlinkTemplateFromHostResult(TableRenderable):
         action: str,
     ) -> UnlinkTemplateFromHostResult:
         """Only show templates that are actually unlinked."""
-        to_remove = set()
+        to_remove: Set[str] = set()
         for t in templates:
             for h in t.hosts:
                 if h.host == host.host:
@@ -110,7 +110,7 @@ class RemoveTemplateFromGroupResult(TableRenderable):
         templates: List[Template],
         group: Union[TemplateGroup, HostGroup],
     ) -> RemoveTemplateFromGroupResult:
-        to_remove = set()
+        to_remove: Set[str] = set()
         for template in group.templates:
             for t in templates:
                 if t.host == template.host:

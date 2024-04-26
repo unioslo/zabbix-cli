@@ -58,7 +58,7 @@ def render_result(
     paging = False  # TODO: implement
 
     ctx_manager = console.pager() if paging else nullcontext()
-    with ctx_manager:  # type: ignore # not quite sure why mypy is complaining here
+    with ctx_manager:
         if fmt == OutputFormat.JSON:
             if state.config.app.legacy_json_format:
                 render_json_legacy(result, ctx, **kwargs)
@@ -143,7 +143,7 @@ def render_json_legacy(
         jdict = {}  # type: dict[str, Any] # always a dict in legacy mode
         res = result.model_dump(mode="json", by_alias=True)
         if isinstance(result, AggregateResult):
-            py_result = res.get("result", [])  # type: ignore # bad annotation
+            py_result = res.get("result", [])
         else:
             py_result = [res]
 

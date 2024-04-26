@@ -119,7 +119,7 @@ def init_config(
 
     config.api.url = url
     # TODO: re-use prompts from zabbix_cli.auth
-    username, password = auth._prompt_username_password(config)
+    username, password = auth.prompt_username_password(config)
     config.api.username = username
     config.api.password = SecretStr(password)
 

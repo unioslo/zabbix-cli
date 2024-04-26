@@ -400,7 +400,7 @@ def unlink_template_from_template(
         LinkTemplateResult.from_result(
             source_templates,
             dest_templates,
-            action,  # type: ignore # mypy unable to infer literal type
+            action,
         )
     )
     base_msg = f"{p('template', len(source_templates))} from {p('template', len(dest_templates))}"
