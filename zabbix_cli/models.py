@@ -248,7 +248,7 @@ class TableRenderable(BaseModel):
 DataT = TypeVar("DataT", default=TableRenderable)
 
 
-class ResultBase(TableRenderable):
+class BaseResult(TableRenderable):
     message: str = Field(default="")
     """Field that signals that the result should be printed as a message, not a table."""
     errors: List[str] = Field(default_factory=list)
@@ -260,7 +260,7 @@ class ResultBase(TableRenderable):
     )
 
 
-class Result(ResultBase, Generic[DataT]):
+class Result(BaseResult, Generic[DataT]):
     """A result wrapping a single data object."""
 
     result: Optional[Union[DataT, List[DataT]]] = None
@@ -269,7 +269,7 @@ class Result(ResultBase, Generic[DataT]):
 TableRenderableT = TypeVar("TableRenderableT", bound=TableRenderable)
 
 
-class AggregateResult(ResultBase, Generic[TableRenderableT]):
+class AggregateResult(BaseResult, Generic[TableRenderableT]):
     """Resut wrapping multiple table renderables.
 
     Used for compatibility with the legacy JSON format,

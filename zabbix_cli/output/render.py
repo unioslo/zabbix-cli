@@ -16,21 +16,21 @@ from zabbix_cli.state import get_state
 if TYPE_CHECKING:
     from pydantic import BaseModel
 
-    from zabbix_cli.models import ResultBase
+    from zabbix_cli.models import BaseResult
     from zabbix_cli.models import TableRenderable
 
 
-def wrap_result(result: BaseModel) -> ResultBase:
+def wrap_result(result: BaseModel) -> BaseResult:
     """Wraps a BaseModel instance in a Result object so that it receives
     `return_code`, `errors`, and `message` fields, with the original object
     is available as `result`.
 
-    Does nothing if the function argument is already a ResultBase instance."""
+    Does nothing if the function argument is already a BaseResult instance."""
 
+    from zabbix_cli.models import BaseResult
     from zabbix_cli.models import Result
-    from zabbix_cli.models import ResultBase
 
-    if isinstance(result, ResultBase):
+    if isinstance(result, BaseResult):
         return result
     # TODO: handle AggregateResult?
     return Result(result=result)
