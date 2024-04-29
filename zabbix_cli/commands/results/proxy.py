@@ -80,6 +80,21 @@ class LBProxyResult(TableRenderable):
         return cols, rows
 
 
+class UpdateHostGroupProxyResult(TableRenderable):
+    """Result type for `update_hostgroup_proxy` command."""
+
+    proxy: str
+    hosts: List[str] = []
+    """Name of the host."""
+
+    @classmethod
+    def from_result(cls, proxy: Proxy, hosts: List[Host]) -> UpdateHostGroupProxyResult:
+        return cls(
+            proxy=proxy.name,
+            hosts=[h.host for h in hosts],
+        )
+
+
 class ShowProxiesResult(TableRenderable):
     """Result type for `show_proxy` command."""
 

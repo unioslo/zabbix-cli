@@ -30,6 +30,7 @@
   - `unlink_template_from_template`: Unlink template(s) from template(s).
   - `update_host_interface`: Update a host interface.
   - `update_user`: Update a user.
+  - `update_hostgroup_proxy`: Change the proxy for all hosts in one or more host groups.
 - **New command options:**
   - `add_host_to_hostgroup`:
     - `--dryrun`: Preview changes without making them.
@@ -135,9 +136,9 @@
   - `show_hostgroup_permissions`:
     - Shows permissions for all host groups by default.
   - `update_host_proxy`
-    - Supports setting proxy for multiple hosts at once using wildcards.
+    - Now supports setting proxy for multiple hosts at once using wildcards.
     - Output format is changed.
-      - Now groups hosts by previous proxy.
+      - Now groups hosts by proxy prior to update.
 - Use Hatch for building and publishing
 - Switch from setup.py to pyproject.toml
 

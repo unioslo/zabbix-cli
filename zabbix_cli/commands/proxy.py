@@ -4,6 +4,7 @@ import logging
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 
 import typer
 
@@ -11,6 +12,7 @@ from zabbix_cli.app import Example
 from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.console import exit_err
+from zabbix_cli.output.console import info
 from zabbix_cli.output.console import success
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.args import parse_int_list_arg
@@ -59,7 +61,7 @@ def update_host_proxy(
 
     # TODO: report failed hosts
 
-    # Group results by previous proxy
+    # Group results by proxy they had prior to update
     proxy_map: Dict[str, List[Host]] = {}
     for host in updated:
         proxy_map.setdefault(host.proxyid or "0", []).append(host)
@@ -251,6 +253,69 @@ def load_balance_proxy_hosts(
     render_result(LBProxyResult(proxies=list(lb_proxies.values())))
     # HACK: render_result doesn't print a message for table results
     success(f"Load balanced {len(all_hosts)} hosts between {len(proxy_list)} proxies.")
+
+
+@app.command(name="update_hostgroup_proxy")
+def update_hostgroup_proxy(
+    ctx: typer.Context,
+    hostgroup: str = typer.Argument(
+        ..., help="Host group(s). Comma-separated. Supports wildcards."
+    ),
+    proxy: str = typer.Argument(..., help="Proxy to assign. Supports wildcards."),
+    dryrun: bool = typer.Option(False, help="Preview changes.", is_flag=True),
+) -> None:
+    """Assign a proxy to all hosts in one or more host groups."""
+    from zabbix_cli.commands.results.proxy import UpdateHostGroupProxyResult
+    from zabbix_cli.output.console import error
+    from zabbix_cli.output.console import warning
+    from zabbix_cli.pyzabbix.types import Host
+
+    prx = app.state.client.get_proxy(proxy)
+
+    hostgroup_names = parse_list_arg(hostgroup)
+    hostgroups = app.state.client.get_hostgroups(
+        *hostgroup_names, select_hosts=True, search=True
+    )
+    # Get all hosts from all host groups
+    # Some hosts can be in multiple host groups - ensure no dupes
+    hosts: List[Host] = []
+    seen: Set[str] = set()
+    for hg in hostgroups:
+        for host in hg.hosts:
+            if host.host not in seen:
+                hosts.append(host)
+                seen.add(host.host)
+
+    to_update: List[Host] = []
+    for host in hosts:
+        if host.proxyid != prx.proxyid:
+            to_update.append(host)
+
+    # Sort hosts by host group
+    updated: List[Host] = []
+    fail: List[Host] = []
+    if not dryrun:
+        with app.status("Updating host proxies...") as status:
+            for host in to_update:
+                status.update(f"Updating {host.host}...")
+                try:
+                    app.state.client.update_host_proxy(host, prx)
+                    updated.append(host)
+                except Exception as e:
+                    fail.append(host)
+                    error(f"Failed to update host {host.host!r}: {e}")
+        if not updated and not fail:
+            warning("No hosts were updated.")
+    else:
+        updated = to_update
+    render_result(UpdateHostGroupProxyResult.from_result(prx, updated))
+
+    total_hosts = len(updated)
+    if dryrun:
+        info(f"Would update proxy for {total_hosts} hosts.")
+    else:
+        success(f"Updated proxy for {total_hosts} hosts.")
+        # TODO: report failed hosts
 
 
 @app.command(name="show_proxies", rich_help_panel=HELP_PANEL)
