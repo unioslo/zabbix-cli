@@ -78,7 +78,9 @@
   - `show_usergroup_permissions`:
     - `--sort`: Sort results by a field.
   - `unlink_template_from_host`:
-    - `--dryrun`: Preview changes without making them.
+    - `--dryrun`: Preview changes.
+  - `update_host_proxy`:
+    - `--dryrun`: Preview changes.
 - **New command arguments:**
   - `show_templates`:
     - `template_names`: Template name(s) to filter by. Shows all templates by default. Supports wildcards.
@@ -115,7 +117,7 @@
     - Exports are automatically overwritten if the file already exists.
   - `app.export_format` defaults to `json` (was `xml`)
 - Application now creates a config file on launch if it doesn't exist.
-- Command changes:
+- **Command changes:**
   - `create_host_interface`
     - Default port number is now determined by interface type.
       - Agent: 10050

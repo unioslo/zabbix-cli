@@ -29,7 +29,7 @@ def update_host_proxy(
         ..., help="Hostnames. Comma-separated Supports wildcards."
     ),
     proxy: str = typer.Argument(..., help="Proxy name. Supports wildcards."),
-    # TODO: add dryrun option
+    dryrun: bool = typer.Option(False, help="Preview changes", is_flag=True),
 ) -> None:
     """Assign one or more hosts to a proxy. Supports wildcards for both hosts and proxy.
 
@@ -44,21 +44,28 @@ def update_host_proxy(
     hosts = app.state.client.get_hosts(*hostnames, search=True)
     proxy_ = app.state.client.get_proxy(proxy)
 
+    to_update: List[Host] = []
+    for host in hosts:
+        if host.proxyid != proxy_.proxyid:
+            to_update.append(host)
+
     updated: List[Host] = []
     fail: List[Host] = []
-    with app.status("Updating host proxies...") as status:
-        for host in hosts:
-            status.update(f"Updating {host.host}...")
-            if host.proxyid and host.proxyid == proxy_.proxyid:
-                info(f"Host {host.host!r} already has proxy {proxy_.name!r}")
-                continue
-            try:
-                app.state.client.update_host_proxy(host, proxy_)
-                updated.append(host)
-            except Exception as e:
-                fail.append(host)
-                error(f"Failed to update host {host.host!r}: {e}")
-
+    if not dryrun:
+        with app.status("Updating host proxies...") as status:
+            for host in to_update:
+                status.update(f"Updating {host.host}...")
+                if host.proxyid and host.proxyid == proxy_.proxyid:
+                    info(f"Host {host.host!r} already has proxy {proxy_.name!r}")
+                    continue
+                try:
+                    app.state.client.update_host_proxy(host, proxy_)
+                    updated.append(host)
+                except Exception as e:
+                    fail.append(host)
+                    error(f"Failed to update host {host.host!r}: {e}")
+    else:
+        updated = to_update
     # TODO: report failed hosts
 
     # Group results by proxy they had prior to update
@@ -66,9 +73,12 @@ def update_host_proxy(
     for host in updated:
         proxy_map.setdefault(host.proxyid or "0", []).append(host)
 
+    # TODO: fetch proxies so we can show proxy names in result
+    #       but in legacy JSON mode we still show IDs
+
     render_result(
         AggregateResult(
-            message=f"Updated proxy for {len(hosts)}.",
+            empty_ok=True,
             result=[
                 UpdateHostProxyResult.from_result(
                     hosts=hosts,
@@ -79,6 +89,12 @@ def update_host_proxy(
             ],
         )
     )
+
+    total_hosts = len(updated)
+    if dryrun:
+        info(f"Would update proxy for {total_hosts} hosts.")
+    else:
+        success(f"Updated proxy for {total_hosts} hosts.")
 
 
 @app.command(
@@ -330,7 +346,8 @@ def show_proxies(
 ) -> None:
     """Show all proxies.
 
-    Shows number of hosts for each proxy unless --hosts is passed in."""
+    Shows number of hosts for each proxy unless --hosts is passed in,
+    in which case the hostnames of each host is displayed instead."""
     from zabbix_cli.commands.results.proxy import ShowProxiesResult
     from zabbix_cli.models import AggregateResult
 
