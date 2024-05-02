@@ -275,7 +275,6 @@ class InterfaceType(APIStrEnum):
     IPMI = APIStr("IPMI", 3, metadata={"port": "623"})
     JMX = APIStr("JMX", 4, metadata={"port": "12345"})
 
-    # TODO: test to ensure we always catch all cases (i.e. error should never be thrown)
     def get_port(self: InterfaceType) -> str:
         """Returns the default port for the given interface type."""
         try:
