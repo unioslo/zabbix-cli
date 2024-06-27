@@ -6,7 +6,6 @@ from typing import Tuple
 
 import pytest
 from freezegun import freeze_time
-
 from zabbix_cli.utils import convert_duration
 from zabbix_cli.utils.utils import convert_time_to_interval
 from zabbix_cli.utils.utils import convert_timestamp

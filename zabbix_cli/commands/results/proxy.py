@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from pydantic import Field
 from pydantic import model_serializer
 
+from zabbix_cli.models import MetaKey
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import Proxy
@@ -17,23 +18,46 @@ if TYPE_CHECKING:
     from zabbix_cli.models import RowsType  # noqa: F401
 
 
-class UpdateHostProxyResult(TableRenderable):
+class BaseHostProxyResult(TableRenderable):
+    source: str = Field(..., json_schema_extra={MetaKey.HEADER: "Source Proxy"})
+    """Name of the old proxy."""
+    hosts: List[str] = []
+    """Name of the hosts that were updated."""
+
+
+class UpdateHostProxyResult(BaseHostProxyResult):
     """Result type for `update_host_proxy` command."""
 
-    source: Optional[str] = None
-    """ID of the old proxy."""
-    destination: Optional[str] = None
-    """ID of the new proxy"""
-    hosts: List[str] = []
-    """Name of the host."""
+    destination: str = Field(
+        ..., json_schema_extra={MetaKey.HEADER: "Destination Proxy"}
+    )
+    """Name of the new proxy"""
 
     @classmethod
     def from_result(
-        cls, hosts: List[Host], source_proxyid: str, dest_proxyid: str
+        cls,
+        hosts: List[Host],
+        source_proxy: Optional[Proxy],
+        dest_proxy: Optional[Proxy],
     ) -> UpdateHostProxyResult:
         return cls(
-            source=source_proxyid,
-            destination=dest_proxyid,
+            source=source_proxy.name if source_proxy else "",
+            destination=dest_proxy.name if dest_proxy else "",
+            hosts=[h.host for h in hosts],
+        )
+
+
+class ClearHostProxyResult(BaseHostProxyResult):
+    """Result type for `update_host_proxy` command."""
+
+    @classmethod
+    def from_result(
+        cls,
+        hosts: List[Host],
+        source_proxy: Optional[Proxy],
+    ) -> ClearHostProxyResult:
+        return cls(
+            source=source_proxy.name if source_proxy else "",
             hosts=[h.host for h in hosts],
         )
 
@@ -74,7 +98,7 @@ class LBProxyResult(TableRenderable):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["Proxy", "Weight", "Hosts"]
-        rows = []  # type: RowsType
+        rows: RowsType = []
         for proxy in self.proxies:
             rows.append([proxy.proxy.name, str(proxy.weight), str(len(proxy.hosts))])
         return cols, rows
@@ -127,14 +151,14 @@ class ShowProxiesResult(TableRenderable):
             "Hosts",
         ]
 
-        rows = [
+        rows: RowsType = [
             [
                 self.proxy.name,
                 str(self.proxy.address),
                 self.proxy.mode,
                 self.hosts_fmt,
             ]
-        ]  # type: RowsType
+        ]
         if self.zabbix_version.release >= (7, 0, 0):
             cols.extend(["Version", "Compatibility"])
             rows[0].extend([str(self.proxy.version), self.proxy.compatibility_rich])

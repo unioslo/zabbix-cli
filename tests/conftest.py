@@ -6,7 +6,6 @@ import pytest
 import typer
 from typer import Typer
 from typer.testing import CliRunner
-
 from zabbix_cli.main import app
 
 runner = CliRunner()
@@ -24,7 +23,6 @@ def app_runner():
 @pytest.fixture
 def ctx(app: Typer) -> typer.Context:
     """Create context for the main command."""
-
     # Use the CliRunner to invoke a command and capture the context
     obj = {}
     with runner.isolated_filesystem():

@@ -149,14 +149,14 @@ class HostGroupResult(TableRenderable):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Name", "Flag", "Hosts"]
-        rows = [
+        rows: RowsType = [
             [
                 self.groupid,
                 self.name,
                 self.flags_str,
                 ", ".join([host["host"] for host in self.hosts]),
             ]
-        ]  # type: RowsType
+        ]
         # LEGACY: Drop this when we drop support for <=6.0
         if self.zabbix_version.release < (6, 2):
             cols.insert(3, "Type")
@@ -174,5 +174,5 @@ class HostGroupPermissions(TableRenderable):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["GroupID", "Name", "Permissions"]
-        rows = [[self.groupid, self.name, "\n".join(self.permissions)]]  # type: RowsType
+        rows: RowsType = [[self.groupid, self.name, "\n".join(self.permissions)]]
         return cols, rows

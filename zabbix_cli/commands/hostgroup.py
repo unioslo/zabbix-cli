@@ -54,7 +54,7 @@ def add_host_to_hostgroup(
         with app.status("Adding hosts to host groups..."):
             app.state.client.add_hosts_to_hostgroups(hosts, hgs)
 
-    result = []  # type: list[AddHostsToHostGroup]
+    result: List[AddHostsToHostGroup] = []
     for hg in hgs:
         r = AddHostsToHostGroup.from_result(hosts, hg)
         if not r.hosts:
@@ -103,7 +103,7 @@ def remove_host_from_hostgroup(
         with app.status("Removing hosts from host groups..."):
             app.state.client.remove_hosts_from_hostgroups(hosts, hgs)
 
-    result = []  # type: list[RemoveHostsFromHostGroup]
+    result: List[RemoveHostsFromHostGroup] = []
     for hg in hgs:
         r = RemoveHostsFromHostGroup.from_result(hosts, hg)
         if not r.hosts:
@@ -140,7 +140,7 @@ def remove_host_from_hostgroup(
     ],
 )
 def create_hostgroup(
-    hostgroup: str = typer.Argument(..., help="Name of host group."),
+    hostgroup: str = typer.Argument(help="Name of host group."),
     rw_groups: Optional[str] = typer.Option(
         None,
         "--rw-groups",
@@ -176,8 +176,8 @@ def create_hostgroup(
 
     app_config = app.state.config.app
 
-    rw_grps = []  # type: list[str]
-    ro_grps = []  # type: list[str]
+    rw_grps: List[str] = []
+    ro_grps: List[str] = []
     if not no_usergroup_permissions:
         rw_grps = parse_list_arg(rw_groups) or app_config.default_admin_usergroups
         ro_grps = parse_list_arg(ro_groups) or app_config.default_create_user_usergroups
@@ -208,7 +208,7 @@ def create_hostgroup(
 @app.command("remove_hostgroup", rich_help_panel=HELP_PANEL)
 def delete_hostgroup(
     hostgroup: str = typer.Argument(
-        ..., help="Name of host group(s) to delete. Comma-separated."
+        help="Name of host group(s) to delete. Comma-separated."
     ),
     force: bool = typer.Option(
         False,
@@ -244,11 +244,9 @@ def delete_hostgroup(
 @app.command("extend_hostgroup", rich_help_panel=HELP_PANEL)
 def extend_hostgroup(
     src_group: str = typer.Argument(
-        ...,
         help="Group to get hosts from.",
     ),
     dest_group: str = typer.Argument(
-        ...,
         help="Group(s) to add hosts to. Comma-separated. Supports wildcards.",
     ),
     dryrun: bool = typer.Option(
@@ -260,7 +258,8 @@ def extend_hostgroup(
     """Add all hosts from a host group to other host group(s).
 
     The source group is not modified. Existing hosts in the destination group(s)
-    are not removed or modified."""
+    are not removed or modified.
+    """
     from zabbix_cli.commands.results.hostgroup import ExtendHostgroupResult
 
     dest_args = parse_list_arg(dest_group)
@@ -286,11 +285,9 @@ def extend_hostgroup(
 @app.command("move_hosts", rich_help_panel=HELP_PANEL)
 def move_hosts(
     src_group: str = typer.Argument(
-        ...,
         help="Group to move hosts from.",
     ),
     dest_group: str = typer.Argument(
-        ...,
         help="Group to move hosts to.",
     ),
     rollback: bool = typer.Option(
@@ -338,7 +335,7 @@ def move_hosts(
 @app.command("show_hostgroup", rich_help_panel=HELP_PANEL)
 def show_hostgroup(
     ctx: typer.Context,
-    hostgroup: str = typer.Argument(..., help="Name of host group."),
+    hostgroup: str = typer.Argument(help="Name of host group."),
 ) -> None:
     """Show details of a host group."""
     from zabbix_cli.commands.results.hostgroup import HostGroupResult
@@ -403,8 +400,8 @@ def show_hostgroup_permissions(
 ) -> None:
     """Show usergroups with permissions for the given hostgroup. Supports wildcards.
 
-    Shows permissions for all host groups by default."""
-
+    Shows permissions for all host groups by default.
+    """
     from zabbix_cli.commands.results.hostgroup import HostGroupPermissions
     from zabbix_cli.models import AggregateResult
 

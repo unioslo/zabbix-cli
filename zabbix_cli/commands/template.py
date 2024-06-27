@@ -32,7 +32,7 @@ HELP_PANEL = "Template"
 def _handle_hostnames_args(
     hostnames_or_ids: str | None,
     strict: bool = False,
-) -> list[Host]:
+) -> List[Host]:
     if not hostnames_or_ids:
         hostnames_or_ids = str_prompt("Host(s)")
 
@@ -98,7 +98,7 @@ def _handle_template_arg(
     template_names_or_ids: str | None,
     strict: bool = False,
     select_hosts: bool = False,
-) -> list[Template]:
+) -> List[Template]:
     if not template_names_or_ids:
         template_names_or_ids = str_prompt("Template(s)")
 
@@ -177,7 +177,7 @@ def link_template_to_host(
     if not dryrun:
         with app.state.console.status("Linking templates..."):
             app.state.client.link_templates_to_hosts(templates, hosts)
-    result = []  # type: list[LinkTemplateToHostResult]
+    result: List[LinkTemplateToHostResult] = []
     for host in hosts:
         r = LinkTemplateToHostResult.from_result(templates, host, "Link")
         if not r.templates:
@@ -255,7 +255,7 @@ def unlink_template_from_host(
             app.state.client.unlink_templates_from_hosts(templates, hosts)
 
     # Only show hosts with matching templates to unlink
-    result = []  # type: list[UnlinkTemplateFromHostResult]
+    result: List[UnlinkTemplateFromHostResult] = []
     for host in hosts:
         r = UnlinkTemplateFromHostResult.from_result(templates, host, action)
         if not r.templates:
@@ -525,7 +525,7 @@ def remove_template_from_group(
                 templates,
                 groups,
             )
-    result = []  # type: list[RemoveTemplateFromGroupResult]
+    result: List[RemoveTemplateFromGroupResult] = []
     for group in groups:
         r = RemoveTemplateFromGroupResult.from_result(templates, group)
         if not r.templates:
@@ -547,7 +547,7 @@ def remove_template_from_group(
 def show_template(
     ctx: typer.Context,
     template_name: str = typer.Argument(
-        ..., help="Template name or ID. Names support wildcards."
+        help="Template name or ID. Names support wildcards."
     ),
 ) -> None:
     """Show a template."""
@@ -571,7 +571,8 @@ def show_templates(
     """Show one or more templates.
 
     Shows all templates by default. The template name can be a pattern containing wildcards.
-    Names and IDs cannot be mixed."""
+    Names and IDs cannot be mixed.
+    """
     from zabbix_cli.models import AggregateResult
 
     args = parse_list_arg(templates)
@@ -597,7 +598,7 @@ def show_templates(
 def show_items(
     ctx: typer.Context,
     template_name: str = typer.Argument(
-        ..., help="Template name or ID. Supports wildcards."
+        help="Template name or ID. Supports wildcards."
     ),
 ) -> None:
     """Show items that belong to a template."""

@@ -15,8 +15,6 @@
 from __future__ import annotations
 
 import logging
-import random
-import re
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -103,11 +101,10 @@ class ZabbixAPI:
         session: Optional[httpx.Client] = None,
         timeout: Optional[int] = None,
     ):
-        """
-        Parameters:
-            server: Base URI for zabbix web interface (omitting /api_jsonrpc.php)
-            session: optional pre-configured requests.Session instance
-            timeout: optional connect and read timeout in seconds.
+        """Parameters:
+        server: Base URI for zabbix web interface (omitting /api_jsonrpc.php)
+        session: optional pre-configured requests.Session instance
+        timeout: optional connect and read timeout in seconds.
         """
         self.timeout = timeout if timeout else None
 
@@ -127,7 +124,7 @@ class ZabbixAPI:
         self.cache = ZabbixCache(self)
 
         # Attributes for properties
-        self._version = None  # type: Version | None
+        self._version: Optional[Version] = None
 
     @classmethod
     def from_config(cls, config: Config) -> ZabbixAPI:
@@ -143,7 +140,7 @@ class ZabbixAPI:
     ) -> httpx.Client:
         import httpx
 
-        kwargs = {}  # type: HTTPXClientKwargs
+        kwargs: HTTPXClientKwargs = {}
         if timeout is not None:
             kwargs["timeout"] = timeout
         client = httpx.Client(
@@ -171,8 +168,7 @@ class ZabbixAPI:
         password: Optional[str] = None,
         auth_token: Optional[str] = None,
     ) -> str:
-        """
-        Convenience method for logging into the API and storing the resulting
+        """Convenience method for logging into the API and storing the resulting
         auth token as an instance variable.
         """
         # The username kwarg was called "user" in Zabbix 5.2 and earlier.
@@ -197,8 +193,8 @@ class ZabbixAPI:
 
     def confimport(self, format: ExportFormat, source: str, rules: ImportRules) -> Any:
         """Alias for configuration.import because it clashes with
-        Python's import reserved keyword"""
-
+        Python's import reserved keyword
+        """
         return self.do_request(
             method="configuration.import",
             params={
@@ -212,7 +208,8 @@ class ZabbixAPI:
     @property
     def version(self) -> Version:
         """Alternate version of api_version() that caches version info
-        as a Version object."""
+        as a Version object.
+        """
         if self._version is None:
             from packaging.version import Version
 
@@ -382,7 +379,7 @@ class ZabbixAPI:
             List[HostGroup]: List of host groups.
         """
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
-        params = {"output": "extend"}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
 
         if "*" in names_or_ids:
             names_or_ids = tuple()
@@ -522,7 +519,7 @@ class ZabbixAPI:
         """
         # FIXME: ensure we use searching correctly here
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
-        params = {"output": "extend"}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
 
         if "*" in names_or_ids:
             names_or_ids = tuple()
@@ -667,13 +664,12 @@ class ZabbixAPI:
         Returns:
             List[Host]: _description_
         """
-
-        params = {"output": "extend"}  # type: ParamsType
-        filter_params = {}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
+        filter_params: ParamsType = {}
 
         # Filter by the given host name or ID if we have one
         if names_or_ids:
-            id_mode = None  # type: Optional[bool]
+            id_mode: Optional[bool] = None
             for name_or_id in names_or_ids:
                 name_or_id = name_or_id.strip()
                 is_id = name_or_id.isnumeric()
@@ -749,11 +745,11 @@ class ZabbixAPI:
         inventory: Optional[Dict[str, Any]] = None,
         description: Optional[str] = None,
     ) -> str:
-        params = {
+        params: ParamsType = {
             "host": host,
             "status": status.as_api_value(),
             "inventory_mode": inventory_mode.as_api_value(),
-        }  # type: ParamsType
+        }
 
         # dedup group IDs
         groupids = list({group.groupid for group in groups})
@@ -834,8 +830,9 @@ class ZabbixAPI:
         # Can expand with the rest of the parameters if needed
     ) -> List[HostInterface]:
         """Fetches a list of host interfaces, optionally filtered by host ID,
-        interface ID, item ID or trigger ID."""
-        params = {"output": "extend"}  # type: ParamsType
+        interface ID, item ID or trigger ID.
+        """
+        params: ParamsType = {"output": "extend"}
         if hostids:
             params["hostids"] = hostids
         if interfaceids:
@@ -869,7 +866,7 @@ class ZabbixAPI:
             raise ZabbixAPIException(
                 "DNS must be provided if using DNS connection mode."
             )
-        params = {
+        params: ParamsType = {
             "hostid": host.hostid,
             "main": int(main),
             "type": type.as_api_value(),
@@ -877,7 +874,7 @@ class ZabbixAPI:
             "port": str(port),
             "ip": ip or "",
             "dns": dns or "",
-        }  # type: ParamsType
+        }
         if type == InterfaceType.SNMP:
             if not details:
                 raise ZabbixAPIException(
@@ -908,7 +905,7 @@ class ZabbixAPI:
         dns: Optional[str] = None,
         details: Optional[UpdateHostInterfaceDetails] = None,
     ) -> None:
-        params = {"interfaceid": interface.interfaceid}  # type: ParamsType
+        params: ParamsType = {"interfaceid": interface.interfaceid}
         if main is not None:
             params["main"] = int(main)
         if type is not None:
@@ -966,9 +963,9 @@ class ZabbixAPI:
         search: bool = False,
     ) -> List[Usergroup]:
         """Fetches all user groups. Optionally includes users and rights."""
-        params = {
+        params: ParamsType = {
             "output": "extend",
-        }  # type: ParamsType
+        }
         if "*" in names:
             names = tuple()
         if search:
@@ -1041,7 +1038,7 @@ class ZabbixAPI:
         """
         usergroup = self.get_usergroup(usergroup_name, select_users=True)
 
-        params = {"usrgrpid": usergroup.usrgrpid}  # type: ParamsType
+        params: ParamsType = {"usrgrpid": usergroup.usrgrpid}
 
         # Add new IDs to existing and remove duplicates
         current_userids = [user.userid for user in usergroup.users]
@@ -1067,7 +1064,7 @@ class ZabbixAPI:
         """Update usergroup rights for host or template groups."""
         usergroup = self.get_usergroup(usergroup_name, select_rights=True)
 
-        params = {"usrgrpid": usergroup.usrgrpid}  # type: ParamsType
+        params: ParamsType = {"usrgrpid": usergroup.usrgrpid}
 
         if hostgroup:
             hostgroups = [self.get_hostgroup(hg) for hg in groups]
@@ -1103,7 +1100,7 @@ class ZabbixAPI:
         permission: UsergroupPermission,
         groups: Union[List[HostGroup], List[TemplateGroup]],
     ) -> List[ZabbixRight]:
-        new_rights = []  # type: List[ZabbixRight] # list of new rights to add
+        new_rights: List[ZabbixRight] = []  # list of new rights to add
         rights = list(rights)  # copy rights (don't modify original)
         for group in groups:
             for right in rights:
@@ -1118,29 +1115,43 @@ class ZabbixAPI:
         return rights
 
     def get_proxy(
-        self, name: str, select_hosts: bool = False, search: bool = True
+        self, name_or_id: str, select_hosts: bool = False, search: bool = True
     ) -> Proxy:
         """Fetches a single proxy matching the given name."""
-        proxies = self.get_proxies(name=name, select_hosts=select_hosts, search=search)
+        proxies = self.get_proxies(name_or_id, select_hosts=select_hosts, search=search)
         if not proxies:
-            raise ZabbixNotFoundError(f"Proxy {name!r} not found")
+            raise ZabbixNotFoundError(f"Proxy {name_or_id!r} not found")
         return proxies[0]
 
     def get_proxies(
         self,
-        name: Optional[str] = None,
+        *names_or_ids: str,
         select_hosts: bool = False,
         search: bool = True,
         **kwargs: Any,
     ) -> List[Proxy]:
-        """Fetches all proxies."""
-        params = {"output": "extend"}  # type: ParamsType
-        if name:
-            params.setdefault("search", {})[compat.proxy_name(self.version)] = name
+        """Fetches all proxies.
+
+        NOTE: IDs and names cannot be mixed
+        """
+        params: ParamsType = {"output": "extend"}
+        search_params: ParamsType = {}
+
+        for name_or_id in names_or_ids:
+            if name_or_id:
+                if name_or_id.isnumeric():
+                    params.setdefault("proxyids", []).append(name_or_id)
+                else:
+                    search_params.setdefault(
+                        compat.proxy_name(self.version), []
+                    ).append(name_or_id)
+
         if select_hosts:
             params["selectHosts"] = "extend"
-        if search and params.get("search"):
+        if search and search_params:
+            params["search"] = search_params
             params["searchWildcardsEnabled"] = True
+            params["searchByAny"] = True
 
         params.update(**kwargs)
         try:
@@ -1149,21 +1160,6 @@ class ZabbixAPI:
             raise ZabbixAPICallError("Unknown error when fetching proxies") from e
         else:
             return [Proxy(**proxy) for proxy in res]
-
-    def get_random_proxy(self, pattern: Optional[str] = None) -> Proxy:
-        """Fetches a random proxy, optionally matching a regex pattern."""
-        proxies = self.get_proxies()
-        if not proxies:
-            raise ZabbixNotFoundError("No proxies found")
-        if pattern:
-            try:
-                re_pattern = re.compile(pattern)
-            except re.error:
-                raise ZabbixAPICallError(f"Invalid proxy regex pattern: {pattern!r}")
-            proxies = [proxy for proxy in proxies if re_pattern.match(proxy.name)]
-            if not proxies:
-                raise ZabbixNotFoundError(f"No proxies matching pattern {pattern!r}")
-        return random.choice(proxies)
 
     def get_macro(
         self,
@@ -1206,7 +1202,7 @@ class ZabbixAPI:
         sort_field: Optional[str] = "macro",
         sort_order: Optional[SortOrder] = None,
     ) -> List[Macro]:
-        params = {"output": "extend"}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
 
         if host:
             params.setdefault("search", {})["hostids"] = host.hostid
@@ -1259,7 +1255,7 @@ class ZabbixAPI:
         sort_field: Optional[str] = "macro",
         sort_order: Optional[SortOrder] = None,
     ) -> List[GlobalMacro]:
-        params = {"output": "extend", "globalmacro": True}  # type: ParamsType
+        params: ParamsType = {"output": "extend", "globalmacro": True}
 
         if macro_name:
             params.setdefault("search", {})["macro"] = macro_name
@@ -1332,8 +1328,8 @@ class ZabbixAPI:
         return resp["hostids"][0]
 
     def update_host_proxy(self, host: Host, proxy: Proxy) -> str:
-        """Updates a host proxy given a host ID and proxy."""
-        params = {
+        """Updates a host's proxy."""
+        params: ParamsType = {
             "hostid": host.hostid,
             compat.host_proxyid(self.version): proxy.proxyid,
         }
@@ -1348,6 +1344,22 @@ class ZabbixAPI:
                 f"No host ID returned when updating proxy for host {host.host!r} (ID {host.hostid})"
             )
         return resp["hostids"][0]
+
+    def clear_host_proxies(self, hosts: List[Host]) -> List[str]:
+        """Clears a host's proxy."""
+        params: ParamsType = {
+            "hosts": [{"hostid": host.hostid} for host in hosts],
+            compat.host_proxyid(self.version): None,
+        }
+        try:
+            resp = self.host.massupdate(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError("Failed to clear host proxy for hosts") from e
+        if not resp or resp.get("hostids") is None:
+            raise ZabbixNotFoundError(
+                "No host IDs returned when clearing proxies for hosts."
+            )
+        return resp["hostids"]
 
     def update_host_status(self, host: Host, status: MonitoringStatus) -> str:
         """Updates a host status given a host ID and status."""
@@ -1367,10 +1379,10 @@ class ZabbixAPI:
     # Just pass in a list of host IDs instead?
     def move_hosts_to_proxy(self, hosts: List[Host], proxy: Proxy) -> None:
         """Moves a list of hosts to a proxy."""
-        params = {
+        params: ParamsType = {
             "hosts": [{"hostid": host.hostid} for host in hosts],
             compat.host_proxyid(self.version): proxy.proxyid,
-        }  # type: ParamsType
+        }
         try:
             self.host.massupdate(**params)
         except ZabbixAPIException as e:
@@ -1404,7 +1416,7 @@ class ZabbixAPI:
         select_parent_templates: bool = False,
     ) -> List[Template]:
         """Fetches one or more templates given a name or ID."""
-        params = {"output": "extend"}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
 
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
         if "*" in template_names_or_ids:
@@ -1461,8 +1473,10 @@ class ZabbixAPI:
             raise ZabbixAPIException("At least one template is required")
         if not hosts:
             raise ZabbixAPIException("At least one host is required")
-        template_ids = [{"templateid": template.templateid} for template in templates]  # type: ModifyTemplateParams
-        host_ids = [{"hostid": host.hostid} for host in hosts]  # type: ModifyHostParams
+        template_ids: ModifyTemplateParams = [
+            {"templateid": template.templateid} for template in templates
+        ]
+        host_ids: ModifyHostParams = [{"hostid": host.hostid} for host in hosts]
         try:
             self.host.massadd(templates=template_ids, hosts=host_ids)
         except ZabbixAPIException as e:
@@ -1482,9 +1496,9 @@ class ZabbixAPI:
         if not hosts:
             raise ZabbixAPIException("At least one host is required")
 
-        params = {
+        params: ParamsType = {
             "hostids": [h.hostid for h in hosts],
-        }  # type: ParamsType
+        }
         tids = [t.templateid for t in templates]
         if clear:
             params["templateids_clear"] = tids
@@ -1513,8 +1527,12 @@ class ZabbixAPI:
         if not destination:
             raise ZabbixAPIException("At least one destination template is required")
         # NOTE: source templates are passed to templates_link param
-        templates = [{"templateid": template.templateid} for template in destination]  # type: ModifyTemplateParams
-        templates_link = [{"templateid": template.templateid} for template in source]  # type: ModifyTemplateParams
+        templates: ModifyTemplateParams = [
+            {"templateid": template.templateid} for template in destination
+        ]
+        templates_link: ModifyTemplateParams = [
+            {"templateid": template.templateid} for template in source
+        ]
         try:
             self.template.massadd(templates=templates, templates_link=templates_link)
         except ZabbixAPIException as e:
@@ -1537,10 +1555,10 @@ class ZabbixAPI:
             raise ZabbixAPIException("At least one source template is required")
         if not destination:
             raise ZabbixAPIException("At least one destination template is required")
-        params = {
+        params: ParamsType = {
             "templateids": [template.templateid for template in destination],
             "templateids_link": [template.templateid for template in source],
-        }  # type: ParamsType
+        }
         # NOTE: despite what the docs say, we need to pass both templateids_link and templateids_clear
         # in order to unlink and clear templates. Only passing in templateids_clear will just
         # unlink the templates but not clear them (????) Absurd behavior.
@@ -1554,7 +1572,7 @@ class ZabbixAPI:
 
     def link_templates_to_groups(
         self,
-        templates: list[Template],
+        templates: List[Template],
         groups: Union[List[HostGroup], List[TemplateGroup]],
     ) -> None:
         """Links one or more templates to one or more host/template groups.
@@ -1572,8 +1590,10 @@ class ZabbixAPI:
             raise ZabbixAPIException("At least one template is required")
         if not groups:
             raise ZabbixAPIException("At least one group is required")
-        template_ids = [{"templateid": template.templateid} for template in templates]  # type: ModifyTemplateParams
-        group_ids = [{"groupid": group.groupid} for group in groups]  # type: ModifyGroupParams
+        template_ids: ModifyTemplateParams = [
+            {"templateid": template.templateid} for template in templates
+        ]
+        group_ids: ModifyGroupParams = [{"groupid": group.groupid} for group in groups]
         try:
             self.template.massadd(templates=template_ids, groups=group_ids)
         except ZabbixAPIException as e:
@@ -1581,7 +1601,7 @@ class ZabbixAPI:
 
     def remove_templates_from_groups(
         self,
-        templates: list[Template],
+        templates: List[Template],
         groups: Union[List[HostGroup], List[TemplateGroup]],
     ) -> None:
         """Removes template(s) from host/template group(s).
@@ -1621,13 +1641,15 @@ class ZabbixAPI:
         # TODO: implement graphs
         # TODO: implement triggers
     ) -> List[Item]:
-        params = {"output": "extend"}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
         if names:
             params["search"] = {"name": names}
             if search:
                 params["searchWildcardsEnabled"] = True
         if templates:
-            params = {"templateids": [template.templateid for template in templates]}
+            params: ParamsType = {
+                "templateids": [template.templateid for template in templates]
+            }
         if monitored:
             params["monitored"] = monitored  # false by default in API
         if select_hosts:
@@ -1652,7 +1674,10 @@ class ZabbixAPI:
     ) -> str:
         # TODO: handle invalid password
         # TODO: handle invalid type
-        params = {compat.user_name(self.version): username, "passwd": password}  # type: ParamsType
+        params: ParamsType = {
+            compat.user_name(self.version): username,
+            "passwd": password,
+        }
 
         if first_name:
             params["name"] = first_name
@@ -1689,7 +1714,7 @@ class ZabbixAPI:
         return roles[0]
 
     def get_roles(self, name_or_id: Optional[str] = None) -> List[Role]:
-        params = {"output": "extend"}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
         if name_or_id is not None:
             if name_or_id.isdigit():
                 params["roleids"] = name_or_id
@@ -1711,8 +1736,8 @@ class ZabbixAPI:
         role: Optional[UserRole] = None,
         search: bool = False,
     ) -> List[User]:
-        params = {"output": "extend"}  # type: ParamsType
-        filter_params = {}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
+        filter_params: ParamsType = {}
         if search:
             params["searchWildcardsEnabled"] = True
         if username is not None:
@@ -1732,8 +1757,8 @@ class ZabbixAPI:
     def delete_user(self, user: User) -> str:
         """Delete a user.
 
-        Returns ID of deleted user."""
-
+        Returns ID of deleted user.
+        """
         try:
             resp = self.user.delete(user.userid)
         except ZabbixAPIException as e:
@@ -1758,7 +1783,7 @@ class ZabbixAPI:
         autologout: Union[str, int, None] = None,
     ) -> str:
         """Update a user. Returns ID of updated user."""
-        query = {"userid": user.userid}  # type: ParamsType
+        query: ParamsType = {"userid": user.userid}
         if current_password and new_password:
             query["current_passwd"] = current_password
             query["passwd"] = new_password
@@ -1796,8 +1821,8 @@ class ZabbixAPI:
     def get_mediatypes(
         self, name: Optional[str] = None, search: bool = False
     ) -> List[MediaType]:
-        params = {"output": "extend"}  # type: ParamsType
-        filter_params = {}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
+        filter_params: ParamsType = {}
         if search:
             params["searchWildcardsEnabled"] = True
         if name is not None:
@@ -1825,13 +1850,13 @@ class ZabbixAPI:
         hosts: Optional[List[Host]] = None,
         name: Optional[str] = None,
     ) -> List[Maintenance]:
-        params = {
+        params: ParamsType = {
             "output": "extend",
             "selectHosts": "extend",
             compat.param_host_get_groups(self.version): "extend",
             "selectTimeperiods": "extend",
-        }  # type: ParamsType
-        filter_params = {}  # type: ParamsType
+        }
+        filter_params: ParamsType = {}
         if maintenance_ids:
             params["maintenanceids"] = maintenance_ids
         if hostgroups:
@@ -1858,7 +1883,7 @@ class ZabbixAPI:
         """Create a one-time maintenance definition."""
         if not hosts and not hostgroups:
             raise ZabbixAPIException("At least one host or hostgroup is required")
-        params = {
+        params: ParamsType = {
             "name": name,
             "active_since": int(active_since.timestamp()),
             "active_till": int(active_till.timestamp()),
@@ -1867,7 +1892,7 @@ class ZabbixAPI:
                 "start_date": int(active_since.timestamp()),
                 "period": int((active_till - active_since).total_seconds()),
             },
-        }  # type: ParamsType
+        }
         if description:
             params["description"] = description
         if hosts:
@@ -1890,7 +1915,8 @@ class ZabbixAPI:
     def delete_maintenance(self, *maintenance_ids: str) -> List[str]:
         """Deletes one or more maintenances given their IDs
 
-        Returns IDs of deleted maintenances."""
+        Returns IDs of deleted maintenances.
+        """
         try:
             resp = self.maintenance.delete(*maintenance_ids)
         except ZabbixAPIException as e:
@@ -1929,7 +1955,7 @@ class ZabbixAPI:
             change_to_cause=change_to_cause,
             change_to_symptom=change_to_symptom,
         )
-        params = {"eventids": event_ids, "action": action}  # type: ParamsType
+        params: ParamsType = {"eventids": event_ids, "action": action}
         if message:
             params["message"] = message
         try:
@@ -1993,7 +2019,7 @@ class ZabbixAPI:
         sort_order: Optional[SortOrder] = None,
         limit: Optional[int] = None,
     ) -> List[Event]:
-        params = {"output": "extend"}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
         if event_ids:
             params["eventids"] = event_ids
         if group_ids:
@@ -2031,7 +2057,7 @@ class ZabbixAPI:
         sort_field: Optional[str] = "lastchange",
         sort_order: SortOrder = "DESC",
     ) -> List[Trigger]:
-        params = {"output": "extend"}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
         if description:
             params["search"] = {"description": description}
         if skip_dependent is not None:
@@ -2068,7 +2094,7 @@ class ZabbixAPI:
 
     def get_images(self, *image_names: str, select_image: bool = True) -> List[Image]:
         """Fetches images, optionally filtered by name(s)."""
-        params = {"output": "extend"}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
         if image_names:
             params["searchByAny"] = True
             params["search"] = {"name": image_names}
@@ -2083,7 +2109,7 @@ class ZabbixAPI:
 
     def get_maps(self, *map_names: str) -> List[Map]:
         """Fetches maps, optionally filtered by name(s)."""
-        params = {"output": "extend"}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
         if map_names:
             params["searchByAny"] = True
             params["search"] = {"name": map_names}
@@ -2096,7 +2122,7 @@ class ZabbixAPI:
 
     def get_media_types(self, *names: str) -> List[MediaType]:
         """Fetches media types, optionally filtered by name(s)."""
-        params = {"output": "extend"}  # type: ParamsType
+        params: ParamsType = {"output": "extend"}
         if names:
             params["searchByAny"] = True
             params["search"] = {"name": names}
@@ -2120,8 +2146,8 @@ class ZabbixAPI:
         pretty: bool = True,
     ) -> str:
         """Exports a configuration to a JSON or XML file."""
-        params = {"format": str(format)}  # type: ParamsType
-        options = {}  # type: ParamsType
+        params: ParamsType = {"format": str(format)}
+        options: ParamsType = {}
         if host_groups:
             options["host_groups"] = [hg.groupid for hg in host_groups]
         if template_groups:

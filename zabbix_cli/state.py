@@ -2,7 +2,8 @@
 
 The global state object is a singleton that holds the current state of the
 application. It is used to store the current configuration, Zabbix client,
-and other stateful objects."""
+and other stateful objects.
+"""
 
 # This module re-treads all the sins of Harbor CLI's state module.
 #
@@ -27,6 +28,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Optional
 
 # This module should not import from other local modules because it's widely
 # used throughout the application, and we don't want to create circular imports.
@@ -57,30 +59,31 @@ class State:
     bulk: bool = False
     """Running in bulk mode."""
 
-    _client = None  # type: ZabbixAPI | None
+    _client: Optional[ZabbixAPI] = None
     """Zabbix API client object."""
 
-    _config = None  # type: Config | None
+    _config: Optional[Config] = None
     """Current Config object (may have overrides)."""
 
-    _config_repl_original = None  # type: Config | None
+    _config_repl_original: Optional[Config] = None
     """Config object when the REPL was first launched."""
 
-    _console = None  # type: Console | None
+    _console: Optional[Console] = None
     """Stdout Rich console object."""
 
-    _err_console = None  # type: Console | None
+    _err_console: Optional[Console] = None
     """Stderr Rich console object."""
 
-    token = None  # type: str | None
+    token: Optional[str] = None
     """Active Zabbix API auth token."""
 
-    _history = None  # type: History | None
+    _history: Optional[History] = None
 
     @property
     def client(self) -> ZabbixAPI:
         """Zabbix API client object.
-        Fails if the client is not configured."""
+        Fails if the client is not configured.
+        """
         from zabbix_cli.exceptions import ZabbixCLIError
 
         if self._client is None:
@@ -135,7 +138,8 @@ class State:
     def history(self) -> History:
         """Prompt history.
 
-        Lazily instantiates the history object if it doesn't exist."""
+        Lazily instantiates the history object if it doesn't exist.
+        """
         from prompt_toolkit.history import FileHistory
         from prompt_toolkit.history import InMemoryHistory
 
@@ -203,7 +207,8 @@ class State:
 
     def logout(self):
         """Ends the current user's API session if the client is logged in
-        and the application is not configured to use an auth token file."""
+        and the application is not configured to use an auth token file.
+        """
         from zabbix_cli.auth import clear_auth_token_file
 
         # If we are NOT keeping the API session alive between CLI invocations
@@ -235,5 +240,6 @@ class State:
 def get_state() -> State:
     """Returns the global state object.
 
-    Instantiates a new state object with defaults if it doesn't exist."""
+    Instantiates a new state object with defaults if it doesn't exist.
+    """
     return State()

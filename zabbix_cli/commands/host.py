@@ -30,12 +30,7 @@ HELP_PANEL = "Host"
 @app.command(name="create_host", rich_help_panel=HELP_PANEL)
 def create_host(
     ctx: typer.Context,
-    args: Optional[List[str]] = ARGS_POSITIONAL,
-    # FIXME: specify hostname as only positional arg!
-    hostname_or_ip: str = typer.Option(
-        ...,
-        "--host",
-        "--ip",
+    hostname_or_ip: str = typer.Argument(
         help="Hostname or IP",
     ),
     hostgroups: Optional[str] = typer.Option(
@@ -53,7 +48,6 @@ def create_host(
         "--status",
         help="Host monitoring status.",
     ),
-    # Options below are new in V3:
     default_hostgroup: bool = typer.Option(
         True,
         "--default-hostgroup/--no-default-hostgroup",
@@ -69,25 +63,31 @@ def create_host(
         "--description",
         help="Description of the host.",
     ),
+    # LEGACY: V2-style positional args
+    args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Create a host.
 
     Always adds the host to the default host group unless --no-default-hostgroup
     is specified.
+
+    Selects a random proxy by default unless [option]--proxy[/] [value]-[/] is specified.
     """
     # NOTE: this was one of the first commands ported over to V3, and as such
     # it uses a lot of V2 semantics and patterns. It should be changed to have
     # less implicit behavior such as default hostgroups.
     from zabbix_cli.models import Result
+    from zabbix_cli.output.formatting.grammar import pluralize as p
     from zabbix_cli.pyzabbix.types import HostInterface
+    from zabbix_cli.pyzabbix.utils import get_random_proxy
 
     if args:
-        if len(args) != 4:
+        if len(args) != 3:
+            # Hostname + legacy args = 4
             exit_err("create_host takes exactly 4 positional arguments.")
-        hostname_or_ip = args[0]
-        hostgroups = args[1]
-        proxy = args[2]
-        status = MonitoringStatus(args[3])
+        hostgroups = args[0]
+        proxy = args[1]
+        status = MonitoringStatus(args[2])
 
     host_name = name or hostname_or_ip
     if app.state.client.host_exists(host_name):
@@ -117,12 +117,16 @@ def create_host(
     ]
 
     # Determine host group IDs
-    hg_args = []  # type: List[str]
-    if default_hostgroup and app.state.config.app.default_hostgroups:
+    hg_args: List[str] = []
+
+    # Default host groups from config
+    def_hgs = app.state.config.app.default_hostgroups
+    if default_hostgroup and def_hgs:
         info(
-            f"Will add host to default host group(s): {', '.join(app.state.config.app.default_hostgroups)}"
+            f"Will add host to default host {p('group', len(def_hgs))}: {', '.join(def_hgs)}"
         )
-        hg_args.extend(app.state.config.app.default_hostgroups)
+        hg_args.extend(def_hgs)
+    # Host group args
     if hostgroups:
         hostgroup_args = parse_list_arg(hostgroups)
         hg_args.extend(hostgroup_args)
@@ -132,12 +136,12 @@ def create_host(
 
     # Find a proxy (No match = monitored by zabbix server)
     try:
-        prox = app.state.client.get_random_proxy(pattern=proxy)
+        prox = get_random_proxy(app.state.client, pattern=proxy)
     except ZabbixNotFoundError:
         prox = None
 
     if app.state.client.host_exists(hostname_or_ip):
-        exit_err(f"Host {hostname_or_ip} already exists.")
+        exit_err(f"Host {hostname_or_ip!r} already exists.")
 
     host_id = app.state.client.create_host(
         host_name,
@@ -185,7 +189,6 @@ def create_host(
 def create_host_interface(
     ctx: typer.Context,
     hostname: str = typer.Argument(
-        ...,
         help="Name of host to create interface on.",
         show_default=False,
     ),
@@ -350,7 +353,7 @@ def create_host_interface(
         info(f"No default {type_} interface found. Setting new interface as default.")
         default = True
 
-    details = None  # type: CreateHostInterfaceDetails | None
+    details: Optional[CreateHostInterfaceDetails] = None
     if type_ == InterfaceType.SNMP:
         details = CreateHostInterfaceDetails(
             version=snmp_version,
@@ -416,7 +419,6 @@ def create_host_interface(
 def update_host_interface(
     ctx: typer.Context,
     interface_id: str = typer.Argument(
-        ...,
         help="ID of interface to update.",
         show_default=False,
     ),
@@ -566,7 +568,6 @@ def update_host_interface(
 def remove_host_interface(
     ctx: typer.Context,
     interface_id: str = typer.Argument(
-        ...,
         help="ID of interface to remove.",
         show_default=False,
     ),
@@ -581,12 +582,10 @@ def remove_host_interface(
 @app.command(name="define_host_monitoring_status", rich_help_panel=HELP_PANEL)
 def define_host_monitoring_status(
     hostname: str = typer.Argument(
-        ...,
         help="Name of host",
         show_default=False,
     ),
     new_status: MonitoringStatus = typer.Argument(
-        ...,
         help="Monitoring status",
         case_sensitive=False,
         show_default=False,
@@ -607,7 +606,7 @@ def define_host_monitoring_status(
 @app.command(name="remove_host", rich_help_panel=HELP_PANEL)
 def remove_host(
     ctx: typer.Context,
-    hostname: str = typer.Argument(..., help="Name of host to remove."),
+    hostname: str = typer.Argument(help="Name of host to remove."),
 ) -> None:
     """Delete a host."""
     from zabbix_cli.models import Result
@@ -620,7 +619,7 @@ def remove_host(
 @app.command(name="show_host", rich_help_panel=HELP_PANEL)
 def show_host(
     ctx: typer.Context,
-    hostname_or_id: str = typer.Argument(..., help="Hostname or ID."),
+    hostname_or_id: str = typer.Argument(help="Hostname or ID."),
     # This is the legacy filter argument from V2
     filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
     agent: Optional[AgentAvailable] = typer.Option(
@@ -722,7 +721,7 @@ def show_hosts(
 
 @app.command(name="show_host_interfaces", rich_help_panel=HELP_PANEL)
 def show_host_interfaces(
-    hostname_or_id: str = typer.Argument(..., help="Hostname or ID"),
+    hostname_or_id: str = typer.Argument(help="Hostname or ID"),
 ) -> None:
     """Show host interfaces."""
     from zabbix_cli.models import AggregateResult
@@ -733,7 +732,7 @@ def show_host_interfaces(
 
 @app.command(name="show_host_inventory", rich_help_panel=HELP_PANEL)
 def show_host_inventory(
-    hostname_or_id: str = typer.Argument(..., help="Hostname or ID"),
+    hostname_or_id: str = typer.Argument(help="Hostname or ID"),
 ) -> None:
     """Show host inventory details for a specific host."""
     # TODO: support undocumented filter argument from V2
@@ -745,9 +744,9 @@ def show_host_inventory(
 @app.command(name="update_host_inventory", rich_help_panel=HELP_PANEL)
 def update_host_inventory(
     ctx: typer.Context,
-    hostname_or_id: str = typer.Argument(..., help="Hostname or ID of host."),
-    key: str = typer.Argument(..., help="Inventory key"),
-    value: str = typer.Argument(..., help="Inventory value"),
+    hostname_or_id: str = typer.Argument(help="Hostname or ID of host."),
+    key: str = typer.Argument(help="Inventory key"),
+    value: str = typer.Argument(help="Inventory value"),
 ) -> None:
     """Update a host inventory field.
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import List
 from typing import Optional
 
 import typer
@@ -35,7 +36,7 @@ def parse_int_arg(arg: str) -> int:
         raise ZabbixCLIError(f"Invalid integer value: {arg}") from e
 
 
-def parse_list_arg(arg: Optional[str], keep_empty: bool = False) -> list[str]:
+def parse_list_arg(arg: Optional[str], keep_empty: bool = False) -> List[str]:
     """Convert comma-separated string to list."""
     try:
         args = arg.strip().split(",") if arg else []
@@ -46,7 +47,7 @@ def parse_list_arg(arg: Optional[str], keep_empty: bool = False) -> list[str]:
         raise ZabbixCLIError(f"Invalid comma-separated string value: {arg}") from e
 
 
-def parse_int_list_arg(arg: str) -> list[int]:
+def parse_int_list_arg(arg: str) -> List[int]:
     """Convert comma-separated string of ints to list of ints."""
     args = parse_list_arg(
         arg,
@@ -63,7 +64,7 @@ def parse_hostgroups_arg(
     hgroup_names_or_ids: Optional[str],
     strict: bool = False,
     select_hosts: bool = False,
-) -> list[HostGroup]:
+) -> List[HostGroup]:
     from zabbix_cli.output.console import exit_err
     from zabbix_cli.output.prompts import str_prompt
 
@@ -88,7 +89,7 @@ def parse_hostnames_arg(
     app: StatefulApp,
     hostnames_or_ids: Optional[str],
     strict: bool = False,
-) -> list[Host]:
+) -> List[Host]:
     from zabbix_cli.output.console import exit_err
     from zabbix_cli.output.prompts import str_prompt
 

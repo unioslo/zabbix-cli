@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 
 import pytest
-
 from zabbix_cli.output.prompts import HEADLESS_VARS_SET
 from zabbix_cli.output.prompts import TRUE_ARGS
 from zabbix_cli.output.prompts import is_headless

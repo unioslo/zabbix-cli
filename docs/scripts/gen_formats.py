@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 
 import yaml  # type: ignore
-
 from zabbix_cli.config.constants import OutputFormat
 
 sys.path.append(Path(__file__).parent.as_posix())

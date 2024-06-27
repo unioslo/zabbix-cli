@@ -53,7 +53,7 @@ def get_random_password() -> str:
 @app.command("create_user", rich_help_panel=HELP_PANEL)
 def create_user(
     ctx: typer.Context,
-    username: str = typer.Argument(..., help="Username of the user to create."),
+    username: str = typer.Argument(help="Username of the user to create."),
     first_name: Optional[str] = typer.Option(
         None, "--firstname", help="First name of the user to create."
     ),
@@ -165,7 +165,7 @@ def create_user(
 )
 def update_user(
     ctx: typer.Context,
-    username: str = typer.Argument(..., help="Username of the user to update"),
+    username: str = typer.Argument(help="Username of the user to update"),
     first_name: Optional[str] = typer.Option(
         None, "--firstname", help="New first name."
     ),
@@ -199,7 +199,8 @@ def update_user(
 ) -> None:
     """Update a user.
 
-    Use [command]add_user_to_usergroup[/command] and [command]remove_user_from_usergroup[/command] to manage user groups."""
+    Use [command]add_user_to_usergroup[/command] and [command]remove_user_from_usergroup[/command] to manage user groups.
+    """
     from zabbix_cli.models import Result
 
     user = app.state.client.get_user(username)
@@ -236,7 +237,7 @@ def update_user(
 @app.command("remove_user", rich_help_panel=HELP_PANEL)
 def remove_user(
     ctx: typer.Context,
-    username: str = typer.Argument(..., help="Username to remove."),
+    username: str = typer.Argument(help="Username to remove."),
 ) -> None:
     """Remove a user."""
     from zabbix_cli.models import Result
@@ -254,7 +255,7 @@ def remove_user(
 @app.command("show_user", rich_help_panel=HELP_PANEL)
 def show_user(
     ctx: typer.Context,
-    username: str = typer.Argument(..., help="Username of user"),
+    username: str = typer.Argument(help="Username of user"),
 ) -> None:
     """Show a user."""
     user = app.state.client.get_user(username)
@@ -306,12 +307,10 @@ def get_notification_user_username(
 def create_notification_user(
     ctx: typer.Context,
     sendto: str = typer.Argument(
-        ...,
-        help="E-mail address, SMS number, jabber address, etc.",
+        help="Email address, SMS number, jabber address, etc.",
         show_default=False,
     ),
     mediatype: str = typer.Argument(
-        ...,
         help="A media type defined in Zabbix.",
         show_default=False,
     ),
@@ -343,7 +342,7 @@ def create_notification_user(
     user in particular, e.g. an email list or jabber channel but Zabbix has
     not the possibility of defining media for a usergroup.
 
-    This is the reason we use *notification users*. They are users nobody
+    This is the reason we use [b]notification users[/]. They are users nobody
     owns, but that can be used by other users to send notifications to the
     media defined in the notification user profile.
 
@@ -425,7 +424,7 @@ def create_notification_user(
 @app.command("add_user_to_usergroup", rich_help_panel=HELP_PANEL)
 def add_user_to_usergroup(
     ctx: typer.Context,
-    usernames: str = typer.Argument(..., help="Usernames to add. Comma-separated."),
+    usernames: str = typer.Argument(help="Usernames to add. Comma-separated."),
     usergroups: Optional[str] = typer.Argument(
         None,
         help="User groups to add the users to. Comma-separated.",
@@ -433,7 +432,8 @@ def add_user_to_usergroup(
 ) -> None:
     """Adds user(s) to usergroup(s).
 
-    Ignores users not in user groups. Users and groups must exist."""
+    Ignores users not in user groups. Users and groups must exist.
+    """
     from zabbix_cli.commands.results.user import UsergroupAddUsers
 
     # FIXME: requires support for IDs for parity with V2
@@ -460,15 +460,15 @@ def add_user_to_usergroup(
 @app.command("remove_user_from_usergroup", rich_help_panel=HELP_PANEL)
 def remove_user_from_usergroup(
     ctx: typer.Context,
-    usernames: str = typer.Argument(..., help="Usernames to remove. Comma-separated."),
+    usernames: str = typer.Argument(help="Usernames to remove. Comma-separated."),
     usergroups: str = typer.Argument(
-        ...,
         help="User groups to remove the users from. Comma-separated.",
     ),
 ) -> None:
     """Removes user(s) from usergroup(s).
 
-    Ignores users not in user groups. Users and groups must exist."""
+    Ignores users not in user groups. Users and groups must exist.
+    """
     from zabbix_cli.commands.results.user import UsergroupRemoveUsers
 
     # FIXME: requires support for IDs for parity with V2
@@ -495,7 +495,7 @@ def remove_user_from_usergroup(
 @app.command("create_usergroup", rich_help_panel=HELP_PANEL)
 def create_usergroup(
     ctx: typer.Context,
-    usergroup: str = typer.Argument(..., help="Name of the user group to create."),
+    usergroup: str = typer.Argument(help="Name of the user group to create."),
     gui_access: GUIAccess = typer.Option(
         GUIAccess.DEFAULT.value, "--gui", help="GUI access for the group."
     ),
@@ -581,7 +581,6 @@ OPTION_SORT_UGROUPS = typer.Option(
 def show_usergroup(
     ctx: typer.Context,
     usergroup: str = typer.Argument(
-        ...,
         help="Name of the user group(s) to show. Comma-separated. Supports wildcards.",
     ),
     sort: UsergroupSorting = OPTION_SORT_UGROUPS,
@@ -637,7 +636,7 @@ def show_usergroups(
 def show_usergroup_permissions(
     ctx: typer.Context,
     usergroup: str = typer.Argument(
-        ..., help="Name of user group. Comma-separated. Supports wildcards."
+        help="Name of user group. Comma-separated. Supports wildcards."
     ),
     sort: UsergroupSorting = OPTION_SORT_UGROUPS,
 ) -> None:
@@ -665,7 +664,7 @@ def show_usergroup_permissions(
             templategroups = app.state.client.get_templategroups()
     else:
         templategroups = []
-    res = []  # type: list[ShowUsergroupPermissionsResult]
+    res: List[ShowUsergroupPermissionsResult] = []
     for ugroup in usergroups:
         res.append(
             ShowUsergroupPermissionsResult.from_usergroup(
@@ -680,7 +679,7 @@ def show_usergroup_permissions(
 @app.command("update_usergroup_permissions", rich_help_panel=HELP_PANEL)
 def add_usergroup_permissions(
     ctx: typer.Context,
-    usergroup: str = typer.Argument(..., help="User group to give permissions to."),
+    usergroup: str = typer.Argument(help="User group to give permissions to."),
     hostgroups: Optional[str] = typer.Option(
         None,
         "--hostgroups",
@@ -725,7 +724,9 @@ def add_usergroup_permissions(
         exit_err("At least one host group or template group must be specified.")
 
     if not permission:
-        permission = UsergroupPermission.from_prompt()
+        permission = UsergroupPermission.from_prompt(
+            default=UsergroupPermission.READ_WRITE
+        )
 
     if hgroups:
         with app.status("Adding host group permissions..."):

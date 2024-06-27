@@ -54,7 +54,8 @@ DIRS = [
 
 def mkdir_if_not_exists(path: Path) -> None:
     """Create a directory if it does not exist.
-    Returns the path if it was created, otherwise None."""
+    Returns the path if it was created, otherwise None.
+    """
     if path.exists():
         return
     try:

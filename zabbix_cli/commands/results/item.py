@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -34,7 +35,7 @@ class UngroupedItem(TableRenderable):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["Item ID", "Name", "Key", "Last value", "Host"]
-        rows = [
+        rows: RowsType = [
             [
                 self.itemid,
                 self.name or "",
@@ -42,7 +43,7 @@ class UngroupedItem(TableRenderable):
                 self.lastvalue or "",
                 self.host or "",
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows
 
 
@@ -65,14 +66,14 @@ class ItemResult(Item):
         # As long as we include the "host" computed field, we need to
         # override the __cols_rows__ method.
         cols = ["Name", "Key", "Last value", "Hosts"]
-        rows = [
+        rows: RowsType = [
             [
                 self.name or "",
                 self.key or "",
                 self.lastvalue or "",
                 "\n".join(h.host for h in self.hosts),
             ],
-        ]  # type: RowsType
+        ]
         if self.grouped:
             cols.insert(0, "Item ID")
             rows[0].insert(0, self.itemid)
@@ -87,7 +88,6 @@ def group_items(items: List[Item]) -> List[ItemResult]:
 
 
     Example:
-
     ```py
         # Given the following items:
         >>> items = [
@@ -106,7 +106,7 @@ def group_items(items: List[Item]) -> List[ItemResult]:
     """
     from zabbix_cli.commands.results.item import ItemResult
 
-    item_map = {}  # type: dict[str, ItemResult]
+    item_map: Dict[str, ItemResult] = {}
 
     for item in items:
         if not item.name or not item.lastvalue or not item.key or not item.hosts:

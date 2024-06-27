@@ -6,12 +6,11 @@ import os
 from functools import lru_cache
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import List
+from typing import Optional
 from typing import Type
-from typing import cast
 from typing import overload
 
 from rich.prompt import Confirm
@@ -30,9 +29,6 @@ from .formatting.path import path_link
 from .style import Color
 from .style import Icon
 from .style import green
-
-if TYPE_CHECKING:
-    from types import EllipsisType
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -93,10 +89,10 @@ def prompt_msg(*msgs: str) -> str:
 @no_headless
 def str_prompt(
     prompt: str,
-    default: str | EllipsisType = ...,
+    default: str = ...,
     password: bool = False,
     show_default: bool = True,
-    choices: list[str] | None = None,
+    choices: Optional[List[str]] = None,
     empty_ok: bool = False,
     strip: bool = True,
     **kwargs: Any,
@@ -149,7 +145,6 @@ def str_prompt(
             choices=choices,
             **kwargs,
         )
-        inp = cast(str, inp)  # Passing in ellipsis means no default, so always a string
         if empty_ok:  # nothing else to check
             break
 
@@ -168,7 +163,7 @@ def str_prompt_optional(
     default: str = "",
     password: bool = False,
     show_default: bool = False,
-    choices: list[str] | None = None,
+    choices: Optional[List[str]] = None,
     strip: bool = True,
     **kwargs: Any,
 ) -> str:
@@ -295,7 +290,12 @@ def _number_prompt(
     show_range: bool = True,
     **kwargs: Any,
 ) -> int | float:
-    default_arg = ... if default is None else default
+    # NOTE: pyright really doesn't like Ellipsis as default!
+    default_arg = (  # pyright: ignore[reportUnknownVariableType]
+        ... if default is None else default
+    )
+
+    IntPrompt.ask()
 
     _prompt_add = ""
     if show_range:
@@ -312,10 +312,10 @@ def _number_prompt(
     msg = prompt_msg(prompt, _prompt_add)
 
     while True:
-        val = prompt_type.ask(
+        val = prompt_type.ask(  # pyright: ignore[reportUnknownVariableType]
             msg,
             console=err_console,
-            default=default_arg,
+            default=default_arg,  # pyright: ignore[reportUnknownArgumentType]
             show_default=show_default,
             **kwargs,
         )
@@ -357,7 +357,7 @@ def bool_prompt(
 @no_headless
 def path_prompt(
     prompt: str,
-    default: Any = ...,
+    default: str | Path = ...,
     show_default: bool = True,
     exist_ok: bool = True,
     must_exist: bool = False,
@@ -365,15 +365,13 @@ def path_prompt(
 ) -> Path:
     if isinstance(default, Path):
         default_arg = str(default)
-    elif default is None:
-        default_arg = ...
     else:
         default_arg = default
 
     while True:
         path_str = str_prompt(
             prompt,
-            default=default_arg,
+            default=default_arg,  # pyright: ignore[reportUnknownVariableType]
             show_default=show_default,
             **kwargs,
         )

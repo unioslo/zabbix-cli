@@ -31,10 +31,10 @@ class MacroHostListV2(TableRenderable):
     macro: Macro
 
     def __cols_rows__(self) -> ColsRowsType:
-        rows = [
+        rows: RowsType = [
             [self.macro.macro, str(self.macro.value), host.hostid, host.host]
             for host in self.macro.hosts
-        ]  # type: RowsType
+        ]
         return ["Macro", "Value", "HostID", "Host"], rows
 
     @model_serializer()
@@ -53,10 +53,10 @@ class MacroHostListV3(TableRenderable):
     macro: Macro
 
     def __cols_rows__(self) -> ColsRowsType:
-        rows = [
+        rows: RowsType = [
             [host.hostid, host.host, self.macro.macro, str(self.macro.value)]
             for host in self.macro.hosts
-        ]  # type: RowsType
+        ]
         return ["Host ID", "Host", "Macro", "Value"], rows
 
 

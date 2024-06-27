@@ -6,6 +6,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import NamedTuple
@@ -134,7 +135,7 @@ class ZabbixExporter:
         # Will need to be rewritten to use threads to achieve this.
 
         # TODO: test that mapping contains all export types
-        self.exporter_map = {
+        self.exporter_map: Dict[ExportType, ExporterFunc] = {
             ExportType.HOST_GROUPS: self.export_host_groups,
             ExportType.TEMPLATE_GROUPS: self.export_template_groups,
             ExportType.HOSTS: self.export_hosts,
@@ -142,7 +143,7 @@ class ZabbixExporter:
             ExportType.MAPS: self.export_maps,
             ExportType.TEMPLATES: self.export_templates,
             ExportType.MEDIA_TYPES: self.export_media_types,
-        }  # type: dict[ExportType, ExporterFunc]
+        }
 
         self.check_export_types()
         self._export = partial(
@@ -151,7 +152,7 @@ class ZabbixExporter:
 
     def run(self) -> List[Path]:
         """Run exporters."""
-        files = []  # type: List[Path]
+        files: List[Path] = []
         with err_console.status("") as status:
             for exporter in self.get_exporters():
                 status.update(f"Exporting {exporter.type.human_readable()}...")
@@ -175,7 +176,7 @@ class ZabbixExporter:
 
     def get_exporters(self) -> List[Exporter]:
         """Get a list of exporters to run."""
-        exporters = []  # type: List[Exporter]
+        exporters: List[Exporter] = []
         for export_type in self.export_types:
             exporter = self.exporter_map.get(export_type, None)
             if not exporter:  # should never happen - tests should catch this
@@ -268,7 +269,6 @@ class ZabbixExporter:
         self, filename: Path, **kwargs: Unpack[ExportKwargs]
     ) -> Optional[Path]:
         """Runs the export process."""
-
         try:
             exported = self.client.export_configuration(
                 pretty=self.pretty,
@@ -312,7 +312,7 @@ def parse_export_types(value: List[str]) -> List[ExportType]:
     elif "#all#" in value:
         warning("#all# is a deprecated value and will be removed in a future version.")
         value = list(ExportType)
-    objs = []  # type: List[ExportType]
+    objs: List[ExportType] = []
     for obj in value:
         try:
             export_type = ExportType(obj)
@@ -507,8 +507,8 @@ class ZabbixImporter:
         self.update_existing = update_existing
         self.delete_missing = delete_missing
 
-        self.imported = []  # type: List[Path]
-        self.failed = []  # type: List[Path]
+        self.imported: List[Path] = []
+        self.failed: List[Path] = []
 
     def run(self) -> None:
         """Runs the importer."""
@@ -554,7 +554,7 @@ class ZabbixImporter:
 def filter_valid_imports(files: List[Path]) -> List[Path]:
     """Filter list of files to include only valid imports."""
     importables = [i.casefold() for i in ExportFormat.get_importables()]
-    valid = []  # type: List[Path]
+    valid: List[Path] = []
     for f in files:
         if not f.exists():
             continue

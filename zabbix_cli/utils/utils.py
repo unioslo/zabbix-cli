@@ -242,7 +242,8 @@ def get_acknowledge_action_value(
 def get_acknowledge_actions(code: int) -> List[str]:
     """Get acknowledge actions from code.
 
-    See: https://www.zabbix.com/documentation/current/en/manual/api/reference/event/acknowledge (action parameter)"""
+    See: https://www.zabbix.com/documentation/current/en/manual/api/reference/event/acknowledge (action parameter)
+    """
     # Create reverse lookup for action bitmask
     acknowledge_actions = {v: k for k, v in ACKNOWLEDGE_ACTION_BITMASK.items()}
     active_action: List[str] = []
@@ -560,7 +561,8 @@ def sanitize_filename(filename: str) -> str:
     """Make a filename safe(r) for use in filesystems.
 
     Very naive implementation that removes illegal characters.
-    Does not check for reserved names or path length."""
+    Does not check for reserved names or path length.
+    """
     return re.sub(r"[^\w\-.]", "_", filename)
 
 

@@ -27,6 +27,7 @@ import logging
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Dict
 from typing import Optional
 
 import typer
@@ -54,7 +55,7 @@ def run_repl(ctx: typer.Context) -> None:
     from zabbix_cli.state import get_state
 
     patch()
-    from click_repl import (
+    from click_repl import (  # pyright: ignore[reportUnknownVariableType, reportMissingTypeStubs]
         repl as start_repl,  # pyright: ignore[reportUnknownVariableType, reportMissingTypeStubs]
     )
 
@@ -80,7 +81,7 @@ def run_repl(ctx: typer.Context) -> None:
             state.repl = True
         state.revert_config_overrides()
 
-    prompt_kwargs = {"pre_run": pre_run, "history": state.history}  # type: dict[str, Any]
+    prompt_kwargs: Dict[str, Any] = {"pre_run": pre_run, "history": state.history}
     start_repl(ctx, prompt_kwargs=prompt_kwargs)
 
 

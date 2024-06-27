@@ -55,7 +55,8 @@ ColsRowsType = Tuple[ColsType, RowsType]
 
 class MetaKey(str, Enum):
     """Keys used in the `json_schema_extra` dict of a field to customize
-    its rendering."""
+    its rendering.
+    """
 
     JOIN_CHAR = "join_char"
     HEADER = "header"
@@ -122,11 +123,12 @@ class TableRenderable(BaseModel):
 
     def __all_fields__(self) -> Dict[str, Union[FieldInfo, ComputedFieldInfo]]:
         """Returns all fields for the model, including computed fields,
-        but excluding excluded fields."""
-        all_fields = {
+        but excluding excluded fields.
+        """
+        all_fields: Dict[str, Union[FieldInfo, ComputedFieldInfo]] = {
             **self.model_fields,
             **self.model_computed_fields,
-        }  # type: Dict[str, Union[FieldInfo, ComputedFieldInfo]]
+        }
         return {n: f for n, f in all_fields.items() if not getattr(f, "exclude", False)}
 
     def __cols__(self) -> ColsType:
@@ -160,7 +162,7 @@ class TableRenderable(BaseModel):
         return cols
 
     def __rows__(self) -> RowsType:
-        """Returns the rows for the table representation of the object.
+        r"""Returns the rows for the table representation of the object.
 
         Only override if you want to customize the rows without
         overriding the columns. Otherwise, override `__cols_rows__`.
@@ -171,8 +173,8 @@ class TableRenderable(BaseModel):
             - list: render as newline delimited string
         Everything else is rendered as a string.
 
-        Example:
-
+        Example
+        -------
         >>> class User(TableRenderable):
         ...     userid: str
         ...     username: str
@@ -180,7 +182,7 @@ class TableRenderable(BaseModel):
         ...
         >>> User(userid="1", username="admin", groups=["foo", "bar", "baz"]).__rows__()
         [["1", "admin", "foo\nbar\nbaz"]]
-        """
+        """  # noqa: D416
         fields: Dict[str, Any | str] = {
             field_name: getattr(self, field_name, "")
             for field_name in self.__all_fields__()
@@ -221,13 +223,12 @@ class TableRenderable(BaseModel):
         """Returns the columns and rows for the table representation of the object.
 
         Example:
-
-        >>> class User(TableRenderable):
-        ...     userid: str = Field(json_schema_extra={"header" : "User ID"})
-        ...     username: str = ""
-        ...
-        >>> User(userid="1", username="admin").__cols_rows__()
-        (["UserID", "Username"], [["1", "admin"]])
+            >>> class User(TableRenderable):
+            ...     userid: str = Field(json_schema_extra={"header" : "User ID"})
+            ...     username: str = ""
+            ...
+            >>> User(userid="1", username="admin").__cols_rows__()
+            (["UserID", "Username"], [["1", "admin"]])
         """
         return self.__cols__(), self.__rows__()
 
@@ -274,13 +275,14 @@ class AggregateResult(BaseResult, Generic[TableRenderableT]):
 
     Used for compatibility with the legacy JSON format,
     as well as implementing table rendering for multiple
-    results."""
+    results.
+    """
 
     result: List[TableRenderableT] = Field(default_factory=list)
 
     def __cols_rows__(self) -> ColsRowsType:
-        cols = []  # type: ColsType
-        rows = []  # type: RowsType
+        cols: ColsType = []
+        rows: RowsType = []
 
         for result in self.result:
             c, r = result.__cols_rows__()

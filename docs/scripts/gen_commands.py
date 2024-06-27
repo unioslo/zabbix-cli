@@ -11,7 +11,6 @@ from typing import List
 import jinja2
 import yaml  # type: ignore
 from sanitize_filename import sanitize
-
 from zabbix_cli.app import app
 
 sys.path.append(Path(__file__).parent.as_posix())
@@ -33,7 +32,8 @@ def gen_command_list(commands: list[CommandSummary]) -> None:
 
 def gen_category_command_map(commands: list[CommandSummary]) -> None:
     """Generates a YAML file with all categories and detailed information
-    about their respective commands."""
+    about their respective commands.
+    """
     categories: Dict[str, List[Dict[str, Any]]] = {}
     for command in commands:
         category = command.category or ""
@@ -49,7 +49,8 @@ def gen_category_command_map(commands: list[CommandSummary]) -> None:
 
 def gen_category_pages(commands: list[CommandSummary]) -> None:
     """Renders markdown pages for each category with detailed information
-    about each command."""
+    about each command.
+    """
     categories: Dict[str, List[CommandSummary]] = {}
     for command in commands:
         if command.hidden:

@@ -4,7 +4,6 @@ from typing import List
 
 import pytest
 from pydantic import Field
-
 from zabbix_cli.models import MetaKey
 from zabbix_cli.models import TableRenderable
 

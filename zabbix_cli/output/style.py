@@ -18,7 +18,8 @@ from typer.rich_utils import STYLE_OPTION
 class CodeBlockStyle(StrEnum):
     """Names of styles for text representing code blocks.
 
-    Displayed as a code block in markdown."""
+    Displayed as a code block in markdown.
+    """
 
     EXAMPLE = "example"
     """An example command."""
@@ -31,7 +32,8 @@ class CodeBlockStyle(StrEnum):
 class CodeStyle(StrEnum):
     """Names of styles for text representing code, configuration or commands.
 
-    Displayed as inline code-formatted text in markdown."""
+    Displayed as inline code-formatted text in markdown.
+    """
 
     CONFIG_OPTION = "configopt"
     """Configuration file option/key/entry."""
@@ -89,6 +91,30 @@ class Color(StrEnum):
         return f"[{self.value}]{message}[/]"
 
 
+# TODO: define primary, secondary, tertiary colors, then replace
+#       green with primary, magenta with secondary, yellow with tertiary, etc.
+RICH_THEME = Theme(
+    {
+        CodeBlockStyle.EXAMPLE.value: "bold green",
+        CodeStyle.CLI_COMMAND.value: "bold green",
+        CodeStyle.CLI_OPTION.value: STYLE_OPTION,
+        CodeStyle.CLI_VALUE.value: "bold magenta",
+        CodeStyle.CONFIG_OPTION.value: "italic yellow",
+        CodeStyle.CODE.value: "bold green",
+        TextStyle.SUCCESS.value: Color.SUCCESS,
+        TextStyle.WARNING.value: f"bold {Color.WARNING}",
+        TextStyle.ERROR.value: f"bold {Color.ERROR}",
+        TextStyle.INFO.value: Color.SUCCESS,
+        TableStyle.HEADER.value: "bold green",
+    }
+)
+
+# NOTE: this seems a bit TOO decoupled? Would be nice if we could define
+# styles as a combination of style name + style value.
+# That would require rewriting parts of the docs utils for parsing Rich
+# markup to markdown.
+
+
 def blue(message: str) -> str:
     return f"[blue]{message}[/]"
 
@@ -132,24 +158,6 @@ def success(message: str) -> str:
 def info(message: str) -> str:
     return f"[info]{message}[/]"
 
-
-# TODO: define primary, secondary, tertiary colors, then replace
-#       green with primary, magenta with secondary, yellow with tertiary, etc.
-RICH_THEME = Theme(
-    {
-        CodeBlockStyle.EXAMPLE.value: "bold green",
-        CodeStyle.CLI_COMMAND.value: "bold green",
-        CodeStyle.CLI_OPTION.value: STYLE_OPTION,
-        CodeStyle.CLI_VALUE.value: "bold magenta",
-        CodeStyle.CONFIG_OPTION.value: "italic yellow",
-        CodeStyle.CODE.value: "bold green",
-        TextStyle.SUCCESS.value: Color.SUCCESS,
-        TextStyle.WARNING.value: f"bold {Color.WARNING}",
-        TextStyle.ERROR.value: f"bold {Color.ERROR}",
-        TextStyle.INFO.value: Color.SUCCESS,
-        TableStyle.HEADER.value: "bold green",
-    }
-)
 
 ####################
 # Emojis

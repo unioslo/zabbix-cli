@@ -35,7 +35,6 @@ HELP_PANEL = "Item"
 def show_last_values(
     ctx: typer.Context,
     item_name: str = typer.Argument(
-        ...,
         help="Name of item(s) to get. Supports wildcards.",
     ),
     group: bool = typer.Option(

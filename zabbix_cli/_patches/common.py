@@ -12,7 +12,8 @@ if TYPE_CHECKING:
 
 class BasePatcher(ABC):
     """Context manager that logs and prints diagnostic info if an exception
-    occurs."""
+    occurs.
+    """
 
     def __init__(self, description: str) -> None:
         self.description = description

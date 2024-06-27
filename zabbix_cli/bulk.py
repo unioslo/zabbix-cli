@@ -1,7 +1,8 @@
 """Module for running commands in bulk from a file.
 
 Uses a very rudimentary parser to parse commands from a file, then
-passes them to typer.Context.invoke() to run them."""
+passes them to typer.Context.invoke() to run them.
+"""
 
 from __future__ import annotations
 
@@ -24,21 +25,24 @@ from zabbix_cli.utils.fs import read_file
 logger = logging.getLogger(__name__)
 
 
-# All these exceptions inherit from the base ZabbixCLIError type, which means
-# they are caught by the default exception handler. But we define more
-# granular exception types here, so that we can test errors more accurately.
-
-
 class LineParseError(CommandFileError):
-    """Raised when a line cannot be parsed."""
+    """Line cannot be parsed."""
 
 
-class EmptyLineError(LineParseError):
-    """Raised when a line is empty."""
+# NOTE: These are named *Error, but should not be considered errors
+# We should always catch them. They are used for flow control + testing.
 
 
-class CommentLineError(LineParseError):
-    """Raised when a line is a comment."""
+class SkippableLineError(LineParseError):
+    """Line will be skipped during parsing."""
+
+
+class EmptyLineError(SkippableLineError):
+    """Line is empty."""
+
+
+class CommentLineError(SkippableLineError):
+    """Line is a comment."""
 
 
 KwargType = Union[str, bool, int, float, None]
@@ -65,11 +69,13 @@ class BulkCommand(BaseModel):
         if not cmd.name:
             raise LineParseError(f"Invalid command {cmd_name}")
 
-        args = []  # type: list[str]
-        kwargs = {}  # type: dict[str, KwargType | list[KwargType]] # TODO: support other types. ints, floats, bools
+        args: List[str] = []
+        kwargs: Dict[
+            str, KwargType | List[KwargType]
+        ] = {}  # TODO: support other types. ints, floats, bools
 
         next_is_kwarg = False  # next token is a value for an option
-        next_param = None  # type: typer.core.TyperOption | click.core.Parameter | None # param for next token
+        next_param = None  # param for next token
         for token in tokens:
             if token.startswith("#"):
                 break  # encountered comment, no more tokens
@@ -117,9 +123,18 @@ class BulkCommand(BaseModel):
                         kwargs[param.name] = args.pop(0)
                     # Param takes multiple arguments
                     else:
+                        # If nargs != 1, we should have a list of arguments
                         if param.name not in kwargs:
                             kwargs[param.name] = []
-                        kwargs[param.name].extend(args)
+                        # NOTE: using temp vars to convince type checker we have a list
+                        kw = kwargs[param.name]
+                        if not isinstance(kw, list):
+                            kw = [kw]
+                        kw.extend(args)
+                        kwargs[param.name] = kw
+                        # NOTE: why? What is the purpose of resetting args here?
+                        # Should we only pop off the number of arguments we need?
+                        # And if nargs == 0, we pop of all of them?
                         args = []
                 elif param.required:
                     raise CommandFileError(
@@ -171,7 +186,7 @@ class BulkRunner:
         create_host test000001.example.net All-manual-hosts .+ 1
 
         # Or new-form keyword arguments
-        create_host --host test000002.example.net --hostgroup All-manual-hosts --proxy .+ --status 1
+        create_host test000002.example.net --hostgroup All-manual-hosts --proxy .+ --status 1
         ```
         """
         commands = self.load_command_file()
@@ -193,11 +208,11 @@ class BulkRunner:
     def load_command_file(self) -> List[BulkCommand]:
         """Parse the contents of a command file."""
         contents = read_file(self.file)
-        lines = []
+        lines: List[BulkCommand] = []
         for lineno, line in enumerate(contents.splitlines(), start=1):
             try:
                 lines.append(BulkCommand.from_line(line, self.ctx))
-            except (EmptyLineError, CommentLineError):
+            except SkippableLineError:
                 pass  # These are expected
             except Exception as e:
                 raise CommandFileError(

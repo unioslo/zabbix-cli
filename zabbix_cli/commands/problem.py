@@ -22,7 +22,7 @@ HELP_PANEL = "Problem"
 @app.command(name="acknowledge_event", rich_help_panel=HELP_PANEL)
 def acknowledge_event(
     ctx: typer.Context,
-    event_ids: str = typer.Argument(..., help="Comma-separated list of event ID(s)"),
+    event_ids: str = typer.Argument(help="Comma-separated list of event ID(s)"),
     message: str = typer.Option(
         "[Zabbix-CLI] Acknowledged via acknowledge_events",
         "--message",
@@ -188,7 +188,8 @@ def show_trigger_events(
 ) -> None:
     """Show the latest events for the given trigger(s), host(s), and/or host group(s).
 
-    At least one trigger ID, host or host group must be specified."""
+    At least one trigger ID, host or host group must be specified.
+    """
     from zabbix_cli.models import AggregateResult
 
     if args:
@@ -248,7 +249,8 @@ def show_alarms(
 ) -> None:
     """Show the latest events for the given trigger(s), host(s), and/or host group(s).
 
-    At least one trigger ID, host or host group must be specified."""
+    At least one trigger ID, host or host group must be specified.
+    """
     from zabbix_cli.models import AggregateResult
 
     if args:

@@ -5,7 +5,6 @@ from typing import Type
 
 import pytest
 import typer
-
 from zabbix_cli.bulk import BulkCommand
 from zabbix_cli.bulk import BulkRunner
 from zabbix_cli.bulk import CommentLineError
@@ -189,7 +188,8 @@ def test_load_command_file_not_found(
 ) -> None:
     """Test loading a command file that does not exist.
 
-    Can be caught with built-in FileNotFoundError or with our own exception type."""
+    Can be caught with built-in FileNotFoundError or with our own exception type.
+    """
     file = tmp_path / "commands.txt"
     b = BulkRunner(ctx, file)
     with pytest.raises(exc_type):

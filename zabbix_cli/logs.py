@@ -24,6 +24,8 @@ import collections
 import logging
 import sys
 from typing import TYPE_CHECKING
+from typing import Any
+from typing import Literal
 
 if TYPE_CHECKING:
     from zabbix_cli.config.model import LoggingConfig
@@ -42,11 +44,11 @@ DEFAULT_FORMAT = " ".join(
 class ContextFilter(logging.Filter):
     """Log filter that adds a static field to a record."""
 
-    def __init__(self, field, value):
+    def __init__(self, field: str, value: Any) -> None:
         self.field = field
         self.value = value
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> Literal[True]:
         setattr(record, self.field, self.value)
         return True
 
@@ -54,7 +56,7 @@ class ContextFilter(logging.Filter):
 class LogContext:
     """A context that adds ContextFilters to a logger."""
 
-    def __init__(self, logger, **context):
+    def __init__(self, logger: logging.Logger, **context: Any) -> None:
         self.logger = logger
         self.filters = [ContextFilter(k, context[k]) for k in context]
 
@@ -63,7 +65,7 @@ class LogContext:
             self.logger.addFilter(f)
         return self.logger
 
-    def __exit__(self, *args, **kwargs):
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
         for f in self.filters:
             self.logger.removeFilter(f)
 
@@ -71,14 +73,14 @@ class LogContext:
 class SafeRecord(logging.LogRecord):
     """A LogRecord wrapper that returns None for unset fields."""
 
-    def __init__(self, record):
+    def __init__(self, record: logging.LogRecord):
         self.__dict__ = collections.defaultdict(lambda: None, record.__dict__)
 
 
 class SafeFormatter(logging.Formatter):
     """A Formatter that use SafeRecord to avoid failure."""
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         record = SafeRecord(record)
         return super().format(record)
 
@@ -105,7 +107,7 @@ def configure_logging(config: LoggingConfig | None = None):
 
     if config.enabled and filename:
         # log to given filename
-        handler = logging.FileHandler(filename)  # type: logging.Handler
+        handler = logging.FileHandler(filename)
     elif config.enabled:
         # log to stderr
         handler = logging.StreamHandler(sys.stderr)
@@ -125,55 +127,55 @@ def configure_logging(config: LoggingConfig | None = None):
 #
 
 
-def main(inargs=None):
-    import argparse
+# def main(inargs: Optional[Sequence[str]] = None):
+#     import argparse
 
-    from zabbix_cli.config import get_config
+#     from zabbix_cli.config import get_config
 
-    parser = argparse.ArgumentParser("test log settings")
-    parser.add_argument("-c", "--config", default=None)
-    parser.add_argument(
-        "--level", dest="log_level", default=None, help="override %(dest)s from config"
-    )
-    parser.add_argument(
-        "--file", dest="log_file", default=None, help="override %(dest)s from config"
-    )
-    parser.add_argument(
-        "--enable",
-        dest="logging",
-        choices=("ON", "OFF"),
-        default=None,
-        help="override %(dest)s from config",
-    )
+#     parser = argparse.ArgumentParser("test log settings")
+#     parser.add_argument("-c", "--config", default=None)
+#     parser.add_argument(
+#         "--level", dest="log_level", default=None, help="override %(dest)s from config"
+#     )
+#     parser.add_argument(
+#         "--file", dest="log_file", default=None, help="override %(dest)s from config"
+#     )
+#     parser.add_argument(
+#         "--enable",
+#         dest="logging",
+#         choices=("ON", "OFF"),
+#         default=None,
+#         help="override %(dest)s from config",
+#     )
 
-    args = parser.parse_args(inargs)
-    config = get_config(args.config)
+#     args = parser.parse_args(inargs)
+#     config = get_config(args.config)
 
-    for attr in ("logging", "log_level", "log_file"):
-        value = getattr(args, attr)
-        if value is not None:
-            setattr(config, attr, value)
+#     for attr in ("logging", "log_level", "log_file"):
+#         value = getattr(args, attr)
+#         if value is not None:
+#             setattr(config, attr, value)
 
-    configure_logging(config)
+#     configure_logging(config)
 
-    logger.debug("a debug message")
-    logger.info("an info message")
-    logger.warning("a warn message")
-    logger.error("an error message")
-    try:
-        this_name_is_not_in_scope  # noqa: F821
-    except NameError:
-        logger.error("an error message with traceback", exc_info=True)
+#     logger.debug("a debug message")
+#     logger.info("an info message")
+#     logger.warning("a warn message")
+#     logger.error("an error message")
+#     try:
+#         this_name_is_not_in_scope  # noqa: F821 # type: ignore
+#     except NameError:
+#         logger.error("an error message with traceback", exc_info=True)
 
-    logger.debug("Message without user context")
-    with LogContext(logger, user="user1"):
-        logger.debug("Message with context user=user1")
-        with LogContext(logger, user="user2"):
-            logger.debug("Message with nested context user=user2")
-    logger.debug("Message after context")
+#     logger.debug("Message without user context")
+#     with LogContext(logger, user="user1"):
+#         logger.debug("Message with context user=user1")
+#         with LogContext(logger, user="user2"):
+#             logger.debug("Message with nested context user=user2")
+#     logger.debug("Message after context")
 
-    logger.info("done")
+#     logger.info("done")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

@@ -64,7 +64,7 @@ class GroupRights(TableRenderable):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["Name", "Permission"]
-        rows = []  # type: RowsType
+        rows: RowsType = []
         for right in self.rights:
             group = self.groups.get(right.id, None)
             if group:
@@ -128,7 +128,8 @@ class ShowUsergroupPermissionsResult(TableRenderable):
     @model_serializer
     def model_ser(self) -> Dict[str, Any]:
         """LEGACY: Include the permission strings in the serialized output if
-        we have legacy JSON output enabled."""
+        we have legacy JSON output enabled.
+        """
         d: Dict[str, Any] = {
             "usrgrpid": self.usrgrpid,
             "name": self.name,
@@ -184,7 +185,7 @@ class ShowUsergroupPermissionsResult(TableRenderable):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Name", "Host Groups"]
-        row = [self.usrgrpid, self.name]  # type: RowContent
+        row: RowContent = [self.usrgrpid, self.name]
 
         # Host group rights table
         row.append(

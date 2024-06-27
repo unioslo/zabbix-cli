@@ -234,9 +234,8 @@ class LoggingConfig(BaseModel):
         """Passing in an empty string to `log_file` sets it to `None`,
         while omitting the option altogether sets it to the default.
 
-        Examples
+        Examples:
         -------
-
         To get `LoggingConfig.log_file == None`:
 
         ```toml
@@ -311,7 +310,8 @@ class Config(BaseModel):
     @model_validator(mode="after")
     def _assign_legacy_options(self) -> Self:
         """Ensures that options that have moved from one section to another are copied
-        to the new section. I.e. `app.username` -> `api.username`."""
+        to the new section. I.e. `app.username` -> `api.username`.
+        """
         # Only override if `api.username` is not set
         if self.app.username and not self.api.username:
             logging.warning(

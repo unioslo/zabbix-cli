@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 )
 def create_templategroup(
     ctx: typer.Context,
-    templategroup: str = typer.Argument(..., help="Name of the group."),
+    templategroup: str = typer.Argument(help="Name of the group."),
     rw_groups: Optional[str] = typer.Option(
         None,
         help="User group(s) to give read/write permissions. Comma-separated.",
@@ -86,8 +86,8 @@ def create_templategroup(
 
     app_config = app.state.config.app
 
-    rw_grps = []  # type: list[str]
-    ro_grps = []  # type: list[str]
+    rw_grps: List[str] = []
+    ro_grps: List[str] = []
     if not no_usergroup_permissions:
         rw_grps = parse_list_arg(rw_groups) or app_config.default_admin_usergroups
         ro_grps = parse_list_arg(ro_groups) or app_config.default_create_user_usergroups
@@ -126,11 +126,12 @@ def create_templategroup(
 @app.command("remove_templategroup", rich_help_panel=HELP_PANEL)
 def remove_templategroup(
     ctx: typer.Context,
-    templategroup: str = typer.Argument(..., help="Name of the group to delete."),
+    templategroup: str = typer.Argument(help="Name of the group to delete."),
 ) -> None:
     """Delete a template group.
 
-    NOTE: Calls [green]delete_hostgroup[/] for Zabbix versions < 6.2.0."""
+    NOTE: Calls [green]delete_hostgroup[/] for Zabbix versions < 6.2.0.
+    """
     from zabbix_cli.models import Result
 
     if app.state.client.version.release < (6, 2, 0):
@@ -147,7 +148,7 @@ def remove_templategroup(
 def show_templategroup(
     ctx: typer.Context,
     templategroup: str = typer.Argument(
-        ..., help="Name of the group to show. Supports wildcards."
+        help="Name of the group to show. Supports wildcards."
     ),
     templates: bool = typer.Option(
         True,
@@ -201,13 +202,14 @@ def show_templategroups(
 ) -> None:
     """Show details for template groups.
 
-    Fetches all groups by default, but can be filtered by name."""
+    Fetches all groups by default, but can be filtered by name.
+    """
     from zabbix_cli.commands.results.templategroup import ShowTemplateGroupResult
     from zabbix_cli.models import AggregateResult
 
     names = parse_list_arg(name)
 
-    groups: list[HostGroup] | list[TemplateGroup]
+    groups: Union[List[HostGroup], List[TemplateGroup]]
     if app.state.client.version.release < (6, 2, 0):
         groups = app.state.client.get_hostgroups(
             *names,
@@ -238,9 +240,9 @@ def show_templategroups(
 @app.command("extend_templategroup", rich_help_panel=HELP_PANEL)
 def show_triggers(
     ctx: typer.Context,
-    src_group: str = typer.Argument(..., help="Group to get templates from."),
+    src_group: str = typer.Argument(help="Group to get templates from."),
     dest_group: str = typer.Argument(
-        ..., help="Group(s) to add templates to. Comma-separated. Supports wildcards."
+        help="Group(s) to add templates to. Comma-separated. Supports wildcards."
     ),
     dryrun: bool = typer.Option(
         False,
@@ -253,7 +255,8 @@ def show_triggers(
     Interprets the source group as a template group in >= 6.2, otherwise as a host group.
 
     Does not modify the source group or its templates.
-    To remove the templates from the source group, use the [green]move_templates[/] command instead."""
+    To remove the templates from the source group, use the [green]move_templates[/] command instead.
+    """
     from zabbix_cli.commands.results.templategroup import ExtendTemplateGroupResult
 
     dest_arg = parse_list_arg(dest_group)
@@ -290,11 +293,9 @@ def show_triggers(
 @app.command("move_templates", rich_help_panel=HELP_PANEL)
 def move_templates(
     src_group: str = typer.Argument(
-        ...,
         help="Group to move templates from.",
     ),
     dest_group: str = typer.Argument(
-        ...,
         help="Group to move templates to.",
     ),
     rollback: bool = typer.Option(
@@ -330,15 +331,15 @@ def move_templates(
         app.state.client.add_templates_to_groups(
             src.templates,
             # Clunky typing semantics here:
-            # We cannot prove that list is homogenous (list[HostGroup] | list[TemplateGroup])
-            # because inferred type is list[Union[HostGroup, TemplateGroup]]
-            [dest],  # type: ignore
+            # We cannot prove that list is homogenous ("list[HostGroup] | list[TemplateGroup]")
+            # because inferred type is "list[HostGroup | TemplateGroup]""
+            [dest],  # pyright: ignore[reportArgumentType]
         )
         info(f"Added templates to {dest.name!r}")
         try:
             app.state.client.remove_templates_from_groups(
                 src.templates,
-                [src],  # type: ignore # ditto
+                [src],  # pyright: ignore[reportArgumentType] # ditto
             )
         except Exception as e:
             if rollback:
@@ -347,7 +348,7 @@ def move_templates(
                 )
                 app.state.client.remove_templates_from_groups(
                     src.templates,
-                    [dest],  # type: ignore # ditto
+                    [dest],  # pyright: ignore[reportArgumentType] # ditto
                 )
             raise e
         else:

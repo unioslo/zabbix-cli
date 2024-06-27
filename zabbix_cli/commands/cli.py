@@ -78,7 +78,6 @@ def get_directory(directory_type: DirectoryType, config: Optional[Config]) -> Pa
 def open_config_dir(
     ctx: typer.Context,
     directory_type: DirectoryType = typer.Argument(
-        ...,
         help="The type of directory to open.",
         case_sensitive=False,
         show_default=False,
@@ -103,7 +102,8 @@ def open_config_dir(
 ) -> None:
     """Opens an app directory in the system's file manager.
 
-    Use --force to attempt to open when no DISPLAY env var is set."""
+    Use --force to attempt to open when no DISPLAY env var is set.
+    """
     # Try to load the config, but don't fail if it's not available
     try:
         config = app.state.config

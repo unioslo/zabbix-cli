@@ -19,7 +19,7 @@ from .markup import markup_to_markdown
 
 
 def get(param: Any, attr: str) -> Any:
-    """getattr that defaults to None"""
+    """Getattr that defaults to None"""
     return getattr(param, attr, None)
 
 

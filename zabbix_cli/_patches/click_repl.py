@@ -1,3 +1,6 @@
+# type: ignore
+"""Patches for click_repl package."""
+
 from __future__ import annotations
 
 import shlex
@@ -27,8 +30,7 @@ def patch_exception_handling() -> None:
         allow_system_commands=True,
         allow_internal_commands=True,
     ):
-        """
-        Start an interactive shell. All subcommands are available in it.
+        """Start an interactive shell. All subcommands are available in it.
 
         :param old_ctx: The current Click context.
         :param prompt_kwargs: Parameters passed to
@@ -36,7 +38,6 @@ def patch_exception_handling() -> None:
 
         If stdin is not a TTY, no prompt will be printed, but only commands read
         from stdin.
-
         """
         # parent should be available, but we're not going to bother if not
         group_ctx = old_ctx.parent or old_ctx

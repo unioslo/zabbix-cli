@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 from typing import Dict
 from typing import List
+from typing import NamedTuple
 from typing import Optional
 from typing import Set
 
@@ -10,7 +12,9 @@ import typer
 
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
+from zabbix_cli.exceptions import ZabbixAPICallError
 from zabbix_cli.exceptions import ZabbixCLIError
+from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.console import success
@@ -19,34 +23,81 @@ from zabbix_cli.utils.args import parse_int_list_arg
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.utils import compile_pattern
 
+if TYPE_CHECKING:
+    from zabbix_cli.app import StatefulApp
+    from zabbix_cli.pyzabbix.types import Host
+    from zabbix_cli.pyzabbix.types import Proxy
+
 HELP_PANEL = "Proxy"
+
+
+class PrevProxyHosts(NamedTuple):
+    hosts: List[Host]
+    proxy: Optional[Proxy] = None
+
+
+def group_hosts_by_proxy(
+    app: StatefulApp, hosts: List[Host], default_proxy_id: str = ""
+) -> Dict[str, PrevProxyHosts]:
+    """Group hosts by the proxy they had prior to the update."""
+    proxy_ids: Set[str] = set()
+    for host in hosts:
+        if host.proxyid:
+            proxy_ids.add(host.proxyid)
+
+    # Fetch proxies for all observed proxy IDs
+    proxy_mapping: Dict[str, PrevProxyHosts] = {}
+    for proxy_id in proxy_ids:
+        try:
+            p = app.state.client.get_proxy(proxy_id)
+        except ZabbixAPICallError as e:
+            # Should be nigh-impossible, but someone might delete the proxy
+            # while the command is running
+            error(f"{e}")
+            p = None
+        proxy_mapping[proxy_id] = PrevProxyHosts(hosts=[], proxy=p)
+    # The default is a special case - no prev proxy exists for these hosts
+    proxy_mapping[default_proxy_id] = PrevProxyHosts(hosts=[], proxy=None)
+
+    for host in hosts:
+        if not host.proxyid:
+            host_proxyid = default_proxy_id
+        else:
+            host_proxyid = host.proxyid
+        proxy_mapping[host_proxyid].hosts.append(host)
+
+    # No hosts without previous proxy - remove from mapping
+    if not proxy_mapping[default_proxy_id].hosts:
+        del proxy_mapping[default_proxy_id]
+
+    return proxy_mapping
 
 
 @app.command(name="update_host_proxy", rich_help_panel=HELP_PANEL)
 def update_host_proxy(
     ctx: typer.Context,
     hostname: str = typer.Argument(
-        ..., help="Hostnames. Comma-separated Supports wildcards."
+        help="Hostnames. Comma-separated Supports wildcards."
     ),
-    proxy: str = typer.Argument(..., help="Proxy name. Supports wildcards."),
+    proxy: str = typer.Argument(help="Proxy name. Supports wildcards."),
     dryrun: bool = typer.Option(False, help="Preview changes", is_flag=True),
 ) -> None:
     """Assign one or more hosts to a proxy. Supports wildcards for both hosts and proxy.
 
-    If multiple proxies match the proxy name, the first match is used."""
+    If multiple proxies match the proxy name, the first match is used.
+    """
     from zabbix_cli.commands.results.proxy import UpdateHostProxyResult
     from zabbix_cli.models import AggregateResult
     from zabbix_cli.output.console import error
     from zabbix_cli.output.console import info
-    from zabbix_cli.pyzabbix.types import Host
 
     hostnames = parse_list_arg(hostname)
     hosts = app.state.client.get_hosts(*hostnames, search=True)
-    proxy_ = app.state.client.get_proxy(proxy)
+    dest_proxy = app.state.client.get_proxy(proxy)
 
     to_update: List[Host] = []
     for host in hosts:
-        if host.proxyid != proxy_.proxyid:
+        if host.proxyid != dest_proxy.proxyid:
             to_update.append(host)
 
     updated: List[Host] = []
@@ -55,11 +106,11 @@ def update_host_proxy(
         with app.status("Updating host proxies...") as status:
             for host in to_update:
                 status.update(f"Updating {host.host}...")
-                if host.proxyid and host.proxyid == proxy_.proxyid:
-                    info(f"Host {host.host!r} already has proxy {proxy_.name!r}")
+                if host.proxyid and host.proxyid == dest_proxy.proxyid:
+                    info(f"Host {host.host!r} already has proxy {dest_proxy.name!r}")
                     continue
                 try:
-                    app.state.client.update_host_proxy(host, proxy_)
+                    app.state.client.update_host_proxy(host, dest_proxy)
                     updated.append(host)
                 except Exception as e:
                     fail.append(host)
@@ -68,24 +119,18 @@ def update_host_proxy(
         updated = to_update
     # TODO: report failed hosts
 
-    # Group results by proxy they had prior to update
-    proxy_map: Dict[str, List[Host]] = {}
-    for host in updated:
-        proxy_map.setdefault(host.proxyid or "0", []).append(host)
-
-    # TODO: fetch proxies so we can show proxy names in result
-    #       but in legacy JSON mode we still show IDs
+    proxy_hosts = group_hosts_by_proxy(app, updated)
 
     render_result(
         AggregateResult(
             empty_ok=True,
             result=[
                 UpdateHostProxyResult.from_result(
-                    hosts=hosts,
-                    source_proxyid=prev_proxy,
-                    dest_proxyid=proxy_.proxyid,
+                    hosts=prev.hosts,
+                    source_proxy=prev.proxy,
+                    dest_proxy=dest_proxy,
                 )
-                for prev_proxy, hosts in proxy_map.items()
+                for _, prev in proxy_hosts.items()
             ],
         )
     )
@@ -95,6 +140,58 @@ def update_host_proxy(
         info(f"Would update proxy for {total_hosts} hosts.")
     else:
         success(f"Updated proxy for {total_hosts} hosts.")
+
+
+@app.command(name="clear_host_proxy", rich_help_panel=HELP_PANEL)
+def clear_host_proxy(
+    ctx: typer.Context,
+    hostname: str = typer.Argument(
+        help="Hostnames. Comma-separated Supports wildcards."
+    ),
+    dryrun: bool = typer.Option(False, help="Preview changes", is_flag=True),
+) -> None:
+    """Assign one or more hosts to a proxy. Supports wildcards for both hosts and proxy.
+
+    If multiple proxies match the proxy name, the first match is used.
+    """
+    # NOTE: this command is _VERY_ similar to `update_host_proxy`
+    #       can we refactor them to avoid code duplication?
+    from zabbix_cli.commands.results.proxy import ClearHostProxyResult
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.output.console import error
+    from zabbix_cli.output.console import info
+
+    hostnames = parse_list_arg(hostname)
+    hosts = app.state.client.get_hosts(*hostnames, search=True)
+
+    to_update = [host for host in hosts if host.proxyid]
+    if not dryrun:
+        with app.status("Clearing host proxies..."):
+            try:
+                app.state.client.clear_host_proxies(to_update)
+            except Exception as e:
+                error(f"Failed to clear proxies for hosts: {e}")
+
+    proxy_map = group_hosts_by_proxy(app, to_update)
+
+    render_result(
+        AggregateResult(
+            empty_ok=True,
+            result=[
+                ClearHostProxyResult.from_result(
+                    hosts=prev.hosts,
+                    source_proxy=prev.proxy,
+                )
+                for _, prev in proxy_map.items()
+            ],
+        )
+    )
+
+    total_hosts = len(hosts)
+    if dryrun:
+        info(f"Would clear proxy for {total_hosts} hosts.")
+    else:
+        success(f"Cleared proxy for {total_hosts} hosts.")
 
 
 @app.command(
@@ -111,7 +208,7 @@ def update_host_proxy(
         ),
     ],
 )
-def move_proxy_hosts(
+def move_proxy_hosts(  #
     ctx: typer.Context,
     proxy_src: str = typer.Argument(None, help="Proxy to move hosts from."),
     proxy_dst: str = typer.Argument(None, help="Proxy to move hosts to."),
@@ -186,7 +283,6 @@ def move_proxy_hosts(
 def load_balance_proxy_hosts(
     ctx: typer.Context,
     proxies: str = typer.Argument(
-        ...,
         help="Comma delimited list of proxies to share hosts between.",
         metavar="<proxy1,proxy2,...>",
         show_default=False,
@@ -275,16 +371,15 @@ def load_balance_proxy_hosts(
 def update_hostgroup_proxy(
     ctx: typer.Context,
     hostgroup: str = typer.Argument(
-        ..., help="Host group(s). Comma-separated. Supports wildcards."
+        help="Host group(s). Comma-separated. Supports wildcards."
     ),
-    proxy: str = typer.Argument(..., help="Proxy to assign. Supports wildcards."),
+    proxy: str = typer.Argument(help="Proxy to assign. Supports wildcards."),
     dryrun: bool = typer.Option(False, help="Preview changes.", is_flag=True),
 ) -> None:
     """Assign a proxy to all hosts in one or more host groups."""
     from zabbix_cli.commands.results.proxy import UpdateHostGroupProxyResult
     from zabbix_cli.output.console import error
     from zabbix_cli.output.console import warning
-    from zabbix_cli.pyzabbix.types import Host
 
     prx = app.state.client.get_proxy(proxy)
 
@@ -347,7 +442,8 @@ def show_proxies(
     """Show all proxies.
 
     Shows number of hosts for each proxy unless --hosts is passed in,
-    in which case the hostnames of each host is displayed instead."""
+    in which case the hostnames of each host is displayed instead.
+    """
     from zabbix_cli.commands.results.proxy import ShowProxiesResult
     from zabbix_cli.models import AggregateResult
 

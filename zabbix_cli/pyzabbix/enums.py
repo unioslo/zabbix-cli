@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING
 from typing import Any
 from typing import Generic
 from typing import List
@@ -9,21 +8,18 @@ from typing import Mapping
 from typing import Optional
 from typing import Type
 from typing import TypeVar
-from typing import Union
 
 from strenum import StrEnum
 
 from zabbix_cli.exceptions import ZabbixCLIError
-
-if TYPE_CHECKING:
-    from types import EllipsisType
 
 T = TypeVar("T")
 
 
 class APIStr(str, Generic[T]):
     """String type that can be used as an Enum choice while also
-    carrying an API value associated with the string."""
+    carrying an API value associated with the string.
+    """
 
     # Instance variables are set by __new__
     api_value: T  # pyright: ignore[reportUninitializedInstanceVariable]
@@ -103,7 +99,7 @@ class Choice(Enum):
     def from_prompt(
         cls: Type[MixinType],
         prompt: Optional[str] = None,
-        default: Union[MixinType, EllipsisType] = ...,
+        default: MixinType = ...,
     ) -> MixinType:
         """Prompt the user to select a choice from the enum.
 
@@ -146,8 +142,7 @@ class Choice(Enum):
 
     @classmethod
     def _missing_(cls, value: object) -> object:
-        """
-        Method that is called when an enum member is not found.
+        """Method that is called when an enum member is not found.
 
         Attempts to find the member with 2 strategies:
         1. Search for a member with the given string value (ignoring case)
@@ -261,7 +256,8 @@ class TriggerPriority(APIStrEnum):
 class InterfaceConnectionMode(APIStrEnum):
     """Interface connection mode.
 
-    Controls the value of `useip` when creating interfaces in the API."""
+    Controls the value of `useip` when creating interfaces in the API.
+    """
 
     DNS = APIStr("DNS", 0)
     IP = APIStr("IP", 1)
@@ -331,7 +327,8 @@ class ExportFormat(StrEnum):
     def _missing_(cls, value: object) -> ExportFormat:
         """Case-insensitive missing lookup.
 
-        Allows for both `ExportFormat("JSON")` and `ExportFormat("json")`, etc."""
+        Allows for both `ExportFormat("JSON")` and `ExportFormat("json")`, etc.
+        """
         if not isinstance(value, str):
             raise TypeError(f"Invalid format: {value!r}. Must be a string.")
         value = value.lower()

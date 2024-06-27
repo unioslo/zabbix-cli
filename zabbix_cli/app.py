@@ -1,7 +1,8 @@
 """In order to mimick the API of Zabbix-cli < 3.0.0, we define a single
 app object here, which we share between the different command modules.
 
-Thus, every command is part of the same command group."""
+Thus, every command is part of the same command group.
+"""
 
 from __future__ import annotations
 
@@ -79,7 +80,8 @@ class CommandInfo(TyperCommandInfo):
 class StatusCallable(Protocol):
     """Function that returns a Status object.
 
-    Protocol for rich.console.Console.status method."""
+    Protocol for rich.console.Console.status method.
+    """
 
     def __call__(
         self,

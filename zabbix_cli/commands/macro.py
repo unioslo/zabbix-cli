@@ -43,16 +43,15 @@ def fmt_macro_name(macro: str) -> str:
 )
 def define_host_usermacro(
     # NOTE: should this use old style args?
-    hostname: str = typer.Argument(..., help="Host to define macro for."),
+    hostname: str = typer.Argument(help="Host to define macro for."),
     macro_name: str = typer.Argument(
-        ...,
         help=(
             "Name of macro. "
             "Names will be converted to the Zabbix format, "
             "i.e. [value]site_url[/] becomes [code]{$SITE_URL}[/]."
         ),
     ),
-    macro_value: str = typer.Argument(..., help="Default value of macro."),
+    macro_value: str = typer.Argument(help="Default value of macro."),
 ) -> None:
     """Create or update a host usermacro."""
     from zabbix_cli.models import Result
@@ -84,7 +83,7 @@ def define_host_usermacro(
 # @macro_cmd.command(name="list", rich_help_panel=HELP_PANEL)
 @app.command(name="show_host_usermacros", rich_help_panel=HELP_PANEL, hidden=False)
 def show_host_usermacros(
-    hostname_or_id: str = typer.Argument(..., help="Hostname or ID to show macros for"),
+    hostname_or_id: str = typer.Argument(help="Hostname or ID to show macros for"),
 ) -> None:
     """Shows all macros defined for a host."""
     from zabbix_cli.commands.results.macro import ShowHostUserMacrosResult
@@ -119,7 +118,6 @@ def show_host_usermacros(
 @app.command(name="show_usermacro_host_list", rich_help_panel=HELP_PANEL, hidden=False)
 def show_usermacro_host_list(
     usermacro: str = typer.Argument(
-        ...,
         help=(
             "Name of macro to find hosts with. "
             "Application will automatically format macro names, e.g. `site_url` becomes `{$SITE_URL}`."
@@ -128,7 +126,8 @@ def show_usermacro_host_list(
 ) -> None:
     """Find all hosts with a user macro of the given name.
 
-    Renders a list of the complete macro object and its hosts in JSON mode."""
+    Renders a list of the complete macro object and its hosts in JSON mode.
+    """
     from zabbix_cli.commands.results.macro import MacroHostListV2
     from zabbix_cli.commands.results.macro import MacroHostListV3
     from zabbix_cli.models import AggregateResult
@@ -161,8 +160,8 @@ def show_usermacro_host_list(
 @app.command("define_global_macro", rich_help_panel=HELP_PANEL)
 def define_global_macro(
     ctx: typer.Context,
-    name: str = typer.Argument(..., help="Name of the macro"),
-    value: str = typer.Argument(..., help="Value of the macro"),
+    name: str = typer.Argument(help="Name of the macro"),
+    value: str = typer.Argument(help="Value of the macro"),
 ) -> None:
     """Create a global macro."""
     from zabbix_cli.commands.results.macro import GlobalMacroResult
@@ -209,7 +208,7 @@ def show_global_macros(ctx: typer.Context) -> None:
 def show_usermacro_template_list(
     ctx: typer.Context,
     macro_name: str = typer.Argument(
-        ..., help="Name of the macro to find templates with. Automatically formatted."
+        help="Name of the macro to find templates with. Automatically formatted."
     ),
 ) -> None:
     """Find all templates with a user macro of the given name."""

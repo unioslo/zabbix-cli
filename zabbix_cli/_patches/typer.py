@@ -1,7 +1,8 @@
-"""Monkeypatches Typer to extend certain functionality and change the
-styling of its output.
+# type: ignore
+"""Patching of Typer to extend functionality and change styling.
 
-Will probably break for some version of Typer at some point."""
+Will probably break for some version of Typer at some point.
+"""
 
 from __future__ import annotations
 
@@ -44,8 +45,7 @@ def patch_help_text_style() -> None:
 
 
 def patch_help_text_spacing() -> None:
-    """Adds a single blank line between short and long help text of a command
-    when using `--help`.
+    """Adds a single blank line between short and long help text of a command when using `--help`.
 
     As of Typer 0.9.0, the short and long help text is printed without any
     blank lines between them. This is bad for readability (IMO).
@@ -128,7 +128,8 @@ def patch_help_text_spacing() -> None:
 
 def patch_generate_enum_convertor() -> None:
     """Patches enum value converter with an additional fallback to
-    instantiating the enum with the value directly."""
+    instantiating the enum with the value directly.
+    """
 
     def generate_enum_convertor(enum: Type[Enum]) -> Callable[[Any], Any]:
         lower_val_map = {str(val.value).lower(): val for val in enum}
@@ -158,7 +159,8 @@ def patch_get_click_type() -> None:
     instantiating `APIStrEnum` with both the human-readable value and the API value
     (e.g. `"Enabled"` and `0`).
 
-    Uses the `APIStrEnum.all_choices()` method to get the list of choices."""
+    Uses the `APIStrEnum.all_choices()` method to get the list of choices.
+    """
 
     def get_click_type(
         *, annotation: Any, parameter_info: ParameterInfo

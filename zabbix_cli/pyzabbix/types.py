@@ -1,6 +1,5 @@
 """Type definitions for Zabbix API objects.
 
-
 Since we are supporting multiple versions of the Zabbix API at the same time,
 we don't operate with very strict type definitions. Some definitions are
 TypedDicts, while others are Pydantic models. All models are able to
@@ -65,7 +64,6 @@ from zabbix_cli.utils.utils import get_zabbix_agent_status
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
-    from zabbix_cli.models import ColsType  # noqa: F401
     from zabbix_cli.models import RowsType  # noqa: F401
 
 SortOrder = Literal["ASC", "DESC"]
@@ -153,7 +151,8 @@ class ZabbixAPIBaseModel(TableRenderable):
     """Base model for Zabbix API objects.
 
     Implements the `TableRenderable` interface, which allows us to render
-    it as a table, JSON, csv, etc."""
+    it as a table, JSON, csv, etc.
+    """
 
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
@@ -202,8 +201,8 @@ class User(ZabbixAPIBaseModel):
         return None
 
     def __cols_rows__(self) -> ColsRowsType:
-        cols = ["UserID", "Username", "Name", "Surname", "Role"]  # type: ColsType
-        rows = [
+        cols = ["UserID", "Username", "Name", "Surname", "Role"]
+        rows: RowsType = [
             [
                 self.userid,
                 self.username,
@@ -211,7 +210,7 @@ class User(ZabbixAPIBaseModel):
                 self.surname or "",
                 self.role or "",
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows
 
 
@@ -241,7 +240,8 @@ class Usergroup(ZabbixAPIBaseModel):
     @property
     def status(self) -> str:
         """LEGACY: 'users_status' is called 'status' in V2.
-        Ensures serialized output contains the field."""
+        Ensures serialized output contains the field.
+        """
         return self.users_status_str
 
     @field_serializer("gui_access")
@@ -275,7 +275,7 @@ class Template(ZabbixAPIBaseModel):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Name", "Hosts", "Parents", "Children"]
-        rows = [
+        rows: RowsType = [
             [
                 self.templateid,
                 self.name or self.host,  # prefer name, fall back on host
@@ -283,7 +283,7 @@ class Template(ZabbixAPIBaseModel):
                 "\n".join([parent.host for parent in self.parent_templates]),
                 "\n".join([template.host for template in self.templates]),
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows
 
 
@@ -305,7 +305,7 @@ class HostGroup(ZabbixAPIBaseModel):
     def __cols_rows__(self) -> ColsRowsType:
         # FIXME: is this ever used? Can we remove?
         cols = ["GroupID", "Name", "Flag", "Type", "Hosts"]
-        rows = [
+        rows: RowsType = [
             [
                 self.groupid,
                 self.name,
@@ -313,7 +313,7 @@ class HostGroup(ZabbixAPIBaseModel):
                 get_hostgroup_type(self.internal),
                 ", ".join([host.host for host in self.hosts]),
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows
 
 
@@ -323,8 +323,10 @@ class DictModel(ZabbixAPIBaseModel):
     model_config = ConfigDict(extra="allow")
 
     def __cols_rows__(self) -> ColsRowsType:
-        cols = ["Key", "Value"]  # type: ColsType
-        rows = [[key, str(value)] for key, value in self.model_dump().items() if value]  # type: RowsType
+        cols = ["Key", "Value"]
+        rows: RowsType = [
+            [key, str(value)] for key, value in self.model_dump().items() if value
+        ]
         return cols, rows
 
 
@@ -333,6 +335,7 @@ class DictModel(ZabbixAPIBaseModel):
 class Host(ZabbixAPIBaseModel):
     hostid: str
     host: str = ""
+    description: Optional[str] = None
     groups: List[HostGroup] = Field(
         default_factory=list,
         # Compat for >= 6.2.0
@@ -370,7 +373,8 @@ class Host(ZabbixAPIBaseModel):
         self, v: Optional[str], _info: FieldSerializationInfo
     ) -> Optional[str]:
         """Serializes the maintenance status as a formatted string
-        in legacy mode, and as-is in new mode."""
+        in legacy mode, and as-is in new mode.
+        """
         if self.legacy_json_format:
             return get_maintenance_status(v, with_code=True)
         return v
@@ -380,7 +384,8 @@ class Host(ZabbixAPIBaseModel):
         self, v: Optional[int], _info: FieldSerializationInfo
     ) -> Optional[Union[int, str]]:
         """Serializes the zabbix agent status as a formatted string
-        in legacy mode, and as-is in new mode."""
+        in legacy mode, and as-is in new mode.
+        """
         if self.legacy_json_format:
             return get_zabbix_agent_status(v, with_code=True)
         return v
@@ -390,7 +395,8 @@ class Host(ZabbixAPIBaseModel):
         self, v: Optional[str], _info: FieldSerializationInfo
     ) -> Optional[str]:
         """Serializes the monitoring status as a formatted string
-        in legacy mode, and as-is in new mode."""
+        in legacy mode, and as-is in new mode.
+        """
         if self.legacy_json_format:
             return get_monitoring_status(v, with_code=True)
         return v
@@ -401,6 +407,18 @@ class Host(ZabbixAPIBaseModel):
         """In case the Zabbix API returns no host name, use the ID instead."""
         if not v:
             return f"Unknown (ID: {info.data['hostid']})"
+        return v
+
+    @field_validator("proxyid", mode="after")  # TODO: add test for this
+    @classmethod
+    def _proxyid_0_is_none(cls, v: str, info: ValidationInfo) -> Optional[str]:
+        """Zabbix API can return 0 if host has no proxy.
+
+        Convert to None, so we know the proxyid can always be used to
+        look up the proxy, as well as in boolean contexts.
+        """
+        if not v or v == "0":
+            return None
         return v
 
     def __cols_rows__(self) -> ColsRowsType:
@@ -414,7 +432,7 @@ class Host(ZabbixAPIBaseModel):
             "Status",
             "Proxy",
         ]
-        rows = [
+        rows: RowsType = [
             [
                 self.hostid,
                 self.host,
@@ -425,7 +443,7 @@ class Host(ZabbixAPIBaseModel):
                 get_monitoring_status(self.status),
                 self.proxy_address or "",
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows
 
 
@@ -456,7 +474,7 @@ class HostInterface(ZabbixAPIBaseModel):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Type", "IP", "DNS", "Port", "Mode", "Default", "Available"]
-        rows = [
+        rows: RowsType = [
             [
                 self.interfaceid or "",
                 str(InterfaceType(self.type).value),
@@ -467,7 +485,7 @@ class HostInterface(ZabbixAPIBaseModel):
                 str(bool(self.main)),
                 get_zabbix_agent_status(self.available),
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows
 
 
@@ -513,6 +531,9 @@ class Proxy(ZabbixAPIBaseModel):
     )
     compatibility: Optional[int] = None  # >= 7.0
     version: Optional[int] = None  # >= 7.0
+
+    def __hash__(self) -> str:
+        return self.proxyid  # kinda hacky, but lets us use it in dicts
 
     @computed_field
     @property
@@ -623,7 +644,7 @@ class Item(ZabbixAPIBaseModel):
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Name", "Key", "Type", "Interval", "History", "Description"]
-        rows = [
+        rows: RowsType = [
             [
                 self.itemid,
                 str(self.name),
@@ -633,7 +654,7 @@ class Item(ZabbixAPIBaseModel):
                 str(self.history),
                 str(self.description),
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows
 
 
@@ -713,7 +734,8 @@ class TimePeriod(ZabbixAPIBaseModel):
     def __cols_rows__(self) -> ColsRowsType:
         """Renders the table based on the time period type.
 
-        Fields are added/removed based on the time period type."""
+        Fields are added/removed based on the time period type.
+        """
         # TODO: Use enum to define these values
         # and then re-use them in the get_maintenance_period_type function
         if self.timeperiod_type == 0:
@@ -734,8 +756,8 @@ class TimePeriod(ZabbixAPIBaseModel):
             "Day of week",
             "Day",
             "Months",
-        ]  # type: ColsType
-        rows = [
+        ]
+        rows: RowsType = [
             [
                 self.timeperiod_type_str,
                 self.period_str,
@@ -746,19 +768,19 @@ class TimePeriod(ZabbixAPIBaseModel):
                 str(self.day),
                 "\n".join(self.month_str),
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows
 
     def _get_cols_rows_one_time(self) -> ColsRowsType:
         """Get the cols and rows for a one time schedule."""
-        cols = ["Type", "Duration", "Start date"]  # type: ColsType
-        rows = [
+        cols = ["Type", "Duration", "Start date"]
+        rows: RowsType = [
             [
                 self.timeperiod_type_str,
                 self.period_str,
                 self.start_date_str,
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows
 
 
@@ -885,7 +907,7 @@ class Event(ZabbixAPIBaseModel):
             "Acknowledged",
             "Status",
         ]
-        rows = [
+        rows: RowsType = [
             [
                 self.eventid,
                 self.objectid,
@@ -895,7 +917,7 @@ class Event(ZabbixAPIBaseModel):
                 self.acknowledged_str_cell,
                 self.status_str_cell,
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows
 
 
@@ -964,7 +986,7 @@ class Trigger(ZabbixAPIBaseModel):
             "Last Change",
             "Age",
         ]
-        rows = [
+        rows: RowsType = [
             [
                 self.triggerid,
                 self.hostname or "",
@@ -973,7 +995,7 @@ class Trigger(ZabbixAPIBaseModel):
                 self.lastchange.strftime("%Y-%m-%d %H:%M:%S"),
                 self.age,
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows
 
 

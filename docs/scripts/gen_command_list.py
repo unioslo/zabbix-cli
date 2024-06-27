@@ -16,7 +16,6 @@ from typing import Dict
 from typing import List
 
 import yaml  # type: ignore
-
 from zabbix_cli.app import app
 
 sys.path.append(Path(__file__).parent.as_posix())

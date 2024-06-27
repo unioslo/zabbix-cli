@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Type
 
 import pytest
-
 from zabbix_cli.pyzabbix.enums import AgentAvailable
 from zabbix_cli.pyzabbix.enums import APIStr
 from zabbix_cli.pyzabbix.enums import APIStrEnum

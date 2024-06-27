@@ -50,7 +50,8 @@ class ZabbixCache:
 
     def _populate_templategroup_cache(self) -> None:
         """Populates the templategroup caches with data from the Zabbix API
-        on Zabbix >= 6.2.0."""
+        on Zabbix >= 6.2.0.
+        """
         if self.client.version.release < (6, 2, 0):
             logging.debug(
                 "Skipping template group caching. API version is %s",

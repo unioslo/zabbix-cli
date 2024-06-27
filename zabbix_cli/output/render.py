@@ -4,6 +4,7 @@ import json
 from contextlib import nullcontext
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Dict
 
 import typer
 
@@ -25,8 +26,8 @@ def wrap_result(result: BaseModel) -> BaseResult:
     `return_code`, `errors`, and `message` fields, with the original object
     is available as `result`.
 
-    Does nothing if the function argument is already a BaseResult instance."""
-
+    Does nothing if the function argument is already a BaseResult instance.
+    """
     from zabbix_cli.models import BaseResult
     from zabbix_cli.models import Result
 
@@ -124,9 +125,8 @@ def render_json_legacy(
 
     Result is always a dict with numeric string keys.
 
-    NOTE
+    Note:
     ----
-
     This function is very hacky, and will inevitably contain a number of band-aid
     fixes to enable 1:1 compatibility with the legacy V2 JSON format.
     We should try to move away from this format ASAP, so we can remove
@@ -141,7 +141,7 @@ def render_json_legacy(
     else:
         from zabbix_cli.models import AggregateResult
 
-        jdict = {}  # type: dict[str, Any] # always a dict in legacy mode
+        jdict: Dict[str, Any] = {}  # always a dict in legacy mode
         res = result.model_dump(mode="json", by_alias=True)
         if isinstance(result, AggregateResult):
             py_result = res.get("result", [])

@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import NamedTuple
 
 import yaml  # type: ignore
-
 from zabbix_cli.main import app
 
 sys.path.append(Path(__file__).parent.as_posix())

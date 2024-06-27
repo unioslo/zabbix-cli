@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import pytest
 from packaging.version import Version
-
 from zabbix_cli.pyzabbix import compat
 
 
 def test_packaging_version_release_sanity():
     """Ensures that the `Version.release` tuple is in the correct format and
-    supports users running pre-release versions of Zabbix."""
+    supports users running pre-release versions of Zabbix.
+    """
     assert Version("7.0.0").release == (7, 0, 0)
     # Test that all types of pre-releases evaluate to the same release tuple
     for pr in ["a1", "b1", "rc1", "alpha1", "beta1"]:

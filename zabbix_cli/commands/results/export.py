@@ -14,7 +14,7 @@ from zabbix_cli.pyzabbix.enums import ExportFormat
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
-    from zabbix_cli.models import RowsType  # noqa: F401
+    from zabbix_cli.models import RowsType
 
 
 class ExportResult(TableRenderable):
@@ -43,11 +43,11 @@ class ImportResult(TableRenderable):
         return [str(f.resolve()) for f in files]
 
     def __cols_rows__(self) -> ColsRowsType:
-        cols = ["Imported", "Failed"]  # type: List[str]
-        rows = [
+        cols: List[str] = ["Imported", "Failed"]
+        rows: RowsType = [
             [
                 "\n".join(path_link(f) for f in self.imported),
                 "\n".join(path_link(f) for f in self.failed),
             ]
-        ]  # type: RowsType
+        ]
         return cols, rows

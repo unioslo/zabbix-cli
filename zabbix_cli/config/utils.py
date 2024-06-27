@@ -92,7 +92,8 @@ def init_config(
     username: Optional[str] = None,
 ) -> Path:
     """Creates required directories and boostraps config with
-    options required to connect to the Zabbix API."""
+    options required to connect to the Zabbix API.
+    """
     from pydantic import SecretStr
 
     from zabbix_cli import auth

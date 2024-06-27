@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import NoReturn
 from typing import Optional
@@ -111,7 +112,7 @@ class Exiter(Protocol):
     """Protocol class for exit function that can be passed to an
     exception handler function.
 
-    See Also
+    See Also:
     --------
     [zabbix_cli.exceptions.HandleFunc][]
     """
@@ -139,8 +140,9 @@ class HandleFunc(Protocol):
 
 def get_cause_args(e: BaseException) -> List[str]:
     """Retrieves all args as strings from all exceptions in the cause chain.
-    Flattens the args into a single list."""
-    args = []  # type: list[str]
+    Flattens the args into a single list.
+    """
+    args: List[str] = []
     args.extend(e.args)
     if e.__cause__ is not None:
         args.extend(str(get_cause_args(e.__cause__)))
@@ -151,7 +153,8 @@ def get_cause_args(e: BaseException) -> List[str]:
 
 def handle_notraceback(e: Exception) -> NoReturn:
     """Handles an exception with no traceback in console.
-    The exception is logged with a traceback in the log file."""
+    The exception is logged with a traceback in the log file.
+    """
     get_exit_err()(str(e), exception=e, exc_info=True)
 
 
@@ -213,14 +216,15 @@ def get_exception_handler(type_: Type[Exception]) -> Optional[HandleFunc]:
     from httpx import ConnectError
     from pydantic import ValidationError
 
-    EXC_HANDLERS = {
+    # Defined inline for performance reasons (httpx and pydantic imports)
+    EXC_HANDLERS: Dict[type[Exception], HandleFunc] = {
         # ZabbixAPICallError: handle_zabbix_api_call_error,  # NOTE: use different strategy for this?
         ZabbixAPIException: handle_zabbix_api_exception,  # NOTE: use different strategy for this?
         ZabbixCLIError: handle_notraceback,
         ValidationError: handle_validation_error,
         ConnectError: handle_connect_error,
         ConfigError: handle_notraceback,  # NOTE: can we remove this? subclass of ZabbixCLIError
-    }  # type: dict[type[Exception], HandleFunc]
+    }
     """Mapping of exception types to exception handling strategies."""
 
     handler = EXC_HANDLERS.get(type_, None)

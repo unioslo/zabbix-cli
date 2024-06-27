@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from typing import Dict
+from typing import List
 from typing import NoReturn
 from typing import Optional
 
@@ -39,11 +41,12 @@ RESERVED_EXTRA_KEYS = (
 )
 
 
-def get_extra_dict(**kwargs: Any) -> dict[str, Any]:
+def get_extra_dict(**kwargs: Any) -> Dict[str, Any]:
     """Format the extra dict for logging. Renames some keys to avoid
     collisions with the default keys.
 
-    See: https://docs.python.org/3.11/library/logging.html#logging.LogRecord"""
+    See: https://docs.python.org/3.11/library/logging.html#logging.LogRecord
+    """
     for k, v in list(kwargs.items()):  # must be list to change while iterating
         if k in RESERVED_EXTRA_KEYS:
             kwargs[f"{k}_"] = v  # add trailing underscore to avoid collision
@@ -143,7 +146,7 @@ def exit_err(
         from zabbix_cli.models import ReturnCode
         from zabbix_cli.output.render import render_json
 
-        errors = []  # type: list[str]
+        errors: List[str] = []
         if exception:
             errors.extend(str(a) for a in exception.args)
             if exception.__cause__:

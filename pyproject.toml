@@ -110,18 +110,24 @@ omit = ["zabbix_cli/__about__.py"]
 [tool.coverage.report]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
+[tool.ruff]
+src = ["zabbix_cli"]
+extend-exclude = ["zabbix_cli/__init__.py"]
+include = ["pyproject.toml", "zabbix_cli/**/*.py", "scripts/**/*.py"]
 
-[tool.mypy]
-python_version = "3.8"
-ignore_missing_imports = true
-strict = false
-exclude = ["tests", "zabbix_cli/commands/_dev.py"]
+[tool.pyright]
+pythonVersion = "3.8"
+venvPath = "."
+venv = ".venv"
+ignore = ["tests", "scripts", "docs", "zabbix_cli/commands/_dev.py"]
+typeCheckingMode = "strict"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint]
 extend-select = ["I"]
 
-[tool.ruff.lint.pydocstyle]
-convention = "google"
 
 [tool.ruff.lint.isort]
 # Force one line per import to simplify diffing and merging

@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Callable
 from typing import Final
+from typing import List
 from typing import Optional
 from typing import Tuple
 
@@ -52,7 +53,8 @@ SECURE_PERMISSIONS_STR = format(SECURE_PERMISSIONS, "o")
 
 def login(client: ZabbixAPI, config: Config) -> None:
     """Log the client in to the Zabbix API using the configured credentials
-    and stores the API session token in an auth token file if configured."""
+    and stores the API session token in an auth token file if configured.
+    """
     from pydantic import SecretStr
 
     configure_auth(config)  # must bootstrap config first
@@ -132,7 +134,10 @@ def configure_auth_username_password(config: Config) -> None:
     """
     from pydantic import SecretStr
 
-    funcs = [_get_username_password_env, _get_username_password_auth_file]  # type: list[AuthFunc]
+    funcs: List[AuthFunc] = [
+        _get_username_password_env,
+        _get_username_password_auth_file,
+    ]
     for func in funcs:
         username, password = func(config)
         if username and password:

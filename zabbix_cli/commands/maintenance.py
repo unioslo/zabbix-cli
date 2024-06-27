@@ -37,7 +37,6 @@ HELP_PANEL = "Maintenance"
 def create_maintenance_definition(
     ctx: typer.Context,
     name: str = typer.Argument(
-        ...,
         help="Maintenance name.",
     ),
     description: Optional[str] = typer.Option(
@@ -66,8 +65,7 @@ def create_maintenance_definition(
         help="Enable or disable data collection.",
     ),
 ) -> None:
-    """
-    Create a new one-time maintenance definition.
+    """Create a new one-time maintenance definition.
 
     One can define an interval between two timestamps in ISO format
     or a time period in minutes, hours or days from the moment the
@@ -112,7 +110,7 @@ def create_maintenance_definition(
 def remove_maintenance_definition(
     ctx: typer.Context,
     maintenance_id: str = typer.Argument(
-        ..., help="ID(s) of maintenance(s) to remove. Comma-separated."
+        help="ID(s) of maintenance(s) to remove. Comma-separated."
     ),
 ) -> None:
     """Remove a maintenance definition."""
@@ -146,7 +144,8 @@ def show_maintenance_definitions(
 ) -> None:
     """Show maintenance definitions for IDs, host groups or hosts.
 
-    At least one of [option]--maintenance-id[/], [option]--hostgroup[/], or [option]--host[/] is required."""
+    At least one of [option]--maintenance-id[/], [option]--hostgroup[/], or [option]--host[/] is required.
+    """
     from zabbix_cli.commands.results.maintenance import ShowMaintenanceDefinitionsResult
     from zabbix_cli.models import AggregateResult
 
