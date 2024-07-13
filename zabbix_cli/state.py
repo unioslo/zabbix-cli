@@ -34,7 +34,7 @@ from typing import Optional
 # used throughout the application, and we don't want to create circular imports.
 # Imports from other modules should be done inside functions, or in TYPE_CHECKING:
 if TYPE_CHECKING:
-    from prompt_toolkit.history import History  # noqa: F401
+    from prompt_toolkit.history import History
     from rich.console import Console
 
     from zabbix_cli.config.model import Config

@@ -208,7 +208,7 @@ def clear_host_proxy(
         ),
     ],
 )
-def move_proxy_hosts(  #
+def move_proxy_hosts(
     ctx: typer.Context,
     proxy_src: str = typer.Argument(None, help="Proxy to move hosts from."),
     proxy_dst: str = typer.Argument(None, help="Proxy to move hosts to."),

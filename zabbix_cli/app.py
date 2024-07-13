@@ -31,9 +31,9 @@ from zabbix_cli.state import State
 from zabbix_cli.state import get_state
 
 if TYPE_CHECKING:
-    from rich.console import RenderableType  # noqa: F401
-    from rich.status import Status  # noqa: F401
-    from rich.style import StyleType  # noqa: F401
+    from rich.console import RenderableType
+    from rich.status import Status
+    from rich.style import StyleType
 
 
 class Example(NamedTuple):

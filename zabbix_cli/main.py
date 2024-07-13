@@ -38,7 +38,7 @@ from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
 
 if TYPE_CHECKING:
-    from typing import Any  # noqa: F401
+    from typing import Any
 
 logger = logging.getLogger("zabbix-cli")
 

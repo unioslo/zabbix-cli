@@ -15,7 +15,7 @@ from zabbix_cli.pyzabbix.types import Proxy
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
-    from zabbix_cli.models import RowsType  # noqa: F401
+    from zabbix_cli.models import RowsType
 
 
 class BaseHostProxyResult(TableRenderable):

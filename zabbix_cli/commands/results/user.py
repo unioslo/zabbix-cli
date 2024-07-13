@@ -27,8 +27,8 @@ from zabbix_cli.utils.utils import get_usergroup_status
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
-    from zabbix_cli.models import RowContent  # noqa: F401
-    from zabbix_cli.models import RowsType  # noqa: F401
+    from zabbix_cli.models import RowContent
+    from zabbix_cli.models import RowsType
 
 
 class UgroupUpdateUsersResult(TableRenderable):
