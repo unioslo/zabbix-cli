@@ -19,7 +19,9 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import MutableMapping
 from typing import Optional
+from typing import Sequence
 from typing import Union
 
 from pydantic import AliasChoices
@@ -27,11 +29,17 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import FieldSerializationInfo
+from pydantic import ValidationError
 from pydantic import ValidationInfo
+from pydantic import ValidatorFunctionWrapHandler
+from pydantic import WrapValidator
 from pydantic import computed_field
 from pydantic import field_serializer
 from pydantic import field_validator
+from pydantic_core import PydanticCustomError
+from typing_extensions import Annotated
 from typing_extensions import Literal
+from typing_extensions import TypeAliasType
 from typing_extensions import TypedDict
 
 from zabbix_cli.models import TableRenderable
@@ -64,28 +72,50 @@ from zabbix_cli.utils.utils import get_zabbix_agent_status
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
-    from zabbix_cli.models import RowsType  # noqa: F401
-
+    from zabbix_cli.models import RowsType
 SortOrder = Literal["ASC", "DESC"]
 
-PrimitiveType = Union[str, bool, int]
-ParamsType = Dict[str, Any]
-"""Type definition for Zabbix API query parameters.
-Most Zabbix API parameters are strings, but not _always_.
-They can also be contained in nested dicts or in lists.
-"""
 
-# JsonValue: TypeAlias = Union[
-#     List["JsonValue"],
-#     Dict[str, "JsonValue"],
-#     Dict[str, Any],
-#     str,
-#     bool,
-#     int,
-#     float,
-#     None,
-# ]
-# ParamsType: TypeAlias = Dict[str, JsonValue]
+# Source: https://docs.pydantic.dev/2.7/concepts/types/#named-recursive-types
+def json_custom_error_validator(
+    value: Any, handler: ValidatorFunctionWrapHandler, _info: ValidationInfo
+) -> Any:
+    """Simplify the error message to avoid a gross error stemming from
+    exhaustive checking of all union options.
+    """  # noqa: D205
+    try:
+        return handler(value)
+    except ValidationError:
+        raise PydanticCustomError(
+            "invalid_json",
+            "Input is not valid json",
+        ) from None
+
+
+JsonOrBaseModel = TypeAliasType(
+    "JsonOrBaseModel",
+    Annotated[
+        Union[
+            MutableMapping[str, "JsonOrBaseModel"],
+            Sequence["JsonOrBaseModel"],
+            str,
+            int,
+            float,
+            bool,
+            None,
+            BaseModel,
+        ],
+        WrapValidator(json_custom_error_validator),
+    ],
+)
+"""Recursive type that describes an object that can be used as a value in
+a params mapping used when making API requests."""
+
+
+ParamsType = MutableMapping[str, JsonOrBaseModel]
+"""Type used to construct parameters for API requests.
+Can contain native JSON-serializable types or BaseModels.
+"""
 
 
 class ModifyHostItem(TypedDict):

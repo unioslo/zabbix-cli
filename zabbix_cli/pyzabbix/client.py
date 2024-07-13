@@ -22,12 +22,17 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Literal
+from typing import MutableMapping
 from typing import Optional
 from typing import Union
 from typing import cast
 
+from packaging.version import Version
+from pydantic import RootModel
 from pydantic import ValidationError
 
+from zabbix_cli.__about__ import APP_NAME
+from zabbix_cli.__about__ import __version__
 from zabbix_cli.cache import ZabbixCache
 from zabbix_cli.exceptions import ZabbixAPICallError
 from zabbix_cli.exceptions import ZabbixAPIException
@@ -59,6 +64,7 @@ from zabbix_cli.pyzabbix.types import Macro
 from zabbix_cli.pyzabbix.types import Maintenance
 from zabbix_cli.pyzabbix.types import Map
 from zabbix_cli.pyzabbix.types import MediaType
+from zabbix_cli.pyzabbix.types import ParamsType
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import Role
 from zabbix_cli.pyzabbix.types import Template
@@ -75,15 +81,13 @@ from zabbix_cli.utils.utils import get_acknowledge_action_value
 if TYPE_CHECKING:
     import httpx
     from httpx._types import TimeoutTypes
-    from packaging.version import Version
     from typing_extensions import TypedDict
 
     from zabbix_cli.config.model import Config
-    from zabbix_cli.pyzabbix.types import ModifyGroupParams  # noqa: F401
-    from zabbix_cli.pyzabbix.types import ModifyHostParams  # noqa: F401
-    from zabbix_cli.pyzabbix.types import ModifyTemplateParams  # noqa: F401
-    from zabbix_cli.pyzabbix.types import ParamsType  # noqa: F401
-    from zabbix_cli.pyzabbix.types import SortOrder  # noqa: F401
+    from zabbix_cli.pyzabbix.types import ModifyGroupParams
+    from zabbix_cli.pyzabbix.types import ModifyHostParams
+    from zabbix_cli.pyzabbix.types import ModifyTemplateParams
+    from zabbix_cli.pyzabbix.types import SortOrder
 
     class HTTPXClientKwargs(TypedDict, total=False):
         timeout: TimeoutTypes
@@ -92,6 +96,90 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 RPC_ENDPOINT = "/api_jsonrpc.php"
+
+
+def strip_none(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Recursively strip None values from a dictionary."""
+    new: Dict[str, Any] = {}
+    for key, value in data.items():
+        if value is not None:
+            if isinstance(value, dict):
+                v = strip_none(value)  # pyright: ignore[reportUnknownArgumentType]
+                if v:
+                    new[key] = v
+            elif isinstance(value, list):
+                new[key] = [i for i in value if i is not None]  # pyright: ignore[reportUnknownVariableType]
+            else:
+                new[key] = value
+    return new
+
+
+class ParamsTypeSerializer(RootModel[ParamsType]):
+    """Root model that takes in a ParamsType dict.
+
+    Used to recursively serialize a dict that can contain JSON "primitives"
+    as well as BaseModel instances.
+
+
+    Given the following dict:
+
+    {
+        "model": BaseModel(...),
+        "primitive": "string",
+        "nested_dict": {
+            "model": BaseModel(...)
+        },
+        "list_of_models": [
+            BaseModel(...),
+            BaseModel(...)
+        ]
+    }
+
+
+    This model can produce a JSON-serializable dict from such a dict through the classmethod
+    `to_json_dict`.
+    """
+
+    root: ParamsType
+
+    @classmethod
+    def to_json_dict(cls, params: ParamsType) -> Dict[str, Any]:
+        """Validate a ParamsType dict and return it as JSON serializable dict."""
+        dumped = cls.model_validate(params).model_dump(mode="json", exclude_none=True)
+        return strip_none(dumped)
+
+
+def append_param(
+    data: MutableMapping[str, Any], key: str, value: Any
+) -> MutableMapping[str, Any]:
+    """Append a value to a list in a dictionary.
+
+    If the key does not exist in the dictionary, it is created with a list
+    containing the value. If the key already exists and the value is not a list,
+    the value is converted to a list and appended to the existing list.
+    """
+    if key in data:
+        if not isinstance(data[key], list):
+            logger.debug("Converting param %s to list", key, stacklevel=2)
+            data[key] = [data[key]]
+    else:
+        data[key] = []
+    data[key].append(value)
+    return data
+
+
+def add_param(
+    data: MutableMapping[str, Any], key: str, subkey: str, value: Any
+) -> MutableMapping[str, Any]:
+    """Add a value to a nested dict in dict."""
+    if key in data:
+        if not isinstance(data[key], dict):
+            logger.debug("Converting param %s to dict", key, stacklevel=2)
+            data[key] = {key: data[key]}
+    else:
+        data[key] = {}
+    data[key][subkey] = value
+    return data
 
 
 class ZabbixAPI:
@@ -148,7 +236,7 @@ class ZabbixAPI:
             # Default headers for all requests
             headers={
                 "Content-Type": "application/json-rpc",
-                "User-Agent": "python/pyzabbix",
+                "User-Agent": f"python/{APP_NAME}/{__version__}",
                 "Cache-Control": "no-cache",
             },
             **kwargs,
@@ -171,6 +259,16 @@ class ZabbixAPI:
         """Convenience method for logging into the API and storing the resulting
         auth token as an instance variable.
         """
+        # Before we do anything, we try to fetch the API version
+        # Without an API connection, we cannot determine
+        # the user parameter name to use when logging in.
+        try:
+            self.version  # property
+        except ZabbixAPIRequestError as e:
+            raise ZabbixAPIException(
+                f"Failed to connect to Zabbix API at {self.url}"
+            ) from e
+
         # The username kwarg was called "user" in Zabbix 5.2 and earlier.
         # This sets the correct kwarg for the version of Zabbix we're using.
         user_kwarg = {compat.login_user_name(self.version): user}
@@ -211,8 +309,6 @@ class ZabbixAPI:
         as a Version object.
         """
         if self._version is None:
-            from packaging.version import Version
-
             self._version = Version(self.apiinfo.version())
         return self._version
 
@@ -222,10 +318,20 @@ class ZabbixAPI:
     def do_request(
         self, method: str, params: Optional[ParamsType] = None
     ) -> ZabbixAPIResponse:
+        params = params or {}
+
+        try:
+            params_json = ParamsTypeSerializer.to_json_dict(params)
+        except ValidationError:
+            raise ZabbixAPIRequestError(
+                f"Failed to serialize request parameters for {method!r}",
+                params=params,
+            )
+
         request_json = {
             "jsonrpc": "2.0",
             "method": method,
-            "params": params or {},
+            "params": params_json,
             "id": self.id,
         }
 
@@ -380,6 +486,7 @@ class ZabbixAPI:
         """
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
         params: ParamsType = {"output": "extend"}
+        search_params: ParamsType = {}
 
         if "*" in names_or_ids:
             names_or_ids = tuple()
@@ -392,11 +499,12 @@ class ZabbixAPI:
                 if search and not is_id:
                     params["searchWildcardsEnabled"] = True
                     params["searchByAny"] = search_union
-                    params.setdefault("search", {}).setdefault("name", []).append(
-                        name_or_id
-                    )
+                    append_param(search_params, "name", name_or_id)
                 else:
                     params["filter"] = {norid_key: name_or_id}
+
+        if search_params:
+            params["search"] = search_params
         if select_hosts:
             params["selectHosts"] = "extend"
         if self.version.release < (6, 2, 0) and select_templates:
@@ -520,6 +628,7 @@ class ZabbixAPI:
         # FIXME: ensure we use searching correctly here
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
         params: ParamsType = {"output": "extend"}
+        search_params: ParamsType = {}
 
         if "*" in names_or_ids:
             names_or_ids = tuple()
@@ -532,12 +641,11 @@ class ZabbixAPI:
                 if search and not is_id:
                     params["searchWildcardsEnabled"] = True
                     params["searchByAny"] = search_union
-                    params.setdefault("search", {}).setdefault("name", []).append(
-                        name_or_id
-                    )
+                    append_param(search_params, "name", name_or_id)
                 else:
                     params["filter"] = {norid_key: name_or_id}
-
+        if search_params:
+            params["search"] = search_params
         if select_templates:
             params["selectTemplates"] = "extend"
         if sort_order:
@@ -666,6 +774,7 @@ class ZabbixAPI:
         """
         params: ParamsType = {"output": "extend"}
         filter_params: ParamsType = {}
+        search_params: ParamsType = {}
 
         # Filter by the given host name or ID if we have one
         if names_or_ids:
@@ -689,13 +798,11 @@ class ZabbixAPI:
                 if search and not is_id:
                     params["searchWildcardsEnabled"] = True
                     params["searchByAny"] = True
-                    params.setdefault("search", {}).setdefault("host", []).append(
-                        name_or_id
-                    )
+                    append_param(search_params, "host", name_or_id)
                 elif is_id:
-                    params.setdefault("hostids", []).append(name_or_id)
+                    append_param(params, "hostids", name_or_id)
                 else:
-                    filter_params.setdefault("host", []).append(name_or_id)
+                    append_param(filter_params, "host", name_or_id)
 
         # Filters are applied with a logical AND (narrows down)
         if proxyid:
@@ -711,6 +818,8 @@ class ZabbixAPI:
 
         if filter_params:  # Only add filter if we actually have filter params
             params["filter"] = filter_params
+        if search_params:  # ditto for search params
+            params["search"] = search_params
 
         if select_groups:
             # still returns the result under the "groups" property
@@ -966,6 +1075,8 @@ class ZabbixAPI:
         params: ParamsType = {
             "output": "extend",
         }
+        search_params: ParamsType = {}
+
         if "*" in names:
             names = tuple()
         if search:
@@ -976,9 +1087,12 @@ class ZabbixAPI:
             for name in names:
                 name = name.strip()
                 if search:
-                    params.setdefault("search", {}).setdefault("name", []).append(name)
+                    append_param(search_params, "name", name)
                 else:
                     params["filter"] = {"name": name}
+
+        if search_params:
+            params["search"] = search_params
 
         # Rights were split into host and template group rights in 6.2.0
         if select_rights:
@@ -1140,11 +1254,9 @@ class ZabbixAPI:
         for name_or_id in names_or_ids:
             if name_or_id:
                 if name_or_id.isnumeric():
-                    params.setdefault("proxyids", []).append(name_or_id)
+                    append_param(params, "proxyids", name_or_id)
                 else:
-                    search_params.setdefault(
-                        compat.proxy_name(self.version), []
-                    ).append(name_or_id)
+                    append_param(params, compat.proxy_name(self.version), name_or_id)
 
         if select_hosts:
             params["selectHosts"] = "extend"
@@ -1205,10 +1317,10 @@ class ZabbixAPI:
         params: ParamsType = {"output": "extend"}
 
         if host:
-            params.setdefault("search", {})["hostids"] = host.hostid
+            add_param(params, "search", "hostids", host.hostid)
 
         if macro_name:
-            params.setdefault("search", {})["macro"] = macro_name
+            add_param(params, "search", "macro", macro_name)
 
         # Enable wildcard searching if we have one or more search terms
         if params.get("search"):
@@ -1258,7 +1370,7 @@ class ZabbixAPI:
         params: ParamsType = {"output": "extend", "globalmacro": True}
 
         if macro_name:
-            params.setdefault("search", {})["macro"] = macro_name
+            add_param(params, "search", "macro", macro_name)
 
         # Enable wildcard searching if we have one or more search terms
         if params.get("search"):
@@ -1417,6 +1529,7 @@ class ZabbixAPI:
     ) -> List[Template]:
         """Fetches one or more templates given a name or ID."""
         params: ParamsType = {"output": "extend"}
+        search_params: ParamsType = {}
 
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
         if "*" in template_names_or_ids:
@@ -1426,13 +1539,13 @@ class ZabbixAPI:
             name_or_id = name_or_id.strip()
             is_id = name_or_id.isnumeric()
             if is_id:
-                params.setdefault("templateids", []).append(name_or_id)
+                append_param(params, "templateids", name_or_id)
             else:
-                params.setdefault("search", {}).setdefault("host", []).append(
-                    name_or_id
-                )
+                append_param(search_params, "host", name_or_id)
                 params.setdefault("searchWildcardsEnabled", True)
                 params.setdefault("searchByAny", True)
+        if search_params:
+            params["search"] = search_params
         if select_hosts:
             params["selectHosts"] = "extend"
         if select_templates:
@@ -2077,6 +2190,13 @@ class ZabbixAPI:
         if templates:
             params["templateids"] = [t.templateid for t in templates]
         if priority:
+            # TODO: refactor and combine with filter argument
+            # Since priority is a part of filter, we should either
+            # delegate this to the filter argument or add every possible
+            # filter argument to the method signature.
+            if not params.get("filter"):
+                params["filter"] = {}
+            assert isinstance(params["filter"], dict)
             params["filter"]["priority"] = priority.as_api_value()
         if unacknowledged:
             params["withLastEventUnacknowledged"] = True
