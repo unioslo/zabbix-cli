@@ -104,6 +104,7 @@ class zabbixcli(cmd.Cmd):
 
         logger.debug('Connected to Zabbix JSON-API')
         self.zabbix_version = self.zapi.version
+        logger.debug('Zabbix Version: %s', self.zabbix_version)
 
         #
         # The file $HOME/.zabbix-cli_auth_token is created if it does not exists.
@@ -2803,7 +2804,6 @@ class zabbixcli(cmd.Cmd):
             query = {
                 'host': host,
                 'groups': hostgroups_list,
-                compat.host_proxyid(self.zabbix_version): proxy_hostid,
                 'status': int(host_status),
                 'interfaces': interface_list,
                 'inventory_mode': 1,
@@ -2811,6 +2811,9 @@ class zabbixcli(cmd.Cmd):
                     'name': host
                 }
             }
+            # If proxy_hostid is None, the argument proxy should not be passed for Zabbix version 7+, as None value isn't supported
+            if (proxy_hostid is not None or self.zabbix_version.major < 7):
+                query.update({compat.host_proxyid(self.zabbix_version): proxy_hostid})
 
             result = self.zapi.host.create(**query)
             logger.info('Host (%s) with ID: %s created', host, str(result['hostids'][0]))
@@ -6666,7 +6669,6 @@ class zabbixcli(cmd.Cmd):
                             rules = {
                                 'discoveryRules': {'createMissing': True, 'updateExisting': True},
                                 'graphs': {'createMissing': True, 'updateExisting': True},
-                                'groups': {'createMissing': True},
                                 'hosts': {'createMissing': True, 'updateExisting': True},
                                 'images': {'createMissing': True, 'updateExisting': True},
                                 'items': {'createMissing': True, 'updateExisting': True},
@@ -6680,7 +6682,13 @@ class zabbixcli(cmd.Cmd):
                             if self.zabbix_version.major < 6:
                                 rules['applications'] = {'createMissing': True}
                                 rules['screens'] ={'createMissing': True, 'updateExisting': True}
-                                rules['templateScreens'] ={'createMissing': True, 'updateExisting': True}
+                                rules['templateDashboards'] ={'createMissing': True, 'updateExisting': True}
+                            # groups parameter is no longer supported on Zabbix version 6.4+
+                            if self.zabbix_version.major < 7:
+                                if self.zabbix_version.major == 6 and self.zabbix_version.minor == 4:
+                                    pass
+                                else:
+                                    rules['groups'] = {'createMissing': True}
 
                             with open(file, 'r') as import_filename:
                                 import_data = import_filename.read()
