@@ -119,7 +119,7 @@ include = ["pyproject.toml", "zabbix_cli/**/*.py", "scripts/**/*.py"]
 pythonVersion = "3.8"
 venvPath = "."
 venv = ".venv"
-ignore = ["tests", "scripts", "docs", "zabbix_cli/commands/_dev.py"]
+ignore = ["scripts", "docs", "zabbix_cli/commands/_dev.py"]
 typeCheckingMode = "strict"
 
 [tool.ruff.lint.pydocstyle]
