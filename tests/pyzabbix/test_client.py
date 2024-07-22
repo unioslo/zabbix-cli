@@ -4,8 +4,11 @@ from typing import Any
 from typing import Dict
 
 import pytest
+from pydantic import ValidationError
+from zabbix_cli.pyzabbix.client import ParamsTypeSerializer
 from zabbix_cli.pyzabbix.client import add_param
 from zabbix_cli.pyzabbix.client import append_param
+from zabbix_cli.pyzabbix.types import ParamsType
 
 
 @pytest.mark.parametrize(
@@ -70,4 +73,29 @@ def test_add_param(inp: Any, subkey: str, value: Any, expect: Dict[str, Any]) ->
     result = add_param(inp, "search", subkey, value)
     assert result == expect
     # Check in-place modification
-    assert result is inp
+
+
+# TODO: write more extensive tests for params serialization and validation
+
+
+def test_paramstype_serializer() -> None:
+    params: ParamsType = {
+        "output": "extend",
+        "search": {"hostids": 2},
+        "extra": None,
+    }
+    assert ParamsTypeSerializer.to_json_dict(params) == {
+        "output": "extend",
+        "search": {"hostids": 2},
+        # None value stripped
+    }
+
+
+def test_paramstype_serializer_invalid() -> None:
+    with pytest.raises(ValidationError):
+        params: ParamsType = {
+            "output": "extend",
+            "search": {"hostids": object()},  # type: ignore
+            "extra": None,
+        }
+        ParamsTypeSerializer.to_json_dict(params)

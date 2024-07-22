@@ -92,29 +92,29 @@ def json_custom_error_validator(
         ) from None
 
 
-JsonOrBaseModel = TypeAliasType(
-    "JsonOrBaseModel",
+Json = TypeAliasType(
+    "Json",
     Annotated[
         Union[
-            MutableMapping[str, "JsonOrBaseModel"],
-            Sequence["JsonOrBaseModel"],
+            MutableMapping[str, "Json"],
+            Sequence["Json"],
             str,
             int,
             float,
             bool,
             None,
-            BaseModel,
         ],
         WrapValidator(json_custom_error_validator),
     ],
 )
-"""Recursive type that describes an object that can be used as a value in
-a params mapping used when making API requests."""
 
 
-ParamsType = MutableMapping[str, JsonOrBaseModel]
+ParamsType = MutableMapping[str, Json]
 """Type used to construct parameters for API requests.
-Can contain native JSON-serializable types or BaseModels.
+Can only contain native JSON-serializable types.
+
+BaseModel objects must be converted to JSON-serializable dicts before being
+assigned as values in a ParamsType.
 """
 
 

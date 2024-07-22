@@ -114,41 +114,6 @@ def strip_none(data: Dict[str, Any]) -> Dict[str, Any]:
     return new
 
 
-class ParamsTypeSerializer(RootModel[ParamsType]):
-    """Root model that takes in a ParamsType dict.
-
-    Used to recursively serialize a dict that can contain JSON "primitives"
-    as well as BaseModel instances.
-
-
-    Given the following dict:
-
-    {
-        "model": BaseModel(...),
-        "primitive": "string",
-        "nested_dict": {
-            "model": BaseModel(...)
-        },
-        "list_of_models": [
-            BaseModel(...),
-            BaseModel(...)
-        ]
-    }
-
-
-    This model can produce a JSON-serializable dict from such a dict through the classmethod
-    `to_json_dict`.
-    """
-
-    root: ParamsType
-
-    @classmethod
-    def to_json_dict(cls, params: ParamsType) -> Dict[str, Any]:
-        """Validate a ParamsType dict and return it as JSON serializable dict."""
-        dumped = cls.model_validate(params).model_dump(mode="json", exclude_none=True)
-        return strip_none(dumped)
-
-
 def append_param(
     data: MutableMapping[str, Any], key: str, value: Any
 ) -> MutableMapping[str, Any]:
@@ -180,6 +145,25 @@ def add_param(
         data[key] = {}
     data[key][subkey] = value
     return data
+
+
+class ParamsTypeSerializer(RootModel[ParamsType]):
+    """Root model that takes in a Params dict.
+
+    Used to validate and serialize a ParamsType dict to a JSON serializable dict,
+    stripping None values.
+    """
+
+    root: ParamsType
+
+    @classmethod
+    def to_json_dict(cls, params: ParamsType) -> Dict[str, Any]:
+        """Validate a ParamsType dict and return it as JSON serializable dict."""
+        dumped = cls.model_validate(params).model_dump(
+            mode="json",
+            exclude_none=True,
+        )
+        return strip_none(dumped)
 
 
 class ZabbixAPI:
@@ -1544,6 +1528,7 @@ class ZabbixAPI:
                 append_param(search_params, "host", name_or_id)
                 params.setdefault("searchWildcardsEnabled", True)
                 params.setdefault("searchByAny", True)
+
         if search_params:
             params["search"] = search_params
         if select_hosts:
@@ -1552,6 +1537,7 @@ class ZabbixAPI:
             params["selectTemplates"] = "extend"
         if select_parent_templates:
             params["selectParentTemplates"] = "extend"
+
         try:
             templates = self.template.get(**params)
         except ZabbixAPIException as e:
