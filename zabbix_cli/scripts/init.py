@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Authors:
 # Mustafa Ocak
 # muo@uio.no
@@ -36,7 +34,7 @@ def assert_directory(path):
         os.makedirs(path)
 
 
-if __name__ == "__main__":
+def main():
     logging.basicConfig(level=logging.INFO,
                         format='[%(levelname)s]: %(message)s')
 

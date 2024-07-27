@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Authors:
 # rafael@postgresql.org.es / http://www.postgresql.org.es/
 #
@@ -33,7 +31,7 @@ from zabbix_cli.logs import configure_logging
 logger = logging.getLogger('zabbix-cli-bulk-execution')
 
 
-if __name__ == '__main__':
+def main():
 
     parser = argparse.ArgumentParser(prog=sys.argv[0])
     parser.add_argument(

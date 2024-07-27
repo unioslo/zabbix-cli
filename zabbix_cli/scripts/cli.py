@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Authors:
 # rafael@e-mc2.net / https://e-mc2.net/
 #
@@ -35,7 +33,7 @@ from zabbix_cli.cli import zabbixcli
 logger = logging.getLogger('zabbix-cli')
 
 
-if __name__ == '__main__':
+def main():
 
     try:
 

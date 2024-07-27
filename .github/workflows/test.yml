@@ -32,7 +32,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
           # Default cache key is requirements.txt.
-          cache-dependency-path: setup.py
+          cache-dependency-path: pyproject.toml
       - name: Install dependencies
         run: |
           pip install requests pytest

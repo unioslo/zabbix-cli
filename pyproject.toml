@@ -1,0 +1,32 @@
+[project]
+name = "zabbix_cli"
+description = "ZABBIX-CLI - Zabbix terminal client"
+readme = "README.md"
+authors = [
+    { name = "Rafael Martinez Guerrero", email = "rafael@postgresql.org.es" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Monitoring",
+]
+dependencies = ["packaging", "requests"]
+requires-python = ">=3.6"
+license = { file = "LICENSE" }
+dynamic = ["version"]
+
+[project.scripts]
+zabbix-cli = "zabbix_cli.scripts.cli:main"
+zabbix-cli-bulk-execution = "zabbix_cli.scripts.bulk_execution:main"
+zabbix-cli-init = "zabbix_cli.scripts.init:main"
+
+[project.urls]
+Homepage = "https://github.com/unioslo/zabbix-cli"
+
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
