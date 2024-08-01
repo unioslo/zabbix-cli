@@ -171,8 +171,8 @@ class ZabbixAPI:
     def __init__(
         self,
         server: str = "http://localhost/zabbix",
-        session: Optional[httpx.Client] = None,
         timeout: Optional[int] = None,
+        verify_ssl: bool = True,
     ):
         """Parameters:
         server: Base URI for zabbix web interface (omitting /api_jsonrpc.php)
@@ -180,11 +180,7 @@ class ZabbixAPI:
         timeout: optional connect and read timeout in seconds.
         """
         self.timeout = timeout if timeout else None
-
-        if session:
-            self.session = session
-        else:
-            self.session = self._get_client(verify_ssl=True, timeout=timeout)
+        self.session = self._get_client(verify_ssl=verify_ssl, timeout=timeout)
 
         self.auth = ""
         self.id = 0
@@ -205,6 +201,7 @@ class ZabbixAPI:
         client = cls(
             server=config.api.url,
             timeout=config.api.timeout,
+            verify_ssl=config.api.verify_ssl,
         )
         return client
 
