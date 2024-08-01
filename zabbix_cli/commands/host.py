@@ -620,8 +620,6 @@ def remove_host(
 def show_host(
     ctx: typer.Context,
     hostname_or_id: str = typer.Argument(help="Hostname or ID."),
-    # This is the legacy filter argument from V2
-    filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
     agent: Optional[AgentAvailable] = typer.Option(
         None,
         "--agent",
@@ -639,6 +637,8 @@ def show_host(
         "--monitored/--no-monitored",
         help="Monitoring status.",
     ),
+    # This is the legacy filter argument from V2
+    filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
 ) -> None:
     """Show a specific host."""
     from zabbix_cli.commands.results.host import HostFilterArgs
@@ -662,10 +662,27 @@ def show_host(
     render_result(host)
 
 
-@app.command(name="show_hosts", rich_help_panel=HELP_PANEL)
+@app.command(
+    name="show_hosts",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Show all monitored (enabled) hosts",
+            "show_hosts --monitored",
+        ),
+        Example(
+            "Show all hosts with names ending in '.example.com'",
+            "show_hosts '*.example.com'",
+        ),
+    ],
+)
 def show_hosts(
     ctx: typer.Context,
-    # This is the legacy filter argument from V2
+    hostname_or_id: Optional[str] = typer.Argument(
+        None,
+        help="Hostname pattern or ID to filter by.",
+        show_default=False,
+    ),
     agent: Optional[AgentAvailable] = typer.Option(
         None,
         "--agent",
@@ -704,7 +721,7 @@ def show_hosts(
         filter_legacy, agent, maintenance, monitored
     )
     hosts = app.state.client.get_hosts(
-        "*",
+        hostname_or_id or "*",  # default to all hosts wildcard pattern
         select_groups=True,
         select_templates=True,
         sort_field="host",
