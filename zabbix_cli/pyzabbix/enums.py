@@ -208,6 +208,15 @@ class MonitoringStatus(APIStrEnum):
 
     ON = APIStr("on", 0)  # Yes, 0 is on, 1 is off...
     OFF = APIStr("off", 1)
+    UNKNOWN = APIStr(
+        "unknown", 3
+    )  # Undocumented, but shows up in virtual trigger hosts (get_triggers(select_hosts=True))
+
+
+class MonitoredBy(APIStrEnum):  # >=7.0 only
+    SERVER = ("server", 0)
+    PROXY = ("proxy", 1)
+    PROXY_GROUP = ("proxygroup", 2)
 
 
 class MaintenanceStatus(APIStrEnum):

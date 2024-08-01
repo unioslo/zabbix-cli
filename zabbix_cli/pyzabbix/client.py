@@ -46,6 +46,7 @@ from zabbix_cli.pyzabbix.enums import ExportFormat
 from zabbix_cli.pyzabbix.enums import GUIAccess
 from zabbix_cli.pyzabbix.enums import InventoryMode
 from zabbix_cli.pyzabbix.enums import MaintenanceStatus
+from zabbix_cli.pyzabbix.enums import MonitoredBy
 from zabbix_cli.pyzabbix.enums import MonitoringStatus
 from zabbix_cli.pyzabbix.enums import TriggerPriority
 from zabbix_cli.pyzabbix.enums import UsergroupPermission
@@ -850,6 +851,8 @@ class ZabbixAPI:
 
         if proxy:
             params[compat.host_proxyid(self.version)] = proxy.proxyid
+            if self.version.release >= (7, 0, 0):
+                params["monitored_by"] = MonitoredBy.PROXY.as_api_value()
 
         if interfaces:
             params["interfaces"] = [iface.model_dump_api() for iface in interfaces]
@@ -1429,6 +1432,8 @@ class ZabbixAPI:
             "hostid": host.hostid,
             compat.host_proxyid(self.version): proxy.proxyid,
         }
+        if self.version.release >= (7, 0, 0):
+            params["monitored_by"] = MonitoredBy.PROXY.as_api_value()
         try:
             resp = self.host.update(**params)
         except ZabbixAPIException as e:
@@ -1445,8 +1450,11 @@ class ZabbixAPI:
         """Clears a host's proxy."""
         params: ParamsType = {
             "hosts": [{"hostid": host.hostid} for host in hosts],
-            compat.host_proxyid(self.version): None,
         }
+        if self.version.release >= (7, 0, 0):
+            params["monitored_by"] = MonitoredBy.SERVER.as_api_value()
+        else:
+            params[compat.host_proxyid(self.version)] = None
         try:
             resp = self.host.massupdate(**params)
         except ZabbixAPIException as e:
@@ -1479,6 +1487,8 @@ class ZabbixAPI:
             "hosts": [{"hostid": host.hostid} for host in hosts],
             compat.host_proxyid(self.version): proxy.proxyid,
         }
+        if self.version.release >= (7, 0, 0):
+            params["monitored_by"] = MonitoredBy.PROXY.as_api_value()
         try:
             self.host.massupdate(**params)
         except ZabbixAPIException as e:
