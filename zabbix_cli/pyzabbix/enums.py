@@ -70,6 +70,12 @@ class Choice(Enum):
     value: APIStr[int]  # pyright: ignore[reportIncompatibleMethodOverride]
     __choice_name__: str = ""  # default (falls back to class name)
 
+    def __new__(cls, value: APIStr[int]) -> Choice:
+        # Adds type checking for members in enum definition
+        obj = object.__new__(cls)
+        obj._value_ = value
+        return obj
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
 
@@ -266,7 +272,7 @@ class TriggerPriority(APIStrEnum):
     INFORMATION = APIStr("information", 1)
     WARNING = APIStr("warning", 2)
     AVERAGE = APIStr("average", 3)
-    HIGH = APIStr("high", "4")
+    HIGH = APIStr("high", 4)
     DISASTER = APIStr("disaster", 5)
 
 
