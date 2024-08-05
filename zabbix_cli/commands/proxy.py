@@ -150,9 +150,9 @@ def clear_host_proxy(
     ),
     dryrun: bool = typer.Option(False, help="Preview changes", is_flag=True),
 ) -> None:
-    """Assign one or more hosts to a proxy. Supports wildcards for both hosts and proxy.
+    """Clear the proxy for one or more hosts.
 
-    If multiple proxies match the proxy name, the first match is used.
+    Sets the hosts to be monitored by the Zabbix server instead of a proxy.
     """
     # NOTE: this command is _VERY_ similar to `update_host_proxy`
     #       can we refactor them to avoid code duplication?
@@ -321,7 +321,7 @@ def load_balance_proxy_hosts(
     elif all(w == 0 for w in weights):
         exit_err("All weights cannot be zero.")
 
-    # *_list` var are ugly, but we already have proxies, so...
+    # *_list` vars are ugly, but we already have proxies, so...
     proxy_list = [app.state.client.get_proxy(p, select_hosts=True) for p in proxy_names]
 
     # TODO: Make sure list of proxies is in same order we specified them?
@@ -438,6 +438,9 @@ def show_proxies(
         help="Show hostnames of each host.",
         is_flag=True,
     ),
+    name_or_id: Optional[str] = typer.Argument(
+        None, help="Filter by proxy name or ID. Comma-separated. Supports wildcards."
+    ),
 ) -> None:
     """Show all proxies.
 
@@ -447,7 +450,12 @@ def show_proxies(
     from zabbix_cli.commands.results.proxy import ShowProxiesResult
     from zabbix_cli.models import AggregateResult
 
-    proxies = app.state.client.get_proxies(select_hosts=True)
+    names_or_ids = parse_list_arg(name_or_id) if name_or_id else None
+
+    proxies = app.state.client.get_proxies(
+        *names_or_ids or "*",
+        select_hosts=True,
+    )
     render_result(
         AggregateResult(
             result=[ShowProxiesResult.from_result(p, show_hosts=hosts) for p in proxies]

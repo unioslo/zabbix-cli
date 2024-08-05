@@ -58,7 +58,7 @@
     - Old positional filter argument syntax is deprecated.
   - `show_hosts`:
     - `--limit`: Limit number of hosts to show.
-    - + same options as `show_host`
+    - As well as the new `show_host` options.
   - `show_hostgroup`:
     - `--hosts/--no-hosts`: Show hosts in the group
   - `show_hostgroups`:
@@ -86,9 +86,6 @@
     - `template_names`: Template name(s) to filter by. Shows all templates by default. Supports wildcards.
   - `show_hostgroup`:
     - `name`: Host group name(s) to filter by. Shows all host groups by default. Supports wildcards.
-
-
-- **REPOSITORY:** Pre-commit configuration for linting and formatting.
 
 ### Changed
 
@@ -137,6 +134,8 @@
     - Old name is still supported, but hidden and deprecated.
   - `show_hostgroup_permissions`:
     - Shows permissions for all host groups by default.
+  - `show_proxies`:
+    - Now takes a `name_or_id` argument to filter by proxy name or ID. Comma-separated. Supports wildcards.
   - `update_host_proxy`
     - Now supports setting proxy for multiple hosts at once using wildcards.
     - Output format is changed.

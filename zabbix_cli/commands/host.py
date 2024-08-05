@@ -674,13 +674,17 @@ def show_host(
             "Show all hosts with names ending in '.example.com'",
             "show_hosts '*.example.com'",
         ),
+        Example(
+            "Show all hosts with names ending in '.example.com' or '.example.net'",
+            "show_hosts '*.example.com,*.example.net'",
+        ),
     ],
 )
 def show_hosts(
     ctx: typer.Context,
     hostname_or_id: Optional[str] = typer.Argument(
         None,
-        help="Hostname pattern or ID to filter by.",
+        help="Hostname pattern or ID to filter by. Comma-separated. Supports wildcards.",
         show_default=False,
     ),
     agent: Optional[AgentAvailable] = typer.Option(
@@ -720,8 +724,10 @@ def show_hosts(
     args = HostFilterArgs.from_command_args(
         filter_legacy, agent, maintenance, monitored
     )
+
+    hostnames_or_ids = parse_list_arg(hostname_or_id)
     hosts = app.state.client.get_hosts(
-        hostname_or_id or "*",  # default to all hosts wildcard pattern
+        *hostnames_or_ids or "*",  # default to all hosts wildcard pattern
         select_groups=True,
         select_templates=True,
         sort_field="host",

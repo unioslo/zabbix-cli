@@ -117,13 +117,13 @@ def _handle_template_arg(
 
 
 ARG_TEMPLATE_NAMES_OR_IDS = typer.Argument(
-    None, help="Template names or IDs. Separate values with commas."
+    None, help="Template names or IDs. Comma-separated. Supports wildcards."
 )
 ARG_HOSTNAMES_OR_IDS = typer.Argument(
-    None, help="Hostnames or IDs. Separate values with commas."
+    None, help="Hostnames or IDs. Comma-separated. Supports wildcards."
 )
 ARG_GROUP_NAMES_OR_IDS = typer.Argument(
-    None, help="Host/template group names or IDs. Separate values with commas."
+    None, help="Host/template group names or IDs. Comma-separated. Supports wildcards."
 )
 
 

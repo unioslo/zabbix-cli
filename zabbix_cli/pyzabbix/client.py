@@ -24,6 +24,7 @@ from typing import List
 from typing import Literal
 from typing import MutableMapping
 from typing import Optional
+from typing import Tuple
 from typing import Union
 from typing import cast
 
@@ -146,6 +147,41 @@ def add_param(
         data[key] = {}
     data[key][subkey] = value
     return data
+
+
+def parse_name_or_id_arg(
+    params: ParamsType,
+    names_or_ids: Tuple[str, ...],
+    name_param: str,
+    id_param: str,
+    search: bool = True,
+    search_union: bool = True,
+    search_params: Optional[ParamsType] = None,
+) -> ParamsType:
+    search_params = search_params or {}
+    if "*" in names_or_ids:
+        names_or_ids = tuple()
+
+    if names_or_ids:
+        for name_or_id in names_or_ids:
+            name_or_id = name_or_id.strip()
+            is_id = name_or_id.isnumeric()
+
+            # ID searching uses a different top-level parameter,
+            # while names require searching or filtering
+            if is_id:
+                append_param(params, id_param, name_or_id)
+            else:
+                # Names can be used as a filter or search parameter
+                if search:
+                    append_param(search_params, name_param, name_or_id)
+                else:
+                    params["filter"] = {name_param: name_or_id}
+    if search_params:
+        params["search"] = search_params
+        params["searchWildcardsEnabled"] = True
+        params["searchByAny"] = search_union
+    return params
 
 
 class ParamsTypeSerializer(RootModel[ParamsType]):
@@ -466,27 +502,16 @@ class ZabbixAPI:
         Returns:
             List[HostGroup]: List of host groups.
         """
-        # TODO: refactor this along with other methods that take names or ids (or wildcards)
         params: ParamsType = {"output": "extend"}
-        search_params: ParamsType = {}
+        params = parse_name_or_id_arg(
+            params,
+            names_or_ids,
+            name_param="name",
+            id_param="groupids",
+            search=search,
+            search_union=search_union,
+        )
 
-        if "*" in names_or_ids:
-            names_or_ids = tuple()
-
-        if names_or_ids:
-            for name_or_id in names_or_ids:
-                norid = name_or_id.strip()
-                is_id = norid.isnumeric()
-                norid_key = "groupid" if is_id else "name"
-                if search and not is_id:
-                    params["searchWildcardsEnabled"] = True
-                    params["searchByAny"] = search_union
-                    append_param(search_params, "name", name_or_id)
-                else:
-                    params["filter"] = {norid_key: name_or_id}
-
-        if search_params:
-            params["search"] = search_params
         if select_hosts:
             params["selectHosts"] = "extend"
         if self.version.release < (6, 2, 0) and select_templates:
@@ -610,24 +635,15 @@ class ZabbixAPI:
         # FIXME: ensure we use searching correctly here
         # TODO: refactor this along with other methods that take names or ids (or wildcards)
         params: ParamsType = {"output": "extend"}
-        search_params: ParamsType = {}
+        params = parse_name_or_id_arg(
+            params,
+            names_or_ids,
+            name_param="name",
+            id_param="groupids",
+            search=search,
+            search_union=search_union,
+        )
 
-        if "*" in names_or_ids:
-            names_or_ids = tuple()
-
-        if names_or_ids:
-            for name_or_id in names_or_ids:
-                norid = name_or_id.strip()
-                is_id = norid.isnumeric()
-                norid_key = "groupid" if is_id else "name"
-                if search and not is_id:
-                    params["searchWildcardsEnabled"] = True
-                    params["searchByAny"] = search_union
-                    append_param(search_params, "name", name_or_id)
-                else:
-                    params["filter"] = {norid_key: name_or_id}
-        if search_params:
-            params["search"] = search_params
         if select_templates:
             params["selectTemplates"] = "extend"
         if sort_order:
@@ -716,9 +732,7 @@ class ZabbixAPI:
         agent_status: Optional[AgentAvailable] = None,
         sort_field: Optional[str] = None,
         sort_order: Optional[Literal["ASC", "DESC"]] = None,
-        search: Optional[
-            bool
-        ] = True,  # we generally always want to search when multiple hosts are requested
+        search: bool = True,  # we generally always want to search when multiple hosts are requested
         # **filter_kwargs,
     ) -> List[Host]:
         """Fetches all hosts matching the given criteria(s).
@@ -755,38 +769,17 @@ class ZabbixAPI:
             List[Host]: _description_
         """
         params: ParamsType = {"output": "extend"}
-        filter_params: ParamsType = {}
-        search_params: ParamsType = {}
 
-        # Filter by the given host name or ID if we have one
-        if names_or_ids:
-            id_mode: Optional[bool] = None
-            for name_or_id in names_or_ids:
-                name_or_id = name_or_id.strip()
-                is_id = name_or_id.isnumeric()
-                if search is None:  # determine if we should search
-                    search = not is_id
-
-                # Set ID mode if we haven't already
-                # and ensure we aren't mixing IDs and names
-                if id_mode is None:
-                    id_mode = is_id
-                else:
-                    if id_mode != is_id:
-                        raise ZabbixAPICallError("Cannot mix host names and IDs.")
-
-                # Searching for IDs is pointless - never allow it
-                # Logical AND for multiple unique identifiers is not possible
-                if search and not is_id:
-                    params["searchWildcardsEnabled"] = True
-                    params["searchByAny"] = True
-                    append_param(search_params, "host", name_or_id)
-                elif is_id:
-                    append_param(params, "hostids", name_or_id)
-                else:
-                    append_param(filter_params, "host", name_or_id)
+        params = parse_name_or_id_arg(
+            params,
+            names_or_ids,
+            name_param="host",
+            id_param="hostids",
+            search=search,
+        )
 
         # Filters are applied with a logical AND (narrows down)
+        filter_params: ParamsType = {}
         if proxyid:
             filter_params[compat.host_proxyid(self.version)] = proxyid
         if maintenance is not None:
@@ -800,9 +793,6 @@ class ZabbixAPI:
 
         if filter_params:  # Only add filter if we actually have filter params
             params["filter"] = filter_params
-        if search_params:  # ditto for search params
-            params["search"] = search_params
-
         if select_groups:
             # still returns the result under the "groups" property
             # even if we use the new 6.2 selectHostGroups param
@@ -1233,23 +1223,18 @@ class ZabbixAPI:
         NOTE: IDs and names cannot be mixed
         """
         params: ParamsType = {"output": "extend"}
-        search_params: ParamsType = {}
-
-        for name_or_id in names_or_ids:
-            if name_or_id:
-                if name_or_id.isnumeric():
-                    append_param(params, "proxyids", name_or_id)
-                else:
-                    append_param(params, compat.proxy_name(self.version), name_or_id)
+        params = parse_name_or_id_arg(
+            params,
+            names_or_ids,
+            name_param=compat.proxy_name(self.version),
+            id_param="proxyids",
+            search=search,
+            search_union=True,
+        )
 
         if select_hosts:
             params["selectHosts"] = "extend"
-        if search and search_params:
-            params["search"] = search_params
-            params["searchWildcardsEnabled"] = True
-            params["searchByAny"] = True
 
-        params.update(**kwargs)
         try:
             res = self.proxy.get(**params)
         except ZabbixAPIException as e:
@@ -1520,24 +1505,13 @@ class ZabbixAPI:
     ) -> List[Template]:
         """Fetches one or more templates given a name or ID."""
         params: ParamsType = {"output": "extend"}
-        search_params: ParamsType = {}
+        params = parse_name_or_id_arg(
+            params,
+            template_names_or_ids,
+            name_param="host",
+            id_param="templateids",
+        )
 
-        # TODO: refactor this along with other methods that take names or ids (or wildcards)
-        if "*" in template_names_or_ids:
-            template_names_or_ids = tuple()
-
-        for name_or_id in template_names_or_ids:
-            name_or_id = name_or_id.strip()
-            is_id = name_or_id.isnumeric()
-            if is_id:
-                append_param(params, "templateids", name_or_id)
-            else:
-                append_param(search_params, "host", name_or_id)
-                params.setdefault("searchWildcardsEnabled", True)
-                params.setdefault("searchByAny", True)
-
-        if search_params:
-            params["search"] = search_params
         if select_hosts:
             params["selectHosts"] = "extend"
         if select_templates:
