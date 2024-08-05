@@ -13,6 +13,7 @@ Zabbix versions.
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from datetime import timedelta
 from typing import TYPE_CHECKING
@@ -45,6 +46,8 @@ from typing_extensions import TypedDict
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.style import Color
 from zabbix_cli.pyzabbix.enums import InterfaceType
+from zabbix_cli.pyzabbix.enums import MonitoredBy
+from zabbix_cli.pyzabbix.enums import ProxyGroupState
 from zabbix_cli.utils.utils import get_ack_status
 from zabbix_cli.utils.utils import get_event_status
 from zabbix_cli.utils.utils import get_gui_access
@@ -74,6 +77,9 @@ if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
     from zabbix_cli.models import RowsType
 SortOrder = Literal["ASC", "DESC"]
+
+
+logger = logging.getLogger(__name__)
 
 
 # Source: https://docs.pydantic.dev/2.7/concepts/types/#named-recursive-types
@@ -373,6 +379,7 @@ class Host(ZabbixAPIBaseModel):
     )
     templates: List[Template] = Field(default_factory=list)
     inventory: DictModel = Field(default_factory=DictModel)
+    monitored_by: Optional[MonitoredBy] = None
     proxyid: Optional[str] = Field(
         None,
         # Compat for <7.0.0
@@ -595,6 +602,52 @@ class Proxy(ZabbixAPIBaseModel):
         else:
             style = Color.INFO
         return style(compat)
+
+
+class ProxyGroup(ZabbixAPIBaseModel):
+    proxy_groupid: str
+    name: str
+    description: str
+    failover_delay: str
+    min_online: int  # This is a str in the spec, but it's a number 1-1000!
+    state: ProxyGroupState
+    proxies: List[Proxy] = Field(default_factory=list)
+
+    @field_validator("min_online", mode="before")
+    def _handle_non_numeric_min_online(cls, v: Any) -> Any:
+        # The spec states that this value is a string, but its value
+        # is a number between 1-1000. Thus, we try to interpret this as
+        # a number, and default to 1 if it's not.
+        if isinstance(v, str) and not v.isnumeric():
+            logger.error(
+                "Invalid min_online value: %s. Expected a numeric value. Defaulting to 1.",
+                v,
+            )
+            return 1
+        return v
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = [
+            "ID",
+            "Name",
+            "Description",
+            "Failover Delay",
+            "Minimum Available",
+            "State",
+            "Proxies",
+        ]
+        rows: RowsType = [
+            [
+                self.proxy_groupid,
+                self.name,
+                self.description,
+                self.failover_delay,
+                str(self.min_online),
+                str(self.state),  # TODO: make prettier
+                "\n".join(proxy.name for proxy in self.proxies),
+            ]
+        ]
+        return cols, rows
 
 
 class MacroBase(ZabbixAPIBaseModel):

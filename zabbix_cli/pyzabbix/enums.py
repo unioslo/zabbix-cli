@@ -214,9 +214,17 @@ class MonitoringStatus(APIStrEnum):
 
 
 class MonitoredBy(APIStrEnum):  # >=7.0 only
-    SERVER = ("server", 0)
-    PROXY = ("proxy", 1)
-    PROXY_GROUP = ("proxygroup", 2)
+    SERVER = APIStr("server", 0)
+    PROXY = APIStr("proxy", 1)
+    PROXY_GROUP = APIStr("proxygroup", 2)
+
+
+class ProxyGroupState(APIStrEnum):
+    UNKNOWN = APIStr("unknown", 0)
+    OFFLINE = APIStr("offline", 1)
+    RECOVERING = APIStr("recovering", 2)
+    ONLINE = APIStr("online", 3)
+    DEGRADING = APIStr("degrading", 4)
 
 
 class MaintenanceStatus(APIStrEnum):

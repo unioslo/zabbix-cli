@@ -461,3 +461,57 @@ def show_proxies(
             result=[ShowProxiesResult.from_result(p, show_hosts=hosts) for p in proxies]
         )
     )
+
+
+@app.command(
+    name="show_proxy_groups",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Show all proxy groups",
+            "show_proxy_groups",
+        ),
+        Example(
+            "Show proxy groups with a specific proxy",
+            "show_proxy_groups --proxy proxy1",
+        ),
+        Example(
+            "Show proxy groups with either proxy1 or proxy2",
+            "show_proxy_groups --proxy proxy1,proxy2",
+        ),
+    ],
+)
+def show_proxy_groups(
+    ctx: typer.Context,
+    name_or_id: Optional[str] = typer.Argument(
+        None, help="Filter by proxy name or ID. Comma-separated. Supports wildcards."
+    ),
+    proxies: Optional[str] = typer.Option(
+        None,
+        "--proxy",
+        help="Show only groups containing these proxies. Comma-separated.",
+    ),
+) -> None:
+    """Show all proxy groups and their proxies.
+
+    Optionally takes in a list of names or IDs to filter by.
+    """
+    from zabbix_cli.models import AggregateResult
+
+    names_or_ids = parse_list_arg(name_or_id)
+    proxy_names = parse_list_arg(proxies) if proxies else None
+
+    proxy_list: Optional[List[Proxy]] = None
+    if proxy_names:
+        proxy_list = app.state.client.get_proxies(
+            *proxy_names,
+            select_groups=True,
+        )
+
+    groups = app.state.client.get_proxy_groups(
+        *names_or_ids,
+        proxies=proxy_list,
+        select_proxies=True,
+    )
+
+    render_result(AggregateResult(result=groups))

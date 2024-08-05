@@ -68,6 +68,7 @@ from zabbix_cli.pyzabbix.types import Map
 from zabbix_cli.pyzabbix.types import MediaType
 from zabbix_cli.pyzabbix.types import ParamsType
 from zabbix_cli.pyzabbix.types import Proxy
+from zabbix_cli.pyzabbix.types import ProxyGroup
 from zabbix_cli.pyzabbix.types import Role
 from zabbix_cli.pyzabbix.types import Template
 from zabbix_cli.pyzabbix.types import TemplateGroup
@@ -1241,6 +1242,32 @@ class ZabbixAPI:
             raise ZabbixAPICallError("Unknown error when fetching proxies") from e
         else:
             return [Proxy(**proxy) for proxy in res]
+
+    def get_proxy_groups(
+        self,
+        *names_or_ids: str,
+        proxies: Optional[List[Proxy]] = None,
+        select_proxies: bool = False,
+    ) -> List[ProxyGroup]:
+        """Fetches a proxy group given its ID or name."""
+        params: ParamsType = {"output": "extend"}
+        params = parse_name_or_id_arg(
+            params,
+            names_or_ids,
+            name_param="name",
+            id_param="proxy_groupids",
+            search=True,
+            search_union=True,
+        )
+        if proxies:
+            params["proxyids"] = [proxy.proxyid for proxy in proxies]
+        if select_proxies:
+            params["selectProxies"] = "extend"
+        try:
+            result = self.proxygroup.get(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError("Failed to retrieve proxy groups") from e
+        return [ProxyGroup(**group) for group in result]
 
     def get_macro(
         self,
