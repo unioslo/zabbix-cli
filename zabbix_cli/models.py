@@ -266,6 +266,13 @@ class Result(BaseResult, Generic[DataT]):
 
     result: Optional[Union[DataT, List[DataT]]] = None
 
+    # https://docs.pydantic.dev/latest/concepts/serialization/#serialize_as_any-runtime-setting
+    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
+        return super().model_dump(serialize_as_any=True, **kwargs)
+
+    def model_dump_json(self, **kwargs: Any) -> str:
+        return super().model_dump_json(serialize_as_any=True, **kwargs)
+
 
 TableRenderableT = TypeVar("TableRenderableT", bound=TableRenderable)
 
