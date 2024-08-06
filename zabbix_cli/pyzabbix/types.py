@@ -386,6 +386,7 @@ class Host(ZabbixAPIBaseModel):
         validation_alias=AliasChoices("proxyid", "proxy_hostid"),
     )
     proxy_address: Optional[str] = None
+    proxy_groupid: Optional[str] = None  # >= 7.0
     maintenance_status: Optional[str] = None
     zabbix_agent: Optional[int] = Field(
         None, validation_alias=AliasChoices("available", "active_available")
@@ -566,8 +567,11 @@ class Proxy(ZabbixAPIBaseModel):
             "proxy_address",  # <7.0.0
         )
     )
+    proxy_groupid: Optional[str] = None  # >= 7.0
     compatibility: Optional[int] = None  # >= 7.0
     version: Optional[int] = None  # >= 7.0
+    local_address: Optional[str] = None  # >= 7.0
+    local_port: Optional[str] = None  # >= 7.0
 
     def __hash__(self) -> str:
         return self.proxyid  # kinda hacky, but lets us use it in dicts

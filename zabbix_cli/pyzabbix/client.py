@@ -185,6 +185,17 @@ def parse_name_or_id_arg(
     return params
 
 
+def get_returned_list(returned: Any, key: str, endpoint: str) -> List[str]:
+    if not isinstance(returned, dict):
+        raise ZabbixAPIException(f"{endpoint!r} did not return a dict")
+    response_list = returned.get(key, [])  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
+    if not isinstance(response_list, list):
+        raise ZabbixAPIException(
+            f"{endpoint!r} response did not contain a list for key {key!r}"
+        )
+    return cast(List[str], response_list)
+
+
 class ParamsTypeSerializer(RootModel[ParamsType]):
     """Root model that takes in a Params dict.
 
@@ -687,7 +698,8 @@ class ZabbixAPI:
         select_interfaces: bool = False,
         select_inventory: bool = False,
         select_macros: bool = False,
-        proxyid: Optional[str] = None,
+        proxy_group: Optional[ProxyGroup] = None,
+        proxy: Optional[Proxy] = None,
         maintenance: Optional[MaintenanceStatus] = None,
         monitored: Optional[MonitoringStatus] = None,
         agent_status: Optional[AgentAvailable] = None,
@@ -703,7 +715,8 @@ class ZabbixAPI:
             select_inventory=select_inventory,
             select_interfaces=select_interfaces,
             select_macros=select_macros,
-            proxyid=proxyid,
+            proxy=proxy,
+            proxy_group=proxy_group,
             sort_field=sort_field,
             sort_order=sort_order,
             search=search,
@@ -725,7 +738,8 @@ class ZabbixAPI:
         select_inventory: bool = False,
         select_macros: bool = False,
         select_interfaces: bool = False,
-        proxyid: Optional[str] = None,
+        proxy: Optional[Proxy] = None,
+        proxy_group: Optional[ProxyGroup] = None,
         # These params take special API values we don't want to evaluate
         # inside this method, so we delegate it to the enums.
         maintenance: Optional[MaintenanceStatus] = None,
@@ -781,8 +795,7 @@ class ZabbixAPI:
 
         # Filters are applied with a logical AND (narrows down)
         filter_params: ParamsType = {}
-        if proxyid:
-            filter_params[compat.host_proxyid(self.version)] = proxyid
+
         if maintenance is not None:
             filter_params["maintenance_status"] = maintenance.as_api_value()
         if monitored is not None:
@@ -794,6 +807,12 @@ class ZabbixAPI:
 
         if filter_params:  # Only add filter if we actually have filter params
             params["filter"] = filter_params
+
+        if proxy:
+            params["proxyids"] = proxy.proxyid
+        if proxy_group:
+            params["proxy_groupids"] = proxy_group.proxy_groupid
+
         if select_groups:
             # still returns the result under the "groups" property
             # even if we use the new 6.2 selectHostGroups param
@@ -1243,6 +1262,22 @@ class ZabbixAPI:
         else:
             return [Proxy(**proxy) for proxy in res]
 
+    def get_proxy_group(
+        self,
+        name_or_id: str,
+        proxies: Optional[List[Proxy]] = None,
+        select_proxies: bool = False,
+    ) -> ProxyGroup:
+        """Fetches a proxy group given its ID or name."""
+        groups = self.get_proxy_groups(
+            name_or_id,
+            proxies=proxies,
+            select_proxies=select_proxies,
+        )
+        if not groups:
+            raise ZabbixNotFoundError(f"Proxy group {name_or_id!r} not found")
+        return groups[0]
+
     def get_proxy_groups(
         self,
         *names_or_ids: str,
@@ -1268,6 +1303,67 @@ class ZabbixAPI:
         except ZabbixAPIException as e:
             raise ZabbixAPICallError("Failed to retrieve proxy groups") from e
         return [ProxyGroup(**group) for group in result]
+
+    def add_proxy_to_group(
+        self, proxy: Proxy, group: ProxyGroup, local_address: str, local_port: str
+    ) -> None:
+        """Adds proxy to a proxy group."""
+        # NOTE: there is no endpoint for proxy groups to add to proxies
+        # We must update each proxy individually to add them to the group
+        try:
+            self.proxy.update(
+                proxyid=proxy.proxyid,
+                proxy_groupid=group.proxy_groupid,
+                local_address=local_address,
+                local_port=local_port,
+            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError(
+                f"Failed to add proxy {proxy} to group {group}"
+            ) from e
+
+    def remove_proxy_from_group(self, proxy: Proxy) -> None:
+        """Adds proxy to a proxy group."""
+        # NOTE: there is no endpoint for proxy groups to add to proxies
+        # We must update each proxy individually to add them to the group
+        try:
+            self.proxy.update(
+                proxyid=proxy.proxyid,
+                proxy_groupid=0,
+            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError(
+                f"Failed to remove proxy {proxy} from group with ID {proxy.proxy_groupid}."
+            ) from e
+
+    def add_host_to_proxygroup(self, host: Host, proxygroup: ProxyGroup) -> None:
+        """Adds a host to a proxy group."""
+        try:
+            self.host.update(
+                hostid=host.hostid,
+                proxy_hostid=proxygroup.proxy_groupid,
+                monitored_by=MonitoredBy.PROXY_GROUP.as_api_value(),
+            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError(
+                f"Failed to add host {host} to proxy group {proxygroup}"
+            ) from e
+
+    def add_hosts_to_proxygroup(
+        self, hosts: List[Host], proxygroup: ProxyGroup
+    ) -> List[str]:
+        try:
+            updated = self.host.massupdate(
+                hosts=[{"hostid": host.hostid} for host in hosts],
+                proxy_groupid=proxygroup.proxy_groupid,
+                monitored_by=MonitoredBy.PROXY_GROUP.as_api_value(),
+            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError(
+                f"Failed to add hosts to proxy group {proxygroup}"
+            ) from e
+
+        return get_returned_list(updated, "hostids", "host.massupdate")
 
     def get_macro(
         self,
@@ -1437,23 +1533,24 @@ class ZabbixAPI:
 
     def update_host_proxy(self, host: Host, proxy: Proxy) -> str:
         """Updates a host's proxy."""
+        resp = self.update_hosts_proxy([host], proxy)
+        return resp[0] if resp else ""
+
+    def update_hosts_proxy(self, hosts: List[Host], proxy: Proxy) -> List[str]:
+        """Updates a list of hosts' proxy."""
         params: ParamsType = {
-            "hostid": host.hostid,
+            "hosts": [{"hostid": host.hostid} for host in hosts],
             compat.host_proxyid(self.version): proxy.proxyid,
         }
         if self.version.release >= (7, 0, 0):
             params["monitored_by"] = MonitoredBy.PROXY.as_api_value()
         try:
-            resp = self.host.update(**params)
+            resp = self.host.massupdate(**params)
         except ZabbixAPIException as e:
             raise ZabbixAPICallError(
-                f"Failed to update host proxy for host {host.host!r} (ID {host.hostid})"
+                f"Failed to update proxy for hosts {[str(host) for host in hosts]}"
             ) from e
-        if not resp or not resp.get("hostids"):
-            raise ZabbixNotFoundError(
-                f"No host ID returned when updating proxy for host {host.host!r} (ID {host.hostid})"
-            )
-        return resp["hostids"][0]
+        return get_returned_list(resp, "hostids", "host.massupdate")
 
     def clear_host_proxies(self, hosts: List[Host]) -> List[str]:
         """Clears a host's proxy."""
@@ -1468,11 +1565,7 @@ class ZabbixAPI:
             resp = self.host.massupdate(**params)
         except ZabbixAPIException as e:
             raise ZabbixAPICallError("Failed to clear host proxy for hosts") from e
-        if not resp or resp.get("hostids") is None:
-            raise ZabbixNotFoundError(
-                "No host IDs returned when clearing proxies for hosts."
-            )
-        return resp["hostids"]
+        return get_returned_list(resp, "hostids", "host.massupdate")
 
     def update_host_status(self, host: Host, status: MonitoringStatus) -> str:
         """Updates a host status given a host ID and status."""
@@ -2319,13 +2412,13 @@ class ZabbixAPI:
         except ZabbixAPIException as e:
             raise ZabbixAPICallError("Failed to import configuration") from e
 
-    def __getattr__(self, attr: str):
+    def __getattr__(self, attr: str) -> ZabbixAPIObjectClass:
         """Dynamically create an object class (ie: host)"""
         return ZabbixAPIObjectClass(attr, self)
 
 
 class ZabbixAPIObjectClass:
-    def __init__(self, name: str, parent: ZabbixAPI):
+    def __init__(self, name: str, parent: ZabbixAPI) -> None:
         self.name = name
         self.parent = parent
 

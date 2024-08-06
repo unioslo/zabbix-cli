@@ -7,11 +7,14 @@ from typing import Optional
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic import model_serializer
+from typing_extensions import Self
 
+from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import MetaKey
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import Proxy
+from zabbix_cli.pyzabbix.types import ProxyGroup
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
@@ -39,7 +42,7 @@ class UpdateHostProxyResult(BaseHostProxyResult):
         hosts: List[Host],
         source_proxy: Optional[Proxy],
         dest_proxy: Optional[Proxy],
-    ) -> UpdateHostProxyResult:
+    ) -> Self:
         return cls(
             source=source_proxy.name if source_proxy else "",
             destination=dest_proxy.name if dest_proxy else "",
@@ -55,7 +58,7 @@ class ClearHostProxyResult(BaseHostProxyResult):
         cls,
         hosts: List[Host],
         source_proxy: Optional[Proxy],
-    ) -> ClearHostProxyResult:
+    ) -> Self:
         return cls(
             source=source_proxy.name if source_proxy else "",
             hosts=[h.host for h in hosts],
@@ -109,14 +112,21 @@ class UpdateHostGroupProxyResult(TableRenderable):
 
     proxy: str
     hosts: List[str] = []
-    """Name of the host."""
 
     @classmethod
-    def from_result(cls, proxy: Proxy, hosts: List[Host]) -> UpdateHostGroupProxyResult:
-        return cls(
-            proxy=proxy.name,
-            hosts=[h.host for h in hosts],
-        )
+    def from_result(cls, proxy: Proxy, hosts: List[Host]) -> Self:
+        return cls(proxy=proxy.name, hosts=[host.host for host in hosts])
+
+
+class UpdateHostGroupProxyGroupResult(TableRenderable):
+    """Result type for `update_hostgroup_proxygroup` command."""
+
+    proxy_group: str
+    hosts: List[str] = []
+
+    @classmethod
+    def from_result(cls, proxy_group: ProxyGroup, hosts: List[Host]) -> Self:
+        return cls(proxy_group=proxy_group.name, hosts=[host.host for host in hosts])
 
 
 class ShowProxiesResult(TableRenderable):
@@ -133,7 +143,7 @@ class ShowProxiesResult(TableRenderable):
         }
 
     @classmethod
-    def from_result(cls, proxy: Proxy, show_hosts: bool = False) -> ShowProxiesResult:
+    def from_result(cls, proxy: Proxy, show_hosts: bool = False) -> Self:
         return cls(proxy=proxy, show_hosts=show_hosts)
 
     @property
@@ -162,4 +172,26 @@ class ShowProxiesResult(TableRenderable):
         if self.zabbix_version.release >= (7, 0, 0):
             cols.extend(["Version", "Compatibility"])
             rows[0].extend([str(self.proxy.version), self.proxy.compatibility_rich])
+        return cols, rows
+
+
+class ShowProxyGroupHostsResult(TableRenderable):
+    proxy_group: ProxyGroup
+    hosts: List[Host] = []
+
+    @model_serializer(when_used="json")
+    def ser_model(self):
+        return {
+            "proxy_group": self.proxy_group.model_dump(mode="json"),
+            "hosts": [h.model_simple_dump() for h in self.hosts],
+        }
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = ["Name", "Hosts"]
+        rows: RowsType = [
+            [
+                self.proxy_group.name,
+                "\n".join(h.host for h in self.hosts),
+            ]
+        ]
         return cols, rows

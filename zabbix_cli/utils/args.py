@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import List
 from typing import Optional
+from typing import Set
 
 import typer
 
@@ -133,3 +134,31 @@ def parse_path_arg(arg: str, must_exist: bool = False) -> Path:
         if must_exist and not p.exists():
             raise ZabbixCLIError(f"Path does not exist: {arg}")
         return p
+
+
+### API / arg utilities ###
+
+
+def get_hostgroup_hosts(
+    app: StatefulApp, hostgroups: List[HostGroup] | str
+) -> List[Host]:
+    """Get all hosts from a list of host groups.
+
+    Args:
+        app: The application instance.
+        hostgroups: List of host groups or a comma-separated string of host group names."""
+    if isinstance(hostgroups, str):
+        hostgroup_names = parse_list_arg(hostgroups)
+        hostgroups = app.state.client.get_hostgroups(
+            *hostgroup_names, select_hosts=True, search=True
+        )
+    # Get all hosts from all host groups
+    # Some hosts can be in multiple host groups - ensure no dupes
+    hosts: List[Host] = []
+    seen: Set[str] = set()
+    for hg in hostgroups:
+        for host in hg.hosts:
+            if host.host not in seen:
+                hosts.append(host)
+                seen.add(host.host)
+    return hosts

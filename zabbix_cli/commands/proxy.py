@@ -19,6 +19,7 @@ from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.console import success
 from zabbix_cli.output.render import render_result
+from zabbix_cli.utils.args import get_hostgroup_hosts
 from zabbix_cli.utils.args import parse_int_list_arg
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.utils import compile_pattern
@@ -34,6 +35,11 @@ HELP_PANEL = "Proxy"
 class PrevProxyHosts(NamedTuple):
     hosts: List[Host]
     proxy: Optional[Proxy] = None
+
+
+def ensure_proxy_group_support() -> None:
+    if app.state.client.version.major < 7:
+        exit_err("Proxy groups require Zabbix 7.0 or later.")
 
 
 def group_hosts_by_proxy(
@@ -88,7 +94,6 @@ def update_host_proxy(
     """
     from zabbix_cli.commands.results.proxy import UpdateHostProxyResult
     from zabbix_cli.models import AggregateResult
-    from zabbix_cli.output.console import error
     from zabbix_cli.output.console import info
 
     hostnames = parse_list_arg(hostname)
@@ -100,26 +105,16 @@ def update_host_proxy(
         if host.proxyid != dest_proxy.proxyid:
             to_update.append(host)
 
-    updated: List[Host] = []
-    fail: List[Host] = []
     if not dryrun:
-        with app.status("Updating host proxies...") as status:
-            for host in to_update:
-                status.update(f"Updating {host.host}...")
-                if host.proxyid and host.proxyid == dest_proxy.proxyid:
-                    info(f"Host {host.host!r} already has proxy {dest_proxy.name!r}")
-                    continue
-                try:
-                    app.state.client.update_host_proxy(host, dest_proxy)
-                    updated.append(host)
-                except Exception as e:
-                    fail.append(host)
-                    error(f"Failed to update host {host.host!r}: {e}")
+        with app.status("Updating host proxies..."):
+            hostids = app.state.client.update_hosts_proxy(to_update, dest_proxy)
     else:
-        updated = to_update
-    # TODO: report failed hosts
+        hostids = [host.hostid for host in to_update]
 
-    proxy_hosts = group_hosts_by_proxy(app, updated)
+    updated = set(hostids)
+    updated_hosts = [host for host in to_update if host.hostid in updated]
+
+    proxy_hosts = group_hosts_by_proxy(app, updated_hosts)
 
     render_result(
         AggregateResult(
@@ -167,6 +162,8 @@ def clear_host_proxy(
     to_update = [host for host in hosts if host.proxyid]
     if not dryrun:
         with app.status("Clearing host proxies..."):
+            if not to_update:
+                exit_err("No matching hosts have a proxy assigned.")
             try:
                 app.state.client.clear_host_proxies(to_update)
             except Exception as e:
@@ -234,7 +231,7 @@ def move_proxy_hosts(
     source_proxy = app.state.client.get_proxy(proxy_src)
     destination_proxy = app.state.client.get_proxy(proxy_dst)
 
-    hosts = app.state.client.get_hosts(proxyid=source_proxy.proxyid)
+    hosts = app.state.client.get_hosts(proxy=source_proxy)
     if not hosts:
         exit_err(f"Source proxy {source_proxy.name!r} has no hosts.")
 
@@ -378,55 +375,34 @@ def update_hostgroup_proxy(
 ) -> None:
     """Assign a proxy to all hosts in one or more host groups."""
     from zabbix_cli.commands.results.proxy import UpdateHostGroupProxyResult
-    from zabbix_cli.output.console import error
     from zabbix_cli.output.console import warning
 
     prx = app.state.client.get_proxy(proxy)
 
-    hostgroup_names = parse_list_arg(hostgroup)
-    hostgroups = app.state.client.get_hostgroups(
-        *hostgroup_names, select_hosts=True, search=True
-    )
-    # Get all hosts from all host groups
-    # Some hosts can be in multiple host groups - ensure no dupes
-    hosts: List[Host] = []
-    seen: Set[str] = set()
-    for hg in hostgroups:
-        for host in hg.hosts:
-            if host.host not in seen:
-                hosts.append(host)
-                seen.add(host.host)
-
+    hosts = get_hostgroup_hosts(app, hostgroup)
     to_update: List[Host] = []
     for host in hosts:
         if host.proxyid != prx.proxyid:
             to_update.append(host)
 
-    # Sort hosts by host group
-    updated: List[Host] = []
-    fail: List[Host] = []
     if not dryrun:
-        with app.status("Updating host proxies...") as status:
-            for host in to_update:
-                status.update(f"Updating {host.host}...")
-                try:
-                    app.state.client.update_host_proxy(host, prx)
-                    updated.append(host)
-                except Exception as e:
-                    fail.append(host)
-                    error(f"Failed to update host {host.host!r}: {e}")
-        if not updated and not fail:
+        if not to_update:
+            exit_err("All hosts already have the specified proxy.")
+        with app.status("Updating host proxies..."):
+            hostids = app.state.client.update_hosts_proxy(to_update, prx)
+        if not hostids:
             warning("No hosts were updated.")
     else:
-        updated = to_update
-    render_result(UpdateHostGroupProxyResult.from_result(prx, updated))
+        hostids = [host.hostid for host in to_update]
 
-    total_hosts = len(updated)
+    updated_hosts = [host for host in to_update if host.hostid in hostids]
+    render_result(UpdateHostGroupProxyResult.from_result(prx, updated_hosts))
+
+    total_hosts = len(hostids)
     if dryrun:
         info(f"Would update proxy for {total_hosts} hosts.")
     else:
         success(f"Updated proxy for {total_hosts} hosts.")
-        # TODO: report failed hosts
 
 
 @app.command(name="show_proxies", rich_help_panel=HELP_PANEL)
@@ -498,6 +474,8 @@ def show_proxy_groups(
     """
     from zabbix_cli.models import AggregateResult
 
+    ensure_proxy_group_support()
+
     names_or_ids = parse_list_arg(name_or_id)
     proxy_names = parse_list_arg(proxies) if proxies else None
 
@@ -515,3 +493,121 @@ def show_proxy_groups(
     )
 
     render_result(AggregateResult(result=groups))
+
+
+@app.command(
+    name="add_proxy_to_group",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Add a proxy to a proxy group",
+            "add_proxy_to_group proxy1 group1 192.168.0.2 10051",
+        )
+    ],
+)
+def add_proxy_to_group(
+    ctx: typer.Context,
+    name_or_id: str = typer.Argument(help="Name or ID of proxy to add to group."),
+    proxy_group: str = typer.Argument(
+        help="Name or ID of proxy group to add proxies to."
+    ),
+    local_address: Optional[str] = typer.Argument(help="Address for active agents."),
+    local_port: Optional[str] = typer.Argument(help="Address for active agents."),
+) -> None:
+    """Add a proxy to a proxy group.
+
+    Requires a local address and port for active agent redirection if
+    if the proxy does not have it set.
+    """
+    ensure_proxy_group_support()
+
+    proxy = app.state.client.get_proxy(name_or_id)
+
+    # Determine address + port
+    local_address = local_address or proxy.local_address
+    if not local_address:
+        exit_err("Proxy requires a local address for active agents.")
+    local_port = local_port or proxy.local_port
+    if not local_port:
+        exit_err("Proxy requires a local port for active agents.")
+
+    group = app.state.client.get_proxy_group(proxy_group)
+    app.state.client.add_proxy_to_group(proxy, group, local_address, local_port)
+
+    success(f"Added proxy {proxy.name!r} to group {group.name!r}.")
+
+
+@app.command(name="remove_proxy_from_group", rich_help_panel=HELP_PANEL)
+def remove_proxy_from_group(
+    ctx: typer.Context,
+    name_or_id: str = typer.Argument(help="Name or ID of proxy to add to group."),
+) -> None:
+    """Remove a proxy from a proxy group."""
+    ensure_proxy_group_support()
+
+    proxy = app.state.client.get_proxy(name_or_id)
+    app.state.client.remove_proxy_from_group(proxy)
+
+    success(f"Removed proxy {proxy.name!r} from group with ID {proxy.proxy_groupid}.")
+
+
+@app.command(name="update_hostgroup_proxygroup")
+def update_hostgroup_proxygroup(
+    ctx: typer.Context,
+    hostgroup: str = typer.Argument(
+        help="Host group(s). Comma-separated. Supports wildcards."
+    ),
+    proxygroup: str = typer.Argument(help="Proxy group to assign. Supports wildcards."),
+    dryrun: bool = typer.Option(False, help="Preview changes.", is_flag=True),
+) -> None:
+    """Assign a proxy to all hosts in one or more host groups."""
+    from zabbix_cli.commands.results.proxy import UpdateHostGroupProxyGroupResult
+    from zabbix_cli.output.console import warning
+
+    ensure_proxy_group_support()
+
+    grp = app.state.client.get_proxy_group(proxygroup)
+
+    hosts = get_hostgroup_hosts(app, hostgroup)
+    to_update: List[Host] = []
+    for host in hosts:
+        if host.proxy_groupid != grp.proxy_groupid:
+            to_update.append(host)
+
+    # Sort hosts by host group
+    updated: List[str] = []  # list of host IDs
+    if not dryrun:
+        if not to_update:
+            exit_err("All hosts already have the specified proxy group.")
+        with app.status("Updating hosts..."):
+            updated = app.state.client.add_hosts_to_proxygroup(to_update, grp)
+        if not updated:
+            warning("No hosts were updated.")
+    else:
+        updated = [host.hostid for host in to_update]
+
+    updated_hosts = [host for host in to_update if host.hostid in updated]
+    render_result(UpdateHostGroupProxyGroupResult.from_result(grp, updated_hosts))
+
+    total_hosts = len(updated)
+    if dryrun:
+        info(f"Would update proxy group for {total_hosts} hosts.")
+    else:
+        success(f"Updated proxy group for {total_hosts} hosts.")
+
+
+@app.command(name="show_proxy_group_hosts", rich_help_panel=HELP_PANEL)
+def show_proxy_group_hosts(
+    ctx: typer.Context,
+    proxygroup: str = typer.Argument(
+        help="Proxy group name or ID. Supports wildcards."
+    ),
+) -> None:
+    """Show all hosts in a proxy group."""
+    from zabbix_cli.commands.results.proxy import ShowProxyGroupHostsResult
+
+    ensure_proxy_group_support()
+
+    group = app.state.client.get_proxy_group(proxygroup)
+    hosts = app.state.client.get_hosts(proxy_group=group)
+    render_result(ShowProxyGroupHostsResult(proxy_group=group, hosts=hosts))
