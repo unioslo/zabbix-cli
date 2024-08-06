@@ -23,6 +23,9 @@ from typing import Union
 
 from zabbix_cli.exceptions import ZabbixCLIError
 
+# TODO: refactor all these `get_*_status` functions to int enums,
+# who all share a common format_code() method
+
 
 # NOTE: consider setting with_code to False by default...
 # The only downside is possibly breaking backwards compatibility

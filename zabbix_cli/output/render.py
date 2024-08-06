@@ -33,7 +33,7 @@ def wrap_result(result: BaseModel) -> BaseResult:
 
     if isinstance(result, BaseResult):
         return result
-    # TODO: handle AggregateResult?
+    # TODO: handle AggregateResult? (8 months later: What did I mean by this?)
     return Result(result=result)
 
 
