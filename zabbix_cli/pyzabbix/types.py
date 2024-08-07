@@ -45,33 +45,34 @@ from typing_extensions import TypedDict
 
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.style import Color
+from zabbix_cli.pyzabbix.enums import AckStatus
+from zabbix_cli.pyzabbix.enums import ActiveInterface
+from zabbix_cli.pyzabbix.enums import EventStatus
+from zabbix_cli.pyzabbix.enums import GUIAccess
+from zabbix_cli.pyzabbix.enums import HostgroupFlag
+from zabbix_cli.pyzabbix.enums import HostgroupType
+from zabbix_cli.pyzabbix.enums import InterfaceConnectionMode
 from zabbix_cli.pyzabbix.enums import InterfaceType
+from zabbix_cli.pyzabbix.enums import ItemType
+from zabbix_cli.pyzabbix.enums import MacroType
+from zabbix_cli.pyzabbix.enums import MaintenancePeriodType
+from zabbix_cli.pyzabbix.enums import MaintenanceStatus
+from zabbix_cli.pyzabbix.enums import MaintenanceWeekType
 from zabbix_cli.pyzabbix.enums import MonitoredBy
+from zabbix_cli.pyzabbix.enums import MonitoringStatus
+from zabbix_cli.pyzabbix.enums import ProxyCompatibility
 from zabbix_cli.pyzabbix.enums import ProxyGroupState
-from zabbix_cli.utils.utils import get_ack_status
-from zabbix_cli.utils.utils import get_event_status
-from zabbix_cli.utils.utils import get_gui_access
-from zabbix_cli.utils.utils import get_host_interface_connection_mode
-from zabbix_cli.utils.utils import get_host_interface_type
-from zabbix_cli.utils.utils import get_hostgroup_flag
-from zabbix_cli.utils.utils import get_hostgroup_type
-from zabbix_cli.utils.utils import get_item_type
-from zabbix_cli.utils.utils import get_macro_type
+from zabbix_cli.pyzabbix.enums import ProxyMode
+from zabbix_cli.pyzabbix.enums import ProxyModePre70
+from zabbix_cli.pyzabbix.enums import TriggerPriority
+from zabbix_cli.pyzabbix.enums import UsergroupPermission
+from zabbix_cli.pyzabbix.enums import UsergroupStatus
+from zabbix_cli.pyzabbix.enums import UserRole
+from zabbix_cli.pyzabbix.enums import ValueType
 from zabbix_cli.utils.utils import get_maintenance_active_days
 from zabbix_cli.utils.utils import get_maintenance_active_months
-from zabbix_cli.utils.utils import get_maintenance_every_type
-from zabbix_cli.utils.utils import get_maintenance_period_type
 from zabbix_cli.utils.utils import get_maintenance_status
 from zabbix_cli.utils.utils import get_monitoring_status
-from zabbix_cli.utils.utils import get_permission
-from zabbix_cli.utils.utils import get_proxy_compatibility
-from zabbix_cli.utils.utils import get_proxy_mode
-from zabbix_cli.utils.utils import get_proxy_mode_pre_7_0
-from zabbix_cli.utils.utils import get_trigger_severity
-from zabbix_cli.utils.utils import get_user_type
-from zabbix_cli.utils.utils import get_usergroup_status
-from zabbix_cli.utils.utils import get_value_type
-from zabbix_cli.utils.utils import get_zabbix_agent_status
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
@@ -206,7 +207,7 @@ class ZabbixRight(ZabbixAPIBaseModel):
     @property
     def permission_str(self) -> str:
         """Returns the permission as a formatted string."""
-        return get_permission(self.permission)
+        return UsergroupPermission.string_from_value(self.permission)
 
     def model_dump_api(self) -> Dict[str, Any]:
         return self.model_dump(
@@ -233,7 +234,7 @@ class User(ZabbixAPIBaseModel):
     def role(self) -> Optional[str]:
         """Returns the role name, if available."""
         if self.roleid:
-            return get_user_type(self.roleid)
+            return UserRole.string_from_value(self.roleid)
         return None
 
     def __cols_rows__(self) -> ColsRowsType:
@@ -264,29 +265,31 @@ class Usergroup(ZabbixAPIBaseModel):
     @property
     def gui_access_str(self) -> str:
         """GUI access code as a formatted string."""
-        return get_gui_access(self.gui_access)
+        return GUIAccess.string_from_value(self.gui_access)
 
     @computed_field
     @property
     def users_status_str(self) -> str:
         """User status as a formatted string."""
-        return get_usergroup_status(self.users_status)
+        return UsergroupStatus.string_from_value(self.users_status)
 
+    # LEGACY
     @computed_field
     @property
     def status(self) -> str:
         """LEGACY: 'users_status' is called 'status' in V2.
         Ensures serialized output contains the field.
         """
-        return self.users_status_str
+        return UsergroupStatus.string_from_value(self.users_status, with_code=True)
 
+    # LEGACY
     @field_serializer("gui_access")
     def _LEGACY_type_serializer(
         self, v: Optional[int], _info: FieldSerializationInfo
     ) -> Union[str, int, None]:
         """Serializes the GUI access status as a formatted string in legacy JSON mode"""
         if self.legacy_json_format:
-            return self.gui_access
+            return GUIAccess.string_from_value(v, with_code=True)
         return v
 
 
@@ -345,8 +348,8 @@ class HostGroup(ZabbixAPIBaseModel):
             [
                 self.groupid,
                 self.name,
-                get_hostgroup_flag(self.flags),
-                get_hostgroup_type(self.internal),
+                HostgroupFlag.string_from_value(self.flags),
+                HostgroupType.string_from_value(self.internal),
                 ", ".join([host.host for host in self.hosts]),
             ]
         ]
@@ -377,7 +380,10 @@ class Host(ZabbixAPIBaseModel):
         # Compat for >= 6.2.0
         validation_alias=AliasChoices("groups", "hostgroups"),
     )
-    templates: List[Template] = Field(default_factory=list)
+    templates: List[Template] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("templates", "parentTemplates"),
+    )
     inventory: DictModel = Field(default_factory=DictModel)
     monitored_by: Optional[MonitoredBy] = None
     proxyid: Optional[str] = Field(
@@ -388,8 +394,13 @@ class Host(ZabbixAPIBaseModel):
     proxy_address: Optional[str] = None
     proxy_groupid: Optional[str] = None  # >= 7.0
     maintenance_status: Optional[str] = None
-    zabbix_agent: Optional[int] = Field(
-        None, validation_alias=AliasChoices("available", "active_available")
+    active_available: Optional[str] = Field(
+        None,
+        validation_alias=AliasChoices(
+            "available",  # < 7.0
+            "active_available",  # >= 7.0
+            "zabbix_agent",  # Zabbix-cli V2 name of this field
+        ),
     )
     status: Optional[str] = None
     macros: List[Macro] = Field(default_factory=list)
@@ -406,7 +417,7 @@ class Host(ZabbixAPIBaseModel):
         }
 
     # Legacy V2 JSON format compatibility
-    @field_serializer("maintenance_status")
+    @field_serializer("maintenance_status", when_used="json")
     def _LEGACY_maintenance_status_serializer(
         self, v: Optional[str], _info: FieldSerializationInfo
     ) -> Optional[str]:
@@ -417,18 +428,17 @@ class Host(ZabbixAPIBaseModel):
             return get_maintenance_status(v, with_code=True)
         return v
 
-    @field_serializer("zabbix_agent")
-    def _LEGACY_zabbix_agent_serializer(
-        self, v: Optional[int], _info: FieldSerializationInfo
-    ) -> Optional[Union[int, str]]:
-        """Serializes the zabbix agent status as a formatted string
+    @computed_field
+    def zabbix_agent(self) -> Optional[Union[int, str]]:
+        """LEGACY: Serializes the zabbix agent status as a formatted string
         in legacy mode, and as-is in new mode.
         """
+        # NOTE: use `self.active_available` instead of `self.zabbix_agent`
         if self.legacy_json_format:
-            return get_zabbix_agent_status(v, with_code=True)
-        return v
+            return ActiveInterface.string_from_value(self.active_available)
+        return self.active_available
 
-    @field_serializer("status")
+    @field_serializer("status", when_used="json")
     def _LEGACY_status_serializer(
         self, v: Optional[str], _info: FieldSerializationInfo
     ) -> Optional[str]:
@@ -444,7 +454,7 @@ class Host(ZabbixAPIBaseModel):
     def _use_id_if_empty(cls, v: str, info: ValidationInfo) -> str:
         """In case the Zabbix API returns no host name, use the ID instead."""
         if not v:
-            return f"Unknown (ID: {info.data['hostid']})"
+            return f"Unknown (ID: {info.data.get('hostid')})"
         return v
 
     @field_validator("proxyid", mode="after")  # TODO: add test for this
@@ -476,9 +486,9 @@ class Host(ZabbixAPIBaseModel):
                 self.host,
                 "\n".join([group.name for group in self.groups]),
                 "\n".join([template.host for template in self.templates]),
-                get_zabbix_agent_status(self.zabbix_agent),
-                get_maintenance_status(self.maintenance_status),
-                get_monitoring_status(self.status),
+                ActiveInterface.string_from_value(self.active_available),
+                MaintenanceStatus.string_from_value(self.maintenance_status),
+                MonitoringStatus.string_from_value(self.status),
                 self.proxy_address or "",
             ]
         ]
@@ -502,13 +512,13 @@ class HostInterface(ZabbixAPIBaseModel):
     @property
     def connection_mode(self) -> str:
         """Returns the connection mode as a formatted string."""
-        return get_host_interface_connection_mode(self.useip)
+        return InterfaceConnectionMode.string_from_value(self.useip)
 
     @computed_field
     @property
     def type_str(self) -> str:
         """Returns the interface type as a formatted string."""
-        return get_host_interface_type(self.type)
+        return InterfaceType.string_from_value(self.type)
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Type", "IP", "DNS", "Port", "Mode", "Default", "Available"]
@@ -521,7 +531,7 @@ class HostInterface(ZabbixAPIBaseModel):
                 self.port,
                 self.connection_mode,
                 str(bool(self.main)),
-                get_zabbix_agent_status(self.available),
+                ActiveInterface.string_from_value(self.available),
             ]
         ]
         return cols, rows
@@ -581,17 +591,16 @@ class Proxy(ZabbixAPIBaseModel):
     def mode(self) -> str:
         """Returns the proxy mode as a formatted string."""
         if self.zabbix_version.release >= (7, 0, 0):
-            return get_proxy_mode(self.operating_mode)
+            cls = ProxyMode
         else:
-            return get_proxy_mode_pre_7_0(self.status)
+            cls = ProxyModePre70
+        return cls.string_from_value(self.operating_mode)
 
     @computed_field
     @property
-    def compatibility_str(
-        self,
-    ) -> Literal["Undefined", "Current", "Outdated", "Unsupported"]:
+    def compatibility_str(self) -> str:
         """Returns the proxy compatibility as a formatted string."""
-        return get_proxy_compatibility(self.compatibility)
+        return ProxyCompatibility.string_from_value(self.compatibility)
 
     @property
     def compatibility_rich(self) -> str:
@@ -665,7 +674,7 @@ class MacroBase(ZabbixAPIBaseModel):
     @property
     def type_str(self) -> str:
         """Returns the macro type as a formatted string."""
-        return get_macro_type(self.type)
+        return MacroType.string_from_value(self.type)
 
 
 class Macro(MacroBase):
@@ -703,13 +712,13 @@ class Item(ZabbixAPIBaseModel):
     @property
     def type_str(self) -> str:
         """Returns the item type as a formatted string."""
-        return get_item_type(self.type)
+        return ItemType.string_from_value(self.type)
 
     @computed_field
     @property
     def value_type_str(self) -> str:
         """Returns the item type as a formatted string."""
-        return get_value_type(self.value_type)
+        return ValueType.string_from_value(self.value_type)
 
     @field_serializer("type")
     def _LEGACY_type_serializer(
@@ -784,7 +793,7 @@ class TimePeriod(ZabbixAPIBaseModel):
     @property
     def timeperiod_type_str(self) -> str:
         """Returns the time period type as a formatted string."""
-        return get_maintenance_period_type(self.timeperiod_type)
+        return MaintenancePeriodType.string_from_value(self.timeperiod_type)
 
     @computed_field
     @property
@@ -816,15 +825,14 @@ class TimePeriod(ZabbixAPIBaseModel):
     @computed_field
     @property
     def every_str(self) -> str:
-        return get_maintenance_every_type(self.every)
+        return MaintenanceWeekType.string_from_value(self.every)
 
     def __cols_rows__(self) -> ColsRowsType:
         """Renders the table based on the time period type.
 
         Fields are added/removed based on the time period type.
         """
-        # TODO: Use enum to define these values
-        # and then re-use them in the get_maintenance_period_type function
+        # TODO: use MaintenancePeriodType enum for this
         if self.timeperiod_type == 0:
             return self._get_cols_rows_one_time()
         # TODO: add __cols_rows__ method for each timeperiod type
@@ -941,12 +949,12 @@ class Event(ZabbixAPIBaseModel):
     @computed_field
     @property
     def status_str(self) -> str:
-        return get_event_status(self.value)
+        return EventStatus.string_from_value(self.value)
 
     @computed_field
     @property
     def acknowledged_str(self) -> str:
-        return get_ack_status(self.acknowledged)
+        return AckStatus.string_from_value(self.acknowledged)
 
     @property
     def status_str_cell(self) -> str:
@@ -1062,7 +1070,7 @@ class Trigger(ZabbixAPIBaseModel):
     @computed_field
     @property
     def severity(self) -> str:
-        return get_trigger_severity(self.priority)
+        return TriggerPriority.string_from_value(self.priority)
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = [

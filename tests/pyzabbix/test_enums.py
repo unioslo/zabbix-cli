@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Type
 
 import pytest
-from zabbix_cli.pyzabbix.enums import AgentAvailable
+from zabbix_cli.pyzabbix.enums import ActiveInterface
 from zabbix_cli.pyzabbix.enums import APIStr
 from zabbix_cli.pyzabbix.enums import APIStrEnum
 from zabbix_cli.pyzabbix.enums import DataCollectionMode
@@ -22,7 +22,7 @@ from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.pyzabbix.enums import UserRole
 
 APISTR_ENUMS = [
-    AgentAvailable,
+    ActiveInterface,
     DataCollectionMode,
     GUIAccess,
     InterfaceConnectionMode,

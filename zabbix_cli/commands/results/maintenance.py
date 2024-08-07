@@ -12,8 +12,8 @@ from typing_extensions import Literal
 
 from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import TableRenderable
+from zabbix_cli.pyzabbix.enums import MaintenanceType
 from zabbix_cli.pyzabbix.types import TimePeriod
-from zabbix_cli.utils.utils import get_maintenance_type
 
 
 class CreateMaintenanceDefinitionResult(TableRenderable):
@@ -52,7 +52,7 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
     @computed_field
     @property
     def maintenance_type(self) -> str:
-        return get_maintenance_type(self.type)
+        return MaintenanceType.string_from_value(self.type)
 
     @field_validator("active_till", mode="before")
     @classmethod

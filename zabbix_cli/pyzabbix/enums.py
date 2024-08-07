@@ -10,6 +10,7 @@ from typing import Type
 from typing import TypeVar
 
 from strenum import StrEnum
+from typing_extensions import Self
 
 from zabbix_cli.exceptions import ZabbixCLIError
 
@@ -52,9 +53,9 @@ class Choice(Enum):
     or the Zabbix API value of the option.
 
     We can instantiate the enum with either the name or the API value:
-        * `AgentAvailable("available")`
-        * `AgentAvailable(1)`
-        * `AgentAvailable(1)`
+        * `ActiveInterface("available")`
+        * `ActiveInterface(1)`
+        * `ActiveInterface(1)`
 
     Since the API is inconsistent with usage of strings and ints, we support
     instantiation with both.
@@ -90,7 +91,7 @@ class Choice(Enum):
         """Return the name of the enum class in a human-readable format.
 
         If no default is provided, the class name is split on capital letters and
-        lowercased, e.g. `AgentAvailable` becomes `agent availability status`.
+        lowercased, e.g. `ActiveInterface` becomes `active interface`.
         """
         if cls.__choice_name__:
             return cls.__choice_name__
@@ -180,6 +181,30 @@ class APIStrEnum(Choice):
     def casefold(self) -> str:
         return str(self.value).casefold()
 
+    def as_status(self, default: str = "Unknown", with_code: bool = False) -> str:
+        return self.string_from_value(self.value, default=default, with_code=with_code)
+
+    @classmethod
+    def string_from_value(
+        cls: Type[Self], value: Any, default: str = "Unknown", with_code: bool = False
+    ) -> str:
+        """Get a formatted status string given a value."""
+        try:
+            c = cls(value)
+            # All lowercase is capitalized
+            if str(c.value.islower()):
+                name = c.value.capitalize()
+            # Everything else is left as is
+            else:
+                name = str(c.value)
+            code = c.value.api_value
+        except ValueError:
+            name = default
+            code = value
+        if with_code:
+            return f"{name} ({code})"
+        return name
+
 
 class UserRole(APIStrEnum):
     __choice_name__ = "User role"
@@ -199,8 +224,29 @@ class UsergroupPermission(APIStrEnum):
     READ_WRITE = APIStr("rw", 3)
 
 
-class AgentAvailable(APIStrEnum):
-    """Agent availability status."""
+class UsergroupStatus(APIStrEnum):
+    """Usergroup status."""
+
+    ENABLED = APIStr("enabled", 0)
+    DISABLED = APIStr("disabled", 1)
+
+
+class HostgroupFlag(APIStrEnum):
+    """Hostgroup flags."""
+
+    PLAIN = APIStr("plain", 0)
+    DISCOVER = APIStr("discover", 4)
+
+
+class HostgroupType(APIStrEnum):
+    """Hostgroup types."""
+
+    NOT_INTERNAL = APIStr("not_internal", 0)
+    INTERNAL = APIStr("internal", 1)
+
+
+class ActiveInterface(APIStrEnum):
+    """Active interface availability status."""
 
     __choice_name__ = "Agent availability status"
 
@@ -225,6 +271,29 @@ class MonitoredBy(APIStrEnum):  # >=7.0 only
     PROXY_GROUP = APIStr("proxygroup", 2)
 
 
+class ProxyMode(APIStrEnum):
+    """Proxy mode."""
+
+    ACTIVE = APIStr("active", 0)
+    PASSIVE = APIStr("passive", 1)
+
+
+class ProxyModePre70(APIStrEnum):
+    """Proxy mode pre 7.0."""
+
+    ACTIVE = APIStr("active", 5)
+    PASSIVE = APIStr("passive", 6)
+
+
+class ProxyCompatibility(APIStrEnum):
+    """Proxy compatibility status for >=7.0"""
+
+    UNDEFINED = APIStr("undefined", 0)
+    CURRENT = APIStr("current", 1)
+    OUTDATED = APIStr("outdated", 2)
+    UNSUPPORTED = APIStr("unsupported", 3)
+
+
 class ProxyGroupState(APIStrEnum):
     UNKNOWN = APIStr("unknown", 0)
     OFFLINE = APIStr("offline", 1)
@@ -239,6 +308,71 @@ class MaintenanceStatus(APIStrEnum):
     # API values are inverted here compared to monitoring status...
     ON = APIStr("on", 1)
     OFF = APIStr("off", 0)
+
+
+class MaintenanceType(APIStrEnum):
+    """Maintenance type."""
+
+    WITH_DC = APIStr("With DC", 0)
+    WITHOUT_DC = APIStr("Without DC", 1)
+
+
+class MaintenancePeriodType(APIStrEnum):
+    """Maintenance period."""
+
+    ONETIME = APIStr("one time", 0)
+    DAILY = APIStr("daily", 2)
+    WEEKLY = APIStr("weekly", 3)
+    MONTHLY = APIStr("monthly", 4)
+
+
+class MaintenanceWeekType(APIStrEnum):
+    """Maintenance every week type."""
+
+    FIRST_WEEK = APIStr("first week", 1)
+    SECOND_WEEK = APIStr("second week", 2)
+    THIRD_WEEK = APIStr("third week", 3)
+    FOURTH_WEEK = APIStr("fourth week", 4)
+    LAST_WEEK = APIStr("last week", 5)
+
+
+class MacroType(APIStrEnum):
+    TEXT = APIStr("text", 0)
+    SECRET = APIStr("secret", 1)
+    VAULT_SECRET = APIStr("vault secret", 2)
+
+
+class ItemType(APIStrEnum):
+    ZABBIX_AGENT = APIStr("Zabbix agent", 0)
+    SNMPV1_AGENT = APIStr("SNMPv1 agent", 1)
+    ZABBIX_TRAPPER = APIStr("Zabbix trapper", 2)
+    SIMPLE_CHECK = APIStr("Simple check", 3)
+    SNMPV2_AGENT = APIStr("SNMPv2 agent", 4)
+    ZABBIX_INTERNAL = APIStr("Zabbix internal", 5)
+    SNMPV3_AGENT = APIStr("SNMPv3 agent", 6)
+    ZABBIX_AGENT_ACTIVE = APIStr("Zabbix agent (active)", 7)
+    ZABBIX_AGGREGATE = APIStr("Zabbix aggregate", 8)
+    WEB_ITEM = APIStr("Web item", 9)
+    EXTERNAL_CHECK = APIStr("External check", 10)
+    DATABASE_MONITOR = APIStr("Database monitor", 11)
+    IPMI_AGENT = APIStr("IPMI agent", 12)
+    SSH_AGENT = APIStr("SSH agent", 13)
+    TELNET_AGENT = APIStr("TELNET agent", 14)
+    CALCULATED = APIStr("calculated", 15)
+    JMX_AGENT = APIStr("JMX agent", 16)
+    SNMP_TRAP = APIStr("SNMP trap", 17)
+    DEPENDENT_ITEM = APIStr("Dependent item", 18)
+    HTTP_AGENT = APIStr("HTTP agent", 19)
+    SNMP_AGENT = APIStr("SNMP agent", 20)
+    SCRIPT = APIStr("Script", 21)
+
+
+class ValueType(APIStrEnum):
+    NUMERIC_FLOAT = APIStr("Numeric (float)", 0)
+    CHARACTER = APIStr("Character", 1)
+    LOG = APIStr("Log", 2)
+    NUMERIC_UNSIGNED = APIStr("Numeric (unsigned)", 3)
+    TEXT = APIStr("Text", 4)
 
 
 class InventoryMode(APIStrEnum):
@@ -261,7 +395,7 @@ class GUIAccess(APIStrEnum):
 
 
 class DataCollectionMode(APIStrEnum):
-    """Maintenance type."""
+    """Maintenance data collection mode."""
 
     ON = APIStr("on", 0)
     OFF = APIStr("off", 1)
@@ -274,6 +408,16 @@ class TriggerPriority(APIStrEnum):
     AVERAGE = APIStr("average", 3)
     HIGH = APIStr("high", 4)
     DISASTER = APIStr("disaster", 5)
+
+
+class EventStatus(APIStrEnum):
+    OK = APIStr("OK", 0)
+    PROBLEM = APIStr("PROBLEM", 1)
+
+
+class AckStatus(APIStrEnum):
+    NO = APIStr("no", 0)
+    YES = APIStr("yes", 1)
 
 
 class InterfaceConnectionMode(APIStrEnum):

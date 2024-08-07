@@ -34,7 +34,7 @@ def host_available(version: Version) -> Literal["available", "active_available"]
     # TODO: find out why this was changed and what it signifies
     # NO URL YET
     if version.release < (6, 4, 0):
-        return "available"
+        return "available"  # unsupported in < 6.4.0
     return "active_available"
 
 

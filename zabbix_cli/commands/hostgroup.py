@@ -19,7 +19,6 @@ from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.utils.args import parse_hostgroups_arg
 from zabbix_cli.utils.args import parse_hostnames_arg
 from zabbix_cli.utils.args import parse_list_arg
-from zabbix_cli.utils.utils import get_permission
 
 
 @app.command("add_host_to_hostgroup", rich_help_panel=HELP_PANEL)
@@ -426,9 +425,8 @@ def show_hostgroup_permissions(
                 rights = usergroup.rights
             for right in rights:
                 if right.id == hg.groupid:
-                    permissions.append(
-                        f"{usergroup.name} ({get_permission(right.permission)})"
-                    )
+                    perm = UsergroupPermission.string_from_value(right.permission)
+                    permissions.append(f"{usergroup.name} ({perm})")
                     break
         result.append(
             HostGroupPermissions(

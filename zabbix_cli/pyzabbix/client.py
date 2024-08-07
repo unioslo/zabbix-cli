@@ -41,7 +41,7 @@ from zabbix_cli.exceptions import ZabbixAPIRequestError
 from zabbix_cli.exceptions import ZabbixAPIResponseParsingError
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
-from zabbix_cli.pyzabbix.enums import AgentAvailable
+from zabbix_cli.pyzabbix.enums import ActiveInterface
 from zabbix_cli.pyzabbix.enums import DataCollectionMode
 from zabbix_cli.pyzabbix.enums import ExportFormat
 from zabbix_cli.pyzabbix.enums import GUIAccess
@@ -702,7 +702,7 @@ class ZabbixAPI:
         proxy: Optional[Proxy] = None,
         maintenance: Optional[MaintenanceStatus] = None,
         monitored: Optional[MonitoringStatus] = None,
-        agent_status: Optional[AgentAvailable] = None,
+        active_interface: Optional[ActiveInterface] = None,
         sort_field: Optional[str] = None,
         sort_order: Optional[SortOrder] = None,
         search: bool = False,
@@ -722,7 +722,7 @@ class ZabbixAPI:
             search=search,
             maintenance=maintenance,
             monitored=monitored,
-            agent_status=agent_status,
+            active_interface=active_interface,
         )
         if not hosts:
             raise ZabbixNotFoundError(
@@ -744,7 +744,7 @@ class ZabbixAPI:
         # inside this method, so we delegate it to the enums.
         maintenance: Optional[MaintenanceStatus] = None,
         monitored: Optional[MonitoringStatus] = None,
-        agent_status: Optional[AgentAvailable] = None,
+        active_interface: Optional[ActiveInterface] = None,
         sort_field: Optional[str] = None,
         sort_order: Optional[Literal["ASC", "DESC"]] = None,
         search: bool = True,  # we generally always want to search when multiple hosts are requested
@@ -772,7 +772,7 @@ class ZabbixAPI:
             proxyid (Optional[str], optional): Filter by proxy ID. Defaults to None.
             maintenance (Optional[MaintenanceStatus], optional): Filter by maintenance status. Defaults to None.
             monitored (Optional[MonitoringStatus], optional): Filter by monitoring status. Defaults to None.
-            agent_status (Optional[AgentAvailable], optional): Filter by agent availability. Defaults to None.
+            active_interface (Optional[ActiveInterface], optional): Filter by active interface s. Defaults to None.
             sort_field (Optional[str], optional): Sort hosts by the given field. Defaults to None.
             sort_order (Optional[Literal[ASC, DESC]], optional): Sort order. Defaults to None.
             search (Optional[bool], optional): Force positional arguments to be treated as a search pattern. Defaults to True.
@@ -800,10 +800,11 @@ class ZabbixAPI:
             filter_params["maintenance_status"] = maintenance.as_api_value()
         if monitored is not None:
             filter_params["status"] = monitored.as_api_value()
-        if agent_status is not None:
-            filter_params[compat.host_available(self.version)] = (
-                agent_status.as_api_value()
-            )
+        if active_interface is not None:
+            if self.version.release >= (6, 4, 0):
+                params["active_available"] = active_interface.as_api_value()
+            else:
+                filter_params["active"] = active_interface.as_api_value()
 
         if filter_params:  # Only add filter if we actually have filter params
             params["filter"] = filter_params

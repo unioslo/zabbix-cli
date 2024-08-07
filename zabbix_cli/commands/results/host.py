@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 
 from zabbix_cli.exceptions import ZabbixCLIError
-from zabbix_cli.pyzabbix.enums import AgentAvailable
+from zabbix_cli.pyzabbix.enums import ActiveInterface
 from zabbix_cli.pyzabbix.enums import MaintenanceStatus
 from zabbix_cli.pyzabbix.enums import MonitoringStatus
 
@@ -16,7 +16,7 @@ from zabbix_cli.pyzabbix.enums import MonitoringStatus
 class HostFilterArgs(BaseModel):
     """Unified processing of old filter string and new filter options."""
 
-    available: Optional[AgentAvailable] = None
+    active: Optional[ActiveInterface] = None
     maintenance_status: Optional[MaintenanceStatus] = None
     status: Optional[MonitoringStatus] = None
 
@@ -26,7 +26,7 @@ class HostFilterArgs(BaseModel):
     def from_command_args(
         cls,
         filter_legacy: Optional[str],
-        agent: Optional[AgentAvailable],
+        active: Optional[ActiveInterface],
         maintenance: Optional[bool],
         monitored: Optional[bool],
     ) -> HostFilterArgs:
@@ -41,14 +41,14 @@ class HostFilterArgs(BaseModel):
                         f"Failed to parse filter argument at: {item!r}"
                     ) from e
                 if key == "available":
-                    args.available = value  # type: ignore # validator converts it
+                    args.active = ActiveInterface(value)
                 elif key == "maintenance":
-                    args.maintenance_status = value  # type: ignore # validator converts it
+                    args.maintenance_status = MaintenanceStatus(value)
                 elif key == "status":
-                    args.status = value  # type: ignore # validator converts it
+                    args.status = MonitoringStatus(value)
         else:
-            if agent is not None:
-                args.available = agent
+            if active is not None:
+                args.active = active
             if monitored is not None:
                 # Inverted API values (0 = ON, 1 = OFF) - use enums directly
                 args.status = MonitoringStatus.ON if monitored else MonitoringStatus.OFF

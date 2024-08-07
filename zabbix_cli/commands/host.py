@@ -14,7 +14,7 @@ from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.render import render_result
-from zabbix_cli.pyzabbix.enums import AgentAvailable
+from zabbix_cli.pyzabbix.enums import ActiveInterface
 from zabbix_cli.pyzabbix.enums import InterfaceConnectionMode
 from zabbix_cli.pyzabbix.enums import InterfaceType
 from zabbix_cli.pyzabbix.enums import InventoryMode
@@ -620,11 +620,10 @@ def remove_host(
 def show_host(
     ctx: typer.Context,
     hostname_or_id: str = typer.Argument(help="Hostname or ID."),
-    agent: Optional[AgentAvailable] = typer.Option(
+    active: Optional[ActiveInterface] = typer.Option(
         None,
-        "--agent",
-        "--available",
-        help="Agent availability status.",
+        "--active",
+        help="Active interface availability.",
         case_sensitive=False,
     ),
     maintenance: Optional[bool] = typer.Option(
@@ -644,7 +643,7 @@ def show_host(
     from zabbix_cli.commands.results.host import HostFilterArgs
 
     args = HostFilterArgs.from_command_args(
-        filter_legacy, agent, maintenance, monitored
+        filter_legacy, active, maintenance, monitored
     )
 
     host = app.state.client.get_host(
@@ -656,10 +655,14 @@ def show_host(
         search=True,  # we allow wildcard patterns
         maintenance=args.maintenance_status,
         monitored=args.status,
-        agent_status=args.available,
+        active_interface=args.active,
     )
 
     render_result(host)
+
+
+MAX_HOSTS = 100
+"""Maximum hosts to show by default."""
 
 
 @app.command(
@@ -687,11 +690,10 @@ def show_hosts(
         help="Hostname pattern or ID to filter by. Comma-separated. Supports wildcards.",
         show_default=False,
     ),
-    agent: Optional[AgentAvailable] = typer.Option(
+    active: Optional[ActiveInterface] = typer.Option(
         None,
-        "--agent",
-        "--available",
-        help="Agent availability status.",
+        "--active",
+        help="Active interface availability.",
         case_sensitive=False,
     ),
     maintenance: Optional[bool] = typer.Option(
@@ -704,10 +706,10 @@ def show_hosts(
         "--monitored/--unmonitored",
         help="Monitoring status.",
     ),
-    limit: Optional[int] = typer.Option(
-        None,
+    limit: int = typer.Option(
+        100,
         "--limit",
-        help="Limit number of results.",
+        help="Limit number of results. Use 0 to show all.",
     ),
     # V2 Legacy filter argument
     filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
@@ -722,7 +724,7 @@ def show_hosts(
     from zabbix_cli.models import AggregateResult
 
     args = HostFilterArgs.from_command_args(
-        filter_legacy, agent, maintenance, monitored
+        filter_legacy, active, maintenance, monitored
     )
 
     hostnames_or_ids = parse_list_arg(hostname_or_id)
@@ -735,11 +737,19 @@ def show_hosts(
         search=True,  # we use a wildcard pattern here!
         maintenance=args.maintenance_status,
         monitored=args.status,
-        agent_status=args.available,
+        active_interface=args.active,
     )
+
+    total_hosts = len(hosts)  # store len before limiting
     if limit:
         hosts = hosts[: abs(limit)]
+
     render_result(AggregateResult(result=hosts))
+
+    if total_hosts > len(hosts):  # we limited the results
+        info(
+            f"Only showing first {limit} of {total_hosts} hosts. Use [option]--limit 0[/] to show all."
+        )
 
 
 @app.command(name="show_host_interfaces", rich_help_panel=HELP_PANEL)

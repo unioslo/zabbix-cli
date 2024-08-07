@@ -49,9 +49,6 @@ RowsType = MutableSequence[RowContent]
 ColsRowsType = Tuple[ColsType, RowsType]
 """A tuple containing a list of columns and a list of rows, where each row is a list of strings."""
 
-# Values used in the `json_schema_extra` dict for fields
-# to customize how they are rendered as a table.
-
 
 class MetaKey(str, Enum):
     """Keys used in the `json_schema_extra` dict of a field to customize
@@ -211,7 +208,7 @@ class TableRenderable(BaseModel):
                     fields[field_name] = AggregateResult(result=value).as_table()
                 else:
                     # Other lists are rendered as newline delimited strings.
-                    # The delimiter can be modified with the `join_char` key in
+                    # The delimiter can be modified with the `JOIN_CHAR` meta-key in
                     # the field's `json_schema_extra`.
                     join_char = self._get_extra(field_name, MetaKey.JOIN_CHAR, "\n")
                     fields[field_name] = join_char.join(str(v) for v in value)

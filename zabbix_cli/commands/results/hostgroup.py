@@ -9,10 +9,10 @@ from pydantic import computed_field
 from typing_extensions import TypedDict
 
 from zabbix_cli.models import TableRenderable
+from zabbix_cli.pyzabbix.enums import HostgroupFlag
+from zabbix_cli.pyzabbix.enums import HostgroupType
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
-from zabbix_cli.utils.utils import get_hostgroup_flag
-from zabbix_cli.utils.utils import get_hostgroup_type
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
@@ -138,14 +138,14 @@ class HostGroupResult(TableRenderable):
     @computed_field
     @property
     def flags_str(self) -> str:
-        return get_hostgroup_flag(self.flags, with_code=False)
+        return HostgroupFlag.string_from_value(self.flags, with_code=False)
 
     @computed_field
     @property
     def type(self) -> str:
         # LEGACY: Drop this when we drop support for <=6.0
         # Internal groups are not a thing in Zabbix >=6.2
-        return get_hostgroup_type(self.internal, with_code=True)
+        return HostgroupType.string_from_value(self.internal, with_code=True)
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Name", "Flag", "Hosts"]
@@ -157,10 +157,10 @@ class HostGroupResult(TableRenderable):
                 ", ".join([host["host"] for host in self.hosts]),
             ]
         ]
-        # LEGACY: Drop this when we drop support for <=6.0
+        # LEGACY: Remove this when we drop support for <=6.0
         if self.zabbix_version.release < (6, 2):
             cols.insert(3, "Type")
-            t = get_hostgroup_type(self.internal, with_code=False)
+            t = HostgroupType.string_from_value(self.internal, with_code=False)
             rows[0].insert(3, t)  # without code in table
         return cols, rows
 

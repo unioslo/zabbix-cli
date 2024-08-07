@@ -16,14 +16,13 @@ from pydantic import model_serializer
 
 from zabbix_cli.models import MetaKey
 from zabbix_cli.models import TableRenderable
+from zabbix_cli.pyzabbix.enums import GUIAccess
 from zabbix_cli.pyzabbix.enums import UsergroupPermission
+from zabbix_cli.pyzabbix.enums import UsergroupStatus
 from zabbix_cli.pyzabbix.types import HostGroup
 from zabbix_cli.pyzabbix.types import TemplateGroup
 from zabbix_cli.pyzabbix.types import Usergroup
 from zabbix_cli.pyzabbix.types import ZabbixRight
-from zabbix_cli.utils.utils import get_gui_access
-from zabbix_cli.utils.utils import get_permission
-from zabbix_cli.utils.utils import get_usergroup_status
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
@@ -98,14 +97,14 @@ class ShowUsergroupResult(TableRenderable):
     @classmethod
     def _validate_gui_access(cls, v: Any) -> str:
         if isinstance(v, int):
-            return get_gui_access(v)
+            return GUIAccess.string_from_value(v, with_code=False)
         return v
 
     @field_validator("status")
     @classmethod
     def _validate_status(cls, v: Any) -> str:
         if isinstance(v, int):
-            return get_usergroup_status(v)
+            return UsergroupStatus.string_from_value(v, with_code=False)
         return v
 
 
@@ -154,7 +153,10 @@ class ShowUsergroupPermissionsResult(TableRenderable):
                 group_name = group.name
             else:
                 group_name = "Unknown"
-            return f"{group_name} ({get_permission(right.permission, with_code=True)})"
+            perm = UsergroupPermission.string_from_value(
+                right.permission, with_code=True
+            )
+            return f"{group_name} ({perm})"
 
         for right in self.hostgroup_rights:
             r.append(permission_str(right, self.hostgroups))
@@ -212,7 +214,8 @@ class AddUsergroupPermissionsResult(TableRenderable):
     @computed_field
     @property
     def permission_str(self) -> str:
-        return get_permission(self.permission.as_api_value())
+        # FIXME: remove this? Serializing a Choice enum should dump the same value?
+        return self.permission.as_status()
 
     def __cols_rows__(self) -> ColsRowsType:
         return (

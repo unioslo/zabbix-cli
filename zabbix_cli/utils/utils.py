@@ -15,7 +15,6 @@ from typing import Dict
 from typing import Final
 from typing import Iterable
 from typing import List
-from typing import Literal
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
@@ -38,112 +37,18 @@ def _format_code(
     return status
 
 
-def get_ack_status(code: Optional[int]) -> str:
-    """Get ack status from code."""
-    ack_status = {0: "No", 1: "Yes"}
-    return _format_code(code, ack_status, with_code=False)
-
-
-def get_event_status(code: Optional[int]) -> str:
-    """Get event status from code."""
-    event_status = {0: "OK", 1: "Problem"}
-    return _format_code(code, event_status, with_code=False)
-
-
-def get_trigger_severity(code: int | None) -> str:
-    """Get trigger severity from code."""
-    trigger_severity = {
-        0: "Not classified",
-        1: "Information",
-        2: "Warning",
-        3: "Average",
-        4: "High",
-        5: "Disaster",
-    }
-    return _format_code(code, trigger_severity, with_code=False)
-
-
-def get_trigger_status(code: int) -> str:
-    """Get trigger status from code."""
-    trigger_status = {0: "Enable", 1: "Disable"}
-
-    if code in trigger_status:
-        return trigger_status[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
-
-
+# LEGACY: Kept for backwards compatibility in JSON output
 def get_maintenance_status(code: Optional[str], with_code: bool = False) -> str:
     """Get maintenance status from code."""
-    # TODO: can we change the type of the code to int?
     maintenance_status = {"0": "No maintenance", "1": "In progress"}
     return _format_code(code, maintenance_status, with_code=with_code)
 
 
+# LEGACY: Kept for backwards compatibility in JSON output
 def get_monitoring_status(code: Optional[str], with_code: bool = False) -> str:
     """Get monitoring status from code."""
     monitoring_status = {"0": "Monitored", "1": "Not monitored"}
     return _format_code(code, monitoring_status, with_code=with_code)
-
-
-def get_zabbix_agent_status(code: Optional[int], with_code: bool = False) -> str:
-    """Get zabbix agent status from code."""
-    zabbix_agent_status = {1: "Available", 2: "Unavailable"}
-    return _format_code(code, zabbix_agent_status, with_code=with_code)
-
-
-def get_gui_access(code: int) -> str:
-    """Get GUI access from code."""
-    gui_access = {0: "System default", 1: "Internal", 2: "LDAP", 3: "Disable"}
-    return _format_code(code, gui_access)
-
-
-def get_usergroup_status(code: int) -> str:
-    """Get usergroup status from code."""
-    usergroup_status = {0: "Enable", 1: "Disable"}
-    return _format_code(code, usergroup_status)
-
-
-def get_hostgroup_flag(code: int | None, with_code: bool = False) -> str:
-    """Get hostgroup flag from code."""
-    hostgroup_flag = {0: "Plain", 4: "Discover"}
-    return _format_code(code, hostgroup_flag, with_code=with_code)
-
-
-def get_hostgroup_type(code: int | None, with_code: bool = False) -> str:
-    """Get hostgroup type from code."""
-    hostgroup_type = {0: "Not internal", 1: "Internal"}
-    return _format_code(code, hostgroup_type, with_code=with_code)
-
-
-def get_user_type(code: int | None) -> str:
-    """Get user type from code."""
-    user_type = {1: "User", 2: "Admin", 3: "Super admin", 4: "Guest"}
-    return _format_code(code, user_type)
-
-
-def get_maintenance_type(code: int | None) -> str:
-    """Get maintenance type from code."""
-    maintenance_type = {0: "With DC", 1: "Without DC"}
-    return _format_code(code, maintenance_type, with_code=False)
-
-
-def get_maintenance_period_type(code: int | None) -> str:
-    """Get maintenance period type from code."""
-    maintenance_period_type = {0: "One time", 2: "Daily", 3: "Weekly", 4: "Monthly"}
-    return _format_code(code, maintenance_period_type, with_code=False)
-
-
-def get_maintenance_every_type(code: int | None) -> str:
-    """Get maintenance every week type from code."""
-    maintenance_every_type = {
-        1: "First week",
-        2: "Second week",
-        3: "Third week",
-        4: "Fourth week",
-        5: "Last week",
-    }
-    return _format_code(code, maintenance_every_type, with_code=False)
 
 
 def get_maintenance_active_days(schedule: int | None) -> List[str]:
@@ -256,130 +161,6 @@ def get_acknowledge_actions(code: int) -> List[str]:
     return active_action
 
 
-def get_autologin_type(code: int) -> str:
-    """Get autologin type from code."""
-    autologin_type = {0: "Disable", 1: "Enable"}
-
-    if code in autologin_type:
-        return autologin_type[code] + " (" + str(code) + ")"
-
-    return f"Unknown ({str(code)})"
-
-
-# TODO: refactor these two functions and add them to
-# pyzabbix.types.UsergroupPermission
-
-
-def get_permission(code: int, with_code: bool = True) -> str:
-    """Get permission."""
-    permission = {0: "deny", 2: "ro", 3: "rw"}
-    return _format_code(code, permission, with_code=with_code)
-
-
-def get_permission_code(permission: str) -> int:
-    """Get permission code."""
-    permission_code = {"deny": 0, "ro": 2, "rw": 3}
-
-    if permission in permission_code:
-        return permission_code[permission]
-
-    return 0
-
-
-def get_host_interface_type(code: int | None) -> str:
-    """Get host interface type from code."""
-    host_interface_type = {
-        1: "Agent",
-        2: "SNMP",
-        3: "IPMI",
-        4: "JMX",
-    }
-    return _format_code(code, host_interface_type, with_code=False)
-
-
-def get_host_interface_connection_mode(code: int | None) -> str:
-    """Get host interface connectio mode from code."""
-    host_interface_type = {
-        0: "DNS",
-        1: "IP",
-    }
-    return _format_code(code, host_interface_type, with_code=False)
-
-
-def get_item_type(code: int | None) -> str:
-    """Get item type from code."""
-    item_type = {
-        0: "Zabbix agent",
-        1: "SNMPv1 agent",
-        2: "Zabbix trapper",
-        3: "Simple check",
-        4: "SNMPv2 agent",
-        5: "Zabbix internal",
-        6: "SNMPv3 agent",
-        7: "Zabbix agent (active)",
-        8: "Zabbix aggregate",
-        9: "Web item",
-        10: "External check",
-        11: "Database monitor",
-        12: "IPMI agent",
-        13: "SSH agent",
-        14: "TELNET agent",
-        15: "calculated",
-        16: "JMX agent",
-        17: "SNMP trap",
-        18: "Dependent item",
-        19: "HTTP agent",
-        20: "SNMP agent",
-        21: "Script",
-    }
-    return _format_code(code, item_type)
-
-
-def get_value_type(code: int | None) -> str:
-    """Get value type from code."""
-    value_type = {
-        0: "Numeric float",
-        1: "Character",
-        2: "Log",
-        3: "Numeric unsigned",
-        4: "Text",
-    }
-    return _format_code(code, value_type)
-
-
-def get_proxy_mode_pre_7_0(code: int | None) -> str:
-    """Get proxy mode from code. (pre 7.0)"""
-    proxy_mode = {
-        5: "Active",
-        6: "Passive",
-    }
-    return _format_code(code, proxy_mode, with_code=False)
-
-
-def get_proxy_mode(code: int | None) -> str:
-    """Get proxy mode from code."""
-    proxy_mode = {
-        0: "Active",
-        1: "Passive",
-    }
-    return _format_code(code, proxy_mode, with_code=False)
-
-
-def get_proxy_compatibility(
-    code: int | None,
-) -> Literal["Undefined", "Current", "Outdated", "Unsupported"]:
-    """Get proxy compatibility from code."""
-    proxy_compatibility = {
-        0: "Undefined",
-        1: "Current",
-        2: "Outdated",
-        3: "Unsupported",
-    }
-    # HACK: using a Literal annotation gives better auto-complete when using these values to determine styling
-    #       but we don't have a way to tell the type checker that we always return dict values
-    return _format_code(code, proxy_compatibility, with_code=False)  # type: ignore
-
-
 def compile_pattern(pattern: str) -> re.Pattern[str]:
     """Compile regex pattern."""
     try:
@@ -387,16 +168,6 @@ def compile_pattern(pattern: str) -> re.Pattern[str]:
     except re.error as e:
         raise ZabbixCLIError(f"Invalid regex pattern: {pattern}") from e
     return p
-
-
-def get_macro_type(code: int | None) -> str:
-    """Get macro type from code."""
-    macro_type = {
-        0: "Text",
-        1: "Secret",
-        2: "Vault secret",
-    }
-    return _format_code(code, macro_type)
 
 
 class TimeUnit(NamedTuple):

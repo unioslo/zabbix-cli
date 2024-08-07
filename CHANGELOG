@@ -56,7 +56,7 @@
   - `show_host`:
     - `--monitored/--unmonitored`: Filter by monitored status
     - `--maintenance/--no-maintenance`: Filter by maintenance status
-    - `--agent [available | unavailable | unknown ]`: Filter by agent availability
+    - `--active [available | unavailable | unknown ]`: Filter by active interface availability
     - Old positional filter argument syntax is deprecated.
   - `show_hosts`:
     - `--limit`: Limit number of hosts to show.
