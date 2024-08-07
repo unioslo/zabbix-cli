@@ -3,7 +3,6 @@ from __future__ import annotations
 from itertools import chain
 from typing import TYPE_CHECKING
 from typing import List
-from typing import Optional
 from typing import Union
 
 import typer
@@ -14,7 +13,6 @@ from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.console import success
 from zabbix_cli.output.formatting.grammar import pluralize as p
-from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.args import parse_list_arg
 
@@ -30,12 +28,9 @@ HELP_PANEL = "Template"
 
 # FIXME: use parse_hostgroup_args from utils.args
 def _handle_hostnames_args(
-    hostnames_or_ids: str | None,
+    hostnames_or_ids: str,
     strict: bool = False,
 ) -> List[Host]:
-    if not hostnames_or_ids:
-        hostnames_or_ids = str_prompt("Host(s)")
-
     host_args = [h.strip() for h in hostnames_or_ids.split(",")]
     if not host_args:
         exit_err("At least one host name/ID is required.")
@@ -49,13 +44,10 @@ def _handle_hostnames_args(
 
 
 def _handle_hostgroups_args(
-    hgroup_names_or_ids: str | None,
+    hgroup_names_or_ids: str,
     strict: bool = False,
     select_templates: bool = False,
 ) -> List[HostGroup]:
-    if not hgroup_names_or_ids:
-        hgroup_names_or_ids = str_prompt("Host group(s)")
-
     hg_args = [h.strip() for h in hgroup_names_or_ids.split(",")]
     if not hg_args:
         exit_err("At least one host group name/ID is required.")
@@ -71,13 +63,10 @@ def _handle_hostgroups_args(
 
 
 def _handle_templategroup_args(
-    tgroup_names_or_ids: str | None,
+    tgroup_names_or_ids: str,
     strict: bool = False,
     select_templates: bool = False,
 ) -> List[TemplateGroup]:
-    if not tgroup_names_or_ids:
-        tgroup_names_or_ids = str_prompt("Template group(s)")
-
     tg_args = parse_list_arg(tgroup_names_or_ids)
     if not tg_args:
         exit_err("At least one template group name/ID is required.")
@@ -95,13 +84,10 @@ def _handle_templategroup_args(
 
 
 def _handle_template_arg(
-    template_names_or_ids: str | None,
+    template_names_or_ids: str,
     strict: bool = False,
     select_hosts: bool = False,
 ) -> List[Template]:
-    if not template_names_or_ids:
-        template_names_or_ids = str_prompt("Template(s)")
-
     template_args = parse_list_arg(template_names_or_ids)
     if not template_args:
         exit_err("At least one template name/ID is required.")
@@ -113,17 +99,18 @@ def _handle_template_arg(
         exit_err(f"No templates found matching {template_names_or_ids}")
     if strict and len(templates) != len(template_args):
         exit_err(f"Found {len(templates)} templates, expected {len(template_args)}")
+
     return templates
 
 
 ARG_TEMPLATE_NAMES_OR_IDS = typer.Argument(
-    None, help="Template names or IDs. Comma-separated. Supports wildcards."
+    help="Template names or IDs. Comma-separated. Supports wildcards."
 )
 ARG_HOSTNAMES_OR_IDS = typer.Argument(
-    None, help="Hostnames or IDs. Comma-separated. Supports wildcards."
+    help="Hostnames or IDs. Comma-separated. Supports wildcards."
 )
 ARG_GROUP_NAMES_OR_IDS = typer.Argument(
-    None, help="Host/template group names or IDs. Comma-separated. Supports wildcards."
+    help="Host/template group names or IDs. Comma-separated. Supports wildcards."
 )
 
 
@@ -155,8 +142,8 @@ ARG_GROUP_NAMES_OR_IDS = typer.Argument(
 )
 def link_template_to_host(
     ctx: typer.Context,
-    template_names_or_ids: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
-    hostnames_or_ids: Optional[str] = ARG_HOSTNAMES_OR_IDS,
+    template_names_or_ids: str = ARG_TEMPLATE_NAMES_OR_IDS,
+    hostnames_or_ids: str = ARG_HOSTNAMES_OR_IDS,
     strict: bool = typer.Option(
         False,
         "--strict",
@@ -177,6 +164,7 @@ def link_template_to_host(
     if not dryrun:
         with app.state.console.status("Linking templates..."):
             app.state.client.link_templates_to_hosts(templates, hosts)
+
     result: List[LinkTemplateToHostResult] = []
     for host in hosts:
         r = LinkTemplateToHostResult.from_result(templates, host, "Link")
@@ -223,8 +211,8 @@ def link_template_to_host(
 )
 def unlink_template_from_host(
     ctx: typer.Context,
-    template_names_or_ids: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
-    hostnames_or_ids: Optional[str] = ARG_HOSTNAMES_OR_IDS,
+    template_names_or_ids: str = ARG_TEMPLATE_NAMES_OR_IDS,
+    hostnames_or_ids: str = ARG_HOSTNAMES_OR_IDS,
     strict: bool = typer.Option(
         False,
         "--strict",
@@ -298,8 +286,8 @@ def unlink_template_from_host(
 )
 def link_template_to_template(
     ctx: typer.Context,
-    source: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
-    dest: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
+    source: str = ARG_TEMPLATE_NAMES_OR_IDS,
+    dest: str = ARG_TEMPLATE_NAMES_OR_IDS,
     strict: bool = typer.Option(
         False,
         "--strict",
@@ -363,8 +351,8 @@ def link_template_to_template(
 )
 def unlink_template_from_template(
     ctx: typer.Context,
-    source: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
-    dest: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
+    source: str = ARG_TEMPLATE_NAMES_OR_IDS,
+    dest: str = ARG_TEMPLATE_NAMES_OR_IDS,
     strict: bool = typer.Option(
         False,
         "--strict",
@@ -423,8 +411,8 @@ def unlink_template_from_template(
 )
 def add_template_to_group(
     ctx: typer.Context,
-    template_names_or_ids: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
-    group_names_or_ids: Optional[str] = ARG_GROUP_NAMES_OR_IDS,
+    template_names_or_ids: str = ARG_TEMPLATE_NAMES_OR_IDS,
+    group_names_or_ids: str = ARG_GROUP_NAMES_OR_IDS,
     strict: bool = typer.Option(
         False,
         "--strict",
@@ -485,8 +473,8 @@ def add_template_to_group(
 )
 def remove_template_from_group(
     ctx: typer.Context,
-    template_names_or_ids: Optional[str] = ARG_TEMPLATE_NAMES_OR_IDS,
-    group_names_or_ids: Optional[str] = ARG_GROUP_NAMES_OR_IDS,
+    template_names_or_ids: str = ARG_TEMPLATE_NAMES_OR_IDS,
+    group_names_or_ids: str = ARG_GROUP_NAMES_OR_IDS,
     strict: bool = typer.Option(
         False,
         "--strict",
