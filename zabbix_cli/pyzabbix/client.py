@@ -2012,26 +2012,23 @@ class ZabbixAPI:
             )
         return resp["userids"][0]
 
-    def get_mediatype(self, name: str) -> MediaType:
-        mts = self.get_mediatypes(name=name)
+    def get_mediatype(self, name_or_id: str) -> MediaType:
+        mts = self.get_mediatypes(name_or_id)
         if not mts:
-            raise ZabbixNotFoundError(f"Media type {name!r} not found")
+            raise ZabbixNotFoundError(f"Media type {name_or_id!r} not found")
         return mts[0]
 
     def get_mediatypes(
-        self, name: Optional[str] = None, search: bool = False
+        self, *names_or_ids: str, search: bool = False
     ) -> List[MediaType]:
         params: ParamsType = {"output": "extend"}
-        filter_params: ParamsType = {}
-        if search:
-            params["searchWildcardsEnabled"] = True
-        if name is not None:
-            if search:
-                params["search"] = {"name": name}
-            else:
-                filter_params["name"] = name
-        if filter_params:
-            params["filter"] = filter_params
+        params = parse_name_or_id_arg(
+            params,
+            names_or_ids,
+            name_param="name",
+            id_param="mediatypeids",
+            search=search,
+        )
         resp = self.mediatype.get(**params)
         return [MediaType(**mt) for mt in resp]
 

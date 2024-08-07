@@ -23,6 +23,7 @@
   - `remove_host_interface`: Delete a host interface.
   - `remove_templategroup`: Delete a template group.
   - `show_host_interfaces`: Show interfaces for a host.
+  - `show_media_types`: Show media types.
   - `show_proxies`: Show proxies.
   - `show_proxy_groups`: Show proxy groups.
   - `show_templategroup`: Show a single template group.

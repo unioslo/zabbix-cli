@@ -303,7 +303,16 @@ def get_notification_user_username(
     return f"{username}-{sendto}"
 
 
-@app.command("create_notification_user", rich_help_panel=HELP_PANEL)
+@app.command(
+    "create_notification_user",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Create a notification user for email reporting",
+            "create_notification_user user@example.com Email",
+        ),
+    ],
+)
 def create_notification_user(
     ctx: typer.Context,
     sendto: str = typer.Argument(
@@ -311,7 +320,7 @@ def create_notification_user(
         show_default=False,
     ),
     mediatype: str = typer.Argument(
-        help="A media type defined in Zabbix.",
+        help="A media type name or ID defined in Zabbix. Case-sensitive.",
         show_default=False,
     ),
     remarks: Optional[str] = typer.Option(
@@ -750,3 +759,13 @@ def add_usergroup_permissions(
             permission=permission,
         ),
     )
+
+
+@app.command("show_media_types", rich_help_panel=HELP_PANEL)
+def show_media_types(ctx: typer.Context) -> None:
+    """Show all available media types."""
+    from zabbix_cli.models import AggregateResult
+
+    media_types = app.state.client.get_mediatypes()
+
+    render_result(AggregateResult(result=media_types))
