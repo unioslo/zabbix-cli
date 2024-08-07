@@ -48,17 +48,20 @@ MixinType = TypeVar("MixinType", bound="Choice")
 
 
 class Choice(Enum):
-    """Mixin that allows for an Enum to have APIStr values, which
+    """Enum subclass that allows for an Enum to have APIStr values, which
     enables it to be instantiated with either the name of the option
     or the Zabbix API value of the option.
 
     We can instantiate the enum with either the name or the API value:
         * `ActiveInterface("available")`
         * `ActiveInterface(1)`
-        * `ActiveInterface(1)`
+        * `ActiveInterface("1")`
 
-    Since the API is inconsistent with usage of strings and ints, we support
-    instantiation with both.
+    We use these enums as choices in the CLI, so that users can pass in
+    a human readable name for the choice or its API value.
+
+    Since the API itself is inconsistent with usage of strings and ints,
+    we support instantiation with either one.
 
     Provides the `from_prompt` class method, which prompts the user to select
     one of the enum members. The prompt text is generated from the class name

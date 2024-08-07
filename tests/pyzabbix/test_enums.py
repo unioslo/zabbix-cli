@@ -73,12 +73,16 @@ def test_apistrenum(enum: Type[APIStrEnum]) -> None:
     members = list(enum)
     assert members
     for member in members:
+        # Narrow down type
         assert isinstance(member, enum)
         assert isinstance(member.value, str)
         assert isinstance(member.value, APIStr)
+
+        # Methods
         assert member.as_api_value() is not None
         assert member.__choice_name__ is not None
         assert member.__fmt_name__()  # non-empty string
+
         # Test instantiation
         assert enum(member) == member
         assert enum(member.value) == member
