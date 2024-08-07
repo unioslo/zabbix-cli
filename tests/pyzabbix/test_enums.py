@@ -3,39 +3,67 @@ from __future__ import annotations
 from typing import Type
 
 import pytest
+from zabbix_cli.pyzabbix.enums import AckStatus
 from zabbix_cli.pyzabbix.enums import ActiveInterface
 from zabbix_cli.pyzabbix.enums import APIStr
 from zabbix_cli.pyzabbix.enums import APIStrEnum
 from zabbix_cli.pyzabbix.enums import DataCollectionMode
+from zabbix_cli.pyzabbix.enums import EventStatus
 from zabbix_cli.pyzabbix.enums import ExportFormat
 from zabbix_cli.pyzabbix.enums import GUIAccess
+from zabbix_cli.pyzabbix.enums import HostgroupFlag
+from zabbix_cli.pyzabbix.enums import HostgroupType
 from zabbix_cli.pyzabbix.enums import InterfaceConnectionMode
 from zabbix_cli.pyzabbix.enums import InterfaceType
 from zabbix_cli.pyzabbix.enums import InventoryMode
+from zabbix_cli.pyzabbix.enums import ItemType
+from zabbix_cli.pyzabbix.enums import MacroType
 from zabbix_cli.pyzabbix.enums import MaintenanceStatus
+from zabbix_cli.pyzabbix.enums import MaintenanceType
+from zabbix_cli.pyzabbix.enums import MaintenanceWeekType
+from zabbix_cli.pyzabbix.enums import MonitoredBy
 from zabbix_cli.pyzabbix.enums import MonitoringStatus
+from zabbix_cli.pyzabbix.enums import ProxyCompatibility
+from zabbix_cli.pyzabbix.enums import ProxyGroupState
+from zabbix_cli.pyzabbix.enums import ProxyMode
+from zabbix_cli.pyzabbix.enums import ProxyModePre70
 from zabbix_cli.pyzabbix.enums import SNMPAuthProtocol
 from zabbix_cli.pyzabbix.enums import SNMPPrivProtocol
 from zabbix_cli.pyzabbix.enums import SNMPSecurityLevel
 from zabbix_cli.pyzabbix.enums import TriggerPriority
 from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.pyzabbix.enums import UserRole
+from zabbix_cli.pyzabbix.enums import ValueType
 
 APISTR_ENUMS = [
+    AckStatus,
     ActiveInterface,
     DataCollectionMode,
+    EventStatus,
     GUIAccess,
+    HostgroupFlag,
+    HostgroupType,
     InterfaceConnectionMode,
     InterfaceType,
     InventoryMode,
-    MonitoringStatus,
+    ItemType,
+    MacroType,
     MaintenanceStatus,
+    MaintenanceType,
+    MaintenanceWeekType,
+    MonitoredBy,
+    MonitoringStatus,
+    ProxyCompatibility,
+    ProxyGroupState,
+    ProxyMode,
+    ProxyModePre70,
     SNMPSecurityLevel,
     SNMPAuthProtocol,
     SNMPPrivProtocol,
     TriggerPriority,
     UsergroupPermission,
     UserRole,
+    ValueType,
 ]
 
 
@@ -62,6 +90,13 @@ def test_apistrenum(enum: Type[APIStrEnum]) -> None:
             continue
         assert enum(member.as_api_value()) == member
         assert enum(member.value.api_value) == member
+
+        # Test string_from_value
+        for value in [member.as_api_value(), member.value]:
+            s = enum.string_from_value(value)
+            if member.name != "UNKNOWN":
+                assert "Unknown" not in s, f"{value} can't be converted to string"
+            assert s == member.as_status()
 
 
 def test_interfacetype() -> None:

@@ -206,29 +206,68 @@ class APIStrEnum(Choice):
         return name
 
 
-class UserRole(APIStrEnum):
-    __choice_name__ = "User role"
-
-    # Match casing from Zabbix API
-    USER = APIStr("user", 1)
-    ADMIN = APIStr("admin", 2)
-    SUPERADMIN = APIStr("superadmin", 3)
-    GUEST = APIStr("guest", 4)
+class AckStatus(APIStrEnum):
+    NO = APIStr("no", 0)
+    YES = APIStr("yes", 1)
 
 
-class UsergroupPermission(APIStrEnum):
-    """Usergroup permission levels."""
+class ActiveInterface(APIStrEnum):
+    """Active interface availability status."""
 
-    DENY = APIStr("deny", 0)
-    READ_ONLY = APIStr("ro", 2)
-    READ_WRITE = APIStr("rw", 3)
+    __choice_name__ = "Agent availability status"
+
+    UNKNOWN = APIStr("unknown", 0)
+    AVAILABLE = APIStr("available", 1)
+    UNAVAILABLE = APIStr("unavailable", 2)
 
 
-class UsergroupStatus(APIStrEnum):
-    """Usergroup status."""
+class DataCollectionMode(APIStrEnum):
+    """Maintenance data collection mode."""
 
-    ENABLED = APIStr("enabled", 0)
-    DISABLED = APIStr("disabled", 1)
+    ON = APIStr("on", 0)
+    OFF = APIStr("off", 1)
+
+
+class EventStatus(APIStrEnum):
+    OK = APIStr("OK", 0)
+    PROBLEM = APIStr("PROBLEM", 1)
+
+
+class ExportFormat(StrEnum):
+    XML = "xml"
+    JSON = "json"
+    YAML = "yaml"
+    PHP = "php"
+
+    @classmethod
+    def _missing_(cls, value: object) -> ExportFormat:
+        """Case-insensitive missing lookup.
+
+        Allows for both `ExportFormat("JSON")` and `ExportFormat("json")`, etc.
+        """
+        if not isinstance(value, str):
+            raise TypeError(f"Invalid format: {value!r}. Must be a string.")
+        value = value.lower()
+        for e in cls:
+            if e.value.lower() == value:
+                return e
+        raise ValueError(f"Invalid format: {value!r}.")
+
+    @classmethod
+    def get_importables(cls) -> List[ExportFormat]:
+        """Return list of formats that can be imported."""
+        return [cls.JSON, cls.YAML, cls.XML]
+
+
+class GUIAccess(APIStrEnum):
+    """GUI Access for a user group."""
+
+    __choice_name__ = "GUI Access"
+
+    DEFAULT = APIStr("default", 0)
+    INTERNAL = APIStr("internal", 1)
+    LDAP = APIStr("ldap", 2)
+    DISABLE = APIStr("disable", 3)
 
 
 class HostgroupFlag(APIStrEnum):
@@ -243,181 +282,6 @@ class HostgroupType(APIStrEnum):
 
     NOT_INTERNAL = APIStr("not_internal", 0)
     INTERNAL = APIStr("internal", 1)
-
-
-class ActiveInterface(APIStrEnum):
-    """Active interface availability status."""
-
-    __choice_name__ = "Agent availability status"
-
-    UNKNOWN = APIStr("unknown", 0)
-    AVAILABLE = APIStr("available", 1)
-    UNAVAILABLE = APIStr("unavailable", 2)
-
-
-class MonitoringStatus(APIStrEnum):
-    """Host monitoring status."""
-
-    ON = APIStr("on", 0)  # Yes, 0 is on, 1 is off...
-    OFF = APIStr("off", 1)
-    UNKNOWN = APIStr(
-        "unknown", 3
-    )  # Undocumented, but shows up in virtual trigger hosts (get_triggers(select_hosts=True))
-
-
-class MonitoredBy(APIStrEnum):  # >=7.0 only
-    SERVER = APIStr("server", 0)
-    PROXY = APIStr("proxy", 1)
-    PROXY_GROUP = APIStr("proxygroup", 2)
-
-
-class ProxyMode(APIStrEnum):
-    """Proxy mode."""
-
-    ACTIVE = APIStr("active", 0)
-    PASSIVE = APIStr("passive", 1)
-
-
-class ProxyModePre70(APIStrEnum):
-    """Proxy mode pre 7.0."""
-
-    ACTIVE = APIStr("active", 5)
-    PASSIVE = APIStr("passive", 6)
-
-
-class ProxyCompatibility(APIStrEnum):
-    """Proxy compatibility status for >=7.0"""
-
-    UNDEFINED = APIStr("undefined", 0)
-    CURRENT = APIStr("current", 1)
-    OUTDATED = APIStr("outdated", 2)
-    UNSUPPORTED = APIStr("unsupported", 3)
-
-
-class ProxyGroupState(APIStrEnum):
-    UNKNOWN = APIStr("unknown", 0)
-    OFFLINE = APIStr("offline", 1)
-    RECOVERING = APIStr("recovering", 2)
-    ONLINE = APIStr("online", 3)
-    DEGRADING = APIStr("degrading", 4)
-
-
-class MaintenanceStatus(APIStrEnum):
-    """Host maintenance status."""
-
-    # API values are inverted here compared to monitoring status...
-    ON = APIStr("on", 1)
-    OFF = APIStr("off", 0)
-
-
-class MaintenanceType(APIStrEnum):
-    """Maintenance type."""
-
-    WITH_DC = APIStr("With DC", 0)
-    WITHOUT_DC = APIStr("Without DC", 1)
-
-
-class MaintenancePeriodType(APIStrEnum):
-    """Maintenance period."""
-
-    ONETIME = APIStr("one time", 0)
-    DAILY = APIStr("daily", 2)
-    WEEKLY = APIStr("weekly", 3)
-    MONTHLY = APIStr("monthly", 4)
-
-
-class MaintenanceWeekType(APIStrEnum):
-    """Maintenance every week type."""
-
-    FIRST_WEEK = APIStr("first week", 1)
-    SECOND_WEEK = APIStr("second week", 2)
-    THIRD_WEEK = APIStr("third week", 3)
-    FOURTH_WEEK = APIStr("fourth week", 4)
-    LAST_WEEK = APIStr("last week", 5)
-
-
-class MacroType(APIStrEnum):
-    TEXT = APIStr("text", 0)
-    SECRET = APIStr("secret", 1)
-    VAULT_SECRET = APIStr("vault secret", 2)
-
-
-class ItemType(APIStrEnum):
-    ZABBIX_AGENT = APIStr("Zabbix agent", 0)
-    SNMPV1_AGENT = APIStr("SNMPv1 agent", 1)
-    ZABBIX_TRAPPER = APIStr("Zabbix trapper", 2)
-    SIMPLE_CHECK = APIStr("Simple check", 3)
-    SNMPV2_AGENT = APIStr("SNMPv2 agent", 4)
-    ZABBIX_INTERNAL = APIStr("Zabbix internal", 5)
-    SNMPV3_AGENT = APIStr("SNMPv3 agent", 6)
-    ZABBIX_AGENT_ACTIVE = APIStr("Zabbix agent (active)", 7)
-    ZABBIX_AGGREGATE = APIStr("Zabbix aggregate", 8)
-    WEB_ITEM = APIStr("Web item", 9)
-    EXTERNAL_CHECK = APIStr("External check", 10)
-    DATABASE_MONITOR = APIStr("Database monitor", 11)
-    IPMI_AGENT = APIStr("IPMI agent", 12)
-    SSH_AGENT = APIStr("SSH agent", 13)
-    TELNET_AGENT = APIStr("TELNET agent", 14)
-    CALCULATED = APIStr("calculated", 15)
-    JMX_AGENT = APIStr("JMX agent", 16)
-    SNMP_TRAP = APIStr("SNMP trap", 17)
-    DEPENDENT_ITEM = APIStr("Dependent item", 18)
-    HTTP_AGENT = APIStr("HTTP agent", 19)
-    SNMP_AGENT = APIStr("SNMP agent", 20)
-    SCRIPT = APIStr("Script", 21)
-
-
-class ValueType(APIStrEnum):
-    NUMERIC_FLOAT = APIStr("Numeric (float)", 0)
-    CHARACTER = APIStr("Character", 1)
-    LOG = APIStr("Log", 2)
-    NUMERIC_UNSIGNED = APIStr("Numeric (unsigned)", 3)
-    TEXT = APIStr("Text", 4)
-
-
-class InventoryMode(APIStrEnum):
-    """Host inventory mode."""
-
-    DISABLED = APIStr("disabled", -1)
-    MANUAL = APIStr("manual", 0)
-    AUTOMATIC = APIStr("automatic", 1)
-
-
-class GUIAccess(APIStrEnum):
-    """GUI Access for a user group."""
-
-    __choice_name__ = "GUI Access"
-
-    DEFAULT = APIStr("default", 0)
-    INTERNAL = APIStr("internal", 1)
-    LDAP = APIStr("ldap", 2)
-    DISABLE = APIStr("disable", 3)
-
-
-class DataCollectionMode(APIStrEnum):
-    """Maintenance data collection mode."""
-
-    ON = APIStr("on", 0)
-    OFF = APIStr("off", 1)
-
-
-class TriggerPriority(APIStrEnum):
-    UNCLASSIFIED = APIStr("unclassified", 0)
-    INFORMATION = APIStr("information", 1)
-    WARNING = APIStr("warning", 2)
-    AVERAGE = APIStr("average", 3)
-    HIGH = APIStr("high", 4)
-    DISASTER = APIStr("disaster", 5)
-
-
-class EventStatus(APIStrEnum):
-    OK = APIStr("OK", 0)
-    PROBLEM = APIStr("PROBLEM", 1)
-
-
-class AckStatus(APIStrEnum):
-    NO = APIStr("no", 0)
-    YES = APIStr("yes", 1)
 
 
 class InterfaceConnectionMode(APIStrEnum):
@@ -446,13 +310,124 @@ class InterfaceType(APIStrEnum):
             raise ZabbixCLIError(f"Unknown interface type: {self}")
 
 
-class SNMPSecurityLevel(APIStrEnum):
-    __choice_name__ = "SNMPv3 security level"
+class InventoryMode(APIStrEnum):
+    """Host inventory mode."""
 
-    # Match casing from Zabbix API
-    NO_AUTH_NO_PRIV = APIStr("noAuthNoPriv", 0)
-    AUTH_NO_PRIV = APIStr("authNoPriv", 1)
-    AUTH_PRIV = APIStr("authPriv", 2)
+    DISABLED = APIStr("disabled", -1)
+    MANUAL = APIStr("manual", 0)
+    AUTOMATIC = APIStr("automatic", 1)
+
+
+class ItemType(APIStrEnum):
+    ZABBIX_AGENT = APIStr("Zabbix agent", 0)
+    SNMPV1_AGENT = APIStr("SNMPv1 agent", 1)
+    ZABBIX_TRAPPER = APIStr("Zabbix trapper", 2)
+    SIMPLE_CHECK = APIStr("Simple check", 3)
+    SNMPV2_AGENT = APIStr("SNMPv2 agent", 4)
+    ZABBIX_INTERNAL = APIStr("Zabbix internal", 5)
+    SNMPV3_AGENT = APIStr("SNMPv3 agent", 6)
+    ZABBIX_AGENT_ACTIVE = APIStr("Zabbix agent (active)", 7)
+    ZABBIX_AGGREGATE = APIStr("Zabbix aggregate", 8)
+    WEB_ITEM = APIStr("Web item", 9)
+    EXTERNAL_CHECK = APIStr("External check", 10)
+    DATABASE_MONITOR = APIStr("Database monitor", 11)
+    IPMI_AGENT = APIStr("IPMI agent", 12)
+    SSH_AGENT = APIStr("SSH agent", 13)
+    TELNET_AGENT = APIStr("TELNET agent", 14)
+    CALCULATED = APIStr("calculated", 15)
+    JMX_AGENT = APIStr("JMX agent", 16)
+    SNMP_TRAP = APIStr("SNMP trap", 17)
+    DEPENDENT_ITEM = APIStr("Dependent item", 18)
+    HTTP_AGENT = APIStr("HTTP agent", 19)
+    SNMP_AGENT = APIStr("SNMP agent", 20)
+    SCRIPT = APIStr("Script", 21)
+
+
+class MacroType(APIStrEnum):
+    TEXT = APIStr("text", 0)
+    SECRET = APIStr("secret", 1)
+    VAULT_SECRET = APIStr("vault secret", 2)
+
+
+class MaintenancePeriodType(APIStrEnum):
+    """Maintenance period."""
+
+    ONETIME = APIStr("one time", 0)
+    DAILY = APIStr("daily", 2)
+    WEEKLY = APIStr("weekly", 3)
+    MONTHLY = APIStr("monthly", 4)
+
+
+class MaintenanceStatus(APIStrEnum):
+    """Host maintenance status."""
+
+    # API values are inverted here compared to monitoring status...
+    ON = APIStr("on", 1)
+    OFF = APIStr("off", 0)
+
+
+class MaintenanceType(APIStrEnum):
+    """Maintenance type."""
+
+    WITH_DC = APIStr("With DC", 0)
+    WITHOUT_DC = APIStr("Without DC", 1)
+
+
+class MaintenanceWeekType(APIStrEnum):
+    """Maintenance every week type."""
+
+    FIRST_WEEK = APIStr("first week", 1)
+    SECOND_WEEK = APIStr("second week", 2)
+    THIRD_WEEK = APIStr("third week", 3)
+    FOURTH_WEEK = APIStr("fourth week", 4)
+    LAST_WEEK = APIStr("last week", 5)
+
+
+class MonitoredBy(APIStrEnum):  # >=7.0 only
+    SERVER = APIStr("server", 0)
+    PROXY = APIStr("proxy", 1)
+    PROXY_GROUP = APIStr("proxygroup", 2)
+
+
+class MonitoringStatus(APIStrEnum):
+    """Host monitoring status."""
+
+    ON = APIStr("on", 0)  # Yes, 0 is on, 1 is off...
+    OFF = APIStr("off", 1)
+    UNKNOWN = APIStr(
+        "unknown", 3
+    )  # Undocumented, but shows up in virtual trigger hosts (get_triggers(select_hosts=True))
+
+
+class ProxyCompatibility(APIStrEnum):
+    """Proxy compatibility status for >=7.0"""
+
+    UNDEFINED = APIStr("undefined", 0)
+    CURRENT = APIStr("current", 1)
+    OUTDATED = APIStr("outdated", 2)
+    UNSUPPORTED = APIStr("unsupported", 3)
+
+
+class ProxyGroupState(APIStrEnum):
+    UNKNOWN = APIStr("unknown", 0)
+    OFFLINE = APIStr("offline", 1)
+    RECOVERING = APIStr("recovering", 2)
+    ONLINE = APIStr("online", 3)
+    DEGRADING = APIStr("degrading", 4)
+
+
+class ProxyMode(APIStrEnum):
+    """Proxy mode."""
+
+    ACTIVE = APIStr("active", 0)
+    PASSIVE = APIStr("passive", 1)
+
+
+class ProxyModePre70(APIStrEnum):
+    """Proxy mode pre 7.0."""
+
+    ACTIVE = APIStr("active", 5)
+    PASSIVE = APIStr("passive", 6)
 
 
 class SNMPAuthProtocol(APIStrEnum):
@@ -484,27 +459,52 @@ class SNMPPrivProtocol(APIStrEnum):
     AES256C = APIStr("AES256C", 5)
 
 
-class ExportFormat(StrEnum):
-    XML = "xml"
-    JSON = "json"
-    YAML = "yaml"
-    PHP = "php"
+class SNMPSecurityLevel(APIStrEnum):
+    __choice_name__ = "SNMPv3 security level"
 
-    @classmethod
-    def _missing_(cls, value: object) -> ExportFormat:
-        """Case-insensitive missing lookup.
+    # Match casing from Zabbix API
+    NO_AUTH_NO_PRIV = APIStr("noAuthNoPriv", 0)
+    AUTH_NO_PRIV = APIStr("authNoPriv", 1)
+    AUTH_PRIV = APIStr("authPriv", 2)
 
-        Allows for both `ExportFormat("JSON")` and `ExportFormat("json")`, etc.
-        """
-        if not isinstance(value, str):
-            raise TypeError(f"Invalid format: {value!r}. Must be a string.")
-        value = value.lower()
-        for e in cls:
-            if e.value.lower() == value:
-                return e
-        raise ValueError(f"Invalid format: {value!r}.")
 
-    @classmethod
-    def get_importables(cls) -> List[ExportFormat]:
-        """Return list of formats that can be imported."""
-        return [cls.JSON, cls.YAML, cls.XML]
+class TriggerPriority(APIStrEnum):
+    UNCLASSIFIED = APIStr("unclassified", 0)
+    INFORMATION = APIStr("information", 1)
+    WARNING = APIStr("warning", 2)
+    AVERAGE = APIStr("average", 3)
+    HIGH = APIStr("high", 4)
+    DISASTER = APIStr("disaster", 5)
+
+
+class UsergroupPermission(APIStrEnum):
+    """Usergroup permission levels."""
+
+    DENY = APIStr("deny", 0)
+    READ_ONLY = APIStr("ro", 2)
+    READ_WRITE = APIStr("rw", 3)
+
+
+class UsergroupStatus(APIStrEnum):
+    """Usergroup status."""
+
+    ENABLED = APIStr("enabled", 0)
+    DISABLED = APIStr("disabled", 1)
+
+
+class UserRole(APIStrEnum):
+    __choice_name__ = "User role"
+
+    # Match casing from Zabbix API
+    USER = APIStr("user", 1)
+    ADMIN = APIStr("admin", 2)
+    SUPERADMIN = APIStr("superadmin", 3)
+    GUEST = APIStr("guest", 4)
+
+
+class ValueType(APIStrEnum):
+    NUMERIC_FLOAT = APIStr("Numeric (float)", 0)
+    CHARACTER = APIStr("Character", 1)
+    LOG = APIStr("Log", 2)
+    NUMERIC_UNSIGNED = APIStr("Numeric (unsigned)", 3)
+    TEXT = APIStr("Text", 4)
