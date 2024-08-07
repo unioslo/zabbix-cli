@@ -70,7 +70,7 @@ APISTR_ENUMS = [
 @pytest.mark.parametrize("enum", APISTR_ENUMS)
 def test_apistrenum(enum: Type[APIStrEnum]) -> None:
     assert enum.__members__
-    members = list(enum)  # type: list[APIStrEnum]
+    members = list(enum)
     assert members
     for member in members:
         assert isinstance(member, enum)
@@ -85,7 +85,7 @@ def test_apistrenum(enum: Type[APIStrEnum]) -> None:
         # NOTE: to support multiple versions of the Zabbix API, some enums
         # have multiple members with the same API value, and we cannot blindly
         # test instantiation with the API value for those specific enums.
-        # To not overocmplicate things, we just skip that test for the affected members
+        # To not overcomplicate things, we just skip that test for the affected members
         if member in (SNMPPrivProtocol.AES, SNMPPrivProtocol.AES128):
             continue
         assert enum(member.as_api_value()) == member
