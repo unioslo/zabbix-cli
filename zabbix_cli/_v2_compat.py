@@ -84,7 +84,13 @@ def args_callback(
         warning(
             f"Detected deprecated positional arguments {value}. Use options instead."
         )
-    return value
+    # NOTE: Must NEVER return None. The "fix" in Typer 0.10.0 for None defaults
+    # somehow broke the parsing of callback values, where this None default
+    # is passed as-is to the typer command callback, which then fails.
+    # Without this callback, an empty list is passed to the internal callback instead.
+    # https://github.com/tiangolo/typer/pull/664
+    # https://github.com/tiangolo/typer/blob/142422a14ca4c6a8ad579e9bd0fd0728364d86e3/typer/main.py#L639
+    return value or []
 
 
 ARGS_POSITIONAL = typer.Argument(
