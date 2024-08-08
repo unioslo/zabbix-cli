@@ -579,8 +579,14 @@ def remove_host_interface(
     render_result(Result(message=f"Removed host interface ({interface_id})."))
 
 
-@app.command(name="define_host_monitoring_status", rich_help_panel=HELP_PANEL)
-def define_host_monitoring_status(
+@app.command(
+    name="define_host_monitoring_status",
+    rich_help_panel=HELP_PANEL,
+    hidden=True,
+    deprecated=True,
+)
+@app.command(name="monitor_host", rich_help_panel=HELP_PANEL)
+def monitor_host(
     hostname: str = typer.Argument(
         help="Name of host",
         show_default=False,

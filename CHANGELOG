@@ -124,21 +124,23 @@
       - SNMP: 161
       - IPMI: 623
       - JMX: 12345
-  - `show_host_inventory`
-    - Now shows shows any inventory field that is set for the host in the table output.
-    - Includes _all_ inventory fields in JSON output.
-  - `unlink_templates_from_hostgroups`:
-    - Renamed to `remove_template_from_group`.
-    - No longer unlinks and clears templates from each other.
-      - This was a bug/misunderstanding of the Zabbix API in the old version.
-      - Use `unlink_template_from_template` to unlink and clear templates from each other.
+  - `define_host_monitoring_status`:
+    - Renamed to `monitor_host`.
   - `link_template_to_hostgroup`:
     - Renamed to `add_template_to_group`.
     - Old name is still supported, but hidden and deprecated.
+  - `show_host_inventory`
+    - Now shows shows any inventory field that is set for the host in the table output.
+    - Includes _all_ inventory fields in JSON output.
   - `show_hostgroup_permissions`:
     - Shows permissions for all host groups by default.
   - `show_proxies`:
     - Now takes a `name_or_id` argument to filter by proxy name or ID. Comma-separated. Supports wildcards.
+  - `unlink_template_from_hostgroup`:
+    - Renamed to `remove_template_from_group`.
+    - No longer unlinks and clears templates from each other.
+      - This was a bug/misunderstanding of the Zabbix API in the old version.
+      - Use `unlink_template_from_template` to unlink and clear templates from each other.
   - `update_host_proxy`
     - Now supports setting proxy for multiple hosts at once using wildcards.
     - Output format is changed.
@@ -151,6 +153,11 @@
 - `zabbix-cli.conf` format. Prefer the new TOML configuration file format.
 - Config file options:
   - `zabbix_config.system_id` → `api.username`
+- **Commands:**
+  - `unlink_template_from_hostgroup`:
+    - Renamed to `remove_template_from_group`.
+  - `define_host_monitoring_status`:
+    - Renamed to `monitor_host`
 
 ### Removed
 
