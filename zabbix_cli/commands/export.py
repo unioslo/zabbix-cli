@@ -541,7 +541,7 @@ class ZabbixImporter:
             self.client.import_configuration(file)
         except Exception as e:
             self.failed.append(file)
-            msg = f"Failed to import {file}"
+            msg = f"Failed to import {file}: {e}"
             if self.ignore_errors:
                 error(msg, exc_info=True)
             else:
