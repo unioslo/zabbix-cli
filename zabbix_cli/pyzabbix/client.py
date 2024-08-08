@@ -29,7 +29,6 @@ from typing import Union
 from typing import cast
 
 from packaging.version import Version
-from pydantic import RootModel
 from pydantic import ValidationError
 
 from zabbix_cli.__about__ import APP_NAME
@@ -196,25 +195,6 @@ def get_returned_list(returned: Any, key: str, endpoint: str) -> List[str]:
     return cast(List[str], response_list)
 
 
-class ParamsTypeSerializer(RootModel[ParamsType]):
-    """Root model that takes in a Params dict.
-
-    Used to validate and serialize a ParamsType dict to a JSON serializable dict,
-    stripping None values.
-    """
-
-    root: ParamsType
-
-    @classmethod
-    def to_json_dict(cls, params: ParamsType) -> Dict[str, Any]:
-        """Validate a ParamsType dict and return it as JSON serializable dict."""
-        dumped = cls.model_validate(params).model_dump(
-            mode="json",
-            exclude_none=True,
-        )
-        return strip_none(dumped)
-
-
 class ZabbixAPI:
     def __init__(
         self,
@@ -350,18 +330,10 @@ class ZabbixAPI:
     ) -> ZabbixAPIResponse:
         params = params or {}
 
-        try:
-            params_json = ParamsTypeSerializer.to_json_dict(params)
-        except ValidationError:
-            raise ZabbixAPIRequestError(
-                f"Failed to serialize request parameters for {method!r}",
-                params=params,
-            )
-
         request_json = {
             "jsonrpc": "2.0",
             "method": method,
-            "params": params_json,
+            "params": params,
             "id": self.id,
         }
 
