@@ -8,6 +8,7 @@
 - Shell autocompletion
 - TOML configuration file support
   - Old configuration format is still supported, but deprecated.
+- Usage examples for most commands.
 - **New configuration options:**
   - `app.default_format`: Sets the default CLI output format. Defaults to `table`.
   - `app.legacy_json_format`: Enables the old JSON output format. Defaults to `false`.
