@@ -51,7 +51,7 @@ def create_host(
     default_hostgroup: bool = typer.Option(
         True,
         "--default-hostgroup/--no-default-hostgroup",
-        help="Add host to default host group(s).",
+        help="Add host to default host group(s) defined in config.",
     ),
     name: Optional[str] = typer.Option(
         None,
@@ -77,7 +77,7 @@ def create_host(
     # it uses a lot of V2 semantics and patterns. It should be changed to have
     # less implicit behavior such as default hostgroups.
     from zabbix_cli.models import Result
-    from zabbix_cli.output.formatting.grammar import pluralize as p
+    from zabbix_cli.output.formatting.grammar import pluralize_no_count as pnc
     from zabbix_cli.pyzabbix.types import HostInterface
     from zabbix_cli.pyzabbix.utils import get_random_proxy
 
@@ -122,10 +122,10 @@ def create_host(
     # Default host groups from config
     def_hgs = app.state.config.app.default_hostgroups
     if default_hostgroup and def_hgs:
-        info(
-            f"Will add host to default host {p('group', len(def_hgs))}: {', '.join(def_hgs)}"
-        )
+        grp = pnc("group", len(def_hgs))  # pluralize
+        info(f"Will add host to default host {grp}: {', '.join(def_hgs)}")
         hg_args.extend(def_hgs)
+
     # Host group args
     if hostgroups:
         hostgroup_args = parse_list_arg(hostgroups)
@@ -344,7 +344,7 @@ def create_host_interface(
             continue
         if interface.main and interface.interfaceid:
             info(
-                f"Host already has a default {type_} interface. It will be set to non-default."
+                f"Host already has a default {type_} interface. New interface will be created as non-default."
             )
             default = False
             break
