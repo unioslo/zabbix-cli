@@ -194,8 +194,14 @@ class ZabbixAPIBaseModel(TableRenderable):
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
     def model_dump_api(self) -> Dict[str, Any]:
-        """Dump the model as a JSON-serializable dict used in API calls."""
-        return self.model_dump(mode="json", exclude_none=True)
+        """Dump the model as a JSON-serializable dict used in API calls.
+
+        Excludes computed fields by default."""
+        return self.model_dump(
+            mode="json",
+            exclude=set(self.model_computed_fields),
+            exclude_none=True,
+        )
 
 
 class ZabbixRight(ZabbixAPIBaseModel):
