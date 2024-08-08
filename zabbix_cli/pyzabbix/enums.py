@@ -23,15 +23,17 @@ class APIStr(str, Generic[T]):
     """
 
     # Instance variables are set by __new__
-    api_value: T  # pyright: ignore[reportUninitializedInstanceVariable]
-    value: str  # pyright: ignore[reportUninitializedInstanceVariable]
-    metadata: Mapping[str, Any]  # pyright: ignore[reportUninitializedInstanceVariable]
+    api_value: T
+    value: str
+    metadata: Mapping[str, Any]
+    hidden: bool
 
     def __new__(
         cls,
         s: str,
         api_value: T = None,
         metadata: Optional[Mapping[str, Any]] = None,
+        hidden: bool = False,
     ) -> APIStr[T]:
         if isinstance(s, APIStr):
             return s  # type: ignore # Type checker should be able to infer generic type
@@ -41,6 +43,7 @@ class APIStr(str, Generic[T]):
         obj.value = s
         obj.api_value = api_value
         obj.metadata = metadata or {}
+        obj.hidden = hidden
         return obj
 
 
@@ -137,14 +140,25 @@ class Choice(Enum):
         return cls(choice)
 
     @classmethod
+    def public_members(cls) -> List[Self]:
+        """Return list of visible enum members."""
+        return [e for e in cls if not e.value.hidden]
+
+    @classmethod
     def choices(cls) -> List[str]:
         """Return list of string values of the enum members."""
-        return [str(e) for e in cls]
+        return [str(e) for e in cls.public_members()]
+
+    @classmethod
+    def api_choices(cls) -> List[int]:
+        """Return list of API values of the enum members."""
+        # NOTE: should this be a list of strings instead?
+        return [e.as_api_value() for e in cls.public_members()]
 
     @classmethod
     def all_choices(cls) -> List[str]:
-        """Choices including API values."""
-        return [str(e) for e in cls] + [str(e.as_api_value()) for e in cls]
+        """All public choices as well as their API values."""
+        return cls.choices() + [str(c) for c in cls.api_choices()]
 
     def as_api_value(self) -> int:
         """Return the equivalent Zabbix API value."""
@@ -398,7 +412,7 @@ class MonitoringStatus(APIStrEnum):
     ON = APIStr("on", 0)  # Yes, 0 is on, 1 is off...
     OFF = APIStr("off", 1)
     UNKNOWN = APIStr(
-        "unknown", 3
+        "unknown", 3, hidden=True
     )  # Undocumented, but shows up in virtual trigger hosts (get_triggers(select_hosts=True))
 
 
