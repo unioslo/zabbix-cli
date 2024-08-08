@@ -28,6 +28,7 @@ from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
+from zabbix_cli.output.console import success
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.formatting.path import path_link
 from zabbix_cli.output.render import render_result
@@ -159,6 +160,7 @@ class ZabbixExporter:
                 for file in exporter.func():
                     if file:
                         files.append(file)
+                success(f"Exported {exporter.type.human_readable()}")
         return files
 
     def check_export_types(self) -> None:
