@@ -161,7 +161,7 @@ def create_host(
     rich_help_panel=HELP_PANEL,
     examples=[
         Example(
-            "Create an SNMPv2 interface on host 'foo.example.com' with derived DNS name 'foo.example.com (default)",
+            "Create an SNMPv2 interface on host 'foo.example.com' with derived DNS name 'foo.example.com' (default)",
             "create_host_interface foo.example.com",
         ),
         Example(
@@ -170,11 +170,11 @@ def create_host(
         ),
         Example(
             "Create an SNMPv2 interface on host 'foo.example.com' with different DNS name",
-            "create_host_interface foo.example.com --type snmp --dns agent.example.com",
+            "create_host_interface foo.example.com --type snmp --dns snmp.example.com",
         ),
         Example(
-            "Create an SNMPv2 interface on host 'foo' with both IP and DNS, using DNS as enabled agent address",
-            "create_host_interface foo --type snmp --connection dns --dns foo.example.com --ip 127.0.0.1",
+            "Create an SNMPv2 interface on host 'foo' with both IP and DNS, using DNS as enabled address",
+            "create_host_interface foo --type snmp --connection dns --dns snmp.example.com --ip 127.0.0.1",
         ),
         Example(
             "Create an SNMPv3 interface on host 'foo.example.com'",
