@@ -33,8 +33,11 @@ if TYPE_CHECKING:
 HELP_PANEL = "CLI"
 
 
-@app.command("show_zabbixcli_config", rich_help_panel=HELP_PANEL)
-def show_zabbixcli_config(ctx: typer.Context) -> None:
+@app.command(
+    "show_zabbixcli_config", rich_help_panel=HELP_PANEL, hidden=True, deprecated=True
+)
+@app.command("show_config", rich_help_panel=HELP_PANEL)
+def show_config(ctx: typer.Context) -> None:
     """Show the current application configuration."""
     config = app.state.config
     print_toml(config.as_toml())
