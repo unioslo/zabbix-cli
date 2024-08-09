@@ -74,6 +74,7 @@ dependencies = [
   "zabbix_cli[test]",
 ]
 [tool.hatch.envs.default.scripts]
+test = "pytest {args}"
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=zabbix_cli --cov=tests {args}"
 no-cov = "cov --no-cov {args}"
 
@@ -119,7 +120,7 @@ include = ["pyproject.toml", "zabbix_cli/**/*.py", "scripts/**/*.py"]
 pythonVersion = "3.8"
 venvPath = "."
 venv = ".venv"
-ignore = ["scripts", "docs", "zabbix_cli/commands/_dev.py"]
+ignore = ["zabbix_cli/commands/_dev.py"]
 typeCheckingMode = "strict"
 
 [tool.ruff.lint.pydocstyle]

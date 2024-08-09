@@ -8,7 +8,7 @@ The zabbix-cli code is written in [Python](https://www.python.org/) and distribu
 
 The project home page is on [GitHub](https://github.com/unioslo/zabbix-cli). Please report any issues or improvements there.
 
-The manual is available on-line at https://unioslo.github.io/zabbix-cli/manual.html.
+The manual is available on-line at <https://unioslo.github.io/zabbix-cli/manual.html>.
 
 ## Install
 
@@ -16,7 +16,7 @@ There are versioned deb and rpm releases available on the [GitHub releases page]
 
 You could also install directly from GitHub with pip:
 
-```
+```bash
 pip install git+https://github.com/unioslo/zabbix-cli.git@master
 ```
 
@@ -26,7 +26,7 @@ pip install git+https://github.com/unioslo/zabbix-cli.git@master
 
 Zabbix-cli need a config file. This can be created with the `zabbix-cli-init` command.
 
-```
+```bash
 zabbix-cli-init --zabbix-url https://zabbix.example.com/
 ```
 
@@ -41,14 +41,14 @@ Zabbix-cli will look for config files in the following order. Any later files wi
 
 By running the config module you will get the current config or the default config:
 
-```
+```bash
 python -m zabbix_cli.config show
 python -m zabbix_cli.config defaults
 ```
 
 If you run into problems it is useful to enable logging and set the `DEBUG` level for logging:
 
-```
+```toml
 [logging]
 logging = ON
 log_level = DEBUG
@@ -76,3 +76,43 @@ A single command could be run by using the `-C`/`--command` parameter like `zabb
 Alternatively you could run multiple commands if you provide a file, with the `-f` parameter, with one command per line in the file.
 
 Get more help and information by running `zabbix-cli --help` and `zabbix-cli -C "help"`.
+
+## Development
+
+Zabbix-cli currently uses [Hatch](https://hatch.pypa.io/latest/) for project management and packaging. To start off, clone the repository:
+
+```bash
+git clone https://github.com/unioslo/zabbix-cli.git
+```
+
+Then make a virtual environment using Hatch:
+
+```bash
+hatch shell
+```
+
+This will create a new virtual environment, install the required dependencies and enter the environment.
+
+### Testing
+
+Run unit tests (without coverage):
+
+```bash
+hatch run test
+```
+
+Generate coverage report:
+
+```bash
+hatch run cov
+```
+
+### Documentation
+
+To serve the documentation locally:
+
+```bash
+hatch run docs:serve
+```
+
+This will start a local web server on `http://localhost:8001` that is automatically refreshed when you make changes to the documentation. However, some hooks are only run on startup, such as the creation of pages for each command. Changes to command examples or docstrings will require a restart.
