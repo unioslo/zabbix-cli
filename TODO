@@ -1,20 +1,26 @@
 * Configure file logging for scripts as well???
 
-
 # IMPORTANT
 
 * add_host_to_hostgroup & remove_host_from_hostgroup should probably take 2 positional arguments as opposed to 2 options. The current implementation is over-complicated.
 
-
 * Auto relogin + custom error when this happens:
+
 ```
 ✗ ERROR: Failed to get all host groups: ("Error -32602: Invalid params.: Session terminated, re-login, please. while sending {'jsonrpc': '2.0', 'method': 'hostgroup.get', 'params': {'output': 'extend', 'selectHosts': 'extend', 'sortorder': 'ASC', 'sortfield': 'name'}, 'id': 3, 'auth': '1234abc'}", -32602)
 ```
 
+THIS WILL NOT BE CAUGHT WHEN A METHOD RE-RAISES ZabbixAPICallError for some reason!
+
+* Add type checking method for return value of API calls. E.g. `update` and `massupdate` should return a dict with a key called something like `hostids` containing a list of updated hosts. We should have a method that can be called something like this:
+
+```python
+ret = self.host.massupdate(...)
+updated = check_return(ret, "hostids")
+reveal_type(updated) # List[str]
+```
+
 ----------------
-
-
-
 
 ## API
 
@@ -44,13 +50,10 @@
 
 Use APIStr enums in functions that take in a code and return a string representation. That way we don't create duplicate definitions for the same objects/concepts/choices.
 
-
 ## Args
 
-* Show deprecation warning when user uses positional args instead of options.
 * Hide positional args from help?
 * Consistent hostname vs hostname_or_id arguments
-
 
 ## Auth
 
@@ -64,13 +67,15 @@ Use APIStr enums in functions that take in a code and return a string representa
 
 ## Cache
 
-* Add option to enable/disable cache.
-  * Both in REPL mode and in bulk mode.
-* Add command to clear cache.
+* Implement caching (do we need it?)
+* If implememented:
+  * Add option to enable/disable cache.
+    * Both in REPL mode and in bulk mode.
+  * Add command to clear cache.
 
 ## Commands
 
-* Add command aliases: https://github.com/tiangolo/typer/issues/132
+* Add command aliases: <https://github.com/tiangolo/typer/issues/132>
   * Two options:
     * Add new name `show_host` -> `host-show`, hide old name. (easy)
       * Need some sort of decorator like @app.old_name("show_host")
@@ -83,13 +88,11 @@ Use APIStr enums in functions that take in a code and return a string representa
 * Sort command categories by help panel names.
   * Sorting order seems to be alphabetical BUT BASED ON THE COMMAND NAMES. So if one category has a command that starts with "A" and another category has a command that starts with "B", then the category with the "A" command will be listed first, regardless of the category name. Why...
 
-
-*  `show_template` and `show_templates`:
-  * Remove one of the commands and set the default to `*` to the other command, so we mimick the old behavior. Since we can filter names with both of them, the only difference is whether we show all results or just one (meaningless distinction).
+* `show_template` and `show_templates`:
+* Remove one of the commands and set the default to `*` to the other command, so we mimick the old behavior. Since we can filter names with both of them, the only difference is whether we show all results or just one (meaningless distinction).
 
 * `show_alarms`
   * Color severity levels.
-
 
 * `remove_template_from_group`:
   * Add `--dryrun` option.
@@ -101,8 +104,8 @@ Use APIStr enums in functions that take in a code and return a string representa
 * Add loading config from multiple sources. Each new config adds to the existing config and overrides values, like how it was in v2.
 * Use `ctx.config_map` to set command param defaults from config.
   * Lets us set defaults for all commands in one place.
-  * https://github.com/tiangolo/typer/issues/86
-  * https://jwodder.github.io/kbits/posts/click-config/
+  * <https://github.com/tiangolo/typer/issues/86>
+  * <https://jwodder.github.io/kbits/posts/click-config/>
 
 ## Documentation
 
@@ -129,6 +132,7 @@ EXAMPLES = {
   ]
 }
 ```
+
 This way we can have an arbitrary number of examples without impacting startup time. Need to override the the way the help is looked up to make this work.
 
 ## Exceptions
@@ -140,7 +144,6 @@ This way we can have an arbitrary number of examples without impacting startup t
 
 * Don't log traceback of "expected" errors such as `ZabbixNotFound`.
   * Perhaps add some sort of base class we handle for this such as `ZabbixStatusError`?
-
 
 * Handle connection errors more gracefully. Example: if we try to connect to UIO Zabbix without SOCKS proxy, we  get a `HTTPStatusError` with a 403 status code. We should catch this and raise a more meaningful error.
 
@@ -158,6 +161,7 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 * Add a `--debug` flag that enables debug logging???
 
 ## Hosts
+
 * Go through all `get_hosts()` calls. Make sure we only search for one term (why?).
 * Show templates and proxies in `show_host` and `show_hosts`
 
@@ -176,7 +180,7 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
   * Huge offenders:
     * `_handle_hostgroup_args`
     * `_handle_templategroup_args`
-    * `_handle_template_arg `
+    * `_handle_template_arg`
 * Turn some text prompts into arrow key selection prompts:
   * `create_notification_user`: `mediatype`
     * Fetch all media types then display them in a list.
@@ -188,7 +192,6 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
   * **Performance implications?**
 
 * Add some sort of converting of iterable values to newline separated strings in `__rows__`
-
 
 * Prevent "no results found" from being printed when we are trying to render the result of a create/modify action that created/modified 0 objects.
   * Example: `add_host_to_hostgroup` when host is already in the host group.
@@ -209,7 +212,6 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 
 * Some sort of shared callback function between all scripts and the main CLI. This way we can pass in config etc, and have a common way of handling errors etc.
 
-
 ## Templates
 
 * Remove `--strict` option. Adds complexity without much extra value. Users can use `--dryrun` to ensure that the command will work as expected.
@@ -219,16 +221,13 @@ For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/St
 * Choice enum mappings contain all choices.
   * I.e. `InterfaceConnectionMode` & `InterfaceType`
 
-
 --------------------
 
 ## Repo
 
-
 ### Run pyupgrade on all files not referenced by Typer
 
 We only need runtime typing on the functions that typer use for type inference. Modules such as Pyzabbix can be upgraded to use modern typing features such as built-in generics (3.9) and | (3.10).
-
 
 --------------------
 
@@ -238,7 +237,6 @@ We only need runtime typing on the functions that typer use for type inference. 
 * [x] Perform more inline imports
 * [x] Define config model in separate file that is not imported on startup.
 * [x] Profile using py-spy. Preliminary tests show that the majority of the slowdowns are from defining Pydantic models on runtime.
-
 
 --------------------
 
@@ -254,20 +252,24 @@ We only need runtime typing on the functions that typer use for type inference. 
 * Allow for pattern matching in host names.
   * E.g. `assign_hostgroup_to_proxy "proxy-prod01.example.com" "Siteadmin-iti-*"`
 
-
 ### Show help for a command or category: `help`
 
 Usage:
-  * `zabbix-cli help host`
-  * `zabbix-cli help show_host`
+
+* `zabbix-cli help host`
+* `zabbix-cli help show_host`
 
 ### Details about a specific host interface: `show_host_interface`
 
 Usage:
-  * `zabbix-cli show_host_interface <hid>`
-  * Shows more details about the interface than `show_host_interfaces`
+
+* `zabbix-cli show_host_interface <hid>`
+* Shows more details about the interface than `show_host_interfaces`
+
+### Set a host interface as default (unsetting other as default): `set_default_host_interface`
+
+Basically, when we create a new host interface of a type we already have default for, we cannot unset the old default. This command allows us to do that.
 
 ### Create template: `create_template`
-
 
 ....
