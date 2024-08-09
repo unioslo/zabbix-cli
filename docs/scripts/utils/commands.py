@@ -2,17 +2,24 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
+from typing import cast
 
 import click
 import typer
 from pydantic import BaseModel
 from pydantic import Field
+from pydantic import ValidationError
 from pydantic import computed_field
 from pydantic import model_validator
 from typer.core import TyperArgument
 from typer.core import TyperCommand
+from typer.core import TyperGroup
+from typer.models import DefaultPlaceholder
+from zabbix_cli.exceptions import ZabbixCLIError
 
 from .markup import markup_as_plain_text
 from .markup import markup_to_markdown
@@ -151,22 +158,40 @@ class CommandSummary(BaseModel):
     score: int = 0  # match score (not part of TyperCommand)
     short_help: Optional[str]
 
+    @model_validator(mode="before")
+    @classmethod
+    def _replace_placeholders(cls, values: Any) -> Any:
+        """Replace DefaultPlaceholder values with empty strings."""
+        if not isinstance(values, dict):
+            return values
+        values = cast(Dict[str, Any], values)
+        for key, value in values.items():
+            if isinstance(value, DefaultPlaceholder):
+                # Use its value, otherwise empty string
+                values[key] = value.value or ""
+        return values
+
     @classmethod
     def from_command(
         cls, command: TyperCommand, name: str | None = None, category: str | None = None
     ) -> CommandSummary:
         """Construct a new CommandSummary from a TyperCommand."""
-        return cls(
-            category=category,
-            deprecated=command.deprecated,
-            epilog=command.epilog or "",
-            help=command.help or "",
-            hidden=command.hidden,
-            name=name or command.name or "",
-            options_metavar=command.options_metavar or "",
-            params=[ParamSummary.from_param(p) for p in command.params],
-            short_help=command.short_help or "",
-        )
+        try:
+            return cls(
+                category=category,
+                deprecated=command.deprecated,
+                epilog=command.epilog or "",
+                help=command.help or "",
+                hidden=command.hidden,
+                name=name or command.name or "",
+                options_metavar=command.options_metavar or "",
+                params=[ParamSummary.from_param(p) for p in command.params],
+                short_help=command.short_help or "",
+            )
+        except ValidationError as e:
+            raise ZabbixCLIError(
+                f"Failed to construct command summary for {name or command.name}: {e}"
+            ) from e
 
     @property
     def help_plain(self) -> str:
@@ -268,7 +293,11 @@ def _get_app_commands(
     if cmds is None:
         cmds = []
 
+    # NOTE: incorrect type annotation for get_command() here:
+    # The function can return either a TyperGroup or click.Command
     cmd = typer.main.get_command(app)
+    cmd = cast(Union[TyperGroup, click.Command], cmd)
+
     groups: dict[str, TyperCommand] = {}
     try:
         groups = cmd.commands  # type: ignore
@@ -279,11 +308,15 @@ def _get_app_commands(
     for command in groups.values():
         if command.deprecated:  # skip deprecated commands
             continue
+        category = command.rich_help_panel
+
+        # rich_help_panel can also be a DefaultPlaceholder
+        # even if the type annotation says it's str | None
+        if category and not isinstance(category, str):  # pyright: ignore[reportUnnecessaryIsInstance]
+            raise ValueError(f"{command.name} is missing a rich_help_panel (category)")
 
         cmds.append(
-            CommandSummary.from_command(
-                command, name=command.name, category=command.rich_help_panel
-            )
+            CommandSummary.from_command(command, name=command.name, category=category)
         )
 
     return sorted(cmds, key=lambda x: x.name)
@@ -291,7 +324,7 @@ def _get_app_commands(
 
 def get_app_callback_options(app: typer.Typer) -> list[typer.models.OptionInfo]:
     """Get the options of the main callback of a Typer app."""
-    options = []  # type: list[typer.models.OptionInfo]
+    options: List[typer.models.OptionInfo] = []
 
     if not app.registered_callback:
         return options
