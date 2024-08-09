@@ -421,6 +421,8 @@ def export_configuration(
 
     Timestamps are disabled by default, but can be enabled with the [configopt]app.export_timestamps[/]
     configuration option.
+
+    Shows detailed information about exported files in JSON output mode.
     """
     from zabbix_cli.commands.results.export import ExportResult
     from zabbix_cli.models import Result
