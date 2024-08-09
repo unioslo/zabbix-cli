@@ -2,19 +2,19 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.1
+    rev: v3.17.0
     hooks:
       - id: pyupgrade
         args: [--py37-plus, --keep-runtime-typing]
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.3.3"
+    rev: "v0.5.7"
     hooks:
       # Run the linter.
       - id: ruff
@@ -22,7 +22,7 @@ repos:
       # Run the formatter.
       - id: ruff-format
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.368
+    rev: v1.1.375
     hooks:
     - id: pyright
       exclude: ^(tests|scripts|docs)/
