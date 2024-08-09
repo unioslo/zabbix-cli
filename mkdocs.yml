@@ -30,7 +30,6 @@ watch:
 
 plugins:
   - autorefs
-  - include-markdown
   - search
   - mkdocs-simple-hooks:
       hooks:
@@ -96,6 +95,6 @@ nav:
     - Migration: guide/migration.md
     - Commands:
       - guide/commands/*.md
-  - Reference:
-    - reference/*.md
-  - contributing.md
+  # - Reference:
+  #   - reference/*.md
+  # - contributing.md
