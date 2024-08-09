@@ -12,7 +12,6 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Protocol
-from typing import Union
 
 import typer
 from strenum import StrEnum
@@ -63,15 +62,6 @@ if TYPE_CHECKING:
         templates: List[Template]
         template_groups: List[TemplateGroup]
 
-    Exportable = Union[
-        HostGroup,
-        TemplateGroup,
-        Host,
-        Image,
-        Map,
-        Template,
-        MediaType,
-    ]
 
 HELP_PANEL = "Import/Export"
 
