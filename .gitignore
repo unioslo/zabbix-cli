@@ -1,5 +1,6 @@
 *.pyc
 
+# Build files
 dist/
 build/
 *.egg-info/
@@ -17,13 +18,13 @@ my_tests/
 # Hatch Pyapp
 pyapp
 
-
 # Dev commands
 zabbix_cli/commands/_dev.py
 
 # Auto-generated docs files
 docs/guide/commands/
 docs/data
+site/
 
 # Pyinstaller
 *.spec
