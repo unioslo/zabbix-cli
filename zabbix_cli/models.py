@@ -86,7 +86,7 @@ class TableRenderable(BaseModel):
     __box__: rich.box.Box = rich.box.ROUNDED
 
     zabbix_version: ClassVar[Version] = Version(
-        "6.4.0"
+        "7.0.0"
     )  # assume latest released version
     """Zabbix API version the data stems from.
     This is a class variable that can be overridden, which causes all
