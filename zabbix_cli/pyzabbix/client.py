@@ -1296,7 +1296,7 @@ class ZabbixAPI:
             ) from e
 
     def remove_proxy_from_group(self, proxy: Proxy) -> None:
-        """Adds proxy to a proxy group."""
+        """Remove a proxy from any group it's part of."""
         # NOTE: there is no endpoint for proxy groups to add to proxies
         # We must update each proxy individually to add them to the group
         try:

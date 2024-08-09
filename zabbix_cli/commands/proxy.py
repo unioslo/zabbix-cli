@@ -507,9 +507,9 @@ def show_proxy_groups(
 )
 def add_proxy_to_group(
     ctx: typer.Context,
-    name_or_id: str = typer.Argument(help="Name or ID of proxy to add to group."),
+    name_or_id: str = typer.Argument(help="Name or ID of proxy to add."),
     proxy_group: str = typer.Argument(
-        help="Name or ID of proxy group to add proxies to."
+        help="Name or ID of proxy group to add proxy to."
     ),
     local_address: Optional[str] = typer.Argument(help="Address for active agents."),
     local_port: Optional[str] = typer.Argument(help="Address for active agents."),
@@ -540,12 +540,15 @@ def add_proxy_to_group(
 @app.command(name="remove_proxy_from_group", rich_help_panel=HELP_PANEL)
 def remove_proxy_from_group(
     ctx: typer.Context,
-    name_or_id: str = typer.Argument(help="Name or ID of proxy to add to group."),
+    name_or_id: str = typer.Argument(help="Name or ID of proxy to remove."),
 ) -> None:
     """Remove a proxy from a proxy group."""
     ensure_proxy_group_support()
 
     proxy = app.state.client.get_proxy(name_or_id)
+    if proxy.proxy_groupid is None or proxy.proxy_groupid == "0":
+        exit_err(f"Proxy {proxy.name!r} is not in a proxy group.")
+
     app.state.client.remove_proxy_from_group(proxy)
 
     success(f"Removed proxy {proxy.name!r} from group with ID {proxy.proxy_groupid}.")
