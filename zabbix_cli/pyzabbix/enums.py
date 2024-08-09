@@ -191,13 +191,6 @@ class APIStrEnum(Choice):
     # to string, thereby losing the API associated value.
     # If we are to do that, we need to hijack the object creation and inject
     # the member value somehow?
-
-    def __str__(self) -> str:
-        return str(self.value)
-
-    def casefold(self) -> str:
-        return str(self.value).casefold()
-
     def as_status(self, default: str = "Unknown", with_code: bool = False) -> str:
         return self.string_from_value(self.value, default=default, with_code=with_code)
 
