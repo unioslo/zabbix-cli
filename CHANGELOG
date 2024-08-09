@@ -7,7 +7,7 @@
 - New CLI powered by `typer` and `click-repl`
 - Shell autocompletion
 - TOML configuration file support
-  - Old configuration format is still supported, but deprecated.
+  - Old configuration format is deprecated.
 - Usage examples for most commands.
 - **New configuration options:**
   - `app.default_format`: Sets the default CLI output format. Defaults to `table`.
@@ -93,7 +93,7 @@
 ### Changed
 
 - Commands now take named options instead of positional arguments.
-  - Positional arguments are still supported, but deprecated.
+  - Positional arguments are deprecated.
 - JSON output is no longer always a dict with numeric string keys.
   - See V3 migration guide for more information.
   - The old format can be enabled with the new option `app.legacy_json_format` in the new TOML configuration file format.
@@ -109,7 +109,7 @@
     - `default_export_format` → `export_format`
     - `include_timestamp_export_filename` → `export_timestamps`
   - `logging.logging` → `logging.enabled`
-  - The original names are still usable, but are deprecated and slated for removal in a future version.
+  - The original names are deprecated and slated for removal in a future version.
 - **Configuration file defaults:**
   - `app.default_admin_usergroups` defaults to `[]` (empty list)
   - `app.default_create_user_usergroups` defaults to `[]` (empty list)
@@ -128,7 +128,6 @@
     - Renamed to `monitor_host`.
   - `link_template_to_hostgroup`:
     - Renamed to `add_template_to_group`.
-    - Old name is still supported, but hidden and deprecated.
   - `show_host_inventory`
     - Now shows shows any inventory field that is set for the host in the table output.
     - Includes _all_ inventory fields in JSON output.
@@ -138,7 +137,6 @@
     - Now takes a `name_or_id` argument to filter by proxy name or ID. Comma-separated. Supports wildcards.
   - `show_zabbixcli_config`:
     - Renamed to `show_config`.
-    - Old name is still available, but hidden and deprecated.
   - `unlink_template_from_hostgroup`:
     - Renamed to `remove_template_from_group`.
     - No longer unlinks and clears templates from each other.
