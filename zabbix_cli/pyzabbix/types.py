@@ -1155,8 +1155,11 @@ class ImportRules(ZabbixAPIBaseModel):
         delete_missing: bool = False,
     ) -> ImportRules:
         """Create import rules given directives and Zabbix API version."""
+        # Create/delete missing
         cd = ImportRule(createMissing=create_missing, deleteMissing=delete_missing)
+        # Create/update missing
         cu = ImportRule(createMissing=create_missing, updateExisting=update_existing)
+        # Create/update/delete missing
         cud = ImportRule(
             createMissing=create_missing,
             updateExisting=update_existing,
