@@ -364,7 +364,7 @@ def load_balance_proxy_hosts(
     success(f"Load balanced {len(all_hosts)} hosts between {len(proxy_list)} proxies.")
 
 
-@app.command(name="update_hostgroup_proxy")
+@app.command(name="update_hostgroup_proxy", rich_help_panel=HELP_PANEL)
 def update_hostgroup_proxy(
     ctx: typer.Context,
     hostgroup: str = typer.Argument(
@@ -551,7 +551,7 @@ def remove_proxy_from_group(
     success(f"Removed proxy {proxy.name!r} from group with ID {proxy.proxy_groupid}.")
 
 
-@app.command(name="update_hostgroup_proxygroup")
+@app.command(name="update_hostgroup_proxygroup", rich_help_panel=HELP_PANEL)
 def update_hostgroup_proxygroup(
     ctx: typer.Context,
     hostgroup: str = typer.Argument(
