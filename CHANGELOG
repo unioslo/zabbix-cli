@@ -159,8 +159,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Now supports setting proxy for multiple hosts at once using wildcards.
     - Output format is changed.
       - Now groups hosts by proxy prior to update.
-- Use Hatch for building and publishing
-- Switch from setup.py to pyproject.toml
 
 ### Deprecated
 
@@ -178,3 +176,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Support for Zabbix <1.8 login using `user.authenticate`.
+
+### Internal
+
+- Use Hatch for building and publishing.
+- Switch from setup.py to pyproject.toml.
+- Add `pre-commit` hooks.
+- Add `pytest` tests
+- Use Ruff for linting and formatting.
+- Use Pyright for static type checking.
+- API code rewritten with Pydantic data models.
