@@ -77,10 +77,11 @@ from zabbix_cli.utils.utils import get_monitoring_status
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
     from zabbix_cli.models import RowsType
-SortOrder = Literal["ASC", "DESC"]
 
 
 logger = logging.getLogger(__name__)
+
+SortOrder = Literal["ASC", "DESC"]
 
 
 # Source: https://docs.pydantic.dev/2.7/concepts/types/#named-recursive-types
