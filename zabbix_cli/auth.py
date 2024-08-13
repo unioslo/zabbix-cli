@@ -116,10 +116,10 @@ class Authenticator:
         4. Prompt for it
         """
         funcs: List[UsernamePWMethod] = [
-            self._get_username_password_from_config,
+            self._get_username_password_config,
             self._get_username_password_auth_file,
             self._get_username_password_env,
-            self._get_username_password_from_prompt,
+            self._get_username_password_prompt,
         ]
         for func in funcs:
             username, password = func()
@@ -143,13 +143,13 @@ class Authenticator:
         contents = self.load_auth_file()
         return _parse_auth_file_contents(contents)
 
-    def _get_username_password_from_config(
+    def _get_username_password_config(
         self,
     ) -> Tuple[Optional[str], Optional[str]]:
         """Get username and password from config file."""
         return (self.config.api.username, self.config.api.password.get_secret_value())
 
-    def _get_username_password_from_prompt(
+    def _get_username_password_prompt(
         self,
     ) -> Tuple[Optional[str], Optional[str]]:
         """Get username and password from prompt."""
