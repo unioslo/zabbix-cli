@@ -32,7 +32,8 @@ from typing import Optional
 
 # This module should not import from other local modules because it's widely
 # used throughout the application, and we don't want to create circular imports.
-# Imports from other modules should be done inside functions, or in TYPE_CHECKING:
+# Runtime imports from other modules should be done inside functions,
+# while annotations imports should done in `if TYPE_CHECKING:` blocks.
 if TYPE_CHECKING:
     from prompt_toolkit.history import History
     from rich.console import Console
@@ -210,27 +211,13 @@ class State:
         TableRenderable.legacy_json_format = self.config.app.legacy_json_format
 
     def logout(self) -> None:
-        """Ends the current user's API session if the client is logged in
-        and the application is not configured to use an auth token file.
-        """
-        from zabbix_cli.auth import clear_auth_token_file
+        """Log out and clear auth token file."""
+        from zabbix_cli import auth
 
-        try:
-            # Technically this API endpoint might return "false", which
-            # would signify that that the logout somehow failed, but it's
-            # not documented in the API docs.
-            self.client.logout()
-            # Token is now expired - delete it
-            clear_auth_token_file(self.config)
-        except Exception as e:
-            from zabbix_cli.output.console import exit_err
-
-            exit_err(f"Failed to log out of Zabbix API session: {e}")
+        auth.logout(self.client, self.config)
 
     def logout_on_exit(self) -> None:
-        """Ends the current user's API session if the client is logged in
-        and the application is not configured to use an auth token file.
-        """
+        """Log out on exit if not keeping the session alive via auth token file."""
         # If we are NOT keeping the API session alive between CLI invocations
         # we need to remember to log out once we are done in order to end the
         # session properly.

@@ -314,6 +314,10 @@ class ZabbixAPI:
     def logout(self) -> None:
         if not self.auth:
             return  # nothing to do
+
+        # Technically this API endpoint might return `false`, which
+        # would signify that that the logout somehow failed, but it's
+        # not documented in the API docs - only the inverse case `true` is.
         try:
             self.user.logout()
         except ZabbixAPITokenExpired:

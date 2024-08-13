@@ -29,6 +29,7 @@ from zabbix_cli.exceptions import AuthError
 from zabbix_cli.exceptions import AuthTokenFileError
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.output.console import error
+from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.prompts import str_prompt
 
@@ -223,6 +224,16 @@ def login(client: ZabbixAPI, config: Config) -> None:
         write_auth_token_file(config.api.username, token, config.app.auth_token_file)
 
 
+def logout(client: ZabbixAPI, config: Config) -> None:
+    try:
+        client.logout()
+        clear_auth_token_file(config)
+    except ZabbixAPIException as e:
+        exit_err(f"Failed to log out of Zabbix API session: {e}")
+    except AuthTokenFileError as e:
+        exit_err(str(e))
+
+
 def prompt_username_password(username: str) -> Tuple[str, str]:
     """Prompt for username and password."""
     username = str_prompt("Username", default=username, empty_ok=False)
@@ -313,14 +324,16 @@ def clear_auth_token_file(config: Optional[Config] = None) -> None:
     """
     for file in get_auth_token_file_paths(config):
         if not file.exists():
-            logger.debug(f"Auth token file {file} does not exist. Skipping...")
+            logger.debug("Auth token file '%s' does not exist. Skipping...", file)
             continue
         try:
             file.write_text("")
-            logger.debug(f"Cleared auth token file contents {file}")
+            logger.debug("Cleared auth token file contents '%s'", file)
         except OSError as e:
             # Only happens if file exists and we fail to write to it.
-            error(f"Unable to clear auth token file {file}: {e}")
+            raise AuthTokenFileError(
+                f"Unable to clear auth token file {file}: {e}"
+            ) from e
 
 
 def file_has_secure_permissions(file: Path) -> bool:
