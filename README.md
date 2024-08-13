@@ -24,10 +24,10 @@ pip install git+https://github.com/unioslo/zabbix-cli.git@master
 
 ### Configuration
 
-Zabbix-cli need a config file. This can be created with the `zabbix-cli-init` command.
+Zabbix-cli need a config file. This can be created with the `zabbix-cli init` command.
 
 ```bash
-zabbix-cli-init --zabbix-url https://zabbix.example.com/
+zabbix-cli init --zabbix-url https://zabbix.example.com/
 ```
 
 Zabbix-cli will look for config files in the following order. Any later files will override the former:
@@ -39,11 +39,11 @@ Zabbix-cli will look for config files in the following order. Any later files wi
 5. /etc/zabbix-cli/zabbix-cli.fixed.conf
 6. /usr/share/zabbix-cli/zabbix-cli.fixed.conf
 
-By running the config module you will get the current config or the default config:
+Zabbix-cli provides commands for showing the current and default configuration:
 
 ```bash
-python -m zabbix_cli.config show
-python -m zabbix_cli.config defaults
+zabbix-cli show_config
+zabbix-cli sample_config
 ```
 
 If you run into problems it is useful to enable logging and set the `DEBUG` level for logging:
@@ -57,21 +57,103 @@ log_file = /path/to/log/zabbix-cli.log
 
 ### Authentication
 
-By default you will be asked for a username and password when running zabbix-cli.
+Zabbix-cli provides several ways to authenticate. They are tried in the following order if multiple are set:
 
-Alternatively you could store your username and password in the file `~/.zabbix-cli_auth`. The content of this file will need to be on the `USERNAME::PASSWORD` format.
+1. API token in config file
+2. API token in file (if `use_auth_token_file=true`)
+3. Username and password in config file
+4. Username and password in auth file
+5. Username and password in environment variables
+6. Username and password from prompt
 
-A third alternative is using the environment variables, `ZABBIX_USERNAME` and `ZABBIX_PASSWORD`.
+#### Username and Password
 
-You need to secure this authentication file and need to be aware that other processes on the same computer will be able to view your environment variables. Use these features at your own risk.
+Username and password-based authentication is the default and easiest way to authenticate, but also the least secure.
 
-Zabbix-cli will store a session token if you configure `use_auth_token_file = ON`. This way you don't need to provide your credentials each time you run zabbix-cli. This token file should also be secured properly.
+##### Config file
+
+The password can be set directly in the config file:
+
+```toml
+[api]
+zabbix_url = "https://zabbix.example.com/"
+username = "Admin"
+password = "zabbix"
+```
+
+##### Prompt
+
+By omitting the `password` parameter in the config file, you will be prompted for a password when running zabbix-cli:
+
+```toml
+[api]
+zabbix_url = "https://zabbix.example.com/"
+username = "Admin"
+```
+
+##### Auth file
+
+An auth file named `.zabbix-cli_auth` can be created in the user's home directory. The content of this file should be in the `USERNAME::PASSWORD` format.
+
+```bash
+echo "Admin::zabbix" > ~/.zabbix-cli_auth
+```
+
+The file is automatically loaded if it exists and the `password` parameter is not set in the config file. The location of the file can be changed in the config file:
+
+```toml
+[app]
+auth_file = "/path/to/auth/file"
+```
+
+##### Environment variables
+
+The username and password can be set as environment variables:
+
+```bash
+export ZABBIX_USERNAME="Admin"
+export ZABBIX_PASSWORD="zabbix"
+```
+
+These are automatically loaded if the `password` parameter is not set in the config file.
+
+#### Auth token
+
+Once you have authenticated with a username and password, zabbix-cli will store a session token if you configure `use_auth_token_file=true` in the config. This way you don't need to provide your credentials each time you run zabbix-cli. The token file should also be secured properly.
+
+```toml
+[app]
+use_auth_token_file = true
+```
+
+The location of the config file can be changed in the config file:
+
+```toml
+[app]
+auth_token_file = "/path/to/auth/token/file"
+```
+
+#### API token
+
+Zabbix-cli also supports authentication with an API token. This is the most secure way to authenticate. The API token must be set directly in the config file:
+
+```toml
+[api]
+auth_token = "API_TOKEN"
+
+[app]
+use_auth_token_file = false
+```
 
 ### Running zabbix-cli
 
 You may run zabbix-cli as a shell/REPL by simply running `zabbix-cli`.
 
-A single command could be run by using the `-C`/`--command` parameter like `zabbix-cli -C "show_host host.example.com"`.
+A single command could be run by callign `zabbix-cli` with the command as an argument:
+
+```bash
+zabbix-cli show_hosts
+```
 
 Alternatively you could run multiple commands if you provide a file, with the `-f` parameter, with one command per line in the file.
 
