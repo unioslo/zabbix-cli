@@ -175,7 +175,7 @@ def login(
     if username:
         config.api.username = username
         config.api.password = SecretStr(password)
-        config.api.auth_token = None  # Clear token if it exists
+        config.api.auth_token = SecretStr("")  # Clear token if it exists
     elif token:
         config.api.auth_token = SecretStr(token)
         config.api.password = SecretStr("")

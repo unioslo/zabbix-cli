@@ -31,6 +31,7 @@ from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import SecretStr
+from pydantic import SerializationInfo
 from pydantic import ValidationInfo
 from pydantic import field_serializer
 from pydantic import field_validator
@@ -79,14 +80,14 @@ class APIConfig(BaseModel):
         # Changed in V3: system_id -> username
         validation_alias=AliasChoices("username", "system_id"),
     )
-    password: SecretStr = Field(default="", exclude=True)
+    password: SecretStr = Field(default=SecretStr(""))
     verify_ssl: bool = Field(
         default=True,
         # Changed in V3: cert_verify -> verify_ssl
         validation_alias=AliasChoices("verify_ssl", "cert_verify"),
     )
     timeout: Optional[int] = 0
-    auth_token: Optional[SecretStr] = Field(default=None, exclude=True)
+    auth_token: SecretStr = Field(default=SecretStr(""))
 
     @model_validator(mode="after")
     def _validate_model(self) -> Self:
@@ -99,6 +100,14 @@ class APIConfig(BaseModel):
     def _serialize_timeout(self, timeout: Optional[int]) -> int:
         """Represent None timeout as 0 in serialized output."""
         return timeout if timeout is not None else 0
+
+    @field_serializer("password", "auth_token", when_used="json")
+    def dump_secret(self, v: SecretStr, info: SerializationInfo) -> str:
+        """Dump secrets if enabled in serialization context."""
+        if info.context and isinstance(info.context, dict):
+            if info.context.get("secrets", False):  # pyright: ignore[reportUnknownMemberType]
+                return v.get_secret_value()
+        return str(v)
 
 
 class AppConfig(BaseModel):
@@ -324,7 +333,7 @@ class Config(BaseModel):
             raise ConfigError("No username specified in the configuration file.")
         return self
 
-    def as_toml(self) -> str:
+    def as_toml(self, secrets: bool = False) -> str:
         """Dump the configuration to a TOML string."""
         import tomli_w
 
@@ -332,6 +341,7 @@ class Config(BaseModel):
             self.model_dump(
                 mode="json",
                 exclude_none=True,  # we shouldn't have any, but just in case
+                context={"secrets": secrets},
             )
         )
 
@@ -343,4 +353,4 @@ class Config(BaseModel):
             except OSError:
                 logging.error("unable to create directory %r", filename.parent)
                 raise ConfigError(f"unable to create directory {filename.parent}")
-        filename.write_text(self.as_toml())
+        filename.write_text(self.as_toml(secrets=True))

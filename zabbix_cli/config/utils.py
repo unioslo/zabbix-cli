@@ -94,7 +94,6 @@ def init_config(
     """Creates required directories and boostraps config with
     options required to connect to the Zabbix API.
     """
-    from pydantic import SecretStr
 
     from zabbix_cli import auth
     from zabbix_cli.config.model import Config
@@ -121,7 +120,6 @@ def init_config(
     config.api.url = url
     client = ZabbixAPI.from_config(config)
     auth.login(client, config)
-    config.api.auth_token = SecretStr(client.auth)
 
     config_file = create_config_file(config, config_file, overwrite=overwrite)
     info(f"Configuration file created: {config_file}")

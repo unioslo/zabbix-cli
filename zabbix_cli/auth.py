@@ -184,7 +184,7 @@ class Authenticator:
             contents = _do_load_auth_file(path, self.config.app.allow_insecure_authfile)
             if contents:
                 return contents
-        logger.error(
+        logger.info(
             f"No auth token file found. Searched in {', '.join(str(p) for p in paths)}"
         )
 
@@ -195,7 +195,7 @@ class Authenticator:
             contents = self._load_auth_file(path)
             if contents:
                 return contents
-        logger.error(
+        logger.info(
             f"No auth file found. Searched in {', '.join(str(p) for p in paths)}"
         )
 
