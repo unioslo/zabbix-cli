@@ -182,6 +182,10 @@ class Emoji(StrEnum):
     YES = EMOJI_YES
     NO = EMOJI_NO
 
+    @classmethod
+    def fmt_bool(cls, value: bool) -> str:
+        return success(cls.YES) if value else error(cls.NO)
+
 
 def render_config_option(option: str) -> str:
     """Render a configuration file option/key/entry."""

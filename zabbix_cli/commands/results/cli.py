@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -14,6 +15,7 @@ from pydantic import FieldSerializationInfo
 from pydantic import field_serializer
 from rich.box import SIMPLE_HEAD
 from rich.table import Table
+from typing_extensions import Self
 from typing_extensions import TypedDict
 
 from zabbix_cli.models import TableRenderable
@@ -21,6 +23,9 @@ from zabbix_cli.output.console import error
 from zabbix_cli.output.formatting.path import path_link
 
 if TYPE_CHECKING:
+    from zabbix_cli.commands.cli import DirectoryType
+    from zabbix_cli.models import ColsRowsType
+    from zabbix_cli.models import RowsType
     from zabbix_cli.state import State
 
 
@@ -120,3 +125,25 @@ class HistoryResult(TableRenderable):
     __box__ = SIMPLE_HEAD
 
     commands: List[str] = []
+
+
+class DirectoriesResult(TableRenderable):
+    """Result type for `show_dirs` command."""
+
+    directories: List[Dict[str, Path]] = []
+
+    @classmethod
+    def from_directory_types(cls, dirs: List[DirectoryType]) -> Self:
+        return cls(directories=[{str(d.value): d.as_path()} for d in dirs])
+
+    def __cols_rows__(self) -> ColsRowsType:
+        from zabbix_cli.output.style import Emoji
+
+        cols = ["Type", "Path", "Exists"]
+        rows: RowsType = []
+        for d in self.directories:
+            for key in d:
+                p = d[key]
+                exists = Emoji.fmt_bool(p.exists())
+                rows.append([key, str(d[key]), exists])
+        return cols, rows

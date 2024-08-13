@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `remove_host_interface`: Delete a host interface.
   - `remove_proxy_from_group`: Remove a proxy from a proxy group.
   - `remove_templategroup`: Delete a template group.
+  - `show_dirs`: Show directories used by the CLI.
   - `show_host_interfaces`: Show interfaces for a host.
   - `show_media_types`: Show media types.
   - `show_proxies`: Show proxies.

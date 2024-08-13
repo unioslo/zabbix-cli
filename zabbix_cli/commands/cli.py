@@ -76,6 +76,15 @@ def get_directory(directory_type: DirectoryType, config: Optional[Config]) -> Pa
     return directory_type.as_path()
 
 
+@app.command("show_dirs", rich_help_panel=HELP_PANEL)
+def show_directories(ctx: typer.Context) -> None:
+    """Show the default directories used by the application."""
+    from zabbix_cli.commands.results.cli import DirectoriesResult
+
+    result = DirectoriesResult.from_directory_types(list(DirectoryType))
+    render_result(result)
+
+
 @app.command("open", rich_help_panel=HELP_PANEL)
 def open_config_dir(
     ctx: typer.Context,
