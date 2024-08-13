@@ -169,18 +169,13 @@ class State:
         Finally, the API version is set on the ZabbixAPIBaseModel class, so that
         we know how to render the results for the given version of the API.
         """
-        from zabbix_cli import auth
-        from zabbix_cli.models import TableRenderable
         from zabbix_cli.pyzabbix.client import ZabbixAPI
 
         self.config = config
 
         # Create the Zabbix API client object and log in
         self.client = ZabbixAPI.from_config(config)
-        auth.login(self.client, config)
-
-        TableRenderable.zabbix_version = self.client.version
-        TableRenderable.legacy_json_format = config.app.legacy_json_format
+        self.login()
 
     def revert_config_overrides(self) -> None:
         """Revert config overrides from CLI args applied in REPL.
@@ -205,12 +200,37 @@ class State:
         else:
             self.config = self._config_repl_original.model_copy(deep=True)
 
-    def logout(self):
+    def login(self) -> None:
+        """Log in to the Zabbix API."""
+        from zabbix_cli import auth
+        from zabbix_cli.models import TableRenderable
+
+        auth.login(self.client, self.config)
+        TableRenderable.zabbix_version = self.client.version
+        TableRenderable.legacy_json_format = self.config.app.legacy_json_format
+
+    def logout(self) -> None:
         """Ends the current user's API session if the client is logged in
         and the application is not configured to use an auth token file.
         """
         from zabbix_cli.auth import clear_auth_token_file
 
+        try:
+            # Technically this API endpoint might return "false", which
+            # would signify that that the logout somehow failed, but it's
+            # not documented in the API docs.
+            self.client.logout()
+            # Token is now expired - delete it
+            clear_auth_token_file(self.config)
+        except Exception as e:
+            from zabbix_cli.output.console import exit_err
+
+            exit_err(f"Failed to log out of Zabbix API session: {e}")
+
+    def logout_on_exit(self) -> None:
+        """Ends the current user's API session if the client is logged in
+        and the application is not configured to use an auth token file.
+        """
         # If we are NOT keeping the API session alive between CLI invocations
         # we need to remember to log out once we are done in order to end the
         # session properly.
@@ -223,18 +243,7 @@ class State:
             or self.config.app.use_auth_token_file
         ):
             return
-
-        try:
-            # Technically this API endpoint might return "false", which
-            # would signify that that the logout somehow failed, but it's
-            # not documented in the API docs.
-            self.client.user.logout()
-            # Token is now expired - delete it
-            clear_auth_token_file()
-        except Exception as e:
-            from zabbix_cli.output.console import exit_err
-
-            exit_err(f"Failed to log out of Zabbix API session: {e}")
+        self.logout()
 
 
 def get_state() -> State:

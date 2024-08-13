@@ -22,10 +22,12 @@ from typing import Tuple
 
 from zabbix_cli._v2_compat import AUTH_FILE as AUTH_FILE_LEGACY
 from zabbix_cli._v2_compat import AUTH_TOKEN_FILE as AUTH_TOKEN_FILE_LEGACY
+from zabbix_cli.config.constants import AUTH_FILE
+from zabbix_cli.config.constants import AUTH_TOKEN_FILE
 from zabbix_cli.config.constants import ConfigEnvVars
-from zabbix_cli.dirs import DATA_DIR
+from zabbix_cli.exceptions import AuthError
 from zabbix_cli.exceptions import AuthTokenFileError
-from zabbix_cli.exceptions import ZabbixCLIError
+from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.prompts import str_prompt
@@ -34,131 +36,250 @@ if TYPE_CHECKING:
     from zabbix_cli.config.model import Config
     from zabbix_cli.pyzabbix.client import ZabbixAPI
 
-    AuthFunc = Callable[[Config], Tuple[Optional[str], Optional[str]]]
+    UsernamePWMethod = Callable[[], Tuple[Optional[str], Optional[str]]]
     """Function that returns a username/password tuple or None if not available."""
+
+    AuthMethod = Callable[[], str]
 
 logger = logging.getLogger(__name__)
 
 
 # Auth file location
-AUTH_FILE = DATA_DIR / ".zabbix-cli_auth"
-"""Path to file containing user credentials."""
 
-AUTH_TOKEN_FILE = DATA_DIR / ".zabbix-cli_auth_token"
-"""Path to file containing API session token."""
 
 SECURE_PERMISSIONS: Final[int] = 0o600
 SECURE_PERMISSIONS_STR = format(SECURE_PERMISSIONS, "o")
 
 
-def login(client: ZabbixAPI, config: Config) -> None:
-    """Log the client in to the Zabbix API using the configured credentials
-    and stores the API session token in an auth token file if configured.
-    """
-    from pydantic import SecretStr
+class Authenticator:
+    """Encapsulates logic for authenticating with the Zabbix API
+    using various methods, as well as storing and loading auth tokens."""
 
-    configure_auth(config)  # must bootstrap config first
+    client: ZabbixAPI
+    config: Config
 
-    username = config.api.username
-    config_token = None
-    password = None
-    if config.app.use_auth_token_file and config.api.auth_token:
-        config_token = config.api.auth_token.get_secret_value()
-    elif config.api.password:
-        password = config.api.password.get_secret_value()
-    else:
-        # Should never happen due to running configure_auth() first
-        raise ZabbixCLIError("No password or auth token configured.")
+    def __init__(self, client: ZabbixAPI, config: Config) -> None:
+        self.client = client
+        self.config = config
 
-    if not config.api.verify_ssl:
-        client.disable_ssl_verification()
+    def login(self) -> str:
+        """Log in to the Zabbix API using the configured credentials.
 
-    token = client.login(user=username, password=password, auth_token=config_token)
-    # Write the token file if it's new and we are configured to save it
-    if (
-        config.app.use_auth_token_file
-        and config.api.username  # we need a username in the token file
-        and token  # must be not None and not empty
-        and token != config_token  # must be a new token
-    ):
-        write_auth_token_file(config.app.username, token)
-    config.api.auth_token = SecretStr(token)
+        If multiple methods are available, they are tried in the following order:
 
+        1. API token in config file
+        2. API token in file (if `use_auth_token_file=true`)
+        3. Username and password in config file
+        4. Username and password in auth file
+        5. Username and password in environment variables
+        6. Username and password from prompt
+        """
+        # HACK: ensure that client auth token is cleared before entering login flow.
+        # The client may have an auth token already!
+        # We also can't rely on comparing new and old tokens, because if we use
+        # an API auth token, we get the same token back.
+        self.client.auth = ""
+        for func in [
+            self.login_with_auth_token_from_config,
+            self.login_with_auth_token_file,
+            self.login_with_username_password_auto,
+        ]:
+            try:
+                auth_token = func()
+                if auth_token:
+                    logger.debug("Logged in with %s", func.__name__)
+                    break
+            except ZabbixAPIException as e:
+                logger.warning("Failed to log in with %s: %s", func.__name__, e)
+                continue
+        else:
+            raise AuthError("No authentication method succeeded.")
+        return auth_token
 
-def configure_auth(config: Config) -> None:
-    """Configure Zabbix API authentication.
+    def login_with_username_password(
+        self, username: Optional[str] = None, password: Optional[str] = None
+    ) -> str:
+        return self.client.login(user=username, password=password)
 
-    Bootstraps the config object with the configured authentication info.
-    """
-    # Use token file if enabled
-    if config.app.use_auth_token_file:
-        configure_auth_token(config)
-    # Always fall back on username/password if token cannot be loaded or is disabled
-    if not config.api.auth_token:
-        configure_auth_username_password(config)
+    def login_with_username_password_auto(self) -> Optional[str]:
+        """Automatically get a username and password and log in"""
+        username, password = self.get_username_password()
+        if username and password:
+            return self.login_with_username_password(username, password)
 
-    # Sanity checks to ensure our auth functions set the required info
-    # This should never happen.
-    if not (config.api.username and config.api.password) and not config.api.auth_token:
-        raise ZabbixCLIError(
-            "No authentication method configured. Cannot continue. Please check your configuration file."
-        )
+    def get_username_password(self) -> Tuple[Optional[str], Optional[str]]:
+        """Gets a Zabbix username and password with the following priority:
 
+        1. Config file
+        2. Auth file
+        3. Environment variables
+        4. Prompt for it
+        """
+        funcs: List[UsernamePWMethod] = [
+            self._get_username_password_from_config,
+            self._get_username_password_auth_file,
+            self._get_username_password_env,
+            self._get_username_password_from_prompt,
+        ]
+        for func in funcs:
+            username, password = func()
+            if username and password:
+                logger.debug(f"Got username and password from {func.__name__}")
+                return username, password
+        error("No username and password found.")
+        return None, None
 
-def configure_auth_token(config: Config) -> None:
-    from pydantic import SecretStr
+    def _get_username_password_env(self) -> Tuple[Optional[str], Optional[str]]:
+        """Get username and password from environment variables."""
+        username = os.environ.get(ConfigEnvVars.USERNAME)
+        password = os.environ.get(ConfigEnvVars.PASSWORD)
+        return username, password
 
-    contents = load_auth_token_file(config)
-    username, auth_token = _parse_auth_file_contents(contents)
-    # If we have a mismatch between username in config and auth token, we
-    # can't use the auth token. We don't clear it here, but it will never be
-    # loaded by us as long as the usernames don't match.
-    # When we prompt for username and password and store the new auth token,
-    # the old auth token will be overwritten.
-    if username and username != config.api.username:
+    # TODO: refactor. Support other auth file locations(?)
+    def _get_username_password_auth_file(
+        self,
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Get username and password from environment variables."""
+        contents = self.load_auth_file()
+        return _parse_auth_file_contents(contents)
+
+    def _get_username_password_from_config(
+        self,
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Get username and password from config file."""
+        return (self.config.api.username, self.config.api.password.get_secret_value())
+
+    def _get_username_password_from_prompt(
+        self,
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Get username and password from prompt."""
+        return prompt_username_password(username=self.config.api.username)
+
+    def login_with_auth_token_from_config(self) -> str:
+        if self.config.api.auth_token:
+            self.client.login(auth_token=self.config.api.auth_token.get_secret_value())
+        return self.client.auth
+
+    def login_with_auth_token_file(self) -> Optional[str]:
+        if not self.config.app.use_auth_token_file:
+            return None
+
+        contents = self._load_auth_token_file()
+        # FIXME: requires username to login with token here!
+        # That is not actually the case in the API itself
+        username, auth_token = _parse_auth_file_contents(contents)
+        if not auth_token:
+            return None
+        if username and username == self.config.api.username:
+            return self.client.login(auth_token=auth_token)
+        # Found token, but does match configured username
         warning(
             "Ignoring existing auth token. "
-            f"Username {username!r} does not match configured username {config.api.username!r}."
+            f"Username {username!r} does not match configured username {self.config.api.username!r}."
         )
-        return
-    if auth_token:  # technically not needed, but might as well
-        config.api.auth_token = SecretStr(auth_token)
+
+    def _load_auth_token_file(self) -> Optional[str]:
+        paths = get_auth_token_file_paths(self.config)
+        for path in paths:
+            contents = _do_load_auth_file(path, self.config.app.allow_insecure_authfile)
+            if contents:
+                return contents
+        logger.error(
+            f"No auth token file found. Searched in {', '.join(str(p) for p in paths)}"
+        )
+
+    def load_auth_file(self) -> Optional[str]:
+        """Loads a"""
+        paths = get_auth_file_paths(self.config)
+        for path in paths:
+            contents = self._load_auth_file(path)
+            if contents:
+                return contents
+        logger.error(
+            f"No auth file found. Searched in {', '.join(str(p) for p in paths)}"
+        )
+
+    def _load_auth_file(self, file: Path) -> Optional[str]:
+        """Attempts to read the contents of an auth file.
+        Returns None if the file does not exist or is not secure.
+        """
+        if not file.exists():
+            return None
+        if (
+            not self.config.app.allow_insecure_authfile
+            and not file_has_secure_permissions(file)
+        ):
+            error(
+                f"Auth file {file} must have {SECURE_PERMISSIONS_STR} permissions, has {oct(get_file_permissions(file))}. Refusing to load."
+            )
+            return None
+        return file.read_text().strip()
 
 
-def configure_auth_username_password(config: Config) -> None:
-    """Gets a Zabbix username and password with the following priority:
+def login(client: ZabbixAPI, config: Config) -> None:
+    auth = Authenticator(client, config)
+    token = auth.login()
+    if config.app.use_auth_token_file:
+        write_auth_token_file(config.api.username, token, config.app.auth_token_file)
 
-    1. Environment variables
-    2. Auth file
-    3. Prompt for it
+
+def prompt_username_password(username: str) -> Tuple[str, str]:
+    """Prompt for username and password."""
+    username = str_prompt("Username", default=username, empty_ok=False)
+    password = str_prompt("Password", password=True, empty_ok=False)
+    return username, password
+
+
+def _parse_auth_file_contents(
+    contents: Optional[str],
+) -> Tuple[Optional[str], Optional[str]]:
+    """Parse the contents of an auth file.
+
+    We store auth files in the format `username::secret`.
     """
-    from pydantic import SecretStr
+    if contents:
+        lines = contents.splitlines()
+        if lines:
+            line = lines[0].strip()
+            username, _, secret = line.partition("::")
+            return username, secret
+    return None, None
 
-    funcs: List[AuthFunc] = [
-        _get_username_password_env,
-        _get_username_password_auth_file,
+
+def _do_load_auth_file(file: Path, allow_insecure: bool) -> Optional[str]:
+    """Attempts to read the contents of an auth file.
+    Returns None if the file does not exist or is not secure.
+    """
+    if not file.exists():
+        return None
+    if not allow_insecure and not file_has_secure_permissions(file):
+        error(
+            f"Auth file {file} must have {SECURE_PERMISSIONS_STR} permissions, has {oct(get_file_permissions(file))}. Refusing to load."
+        )
+        return None
+    return file.read_text().strip()
+
+
+def get_auth_file_paths(config: Optional[Config] = None) -> List[Path]:
+    """Get all possible auth token file paths."""
+    paths = [
+        AUTH_FILE,
+        AUTH_FILE_LEGACY,
     ]
-    for func in funcs:
-        username, password = func(config)
-        if username and password:
-            break
-    else:
-        # Found no auth methods, prompt for it
-        username, password = prompt_username_password(config)
-    config.api.username = username
-    config.api.password = SecretStr(password)
+    if config and config.app.auth_file not in paths:
+        paths.append(config.app.auth_file)
+    return paths
 
 
-def load_auth_token_file(config: Config) -> Optional[str]:
-    files = (AUTH_TOKEN_FILE, AUTH_TOKEN_FILE_LEGACY)
-    for file in files:
-        contents = _do_load_auth_file(file, config.app.allow_insecure_authfile)
-        if contents:
-            return contents
-    logging.debug(
-        f"No auth token file found. Searched in {', '.join(str(f) for f in files)}"
-    )
-    return None
+def get_auth_token_file_paths(config: Optional[Config] = None) -> List[Path]:
+    """Get all possible auth token file paths."""
+    paths = [
+        AUTH_TOKEN_FILE,
+        AUTH_TOKEN_FILE_LEGACY,
+    ]
+    if config and config.app.auth_token_file not in paths:
+        paths.append(config.app.auth_token_file)
+    return paths
 
 
 def write_auth_token_file(
@@ -190,81 +311,16 @@ def clear_auth_token_file(config: Optional[Config] = None) -> None:
 
     Optionally also clears the loaded auth token from the config object.
     """
-    for file in (AUTH_TOKEN_FILE, AUTH_TOKEN_FILE_LEGACY):
+    for file in get_auth_token_file_paths(config):
+        if not file.exists():
+            logger.debug(f"Auth token file {file} does not exist. Skipping...")
+            continue
         try:
-            _do_clear_auth_token_file(file)
+            file.write_text("")
+            logger.debug(f"Cleared auth token file contents {file}")
         except OSError as e:
             # Only happens if file exists and we fail to write to it.
             error(f"Unable to clear auth token file {file}: {e}")
-    if config:
-        config.api.auth_token = None
-
-
-def _do_clear_auth_token_file(file: Path) -> None:
-    if file.exists():
-        file.write_text("")
-        logger.debug(f"Cleared auth token file contents {file}")
-    else:
-        logger.debug(f"Auth token file {file} does not exist. Skipping...")
-
-
-def prompt_username_password(config: Config) -> Tuple[str, str]:
-    """Prompt for username and password."""
-    username = str_prompt("Username", default=config.api.username)
-    password = str_prompt("Password", password=True)
-    return username, password
-
-
-def _get_username_password_env(config: Config) -> Tuple[Optional[str], Optional[str]]:
-    """Get username and password from environment variables."""
-    username = os.environ.get(ConfigEnvVars.USERNAME)
-    password = os.environ.get(ConfigEnvVars.PASSWORD)
-    return username, password
-
-
-# TODO: refactor. Support other auth file locations(?)
-def _get_username_password_auth_file(
-    config: Config,
-) -> Tuple[Optional[str], Optional[str]]:
-    """Get username and password from environment variables."""
-    contents = load_auth_file(config)
-    return _parse_auth_file_contents(contents)
-
-
-def _parse_auth_file_contents(
-    contents: Optional[str],
-) -> Tuple[Optional[str], Optional[str]]:
-    if contents:
-        lines = contents.splitlines()
-        if lines:
-            line = lines[0].strip()
-            username, _, secret = line.partition("::")
-            return username, secret
-    return None, None
-
-
-def load_auth_file(config: Config) -> Optional[str]:
-    files = (AUTH_FILE, AUTH_FILE_LEGACY)
-    for file in files:
-        contents = _do_load_auth_file(file, config.app.allow_insecure_authfile)
-        if contents:
-            return contents
-    logging.debug(f"No auth file found. Searched in {', '.join(str(f) for f in files)}")
-    return None
-
-
-def _do_load_auth_file(file: Path, allow_insecure: bool) -> Optional[str]:
-    """Attempts to read the contents of an auth file.
-    Returns None if the file does not exist or is not secure.
-    """
-    if not file.exists():
-        return None
-    if not allow_insecure and not file_has_secure_permissions(file):
-        error(
-            f"Auth file {file} must have {SECURE_PERMISSIONS_STR} permissions, has {oct(get_file_permissions(file))}. Refusing to load."
-        )
-        return None
-    return file.read_text().strip()
 
 
 def file_has_secure_permissions(file: Path) -> bool:

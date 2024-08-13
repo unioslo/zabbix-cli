@@ -24,7 +24,6 @@ import logging
 from pathlib import Path
 from typing import Any
 from typing import List
-from typing import Literal
 from typing import Optional
 
 from pydantic import AliasChoices
@@ -39,6 +38,8 @@ from pydantic import model_validator
 from typing_extensions import Self
 
 from zabbix_cli._v2_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
+from zabbix_cli.config.constants import AUTH_FILE
+from zabbix_cli.config.constants import AUTH_TOKEN_FILE
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import find_config
 from zabbix_cli.config.utils import load_config_conf
@@ -47,6 +48,7 @@ from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
 from zabbix_cli.exceptions import ConfigError
+from zabbix_cli.logs import LogLevelStr
 from zabbix_cli.pyzabbix.enums import ExportFormat
 
 
@@ -77,7 +79,7 @@ class APIConfig(BaseModel):
         # Changed in V3: system_id -> username
         validation_alias=AliasChoices("username", "system_id"),
     )
-    password: Optional[SecretStr] = Field(default=None, exclude=True)
+    password: SecretStr = Field(default="", exclude=True)
     verify_ssl: bool = Field(
         default=True,
         # Changed in V3: cert_verify -> verify_ssl
@@ -157,6 +159,8 @@ class AppConfig(BaseModel):
     )
     use_colors: bool = True
     use_auth_token_file: bool = True
+    auth_token_file: Path = AUTH_TOKEN_FILE
+    auth_file: Path = AUTH_FILE
     use_paging: bool = False
     output_format: OutputFormat = OutputFormat.TABLE
     history: bool = True
@@ -220,9 +224,7 @@ class LoggingConfig(BaseModel):
         # Changed in V3: logging -> enabled (we also allow enable [why?])
         validation_alias=AliasChoices("logging", "enabled", "enable"),
     )
-    log_level: Literal[
-        "DEBUG", "INFO", "WARN", "WARNING", "ERROR", "CRITICAL", "FATAL"
-    ] = "ERROR"
+    log_level: LogLevelStr = "ERROR"
     log_file: Optional[Path] = (
         # TODO: define this default path elsewhere
         LOGS_DIR / "zabbix-cli.log"

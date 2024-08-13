@@ -45,11 +45,19 @@ class CommandFileError(ZabbixCLIError):
     """Error running bulk commands from a file."""
 
 
-class AuthTokenFileError(ZabbixCLIError):
+class AuthError(ZabbixCLIError):
+    """Base class for all authentication errors."""
+
+    # NOTE: We might still run into the problem of expired tokens, which won't raise
+    # this type of error, but instead raise a ZabbixAPIRequestError.
+    # We should probably handle that in the client and raise the appropriate error
+
+
+class AuthTokenFileError(AuthError):
     """Auth token file error."""
 
 
-class AuthTokenError(ZabbixCLIError):  # NOTE: unused
+class AuthTokenError(AuthError):
     """Auth token (not file) error."""
 
 
@@ -88,6 +96,10 @@ class ZabbixAPIRequestError(ZabbixAPIException):
         else:
             reason = str(self)
         return reason
+
+
+class ZabbixAPITokenExpired(ZabbixAPIRequestError):
+    """Zabbix API token expired error."""
 
 
 class ZabbixAPIResponseParsingError(ZabbixAPIRequestError):
@@ -148,7 +160,7 @@ def get_cause_args(e: BaseException) -> List[str]:
         args.extend(str(get_cause_args(e.__cause__)))
     if isinstance(e, ZabbixAPIRequestError):
         args.append(e.reason())
-    return args
+    return [str(arg) for arg in args]
 
 
 def handle_notraceback(e: Exception) -> NoReturn:
@@ -187,7 +199,6 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
     from zabbix_cli.state import get_state
 
     state = get_state()
-
     # If we have a stale auth token, we need to clear it.
     if (
         state.is_config_loaded

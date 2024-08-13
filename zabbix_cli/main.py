@@ -192,7 +192,7 @@ def main() -> int:
         from zabbix_cli.state import get_state
 
         state = get_state()
-        state.logout()
+        state.logout_on_exit()
         logger.debug("Zabbix-CLI stopped.")
     return 0
 

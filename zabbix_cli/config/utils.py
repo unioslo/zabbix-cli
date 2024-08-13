@@ -119,15 +119,6 @@ def init_config(
         url = str_prompt("Zabbix URL (without /api_jsonrpc.php)", url or config.api.url)
 
     config.api.url = url
-    # TODO: re-use prompts from zabbix_cli.auth
-    username, password = auth.prompt_username_password(config)
-    config.api.username = username
-    config.api.password = SecretStr(password)
-
-    # HACK: login to client to get auth token
-    # This is kind of insane!!
-    # We should refactor all calls to auth.login().
-    # Writing the token file as a side-effect of calling auth.login() is bonkers.
     client = ZabbixAPI.from_config(config)
     auth.login(client, config)
     config.api.auth_token = SecretStr(client.auth)

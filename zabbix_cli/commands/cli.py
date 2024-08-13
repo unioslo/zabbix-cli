@@ -9,7 +9,6 @@ from typing import Optional
 
 import typer
 
-from zabbix_cli import auth
 from zabbix_cli.app import app
 from zabbix_cli.dirs import CONFIG_DIR
 from zabbix_cli.dirs import DATA_DIR
@@ -18,11 +17,11 @@ from zabbix_cli.dirs import LOGS_DIR
 from zabbix_cli.dirs import SITE_CONFIG_DIR
 from zabbix_cli.exceptions import ConfigExistsError
 from zabbix_cli.exceptions import ZabbixCLIError
-from zabbix_cli.logs import logger
 from zabbix_cli.output.console import info
 from zabbix_cli.output.console import print_path
 from zabbix_cli.output.console import print_toml
 from zabbix_cli.output.console import success
+from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.utils import open_directory
 
@@ -137,27 +136,44 @@ def debug_cmd(
 @app.command(name="login", rich_help_panel=HELP_PANEL)
 def login(
     ctx: typer.Context,
+    username: str = typer.Option(
+        None, "--username", "-u", help="Username to log in with."
+    ),
+    password: str = typer.Option(
+        None, "--password", "-p", help="Password to log in with."
+    ),
+    token: str = typer.Option(None, "--token", "-t", help="API token to log in with."),
 ) -> None:
     """Reauthenticate with the Zabbix API.
 
-    Creates a new auth token.
+    Creates a new auth token file if enabled in the config.
     """
+    from pydantic import SecretStr
+
     if not app.state.repl:
         raise ZabbixCLIError("This command is only available in the REPL.")
 
-    client = app.state.client
     config = app.state.config
 
-    # End current session if it's active
-    try:
-        app.state.client.user.logout()
-        if config.app.use_auth_token_file:
-            auth.clear_auth_token_file(config)
-    # Fails if no active session (ok)
-    except Exception as e:
-        logger.debug("Failed to log out: %s", e)
+    # Prompt for password if username is specified
+    if username and not password:
+        password = str_prompt(
+            "Password",
+            password=True,
+            empty_ok=False,
+        )
 
-    auth.login(client, config)
+    if username:
+        config.api.username = username
+        config.api.password = SecretStr(password)
+        config.api.auth_token = None  # Clear token if it exists
+    elif token:
+        config.api.auth_token = SecretStr(token)
+        config.api.password = SecretStr("")
+
+    # End current session if it's active
+    app.state.logout()
+    app.state.login()
     success(f"Logged in to {config.api.url} as {config.api.username}.")
 
 
@@ -206,10 +222,3 @@ def init(
         init_config(config_file=config_file, overwrite=overwrite)
     except ConfigExistsError as e:
         raise ZabbixCLIError(f"{e}. Use [option]--overwrite[/] to overwrite it") from e
-
-    # try:
-    #     login(ctx)  # is this too hacky?
-    # except Exception as e:
-    #     from zabbix_cli.exceptions import handle_exception
-
-    #     handle_exception(e)

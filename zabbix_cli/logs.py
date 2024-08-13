@@ -85,12 +85,20 @@ class SafeFormatter(logging.Formatter):
         return super().format(record)
 
 
-def get_log_level(level: str) -> int:
-    if level and level.isdigit():
-        return int(level)
-    elif level:
-        # Given a name, getLevelName returns the int level
-        return logging.getLevelName(level.upper())
+LogLevelStr = Literal["DEBUG", "INFO", "WARN", "WARNING", "ERROR", "CRITICAL", "FATAL"]
+
+
+def get_log_level(level: LogLevelStr) -> int:
+    if level == "DEBUG":
+        return logging.DEBUG
+    elif level == "INFO":
+        return logging.INFO
+    elif level in ("WARN", "WARNING"):
+        return logging.WARNING
+    elif level == "ERROR":
+        return logging.ERROR
+    elif level in ("CRITICAL", "FATAL"):
+        return logging.CRITICAL
     else:
         return logging.NOTSET
 
@@ -118,8 +126,16 @@ def configure_logging(config: LoggingConfig | None = None):
     handler.setFormatter(SafeFormatter(fmt=DEFAULT_FORMAT))
     root = logging.getLogger()
     root.handlers.clear()  # clear any existing handlers
+
+    # Log
     root.addHandler(handler)
-    root.setLevel(level)
+    root.setLevel(logging.WARNING)
+    zabbix_cli = logging.getLogger("zabbix_cli")
+    zabbix_cli.setLevel(level)
+
+    # Also log from HTTPX
+    httpx = logging.getLogger("httpx")
+    httpx.setLevel(level)
 
 
 #
