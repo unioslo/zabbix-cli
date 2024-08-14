@@ -30,14 +30,30 @@ Zabbix-cli need a config file. This can be created with the `zabbix-cli init` co
 zabbix-cli init --zabbix-url https://zabbix.example.com/
 ```
 
-Zabbix-cli will look for config files in the following order. Any later files will override the former:
+Zabbix-cli will look for config files in the following order:
 
-1. /usr/share/zabbix-cli/zabbix-cli.conf
-2. /etc/zabbix-cli/zabbix-cli.conf
-3. ~/.zabbix-cli/zabbix-cli.conf
-4. File specified with `-c`/`--config` parameter
-5. /etc/zabbix-cli/zabbix-cli.fixed.conf
-6. /usr/share/zabbix-cli/zabbix-cli.fixed.conf
+1. The path specified with the `--config` parameter
+2. `./zabbix-cli.toml`
+3. XDG config directory (usually `~/.config/zabbix-cli/zabbix-cli.toml`), or equivalent Platformdirs directory on [Windows](https://platformdirs.readthedocs.io/en/latest/api.html#windows) and [macOS](https://platformdirs.readthedocs.io/en/latest/api.html#macos)
+4. XDG site config directory (usually `/etc/xdg/zabbix-cli/zabbix-cli.toml`), or equivalent Platformdirs directory on [Windows](https://platformdirs.readthedocs.io/en/latest/api.html#windows) and [macOS](https://platformdirs.readthedocs.io/en/latest/api.html#macos)
+
+To show the directories used by the application run:
+
+```
+zabbix-cli show_dirs
+```
+
+To open the default config directory with the default window manager run:
+
+```bash
+zabbix-cli open config
+```
+
+Or print the path to the default config directory:
+
+```bash
+zabbix-cli open config --path
+```
 
 Zabbix-cli provides commands for showing the current and default configuration:
 
