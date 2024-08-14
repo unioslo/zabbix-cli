@@ -211,7 +211,7 @@ class State:
         TableRenderable.legacy_json_format = self.config.app.legacy_json_format
 
     def logout(self) -> None:
-        """Log out and clear auth token file."""
+        """Log out and clear auth token file if configured."""
         from zabbix_cli import auth
 
         auth.logout(self.client, self.config)

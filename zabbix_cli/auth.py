@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 from typing import Callable
 from typing import Final
 from typing import List
+from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
     from zabbix_cli.config.model import Config
     from zabbix_cli.pyzabbix.client import ZabbixAPI
 
+    CredentialsMethod = Callable[[], "Credentials"]
     UsernamePWMethod = Callable[[], Tuple[Optional[str], Optional[str]]]
     """Function that returns a username/password tuple or None if not available."""
 
@@ -50,6 +52,20 @@ logger = logging.getLogger(__name__)
 
 SECURE_PERMISSIONS: Final[int] = 0o600
 SECURE_PERMISSIONS_STR = format(SECURE_PERMISSIONS, "o")
+
+
+class Credentials(NamedTuple):
+    username: Optional[str] = None
+    password: Optional[str] = None
+    auth_token: Optional[str] = None
+
+    def is_valid(self) -> bool:
+        """Check if credentials are valid (non-empty)."""
+        if self.username and self.password:
+            return True
+        if self.auth_token:
+            return True
+        return False
 
 
 class Authenticator:
@@ -75,109 +91,93 @@ class Authenticator:
         5. Username and password in environment variables
         6. Username and password from prompt
         """
-        # HACK: ensure that client auth token is cleared before entering login flow.
-        # The client may have an auth token already!
-        # We also can't rely on comparing new and old tokens, because if we use
-        # an API auth token, we get the same token back.
-        self.client.auth = ""
         for func in [
-            self.login_with_auth_token_from_config,
-            self.login_with_auth_token_file,
-            self.login_with_username_password_auto,
-        ]:
-            try:
-                auth_token = func()
-                if auth_token:
-                    logger.debug("Logged in with %s", func.__name__)
-                    break
-            except ZabbixAPIException as e:
-                logger.warning("Failed to log in with %s: %s", func.__name__, e)
-                continue
-        else:
-            raise AuthError("No authentication method succeeded.")
-        return auth_token
-
-    def login_with_username_password(
-        self, username: Optional[str] = None, password: Optional[str] = None
-    ) -> str:
-        return self.client.login(user=username, password=password)
-
-    def login_with_username_password_auto(self) -> Optional[str]:
-        """Automatically get a username and password and log in"""
-        username, password = self.get_username_password()
-        if username and password:
-            return self.login_with_username_password(username, password)
-
-    def get_username_password(self) -> Tuple[Optional[str], Optional[str]]:
-        """Gets a Zabbix username and password with the following priority:
-
-        1. Config file
-        2. Auth file
-        3. Environment variables
-        4. Prompt for it
-        """
-        funcs: List[UsernamePWMethod] = [
+            self._get_auth_token_from_config,
+            self._get_auth_token_from_file,
             self._get_username_password_config,
             self._get_username_password_auth_file,
             self._get_username_password_env,
             self._get_username_password_prompt,
-        ]
-        for func in funcs:
-            username, password = func()
-            if username and password:
-                logger.debug(f"Got username and password from {func.__name__}")
-                return username, password
-        error("No username and password found.")
-        return None, None
+        ]:
+            try:
+                credentials = func()
+                if not credentials.is_valid():
+                    logger.debug("No credentials found with %s", func.__name__)
+                    continue
+                logger.debug(
+                    "Attempting to log in with credentials from %s", func.__name__
+                )
+                return self.do_login(credentials)
+            except ZabbixAPIException as e:
+                logger.warning("Failed to log in with %s: %s", func.__name__, e)
+                continue
+            except Exception as e:
+                logger.error(
+                    "Unexpected error logging in with %s: %s", func.__name__, e
+                )
+                continue
+        else:
+            raise AuthError("No authentication method succeeded.")
 
-    def _get_username_password_env(self) -> Tuple[Optional[str], Optional[str]]:
+    def do_login(self, credentials: Credentials) -> str:
+        """Log in to the Zabbix API using the provided credentials."""
+        return self.client.login(
+            user=credentials.username,
+            password=credentials.password,
+            auth_token=credentials.auth_token,
+        )
+
+    def _get_username_password_env(self) -> Credentials:
         """Get username and password from environment variables."""
-        username = os.environ.get(ConfigEnvVars.USERNAME)
-        password = os.environ.get(ConfigEnvVars.PASSWORD)
-        return username, password
+        return Credentials(
+            username=os.environ.get(ConfigEnvVars.USERNAME),
+            password=os.environ.get(ConfigEnvVars.PASSWORD),
+        )
 
-    # TODO: refactor. Support other auth file locations(?)
     def _get_username_password_auth_file(
         self,
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> Credentials:
         """Get username and password from environment variables."""
         contents = self.load_auth_file()
-        return _parse_auth_file_contents(contents)
+        username, password = _parse_auth_file_contents(contents)
+        return Credentials(username=username, password=password)
 
     def _get_username_password_config(
         self,
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> Credentials:
         """Get username and password from config file."""
-        return (self.config.api.username, self.config.api.password.get_secret_value())
+        return Credentials(
+            username=self.config.api.username,
+            password=self.config.api.password.get_secret_value(),
+        )
 
     def _get_username_password_prompt(
         self,
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> Credentials:
         """Get username and password from prompt."""
-        return prompt_username_password(username=self.config.api.username)
+        username, password = prompt_username_password(username=self.config.api.username)
+        return Credentials(username=username, password=password)
 
-    def login_with_auth_token_from_config(self) -> str:
-        if self.config.api.auth_token:
-            self.client.login(auth_token=self.config.api.auth_token.get_secret_value())
-        return self.client.auth
+    def _get_auth_token_from_config(self) -> Credentials:
+        return Credentials(auth_token=self.config.api.auth_token.get_secret_value())
 
-    def login_with_auth_token_file(self) -> Optional[str]:
+    def _get_auth_token_from_file(self) -> Credentials:
         if not self.config.app.use_auth_token_file:
-            return None
+            logger.debug("Not configured to use auth token file.")
+            return Credentials()
 
         contents = self._load_auth_token_file()
-        # FIXME: requires username to login with token here!
-        # That is not actually the case in the API itself
         username, auth_token = _parse_auth_file_contents(contents)
-        if not auth_token:
-            return None
-        if username and username == self.config.api.username:
-            return self.client.login(auth_token=auth_token)
-        # Found token, but does match configured username
-        warning(
-            "Ignoring existing auth token. "
-            f"Username {username!r} does not match configured username {self.config.api.username!r}."
-        )
+
+        # Found token, but does not match configured username
+        if auth_token and username and username != self.config.api.username:
+            warning(
+                "Ignoring existing auth token. "
+                f"Username {username!r} does not match configured username {self.config.api.username!r}."
+            )
+            auth_token = None
+
+        return Credentials(auth_token=auth_token)
 
     def _load_auth_token_file(self) -> Optional[str]:
         paths = get_auth_token_file_paths(self.config)
@@ -227,7 +227,8 @@ def login(client: ZabbixAPI, config: Config) -> None:
 def logout(client: ZabbixAPI, config: Config) -> None:
     try:
         client.logout()
-        clear_auth_token_file(config)
+        if config.app.use_auth_token_file:
+            clear_auth_token_file(config)
     except ZabbixAPIException as e:
         exit_err(f"Failed to log out of Zabbix API session: {e}")
     except AuthTokenFileError as e:
@@ -277,7 +278,7 @@ def get_auth_file_paths(config: Optional[Config] = None) -> List[Path]:
         AUTH_FILE,
         AUTH_FILE_LEGACY,
     ]
-    if config and config.app.auth_file not in paths:
+    if config and config.app.auth_file not in paths:  # config has custom path
         paths.append(config.app.auth_file)
     return paths
 
@@ -288,7 +289,7 @@ def get_auth_token_file_paths(config: Optional[Config] = None) -> List[Path]:
         AUTH_TOKEN_FILE,
         AUTH_TOKEN_FILE_LEGACY,
     ]
-    if config and config.app.auth_token_file not in paths:
+    if config and config.app.auth_token_file not in paths:  # config has custom path
         paths.append(config.app.auth_token_file)
     return paths
 
@@ -302,7 +303,10 @@ def write_auth_token_file(
         try:
             file.touch(mode=SECURE_PERMISSIONS)
         except OSError as e:
-            raise AuthTokenFileError(f"Unable to create auth token file {file}.") from e
+            raise AuthTokenFileError(
+                f"Unable to create auth token file {file}. "
+                "Change the location or disable auth token file in config."
+            ) from e
     elif not file_has_secure_permissions(file):
         try:
             file.chmod(SECURE_PERMISSIONS)
@@ -324,13 +328,11 @@ def clear_auth_token_file(config: Optional[Config] = None) -> None:
     """
     for file in get_auth_token_file_paths(config):
         if not file.exists():
-            logger.debug("Auth token file '%s' does not exist. Skipping...", file)
             continue
         try:
             file.write_text("")
             logger.debug("Cleared auth token file contents '%s'", file)
         except OSError as e:
-            # Only happens if file exists and we fail to write to it.
             raise AuthTokenFileError(
                 f"Unable to clear auth token file {file}: {e}"
             ) from e
