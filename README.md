@@ -12,9 +12,7 @@ The manual is available on-line at <https://unioslo.github.io/zabbix-cli/manual.
 
 ## Install
 
-There are versioned deb and rpm releases available on the [GitHub releases page](https://github.com/unioslo/zabbix-cli/releases).
-
-You could also install directly from GitHub with pip:
+Install with pip:
 
 ```bash
 pip install git+https://github.com/unioslo/zabbix-cli.git@master
@@ -24,7 +22,7 @@ pip install git+https://github.com/unioslo/zabbix-cli.git@master
 
 ### Configuration
 
-Zabbix-cli need a config file. This can be created with the `zabbix-cli init` command.
+Zabbix-cli needs a config file. This can be created with the `zabbix-cli init` command.
 
 ```bash
 zabbix-cli init --zabbix-url https://zabbix.example.com/
