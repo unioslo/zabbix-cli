@@ -4,7 +4,6 @@ The application is configured with a TOML file. The default location is platform
 
 {% include ".includes/config-locations.md" %}
 
-
 ## Open configuration directory
 
 The default configuration directory can be opened in the system's file manager with the `open` command:
@@ -53,13 +52,12 @@ A more convoluted way of creating a default config file in the default location 
 zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
 ```
 
-
 ## Show configuration file contents
 
-The contents of the current configuration file can be displayed with `show_zabbixcli_config`:
+The contents of the current configuration file can be displayed with `show_config`:
 
 ```bash
-zabbix-cli show_zabbixcli_config
+zabbix-cli show_config
 ```
 
 ## Sample configuration file
@@ -67,7 +65,6 @@ zabbix-cli show_zabbixcli_config
 ```toml
 {% include "data/sample_config.toml" %}
 ```
-
 
 ## Configuration options
 
@@ -91,7 +88,6 @@ The `api` section contains the configuration for the Zabbix API.
 URL of the Zabbix API host. Should not include the `/api_jsonrpc.php` path.
 
 Type: `str`
-
 
 ----
 
