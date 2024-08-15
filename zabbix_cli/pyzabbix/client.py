@@ -159,6 +159,7 @@ def parse_name_or_id_arg(
     search_union: bool = True,
     search_params: Optional[ParamsType] = None,
 ) -> ParamsType:
+    """Parse a tuple of names or IDs and add them to an existing params dict."""
     search_params = search_params or {}
     if "*" in names_or_ids:
         names_or_ids = tuple()
@@ -186,8 +187,11 @@ def parse_name_or_id_arg(
 
 
 def get_returned_list(returned: Any, key: str, endpoint: str) -> List[str]:
+    """Retrieve a list from a given key in a Zabbix API response."""
     if not isinstance(returned, dict):
-        raise ZabbixAPIException(f"{endpoint!r} did not return a dict")
+        raise ZabbixAPIException(
+            f"Expected endpoint {endpoint!r} to return a dict, got {type(returned)}"
+        )
     response_list = returned.get(key, [])  # pyright: ignore[reportUnknownMemberType,reportUnknownVariableType]
     if not isinstance(response_list, list):
         raise ZabbixAPIException(
