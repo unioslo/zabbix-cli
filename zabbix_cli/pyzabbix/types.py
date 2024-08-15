@@ -546,7 +546,7 @@ class HostInterface(ZabbixAPIBaseModel):
 
 class CreateHostInterfaceDetails(ZabbixAPIBaseModel):
     version: int
-    bulk: int
+    bulk: Optional[int] = None
     community: Optional[str] = None
     max_repetitions: Optional[int] = None
     securityname: Optional[str] = None
