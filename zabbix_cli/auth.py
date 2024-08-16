@@ -107,7 +107,9 @@ class Authenticator:
                 logger.debug(
                     "Attempting to log in with credentials from %s", func.__name__
                 )
-                return self.do_login(credentials)
+                token = self.do_login(credentials)
+                logger.info("Logged in with %s", func.__name__)
+                return token
             except ZabbixAPIException as e:
                 logger.warning("Failed to log in with %s: %s", func.__name__, e)
                 continue
