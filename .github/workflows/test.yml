@@ -12,12 +12,10 @@ name: CI
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version:
-          - '3.6'
-          - '3.7'
           - '3.8'
           - '3.9'
           - '3.10'
@@ -25,16 +23,14 @@ jobs:
           - '3.12'
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-          # Default cache key is requirements.txt.
-          cache-dependency-path: setup.py
       - name: Install dependencies
         run: |
-          pip install requests pytest
+          pip install .[test]
       - name: Test
         run: python -m pytest -vv

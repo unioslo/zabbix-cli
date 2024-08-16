@@ -1,0 +1,275 @@
+* Configure file logging for scripts as well???
+
+# IMPORTANT
+
+* add_host_to_hostgroup & remove_host_from_hostgroup should probably take 2 positional arguments as opposed to 2 options. The current implementation is over-complicated.
+
+* Auto relogin + custom error when this happens:
+
+```
+✗ ERROR: Failed to get all host groups: ("Error -32602: Invalid params.: Session terminated, re-login, please. while sending {'jsonrpc': '2.0', 'method': 'hostgroup.get', 'params': {'output': 'extend', 'selectHosts': 'extend', 'sortorder': 'ASC', 'sortfield': 'name'}, 'id': 3, 'auth': '1234abc'}", -32602)
+```
+
+THIS WILL NOT BE CAUGHT WHEN A METHOD RE-RAISES ZabbixAPICallError for some reason!
+
+* Add type checking method for return value of API calls. E.g. `update` and `massupdate` should return a dict with a key called something like `hostids` containing a list of updated hosts. We should have a method that can be called something like this:
+
+```python
+ret = self.host.massupdate(...)
+updated = check_return(ret, "hostids")
+reveal_type(updated) # List[str]
+```
+
+----------------
+
+## API
+
+* Add some sort of `process_params` method that can be used to process params and add them to the ParamsType mapping, to reduce code duplication within each method.
+
+* Add support for both names and IDs in certain API methods. This adds a bunch of complexity, but is required to support some V2 features. Drop them?
+
+* Move all APIStrEnum classes into pyzabbix. Add `enums` module to pyzabbix?
+
+* Wrap most POST/UPDATE/DELETEs in a try/except block that catches ZabbixAPIExceptions and re-raises it with a more understandable error message.
+  * Some methods already do this, but not all.
+
+* Wrap GETs in try/except as well. About half of the methods do this... Very inconsistent.
+
+* Some sort of type checking of API results.
+  * If we expect a list, we should have a function that does the appropriate isinstance checks, and possibly also converts each item in the list to the correct type.
+  * Similarly, each response is likely a dict of some sort, but we should ensure it actually is a dict before we try to access it.
+
+* Log all API calls and responses.
+  * Successful calls should be logged at INFO level.
+    * I.e. `logger.info("Acknowledged event: %s. Closed: %s", event_id, close)`
+  * Failures that raise exceptions don't need to log anything (they are logged by the exception handler).
+  * In debug mode, we can also log the request and response.
+  * This will help us debug issues with the API.
+
+### Utils
+
+Use APIStr enums in functions that take in a code and return a string representation. That way we don't create duplicate definitions for the same objects/concepts/choices.
+
+## Args
+
+* Hide positional args from help?
+* Consistent hostname vs hostname_or_id arguments
+
+## Auth
+
+* Add configurable auth token file location. Requires a minor refactoring of functions in `auth.py` to locate the custom file. Also might not be possible to automatically clear the file when we encounter an error with an exipred token.
+
+## Bulk / -C mode
+
+* Add timeout to commands when running in bulk mode in case command prompts for input.
+* Populate cache when in bulk mode.
+* Automatically enable headless mode when running in bulk mode.
+
+## Cache
+
+* Implement caching (do we need it?)
+* If implememented:
+  * Add option to enable/disable cache.
+    * Both in REPL mode and in bulk mode.
+  * Add command to clear cache.
+
+## Commands
+
+* Add command aliases: <https://github.com/tiangolo/typer/issues/132>
+  * Two options:
+    * Add new name `show_host` -> `host-show`, hide old name. (easy)
+      * Need some sort of decorator like @app.old_name("show_host")
+        * Registers the command with hidden=True
+        * Adds `Old name: show_host` to the bottom of the help text.
+        * This lets us traverse all the commands and create a mapping of old to new names, as well as providing it in the help text.
+    * Add new sub-apps a la Harbor CLI: `show_host` -> `host show` (hard)
+      * Requires a bigger refactoring and is semantically different from the current set up.
+
+* Sort command categories by help panel names.
+  * Sorting order seems to be alphabetical BUT BASED ON THE COMMAND NAMES. So if one category has a command that starts with "A" and another category has a command that starts with "B", then the category with the "A" command will be listed first, regardless of the category name. Why...
+
+* `show_template` and `show_templates`:
+* Remove one of the commands and set the default to `*` to the other command, so we mimick the old behavior. Since we can filter names with both of them, the only difference is whether we show all results or just one (meaningless distinction).
+
+* `show_alarms`
+  * Color severity levels.
+
+* `remove_template_from_group`:
+  * Add `--dryrun` option.
+
+## Config
+
+* Catch when users use deprecated names and warn them. Also warn when we load a .conf config.
+* Add support for .fixed.conf files
+* Add loading config from multiple sources. Each new config adds to the existing config and overrides values, like how it was in v2.
+* Use `ctx.config_map` to set command param defaults from config.
+  * Lets us set defaults for all commands in one place.
+  * <https://github.com/tiangolo/typer/issues/86>
+  * <https://jwodder.github.io/kbits/posts/click-config/>
+
+## Documentation
+
+* Convert all docstrings to google docstring style.
+
+### Examples
+
+* Add examples to all commands.
+* Render examples in documentation. Extract rich-formatted text and render it as markdown.
+  * Append `zabbix-cli` to the beginning of each example (we omit this in the app since the REPL is the primary use case). Should we?
+* Define examples in own mapping in a separate module. This module is not imported on runtime and is only used when --help is invoked. The command looks up its own examples based on name. I.e.
+
+```python
+EXAMPLES = {
+  "show_host": [
+    Example(
+      "Show a host by name",
+      "show_host foo.example.com"
+    ),
+    Example(
+      "Show first host with a name that starts with 'foo'",
+      "show_host 'foo*'"
+    )
+  ]
+}
+```
+
+This way we can have an arbitrary number of examples without impacting startup time. Need to override the the way the help is looked up to make this work.
+
+## Exceptions
+
+### Zabbix API Exceptions
+
+* Store error code and message in ZabbixAPIException, so that we can automatically add it to the error message when we write custom ZabbixAPIExceptions.
+  * **VERY VERY IMPORTANT:** If we raise ZabbixAPIException from a ZabbixAPIException, we should be able to extract the data from the original exception (`__cause__`) and add it to whatever we are printing.
+
+* Don't log traceback of "expected" errors such as `ZabbixNotFound`.
+  * Perhaps add some sort of base class we handle for this such as `ZabbixStatusError`?
+
+* Handle connection errors more gracefully. Example: if we try to connect to UIO Zabbix without SOCKS proxy, we  get a `HTTPStatusError` with a 403 status code. We should catch this and raise a more meaningful error.
+
+```
+HTTPStatusError: Client error '403 Forbidden' for url 'https://example.com/api_jsonrpc.php'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403
+```
+
+### Pydantic Exceptions
+
+* Log all data and API version whenever we get a validation error.
+  * This will help us debug issues with the API.
+  * We should also log the full request and response.
+
+* Add a `--debug` flag that enables debug logging???
+
+## Hosts
+
+* Go through all `get_hosts()` calls. Make sure we only search for one term (why?).
+* Show templates and proxies in `show_host` and `show_hosts`
+
+## Logging
+
+* Document that setting `log_file = ""` causes logs to be sent to stderr.
+  * This is not recommended, but useful for real-time debugging.
+  * Maybe toggle normal console messages when this is set?
+* Either only use root logger OR add a logger for each module.
+  * Currently we have a mix of both.
+* Log record markup normalizer. Remove Rich formattings from log records.
+
+## Prompts
+
+* Remove most prompts
+  * Huge offenders:
+    * `_handle_hostgroup_args`
+    * `_handle_templategroup_args`
+    * `_handle_template_arg`
+* Turn some text prompts into arrow key selection prompts:
+  * `create_notification_user`: `mediatype`
+    * Fetch all media types then display them in a list.
+
+## Rendering
+
+* [ ]  Turn `ColsRowsType` into some sort of BaseModel type that validates that row length matches cols length.
+  * Rewrite `TableRenderable.__cols_rows__` to use this new type.
+  * **Performance implications?**
+
+* Add some sort of converting of iterable values to newline separated strings in `__rows__`
+
+* Prevent "no results found" from being printed when we are trying to render the result of a create/modify action that created/modified 0 objects.
+  * Example: `add_host_to_hostgroup` when host is already in the host group.
+
+## Legacy
+
+* Assume legacy JSON format when loading from .conf file.
+* Render some names as legacy names when using legacy JSON format.
+  * E.g. `name` instead of `macro` for `show_host_usermacros`
+
+## Serialization
+
+* Always serialize string representations of codes (`Maintenance (0)`)
+  * We do not strive for 1:1 compatibility with the Zabbix API. It's more important that users can read the output.
+  * We need to fix  `Host` to convert to string representations instead of codes.
+
+## scripts
+
+* Some sort of shared callback function between all scripts and the main CLI. This way we can pass in config etc, and have a common way of handling errors etc.
+
+## Templates
+
+* Remove `--strict` option. Adds complexity without much extra value. Users can use `--dryrun` to ensure that the command will work as expected.
+
+## Tests
+
+* Choice enum mappings contain all choices.
+  * I.e. `InterfaceConnectionMode` & `InterfaceType`
+
+--------------------
+
+## Repo
+
+### Run pyupgrade on all files not referenced by Typer
+
+We only need runtime typing on the functions that typer use for type inference. Modules such as Pyzabbix can be upgraded to use modern typing features such as built-in generics (3.9) and | (3.10).
+
+--------------------
+
+### Imports
+
+* [x] Reduce number of cross-imports
+* [x] Perform more inline imports
+* [x] Define config model in separate file that is not imported on startup.
+* [x] Profile using py-spy. Preliminary tests show that the majority of the slowdowns are from defining Pydantic models on runtime.
+
+--------------------
+
+## New command ideas
+
+### Assign unproxied hosts to proxies: `assign_host_to_proxy`
+
+* Allow for pattern matching in host names.
+  * E.g. `assign_host_to_proxy "proxy-prod01.example.com" "*.example.com"`
+
+### Assign all hosts in host group to proxy: `assign_hostgroup_to_proxy`
+
+* Allow for pattern matching in host names.
+  * E.g. `assign_hostgroup_to_proxy "proxy-prod01.example.com" "Siteadmin-iti-*"`
+
+### Show help for a command or category: `help`
+
+Usage:
+
+* `zabbix-cli help host`
+* `zabbix-cli help show_host`
+
+### Details about a specific host interface: `show_host_interface`
+
+Usage:
+
+* `zabbix-cli show_host_interface <hid>`
+* Shows more details about the interface than `show_host_interfaces`
+
+### Set a host interface as default (unsetting other as default): `set_default_host_interface`
+
+Basically, when we create a new host interface of a type we already have default for, we cannot unset the old default. This command allows us to do that.
+
+### Create template: `create_template`
+
+....

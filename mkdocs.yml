@@ -1,0 +1,104 @@
+site_name: zabbix-cli
+
+repo_url: https://github.com/unioslo/zabbix-cli
+repo_name: unioslo/zabbix-cli
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: blue
+    accent: orange
+  language: en
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+    - content.action.edit
+    - toc.integrate
+    - toc.follow
+    - navigation.path
+    - navigation.top
+    - navigation.tabs
+    - navigation.footer
+
+watch:
+  - zabbix_cli
+
+plugins:
+  - autorefs
+  - search
+  - mkdocs-simple-hooks:
+      hooks:
+        # NOTE: we would like to run this on_pre_build, but it causes an infinite
+        # loop due to generating new files.
+        # This might be solveable by migrating all these scripts to mkdocs-gen-files
+        on_startup: docs.scripts.run:main
+  - literate-nav: # enhanced nav section (enables wildcards)
+  - include-markdown:
+      preserve_includer_indent: true
+  - gen-files:
+      scripts:
+        - docs/scripts/gen_ref_pages.py
+  - macros:
+      on_error_fail: true
+      include_dir: docs/data
+      include_yaml:
+        - commandlist: docs/data/commandlist.yaml
+        - formats: docs/data/formats.yaml
+        - options: docs/data/options.yaml
+  - mkdocstrings:
+      enable_inventory: true
+      handlers:
+        python:
+          import:
+            - https://docs.python.org/3/objects.inv
+          options:
+            docstring_style: numpy
+            members_order: source
+            docstring_section_style: table
+            heading_level: 1
+            show_source: true
+            show_if_no_docstring: true
+            show_signature_annotations: true
+            show_root_heading: true
+            show_category_heading: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.keys
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - mdx_gh_links:
+      user: unioslo
+      repo: zabbix-cli
+
+nav:
+  - Home:
+      - index.md
+  - User Guide:
+    - Introduction: guide/introduction.md
+    - Installation: guide/installation.md
+    - Configuration: guide/configuration.md
+    - Authentication: guide/authentication.md
+    - Usage: guide/usage.md
+    - Migration: guide/migration.md
+    - Commands:
+      - guide/commands/*.md
+  # - Reference:
+  #   - reference/*.md
+  # - contributing.md

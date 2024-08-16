@@ -18,35 +18,45 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import collections
 import logging
 import sys
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Literal
+
+if TYPE_CHECKING:
+    from zabbix_cli.config.model import LoggingConfig
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_FORMAT = " ".join((
-    "%(asctime)s",
-    "[%(name)s][%(user)s][%(process)d][%(levelname)s]:",
-    "%(message)s",
-))
+DEFAULT_FORMAT = " ".join(
+    (
+        "%(asctime)s",
+        "[%(name)s][%(user)s][%(process)d][%(levelname)s]:",
+        "%(message)s",
+    )
+)
 
 
 class ContextFilter(logging.Filter):
     """Log filter that adds a static field to a record."""
 
-    def __init__(self, field, value):
+    def __init__(self, field: str, value: Any) -> None:
         self.field = field
         self.value = value
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> Literal[True]:
         setattr(record, self.field, self.value)
         return True
 
 
-class LogContext(object):
+class LogContext:
     """A context that adds ContextFilters to a logger."""
 
-    def __init__(self, logger, **context):
+    def __init__(self, logger: logging.Logger, **context: Any) -> None:
         self.logger = logger
         self.filters = [ContextFilter(k, context[k]) for k in context]
 
@@ -55,46 +65,58 @@ class LogContext(object):
             self.logger.addFilter(f)
         return self.logger
 
-    def __exit__(self, *args, **kwargs):
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
         for f in self.filters:
             self.logger.removeFilter(f)
 
 
-class SafeRecord(logging.LogRecord, object):
+class SafeRecord(logging.LogRecord):
     """A LogRecord wrapper that returns None for unset fields."""
 
-    def __init__(self, record):
+    def __init__(self, record: logging.LogRecord):
         self.__dict__ = collections.defaultdict(lambda: None, record.__dict__)
 
 
 class SafeFormatter(logging.Formatter):
     """A Formatter that use SafeRecord to avoid failure."""
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         record = SafeRecord(record)
-        return super(SafeFormatter, self).format(record)
+        return super().format(record)
 
 
-def get_log_level(level):
-    if level and level.isdigit():
-        return int(level)
-    elif level:
-        # Given a name, getLevelName returns the int level
-        return logging.getLevelName(level.upper())
+LogLevelStr = Literal["DEBUG", "INFO", "WARN", "WARNING", "ERROR", "CRITICAL", "FATAL"]
+
+
+def get_log_level(level: LogLevelStr) -> int:
+    if level == "DEBUG":
+        return logging.DEBUG
+    elif level == "INFO":
+        return logging.INFO
+    elif level in ("WARN", "WARNING"):
+        return logging.WARNING
+    elif level == "ERROR":
+        return logging.ERROR
+    elif level in ("CRITICAL", "FATAL"):
+        return logging.CRITICAL
     else:
         return logging.NOTSET
 
 
-def configure_logging(config):
+def configure_logging(config: LoggingConfig | None = None):
     """Configure the root logger."""
-    enable = config.logging == 'ON'
+    if not config:
+        from zabbix_cli.config.model import LoggingConfig
+
+        config = LoggingConfig()
+
     level = get_log_level(config.log_level)
     filename = config.log_file
 
-    if enable and filename:
+    if config.enabled and filename:
         # log to given filename
         handler = logging.FileHandler(filename)
-    elif enable:
+    elif config.enabled:
         # log to stderr
         handler = logging.StreamHandler(sys.stderr)
     else:
@@ -103,67 +125,73 @@ def configure_logging(config):
 
     handler.setFormatter(SafeFormatter(fmt=DEFAULT_FORMAT))
     root = logging.getLogger()
+    root.handlers.clear()  # clear any existing handlers
+
+    # Log
     root.addHandler(handler)
-    root.setLevel(level)
+    root.setLevel(logging.WARNING)
+    zabbix_cli = logging.getLogger("zabbix_cli")
+    zabbix_cli.setLevel(level)
+
+    # Also log from HTTPX
+    httpx = logging.getLogger("httpx")
+    httpx.setLevel(level)
 
 
 #
 # python -m zabbix_cli.logs
 #
 
-def main(inargs=None):
-    import argparse
-    from zabbix_cli.config import get_config
 
-    parser = argparse.ArgumentParser('test log settings')
-    parser.add_argument(
-        '-c', '--config',
-        default=None)
-    parser.add_argument(
-        '--level',
-        dest='log_level',
-        default=None,
-        help='override %(dest)s from config')
-    parser.add_argument(
-        '--file',
-        dest='log_file',
-        default=None,
-        help='override %(dest)s from config')
-    parser.add_argument(
-        '--enable',
-        dest='logging',
-        choices=('ON', 'OFF'),
-        default=None,
-        help='override %(dest)s from config')
+# def main(inargs: Optional[Sequence[str]] = None):
+#     import argparse
 
-    args = parser.parse_args(inargs)
-    config = get_config(args.config)
+#     from zabbix_cli.config import get_config
 
-    for attr in ('logging', 'log_level', 'log_file'):
-        value = getattr(args, attr)
-        if value is not None:
-            setattr(config, attr, value)
+#     parser = argparse.ArgumentParser("test log settings")
+#     parser.add_argument("-c", "--config", default=None)
+#     parser.add_argument(
+#         "--level", dest="log_level", default=None, help="override %(dest)s from config"
+#     )
+#     parser.add_argument(
+#         "--file", dest="log_file", default=None, help="override %(dest)s from config"
+#     )
+#     parser.add_argument(
+#         "--enable",
+#         dest="logging",
+#         choices=("ON", "OFF"),
+#         default=None,
+#         help="override %(dest)s from config",
+#     )
 
-    configure_logging(config)
+#     args = parser.parse_args(inargs)
+#     config = get_config(args.config)
 
-    logger.debug('a debug message')
-    logger.info('an info message')
-    logger.warning('a warn message')
-    logger.error('an error message')
-    try:
-        this_name_is_not_in_scope  # noqa: F821
-    except NameError:
-        logger.error('an error message with traceback', exc_info=True)
+#     for attr in ("logging", "log_level", "log_file"):
+#         value = getattr(args, attr)
+#         if value is not None:
+#             setattr(config, attr, value)
 
-    logger.debug("Message without user context")
-    with LogContext(logger, user='user1'):
-        logger.debug("Message with context user=user1")
-        with LogContext(logger, user='user2'):
-            logger.debug("Message with nested context user=user2")
-    logger.debug("Message after context")
+#     configure_logging(config)
 
-    logger.info('done')
+#     logger.debug("a debug message")
+#     logger.info("an info message")
+#     logger.warning("a warn message")
+#     logger.error("an error message")
+#     try:
+#         this_name_is_not_in_scope  # noqa: F821 # type: ignore
+#     except NameError:
+#         logger.error("an error message with traceback", exc_info=True)
+
+#     logger.debug("Message without user context")
+#     with LogContext(logger, user="user1"):
+#         logger.debug("Message with context user=user1")
+#         with LogContext(logger, user="user2"):
+#             logger.debug("Message with nested context user=user2")
+#     logger.debug("Message after context")
+
+#     logger.info("done")
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == "__main__":
+#     main()

@@ -2,11 +2,11 @@
 
 ZABBIX_CLI=/usr/bin/zabbix-cli
 
-#${ZABBIX_CLI} --use-json-format remove_hostgroup \"AAA-00\"
-#${ZABBIX_CLI} --use-json-format remove_hostgroup \"AAA-001\"
+#${ZABBIX_CLI} -o json remove_hostgroup \"AAA-00\"
+#${ZABBIX_CLI} -o json remove_hostgroup \"AAA-001\"
 
 # return: error
-${ZABBIX_CLI} --use-json-format remove_host \"aaa.000001\"
+${ZABBIX_CLI} -o json remove_host \"aaa.000001\"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -16,7 +16,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format create_hostgroup \"\"
+${ZABBIX_CLI} -o json create_hostgroup \"\"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -26,7 +26,7 @@ else
 fi
 
 # return:ok
-${ZABBIX_CLI} --use-json-format create_hostgroup \"AAA-001\"
+${ZABBIX_CLI} -o json create_hostgroup \"AAA-001\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -36,7 +36,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_hostgroup \"AAA-002\"
+${ZABBIX_CLI} -o json create_hostgroup \"AAA-002\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -45,8 +45,8 @@ else
     echo -e  "TEST 4: ERROR\n"
 fi
 
-# return: ok 
-${ZABBIX_CLI} --use-json-format create_host \"aaa-001.uio.no\" \"\" \"\" \"\"
+# return: ok
+${ZABBIX_CLI} -o json create_host \"aaa-001.uio.no\" \"\" \"\" \"\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -57,7 +57,7 @@ fi
 
 
 # return: ok
-${ZABBIX_CLI} --use-json-format remove_host \"aaa-001.uio.no\"
+${ZABBIX_CLI} -o json remove_host \"aaa-001.uio.no\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -67,7 +67,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_host \"aaa-001.uio.no\" \"AAA-001\" \"\" \"\"
+${ZABBIX_CLI} -o json create_host \"aaa-001.uio.no\" \"AAA-001\" \"\" \"\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -77,7 +77,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format remove_host \"aaa-001.uio.no\"
+${ZABBIX_CLI} -o json remove_host \"aaa-001.uio.no\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -87,7 +87,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format create_host \"aaa-001.uio.no\" \"AAA-0\" \"\" \"\"
+${ZABBIX_CLI} -o json create_host \"aaa-001.uio.no\" \"AAA-0\" \"\" \"\"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -97,7 +97,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format remove_host \"aaa-001.uio.no\"
+${ZABBIX_CLI} -o json remove_host \"aaa-001.uio.no\"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -107,7 +107,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_host \"aaa-001.uio.no\" \"AAA-001\" \"*.uio.no\" \"\"
+${ZABBIX_CLI} -o json create_host \"aaa-001.uio.no\" \"AAA-001\" \"*.uio.no\" \"\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -117,7 +117,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format remove_host \"aaa-001.uio.no\"
+${ZABBIX_CLI} -o json remove_host \"aaa-001.uio.no\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -128,7 +128,7 @@ fi
 
 
 # return: error
-${ZABBIX_CLI} --use-json-format create_host \"aaa-001.uio.no\" \"AAA-001\" \"*.xxxx\" \"\"
+${ZABBIX_CLI} -o json create_host \"aaa-001.uio.no\" \"AAA-001\" \"*.xxxx\" \"\"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -139,7 +139,7 @@ fi
 
 
 # return: error
-${ZABBIX_CLI} --use-json-format remove_host \"aaa-001.uio.no\"
+${ZABBIX_CLI} -o json remove_host \"aaa-001.uio.no\"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -150,7 +150,7 @@ fi
 
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_host \"aaa-001.uio.no\" \"AAA-001\" \"*.uio.no\" \"0\"
+${ZABBIX_CLI} -o json create_host \"aaa-001.uio.no\" \"AAA-001\" \"*.uio.no\" \"0\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -160,7 +160,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format remove_host \"aaa-001.uio.no\"
+${ZABBIX_CLI} -o json remove_host \"aaa-001.uio.no\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -170,7 +170,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_host \"aaa-001.uio.no\" \"AAA-001\" \"*.uio.no\" \"1\"
+${ZABBIX_CLI} -o json create_host \"aaa-001.uio.no\" \"AAA-001\" \"*.uio.no\" \"1\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -180,7 +180,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format remove_host \"aaa-001.uio.no\"
+${ZABBIX_CLI} -o json remove_host \"aaa-001.uio.no\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -190,7 +190,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_host \"aaa-001.uio.no\" \"AAA-001\" \"*.uio.no\" \"10\"
+${ZABBIX_CLI} -o json create_host \"aaa-001.uio.no\" \"AAA-001\" \"*.uio.no\" \"10\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -200,7 +200,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format remove_host \"aaa-001.uio.no\"
+${ZABBIX_CLI} -o json remove_host \"aaa-001.uio.no\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -210,7 +210,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_host \"aaa-001.uio.no\" \"AAA-001\" \"\" \"\"
+${ZABBIX_CLI} -o json create_host \"aaa-001.uio.no\" \"AAA-001\" \"\" \"\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -220,7 +220,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_host \"aaa-002.uio.no\" \"AAA-001\" \"\" \"\"
+${ZABBIX_CLI} -o json create_host \"aaa-002.uio.no\" \"AAA-001\" \"\" \"\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -231,7 +231,7 @@ fi
 
 
 # return: ok
-${ZABBIX_CLI} --use-json-format add_host_to_hostgroup \" aaa-001.uio.no , aaa-002.uio.no \" \" AAA-001, AAA-002 \"
+${ZABBIX_CLI} -o json add_host_to_hostgroup \" aaa-001.uio.no , aaa-002.uio.no \" \" AAA-001, AAA-002 \"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -241,7 +241,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format add_host_to_hostgroup \" aaa-001.uio.no , aaa-002.uio.no \" \" AAA-001, AAA-002, AAA-0000000 \"
+${ZABBIX_CLI} -o json add_host_to_hostgroup \" aaa-001.uio.no , aaa-002.uio.no \" \" AAA-001, AAA-002, AAA-0000000 \"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -251,7 +251,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format add_host_to_hostgroup \" aaa-001.uio.no , aaa-002222222.uio.no \" \"AAA-001, AAA-002 \"
+${ZABBIX_CLI} -o json add_host_to_hostgroup \" aaa-001.uio.no , aaa-002222222.uio.no \" \"AAA-001, AAA-002 \"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -261,7 +261,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format link_template_to_host \" Template AAA-0 \" \"  aaa-001.uio.no , aaa-002.uio.no  \"
+${ZABBIX_CLI} -o json link_template_to_host \" Template AAA-0 \" \"  aaa-001.uio.no , aaa-002.uio.no  \"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -271,7 +271,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format link_template_to_host \" Template AAA-001 \" \"  aaa-0011111.uio.no , aaa-002.uio.no  \"
+${ZABBIX_CLI} -o json link_template_to_host \" Template AAA-001 \" \"  aaa-0011111.uio.no , aaa-002.uio.no  \"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -281,7 +281,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format link_template_to_host \" Template AAA-001 , Template AAA-002 \" \"  aaa-001.uio.no , aaa-002.uio.no  \"
+${ZABBIX_CLI} -o json link_template_to_host \" Template AAA-001 , Template AAA-002 \" \"  aaa-001.uio.no , aaa-002.uio.no  \"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -291,7 +291,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format unlink_template_from_host \" Template AAA-0 \" \"  aaa-001.uio.no , aaa-002.uio.no  \"
+${ZABBIX_CLI} -o json unlink_template_from_host \" Template AAA-0 \" \"  aaa-001.uio.no , aaa-002.uio.no  \"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -301,7 +301,7 @@ else
 fi
 
 # return error
-${ZABBIX_CLI} --use-json-format unlink_template_from_host \" Template AAA-001 \" \"  aaa-0011111.uio.no , aaa-002.uio.no  \"
+${ZABBIX_CLI} -o json unlink_template_from_host \" Template AAA-001 \" \"  aaa-0011111.uio.no , aaa-002.uio.no  \"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -311,7 +311,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format unlink_template_from_host \" Template AAA-001 , Template AAA-002\" \"  aaa-001.uio.no , aaa-002.uio.no  \"
+${ZABBIX_CLI} -o json unlink_template_from_host \" Template AAA-001 , Template AAA-002\" \"  aaa-001.uio.no , aaa-002.uio.no  \"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -321,7 +321,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format remove_host_from_hostgroup \" aaa-001.uio.no , aaa-002222222.uio.no \" \"AAA-001, AAA-002 \"
+${ZABBIX_CLI} -o json remove_host_from_hostgroup \" aaa-001.uio.no , aaa-002222222.uio.no \" \"AAA-001, AAA-002 \"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -331,7 +331,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format remove_host_from_hostgroup \" aaa-001.uio.no , aaa-002.uio.no \" \" AAA-001, AAA-002, AAA-0000000 \"
+${ZABBIX_CLI} -o json remove_host_from_hostgroup \" aaa-001.uio.no , aaa-002.uio.no \" \" AAA-001, AAA-002, AAA-0000000 \"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -341,7 +341,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format remove_host_from_hostgroup \" aaa-001.uio.no , aaa-002.uio.no \" \" AAA-001, AAA-002 \"
+${ZABBIX_CLI} -o json remove_host_from_hostgroup \" aaa-001.uio.no , aaa-002.uio.no \" \" AAA-001, AAA-002 \"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -352,7 +352,7 @@ fi
 
 
 # return: ok
-${ZABBIX_CLI} --use-json-format remove_host \"aaa-001.uio.no\"
+${ZABBIX_CLI} -o json remove_host \"aaa-001.uio.no\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -362,7 +362,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format remove_host \"aaa-002.uio.no\"
+${ZABBIX_CLI} -o json remove_host \"aaa-002.uio.no\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -373,7 +373,7 @@ fi
 
 
 # return: error
-${ZABBIX_CLI} --use-json-format create_usergroup \"\" \"\"
+${ZABBIX_CLI} -o json create_usergroup \"\" \"\"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -384,7 +384,7 @@ fi
 
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_usergroup \"AAA-usergroup\" \"\" \"\"
+${ZABBIX_CLI} -o json create_usergroup \"AAA-usergroup\" \"\" \"\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -394,7 +394,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_usergroup \"BBB-usergroup\" \"0\" \"0\"
+${ZABBIX_CLI} -o json create_usergroup \"BBB-usergroup\" \"0\" \"0\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -404,7 +404,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_user \"AAA-user\" \"AAA\" \"user\" \"\" \"\" \"\" \"\" \"13\" 
+${ZABBIX_CLI} -o json create_user \"AAA-user\" \"AAA\" \"user\" \"\" \"\" \"\" \"\" \"13\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -414,7 +414,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_user \"BBB-user\" \"BBB\" \"user\" \"\" \"\" \"\" \"\" \"13\" 
+${ZABBIX_CLI} -o json create_user \"BBB-user\" \"BBB\" \"user\" \"\" \"\" \"\" \"\" \"13\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -424,7 +424,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format create_user \"AAA-user\" \"AAA\" \"user\" \"\" \"\" \"\" \"\" \"13\" 
+${ZABBIX_CLI} -o json create_user \"AAA-user\" \"AAA\" \"user\" \"\" \"\" \"\" \"\" \"13\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -435,7 +435,7 @@ fi
 
 
 # return: error
-${ZABBIX_CLI} --use-json-format add_user_to_usergroup \"\" \"AAA-usergroup, BBB-usergroup\"
+${ZABBIX_CLI} -o json add_user_to_usergroup \"\" \"AAA-usergroup, BBB-usergroup\"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -445,7 +445,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format add_user_to_usergroup \"AAA-user\" \"\"
+${ZABBIX_CLI} -o json add_user_to_usergroup \"AAA-user\" \"\"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -455,7 +455,7 @@ else
 fi
 
 # return: error
-${ZABBIX_CLI} --use-json-format add_user_to_usergroup \"AAA-user\" \"asdsad\"
+${ZABBIX_CLI} -o json add_user_to_usergroup \"AAA-user\" \"asdsad\"
 
 RETVAL=$?
 if [ $RETVAL -eq 1 ]; then
@@ -465,7 +465,7 @@ else
 fi
 
 # return: ok
-${ZABBIX_CLI} --use-json-format add_user_to_usergroup \"AAA-user, BBB-user \" \"AAA-usergroup, BBB-usergroup\"
+${ZABBIX_CLI} -o json add_user_to_usergroup \"AAA-user, BBB-user \" \"AAA-usergroup, BBB-usergroup\"
 
 RETVAL=$?
 if [ $RETVAL -eq 0 ]; then
@@ -473,4 +473,3 @@ if [ $RETVAL -eq 0 ]; then
 else
     echo -e  "TEST 46: ERROR\n"
 fi
-

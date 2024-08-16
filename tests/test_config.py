@@ -1,114 +1,96 @@
-import configparser
-import unittest
+from __future__ import annotations
 
-import zabbix_cli.config
+from pathlib import Path
 
-
-# TODO: Switch from RawConfigParser to ConfigParser here and config.py
-class MockConfig(configparser.RawConfigParser, object):
-
-    def __init__(self):
-        super(MockConfig, self).__init__({'option_a': 'a', 'option_b': 'b'})
-        self.add_section('foo')
-        self.add_section('bar')
+import pytest
+from pydantic import ValidationError
+from zabbix_cli.config.model import Config
 
 
-class TestOptionDescriptor(unittest.TestCase):
-
-    class MockConfigWithDescriptors(MockConfig):
-        foo_a = zabbix_cli.config.OptionDescriptor('foo', 'option_a')
-        bar_b = zabbix_cli.config.OptionDescriptor('bar', 'option_b')
-
-    def _make_config(self):
-        return self.MockConfigWithDescriptors()
-
-    def test_descriptor_cls(self):
-        cls = self.MockConfigWithDescriptors
-        desc = cls.foo_a
-        self.assertTrue(isinstance(desc, zabbix_cli.config.OptionDescriptor))
-
-    def test_descriptor_get(self):
-        config = self._make_config()
-        self.assertEqual(config.get('foo', 'option_a'),
-                         getattr(config, 'foo_a'))
-
-    def test_descriptor_set(self):
-        config = self._make_config()
-        config.foo_a = 'foo'
-        self.assertEqual('foo', config.foo_a)
-        self.assertEqual(config.get('foo', 'option_a'),
-                         config.foo_a)
-
-    def test_descriptor_del(self):
-        config = self._make_config()
-        config.foo_a = 'foo'
-        del config.foo_a
-        self.assertFalse('foo' == config.foo_a)
-        self.assertEqual(config.get('foo', 'option_a'),
-                         config.foo_a)
+def test_config_default() -> None:
+    """Assert that the config by default only requires a URL."""
+    with pytest.raises(ValidationError) as excinfo:
+        Config()
+    assert "1 validation error" in str(excinfo.value)
+    assert "url" in str(excinfo.value)
 
 
-class TestOptionRegister(unittest.TestCase):
+def test_sample_config() -> None:
+    """Assert that the sample config can be instantiated."""
+    assert Config.sample_config()
 
-    def _make_register(self):
-        return zabbix_cli.config.OptionRegister()
 
-    def test_len(self):
-        register = self._make_register()
-        self.assertEqual(0, len(register))
+@pytest.mark.parametrize(
+    "bespoke",
+    [True, False],
+)
+def test_load_config_file_legacy(data_dir: Path, bespoke: bool) -> None:
+    config_path = data_dir / "zabbix-cli.conf"
+    if bespoke:
+        conf = Config.from_conf_file(config_path)
+    else:
+        conf = Config.from_file(config_path)
+    assert conf
+    # Should be loaded from the file we specified
+    assert conf.config_path == config_path
+    # Should be marked as legacy
+    assert conf.app.is_legacy is True
+    # Should use legacy JSON format automatically
+    assert conf.app.legacy_json_format is True
 
-        register.add('foo', 'bar')
-        self.assertEqual(1, len(register))
 
-        register.add('foo', 'baz')
-        self.assertEqual(2, len(register))
+def remove_path_options(path: Path, tmp_path: Path) -> Path:
+    """Remove all path options from a TOML config file.
 
-    def test_iter(self):
-        items = [('foo', 'bar'), ('foo', 'baz')]
-        register = self._make_register()
+    Some config options require a directory or file to exist, which is not always
+    possible or desirable in a test environment."""
+    contents = path.read_text()
+    new_contents = "\n".join(
+        line for line in contents.splitlines() if "/path/to" not in line
+    )
+    new_file = tmp_path / path.name
+    new_file.write_text(new_contents)
+    return new_file
 
-        for section, option in items:
-            register.add(section, option)
 
-        for i, item in enumerate(register):
-            self.assertEqual(items[i], item)
+def replace_paths(path: Path, tmp_path: Path) -> Path:
+    """Replace all /path/to paths with directory created by tmp_path."""
+    contents = path.read_text()
+    new_contents = contents.replace("/path/to", str(tmp_path))
+    tmp_path.mkdir(exist_ok=True)
+    new_file = tmp_path / path.name
+    new_file.write_text(new_contents)
+    return new_file
 
-    def test_getitem(self):
-        items = [('foo', 'bar'), ('foo', 'baz')]
-        register = self._make_register()
 
-        comparison = []
-        for section, option in items:
-            comparison.append(register.add(section, option))
+@pytest.mark.parametrize(
+    "bespoke",
+    [True, False],
+)
+@pytest.mark.parametrize(
+    "with_paths",
+    [True, False],
+)
+def test_load_config_file(
+    data_dir: Path, tmp_path: Path, bespoke: bool, with_paths: bool
+) -> None:
+    """Test loading a TOML configuration file."""
+    config_path = data_dir / "zabbix-cli.toml"
 
-        for i, item in enumerate(items):
-            gotten = register[item]
-            self.assertEqual(comparison[i], gotten)
+    # Test with and without custom file paths
+    if with_paths:
+        config_path = replace_paths(config_path, tmp_path)
+    else:
+        config_path = remove_path_options(config_path, tmp_path)
 
-    def test_sections(self):
-        items = [('foo', 'bar'), ('foo', 'baz'), ('bar', 'foo')]
-        expect = set(t[0] for t in items)
-        register = self._make_register()
+    # Use bespoke method for loading the given format
+    if bespoke:
+        conf = Config.from_toml_file(config_path)
+    else:
+        conf = Config.from_file(config_path)
 
-        for section, option in items:
-            register.add(section, option)
-
-        self.assertEqual(len(expect), len(register.sections))
-        self.assertEqual(set(expect), set(register.sections))
-
-    def test_initialize(self):
-        items = [('foo', 'bar'), ('foo', 'baz'), ('bar', 'foo')]
-        sections = set(t[0] for t in items)
-        register = self._make_register()
-
-        for section, option in items:
-            register.add(section, option)
-
-        config = configparser.RawConfigParser()
-        register.initialize(config)
-
-        for section in sections:
-            self.assertTrue(config.has_section(section))
-
-        for section, option in items:
-            self.assertTrue(config.has_option(section, option))
+    assert conf
+    # Should be loaded from the file we specified
+    assert conf.config_path == config_path
+    assert conf.app.is_legacy is False
+    assert conf.app.legacy_json_format is False

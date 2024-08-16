@@ -98,7 +98,7 @@ configuration parameters that zabbix-cli is using, use
   | */etc/zabbix-cli/zabbix-cli.conf             |
   | */usr/share/zabbix-cli/zabbix-cli.conf       |
   +----------------------------------------------+
-  
+
   +--------------------------------------+---------------------------------------+
   |              Configuration parameter | Value                                 |
   +--------------------------------------+---------------------------------------+
@@ -134,7 +134,7 @@ For example:
    export ZABBIX_USERNAME=zbxuser
    read -srp "Zabbix Password: " ZABBIX_PASSWORD; export ZABBIX_PASSWORD;
    zabbix-cli
-  
+
 **NOTE**: It is important to remember that this method will save the password in clear text in a environment variable. This value will be available to other processes running in the same session.
 
 

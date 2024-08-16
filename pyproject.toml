@@ -1,0 +1,137 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+description = "ZABBIX-CLI - Zabbix terminal client"
+name = "zabbix-cli"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "GPL-3.0-or-later"
+keywords = []
+authors = [
+  { name = "Rafael Martinez Guerrero", email = "rafael@postgresql.org.es" },
+]
+maintainers = [{ name = "Peder Hovdan Andresen", email = "pederhan@uio.no" }]
+
+classifiers = [
+  "Environment :: Console",
+  "Development Status :: 5 - Production/Stable",
+  "Topic :: System :: Monitoring",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = [
+  "typer>=0.7.0",
+  "rich>=13.3.1",
+  "click-repl==0.2.0",        # 0.3.0 has a bug that breaks the CLI
+  "httpx>=0.26.0",
+  "packaging>=22.0",
+  "pydantic>=2.7.0",
+  "tomli>=2.0.1",
+  "tomli-w>=1.0.0",
+  "platformdirs>=2.5.4",
+  "strenum>=0.4.15",
+  "typing-extensions>=4.8.0",
+]
+dynamic = ["version"]
+
+[project.urls]
+Documentation = "https://github.com/unioslo/zabbix-cli#readme"
+Issues = "https://github.com/unioslo/zabbix-cli/issues"
+Source = "https://github.com/unioslo/zabbix-cli"
+
+[project.scripts]
+zabbix-cli = "zabbix_cli.main:main"
+zabbix-cli-init = "zabbix_cli.scripts.init:main"
+zabbix-cli-bulk-execution = "zabbix_cli.scripts.bulk_execution:main"
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-cov", "freezegun"]
+
+[tool.hatch.version]
+path = "zabbix_cli/__about__.py"
+
+[tool.hatch.build.targets.app]
+pyapp-version = "0.12.0"
+python-version = "3.11"
+
+[tool.hatch.envs.default]
+dependencies = [
+  # Linting and formatting only here
+  # Dependencies used for testing are specified in the main metadata
+  # optional dependencies
+  "ruff",
+  "mypy",
+  "zabbix_cli[test]",
+]
+[tool.hatch.envs.default.scripts]
+test = "pytest {args}"
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=zabbix_cli --cov=tests {args}"
+no-cov = "cov --no-cov {args}"
+
+[[tool.hatch.envs.test.matrix]]
+python = ["38", "39", "310", "311"]
+
+[tool.hatch.envs.docs]
+dependencies = [
+  "mkdocs>=1.5.3",
+  "mkdocs-material>=9.5.13",
+  "mkdocs-include-markdown-plugin>=6.0.4",
+  "pymdown-extensions>=9.11",
+  "mdx-gh-links>=0.3",
+  "mkdocs-simple-hooks>=0.1.5",
+  "mkdocs-version-annotations>=1.0.0",
+  "mkdocstrings[python]",
+  "mkdocs-macros-plugin",
+  "mkdocs-literate-nav",
+  "mkdocs-simple-hooks",
+  "mkdocs-gen-files",
+  "sanitize-filename",
+  "jinja2",
+  "pyyaml",
+]
+[tool.hatch.envs.docs.scripts]
+build = "mkdocs build --clean --strict {args}"
+serve = "mkdocs serve --dev-addr localhost:8001 {args}"
+
+[tool.coverage.run]
+branch = true
+parallel = true
+omit = ["zabbix_cli/__about__.py"]
+
+[tool.coverage.report]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
+
+[tool.ruff]
+src = ["zabbix_cli"]
+extend-exclude = ["zabbix_cli/__init__.py"]
+include = ["pyproject.toml", "zabbix_cli/**/*.py", "scripts/**/*.py"]
+
+[tool.pyright]
+pythonVersion = "3.8"
+venvPath = "."
+venv = ".venv"
+ignore = ["zabbix_cli/commands/_dev.py"]
+typeCheckingMode = "strict"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+
+[tool.ruff.lint.isort]
+# Force one line per import to simplify diffing and merging
+force-single-line = true
+# Add annotations import to every file
+required-imports = ["from __future__ import annotations"]

@@ -1,0 +1,124 @@
+name: build zabbix-cli
+
+on:
+  push:
+    tags:
+      - zabbix-cli-v*
+
+concurrency:
+  group: build-zabbix-cli-${{ github.head_ref }}
+
+jobs:
+  build_pypi:
+    name: Build wheels and source distribution
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Exit if not on master branch
+        if: github.ref_name != 'master'
+        run: exit -1
+
+      - name: Install build dependencies
+        run: python -m pip install --upgrade build
+
+      - name: Build source distribution
+        run: python -m build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pypi_artifacts
+          path: dist/*
+          if-no-files-found: error
+
+  build_pyinstaller:
+    name: Build pyinstaller binary
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-latest, macos-latest]
+        python-version:
+          - '3.12'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Build binary with PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -U . pyinstaller
+
+
+      - name: Rename binary
+        run: |
+          mv dist/zabbix-cli${{ contains(matrix.os, 'windows') && '.exe' || '' }} dist/zabbix-cli-${{ matrix.os }}-${{ matrix.python-version }}${{ contains(matrix.os, 'windows') && '.exe' || '' }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zabbix-cli-${{ matrix.os }}-${{ matrix.python-version }}${{ contains(matrix.os, 'windows') && '.exe' || '' }}
+          path: dist/zabbix-cli-${{ matrix.os }}-${{ matrix.python-version }}${{ contains(matrix.os, 'windows') && '.exe' || '' }}
+          if-no-files-found: error
+
+  publish_pypi:
+    name: Publish PyPI release
+    needs:
+      - build_pypi
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pypi_artifacts
+          path: dist
+
+      - name: Push build artifacts to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.8.14
+
+  publish_github:
+    name: Publish GitHub release
+    needs:
+      - build_pypi
+      - build_pyinstaller
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download PyInstaller binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: zabbix-cli-*
+          path: dist
+          merge-multiple: true
+
+      - name: Download wheel and source distributions
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pypi_artifacts
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Release notes for ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload release asset
+        id: upload-release-asset
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: dist/*
