@@ -62,11 +62,18 @@ These are automatically loaded if the `password` parameter is not set in the con
 
 ## Auth token file
 
-Once you have authenticated with a username and password, zabbix-cli will store a session token if you configure `use_auth_token_file=true` in the config. This way you don't need to provide your credentials each time you run zabbix-cli. The token file should also be secured properly with 600 permissions.
+Once you have authenticated with a username and password, zabbix-cli will store a session token if you configure `use_auth_token_file=true` in the config. This way you don't need to provide your credentials each time you run zabbix-cli.
 
 ```toml
 [app]
 use_auth_token_file = true
+```
+
+If you want the application to only load the file if it has 600 permissions, you can set `allow_insecure_auth_file=false` in the config file:
+
+```toml
+[app]
+allow_insecure_auth_file = false
 ```
 
 The location of the auth token file can be changed in the config file:

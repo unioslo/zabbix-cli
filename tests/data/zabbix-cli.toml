@@ -21,7 +21,7 @@ use_paging = false
 output_format = "table"
 history = true
 history_file = "/path/to/history_file"
-allow_insecure_authfile = true
+allow_insecure_auth_file = true
 legacy_json_format = false
 
 [logging]

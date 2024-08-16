@@ -177,7 +177,14 @@ class AppConfig(BaseModel):
     history_file: Path = DATA_DIR / "history"
 
     # Legacy options
-    allow_insecure_authfile: bool = True  # mimick old behavior
+    allow_insecure_auth_file: bool = Field(
+        default=True,
+        # Changed in V3: allow_insecure_authfile -> allow_insecure_auth_file
+        validation_alias=AliasChoices(
+            "allow_insecure_auth_file",
+            "allow_insecure_authfile",
+        ),
+    )
     legacy_json_format: bool = False
     """Mimicks V2 behavior where the JSON output was ALWAYS a dict, where
     each entry was stored under the keys "0", "1", "2", etc.

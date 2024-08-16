@@ -121,6 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `default_directory_exports` → `export_directory`
     - `default_export_format` → `export_format`
     - `include_timestamp_export_filename` → `export_timestamps`
+    - `allow_insecure_authfile` → `allow_insecure_auth_file`
   - `logging.logging` → `logging.enabled`
   - The original names are deprecated and slated for removal in a future version.
 - **Configuration file defaults:**

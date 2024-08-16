@@ -247,7 +247,7 @@ Default: `"<DATA_DIR>/zabbix-cli/history"`
 
 ----
 
-#### `allow_insecure_authfile`
+#### `allow_insecure_auth_file`
 
 Whether to allow insecure auth files.
 

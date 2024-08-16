@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Callable
@@ -184,7 +185,9 @@ class Authenticator:
     def _load_auth_token_file(self) -> Optional[str]:
         paths = get_auth_token_file_paths(self.config)
         for path in paths:
-            contents = _do_load_auth_file(path, self.config.app.allow_insecure_authfile)
+            contents = _do_load_auth_file(
+                path, self.config.app.allow_insecure_auth_file
+            )
             if contents:
                 return contents
         logger.info(
@@ -209,7 +212,7 @@ class Authenticator:
         if not file.exists():
             return None
         if (
-            not self.config.app.allow_insecure_authfile
+            not self.config.app.allow_insecure_auth_file
             and not file_has_secure_permissions(file)
         ):
             error(
@@ -342,6 +345,8 @@ def clear_auth_token_file(config: Optional[Config] = None) -> None:
 
 def file_has_secure_permissions(file: Path) -> bool:
     """Check if a file has secure permissions."""
+    if sys.platform == "win32":
+        return True
     return get_file_permissions(file) == SECURE_PERMISSIONS
 
 
