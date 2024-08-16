@@ -7,6 +7,7 @@ Thus, every command is part of the same command group.
 from __future__ import annotations
 
 import inspect
+import logging
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
@@ -94,6 +95,9 @@ class StatusCallable(Protocol):
     ) -> Status: ...
 
 
+APP_LOGGER = logging.getLogger("zabbix-cli")
+
+
 class StatefulApp(typer.Typer):
     """A Typer app that provides access to the global state."""
 
@@ -103,6 +107,10 @@ class StatefulApp(typer.Typer):
     def __init__(self, **kwargs: Any) -> None:
         self.parent = None
         super().__init__(**kwargs)
+
+    @property
+    def logger(self) -> logging.Logger:
+        return APP_LOGGER
 
     # Methods for adding subcommands and keeping track of hierarchy
     def add_typer(self, typer_instance: Typer, **kwargs: Any) -> None:
