@@ -169,7 +169,7 @@ class Authenticator:
             logger.debug("Not configured to use auth token file.")
             return Credentials()
 
-        contents = self._load_auth_token_file()
+        contents = self.load_auth_token_file()
         username, auth_token = _parse_auth_file_contents(contents)
 
         # Found token, but does not match configured username
@@ -182,12 +182,10 @@ class Authenticator:
 
         return Credentials(auth_token=auth_token)
 
-    def _load_auth_token_file(self) -> Optional[str]:
+    def load_auth_token_file(self) -> Optional[str]:
         paths = get_auth_token_file_paths(self.config)
         for path in paths:
-            contents = _do_load_auth_file(
-                path, self.config.app.allow_insecure_auth_file
-            )
+            contents = self._do_load_auth_file(path)
             if contents:
                 return contents
         logger.info(
@@ -195,18 +193,18 @@ class Authenticator:
         )
 
     def load_auth_file(self) -> Optional[str]:
-        """Loads a"""
+        """Attempts to load an auth file."""
         paths = get_auth_file_paths(self.config)
         for path in paths:
-            contents = self._load_auth_file(path)
+            contents = self._do_load_auth_file(path)
             if contents:
                 return contents
         logger.info(
             f"No auth file found. Searched in {', '.join(str(p) for p in paths)}"
         )
 
-    def _load_auth_file(self, file: Path) -> Optional[str]:
-        """Attempts to read the contents of an auth file.
+    def _do_load_auth_file(self, file: Path) -> Optional[str]:
+        """Attempts to read the contents of an auth (token) file.
         Returns None if the file does not exist or is not secure.
         """
         if not file.exists():
@@ -261,20 +259,6 @@ def _parse_auth_file_contents(
             username, _, secret = line.partition("::")
             return username, secret
     return None, None
-
-
-def _do_load_auth_file(file: Path, allow_insecure: bool) -> Optional[str]:
-    """Attempts to read the contents of an auth file.
-    Returns None if the file does not exist or is not secure.
-    """
-    if not file.exists():
-        return None
-    if not allow_insecure and not file_has_secure_permissions(file):
-        error(
-            f"Auth file {file} must have {SECURE_PERMISSIONS_STR} permissions, has {oct(get_file_permissions(file))}. Refusing to load."
-        )
-        return None
-    return file.read_text().strip()
 
 
 def get_auth_file_paths(config: Optional[Config] = None) -> List[Path]:
