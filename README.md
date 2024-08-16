@@ -16,7 +16,7 @@ The zabbix-cli code is written in [Python](https://www.python.org/) and distribu
 
 The project home page is on [GitHub](https://github.com/unioslo/zabbix-cli). Please report any issues or improvements there.
 
-The manual is available on-line at <https://unioslo.github.io/zabbix-cli/manual.html>.
+The manual is available online at <https://unioslo.github.io/zabbix-cli/>.
 
 ## Install
 
