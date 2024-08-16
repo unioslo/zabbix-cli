@@ -164,7 +164,7 @@ def print_toml(toml_str: str) -> None:
     console.print(
         toml_str,
         markup=False,  # TOML tables could be interpreted as rich markup
-        no_wrap=True,  # prevents mangling whitespace
+        soft_wrap=True,  # prevents mangling whitespace
     )
 
 
