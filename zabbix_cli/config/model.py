@@ -81,13 +81,13 @@ class APIConfig(BaseModel):
         validation_alias=AliasChoices("username", "system_id"),
     )
     password: SecretStr = Field(default=SecretStr(""))
+    auth_token: SecretStr = Field(default=SecretStr(""))
     verify_ssl: bool = Field(
         default=True,
         # Changed in V3: cert_verify -> verify_ssl
         validation_alias=AliasChoices("verify_ssl", "cert_verify"),
     )
     timeout: Optional[int] = 0
-    auth_token: SecretStr = Field(default=SecretStr(""))
 
     @model_validator(mode="after")
     def _validate_model(self) -> Self:
