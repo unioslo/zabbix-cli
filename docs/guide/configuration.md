@@ -4,20 +4,6 @@ The application is configured with a TOML file. The default location is platform
 
 {% include ".includes/config-locations.md" %}
 
-## Open configuration directory
-
-The default configuration directory can be opened in the system's file manager with the `open` command:
-
-```bash
-zabbix-cli open config
-```
-
-To print the path instead of opening it, use the `--path` option:
-
-```bash
-zabbix-cli open config --path
-```
-
 ## Create a configuration file
 
 Before using the application, a configuration file must be created. This can be done with the `zabbix-cli-init` command:
@@ -38,6 +24,28 @@ To bootstrap the config with a URL and username, use the options `--url` and `--
 zabbix-cli-init --url https://zabbix.example.com --user Admin
 ```
 
+## Open configuration directory
+
+The default configuration directory can be opened in the system's file manager with the `open` command:
+
+```bash
+zabbix-cli open config
+```
+
+To print the path instead of opening it, use the `--path` option:
+
+```bash
+zabbix-cli open config --path
+```
+
+## Show configuration file contents
+
+The contents of the current configuration file can be displayed with `show_config`:
+
+```bash
+zabbix-cli show_config
+```
+
 ### Create a sample config
 
 A sample configuration file can be printed to the terminal with the `sample_config` command. This can be redirected to a file to create a configuration file in an arbitrary location:
@@ -50,14 +58,6 @@ A more convoluted way of creating a default config file in the default location 
 
 ```
 zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
-```
-
-## Show configuration file contents
-
-The contents of the current configuration file can be displayed with `show_config`:
-
-```bash
-zabbix-cli show_config
 ```
 
 ## Sample configuration file
