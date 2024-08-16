@@ -91,6 +91,7 @@ nav:
     - Introduction: guide/introduction.md
     - Installation: guide/installation.md
     - Configuration: guide/configuration.md
+    - Authentication: guide/authentication.md
     - Usage: guide/usage.md
     - Migration: guide/migration.md
     - Commands:
