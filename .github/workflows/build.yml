@@ -99,22 +99,11 @@ jobs:
           merge-multiple: true
 
       - name: Create GitHub release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
+          files: dist/*
           tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
           body: |
             Release notes for ${{ github.ref }}
           draft: false
           prerelease: false
-
-      - name: Upload release asset
-        id: upload-release-asset
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          files: dist/*
