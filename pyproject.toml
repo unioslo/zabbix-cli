@@ -100,8 +100,8 @@ dependencies = [
   "pyyaml",
 ]
 [tool.hatch.envs.docs.scripts]
-build = "mkdocs build --clean --strict"
-serve = "mkdocs serve --dev-addr localhost:8001"
+build = "mkdocs build --clean --strict {args}"
+serve = "mkdocs serve --dev-addr localhost:8001 {args}"
 
 [tool.coverage.run]
 branch = true
