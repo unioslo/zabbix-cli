@@ -1,5 +1,13 @@
 # Zabbix-cli
 
+**NOTE: This is a new version of Zabbix-cli completely rewritten from the ground up. The old version can be found [here](https://github.com/unioslo/zabbix-cli/tree/2.3.2).**
+
+<!-- Activate badges when we publish to PyPI -->
+<!-- [![PyPI](https://img.shields.io/pypi/v/zabbix-cli)](https://pypi.org/project/zabbix-cli/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zabbix-cli)](https://pypi.org/project/zabbix-cli/)
+[![PyPI - License](https://img.shields.io/pypi/l/zabbix-cli)](https://pypi.org/project/zabbix-cli/) -->
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/unioslo/zabbix-cli/test.yml?branch=master&label=tests)]
+
 ## About
 
 Zabbix-cli is a command line interface for performing common administrative tasks tasks in [Zabbix monitoring system](https://www.zabbix.com/) via the [Zabbix API](https://www.zabbix.com/documentation/current/en/manual/api).
@@ -131,7 +139,7 @@ export ZABBIX_PASSWORD="zabbix"
 
 These are automatically loaded if the `password` parameter is not set in the config file.
 
-#### Auth token
+#### Auth token file
 
 Once you have authenticated with a username and password, zabbix-cli will store a session token if you configure `use_auth_token_file=true` in the config. This way you don't need to provide your credentials each time you run zabbix-cli. The token file should also be secured properly.
 
@@ -140,7 +148,7 @@ Once you have authenticated with a username and password, zabbix-cli will store 
 use_auth_token_file = true
 ```
 
-The location of the config file can be changed in the config file:
+The location of the auth token file can be changed in the config file:
 
 ```toml
 [app]
@@ -149,7 +157,7 @@ auth_token_file = "/path/to/auth/token/file"
 
 #### API token
 
-Zabbix-cli also supports authentication with an API token. This is the most secure way to authenticate. The API token must be set directly in the config file:
+Zabbix-cli also supports authentication with an API token specified directly in the config file:
 
 ```toml
 [api]
@@ -163,7 +171,7 @@ use_auth_token_file = false
 
 You may run zabbix-cli as a shell/REPL by simply running `zabbix-cli`.
 
-A single command could be run by callign `zabbix-cli` with the command as an argument:
+A single command could be run by calling `zabbix-cli` with the command as an argument:
 
 ```bash
 zabbix-cli show_hosts
