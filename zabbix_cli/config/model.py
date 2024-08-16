@@ -331,7 +331,8 @@ class Config(BaseModel):
         """Load configuration from a legacy .conf file."""
         logging.warning("Using legacy config file (%s)", filename)
         conf = load_config_conf(filename)
-        # Use legacy JSON format if we find a legacy config file
+        # Use legacy JSON format if we load from a legacy .conf file
+        # and mark the loaded config as stemming from a legacy config file
         conf.setdefault("zabbix_config", {}).setdefault("legacy_json_format", True)
         conf.setdefault("zabbix_config", {}).setdefault("is_legacy", True)
         try:

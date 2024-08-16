@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Iterator
 
 import pytest
@@ -33,3 +34,8 @@ def ctx(app: Typer) -> typer.Context:
 
         runner.invoke(app, [], obj=obj)
     return obj["ctx"]
+
+
+@pytest.fixture()
+def data_dir() -> Iterator[Path]:
+    yield Path(__file__).parent / "data"
