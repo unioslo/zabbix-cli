@@ -110,9 +110,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Positional arguments are deprecated.
 - JSON output is no longer always a dict with numeric string keys.
   - See V3 migration guide for more information.
-  - The old format can be enabled with the new option `app.legacy_json_format` in the new TOML configuration file format.
-  - When loading configuration from a legacy `.conf`-file, the old format is assumed.
-- Default configuration file location is now `~/.config/zabbix-cli/config.toml`
+  - The old format can be enabled with the new option `app.legacy_json_format` in the new TOML configuration file.
+  - When loading configuration from a legacy `.conf` file, the old format is assumed.
 - **TOML configuration file option names:**
   - Table [zabbix_api] → [api]
     - `zabbix_api_url` → `url`
