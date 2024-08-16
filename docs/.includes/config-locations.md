@@ -8,7 +8,7 @@
 
     - `./zabbix-cli/zabbix-cli.toml`
     - `~/Library/Application Support/zabbix-cli/zabbix-cli.toml`
-    - `~/Library/Preferences\zabbix-cli/zabbix-cli.toml`
+    - `~/Library/Preferences/zabbix-cli/zabbix-cli.toml`
 
 === "Windows"
 
