@@ -33,7 +33,10 @@ plugins:
   - search
   - mkdocs-simple-hooks:
       hooks:
-        on_pre_build: docs.scripts.run:main
+        # NOTE: we would like to run this on_pre_build, but it causes an infinite
+        # loop due to generating new files.
+        # This might be solveable by migrating all these scripts to mkdocs-gen-files
+        on_startup: docs.scripts.run:main
   - literate-nav: # enhanced nav section (enables wildcards)
   - include-markdown:
       preserve_includer_indent: true
