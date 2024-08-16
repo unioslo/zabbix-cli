@@ -102,10 +102,10 @@ class APIConfig(BaseModel):
         return timeout if timeout is not None else 0
 
     @field_serializer("password", "auth_token", when_used="json")
-    def dump_secret(self, v: SecretStr, info: SerializationInfo) -> str:
+    def dump_secret(self, v: Any, info: SerializationInfo) -> str:
         """Dump secrets if enabled in serialization context."""
         if info.context and isinstance(info.context, dict):
-            if info.context.get("secrets", False):  # pyright: ignore[reportUnknownMemberType]
+            if info.context.get("secrets", False) and isinstance(v, SecretStr):  # pyright: ignore[reportUnknownMemberType]
                 return v.get_secret_value()
         return str(v)
 
