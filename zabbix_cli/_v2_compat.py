@@ -40,7 +40,7 @@ CONFIG_PRIORITY = tuple(
 )
 
 
-AUTH_FILE = Path.home() / ".zabbix-cli.auth"
+AUTH_FILE = Path.home() / ".zabbix-cli_auth"
 AUTH_TOKEN_FILE = Path.home() / ".zabbix-cli_auth_token"
 
 
