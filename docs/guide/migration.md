@@ -42,7 +42,21 @@ Multiple changes have been made to the application's configuration file, in term
 
 ### New configuration file format
 
-The configuration file is now in [TOML](https://toml.io/en/) format. The old `.conf` format is deprecated but can still be loaded. Old configs generate a warning when used. See [configuration](/guide/configuration) for more information on the new format. There is currently no automatic migration of the old configuration file to the new format.
+The configuration file is now in [TOML](https://toml.io/en/) format. The old `.conf` format is deprecated but can still be loaded. Old configs generate a warning when used. See [configuration](/guide/configuration) for more information on the new format.
+
+An old configuration file can be migrated using the `migrate_config` command:
+
+```bash
+zabbix-cli migrate_config
+```
+
+The command uses the currently loaded configuration file to generate a new TOML configuration file. The new file is saved in the default TOML configuration file location.
+
+Custom source and destination files can be specified with the `--source` and `--destination` options, respectively:
+
+```bash
+zabbix-cli migrate_config --source /path/to/old/config.conf --destination /path/to/new/config.toml
+```
 
 ### New default configuration file location
 

@@ -17,6 +17,7 @@ from zabbix_cli.dirs import LOGS_DIR
 from zabbix_cli.dirs import SITE_CONFIG_DIR
 from zabbix_cli.exceptions import ConfigExistsError
 from zabbix_cli.exceptions import ZabbixCLIError
+from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
 from zabbix_cli.output.console import print_path
 from zabbix_cli.output.console import print_toml
@@ -231,3 +232,51 @@ def init(
         init_config(config_file=config_file, overwrite=overwrite)
     except ConfigExistsError as e:
         raise ZabbixCLIError(f"{e}. Use [option]--overwrite[/] to overwrite it") from e
+
+
+@app.command("migrate_config", rich_help_panel=HELP_PANEL)
+def migrate_config(
+    ctx: typer.Context,
+    source: Optional[Path] = typer.Option(
+        None, "--source", "-s", help="Location of the config file."
+    ),
+    destination: Optional[Path] = typer.Option(
+        None,
+        "--destination",
+        "-d",
+        help="Location of the new config file. Uses the default config path if not specified.",
+    ),
+    overwrite: bool = typer.Option(
+        False, "--overwrite", help="Overwrite destination config file if it exists."
+    ),
+) -> None:
+    """Migrate a legacy .conf config to a new .toml config."""
+    from zabbix_cli.config.constants import DEFAULT_CONFIG_FILE
+    from zabbix_cli.config.model import Config
+
+    if source:
+        conf = Config.from_file(source)
+        if not conf.app.is_legacy:
+            exit_err(f"Config file {source} is not a legacy .conf file.")
+    else:
+        conf = app.state.config
+        if not conf.app.is_legacy:
+            p = f"'{conf.config_path}' " if conf.config_path else ""
+            exit_err(f"Loaded config {p}is not a legacy .conf config file file.")
+
+    if not destination:
+        destination = DEFAULT_CONFIG_FILE
+    if not destination.suffix == ".toml":
+        destination = destination.with_suffix(".toml")
+
+    if destination.exists() and not overwrite:
+        exit_err(
+            f"File {destination} already exists. Use [option]--overwrite[/] to overwrite it."
+        )
+
+    try:
+        conf.dump_to_file(destination)
+    except Exception as e:
+        exit_err(f"Unable to create config file {destination}: {e}", exception=e)
+    else:
+        success(f"Config migrated to {destination}")
