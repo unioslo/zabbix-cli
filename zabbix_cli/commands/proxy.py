@@ -563,7 +563,7 @@ def update_hostgroup_proxygroup(
     proxygroup: str = typer.Argument(help="Proxy group to assign. Supports wildcards."),
     dryrun: bool = typer.Option(False, help="Preview changes.", is_flag=True),
 ) -> None:
-    """Assign a proxy to all hosts in one or more host groups."""
+    """Assign a proxy group to all hosts in one or more host groups."""
     from zabbix_cli.commands.results.proxy import UpdateHostGroupProxyGroupResult
     from zabbix_cli.output.console import warning
 

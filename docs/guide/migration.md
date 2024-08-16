@@ -11,30 +11,30 @@ Notable changes include:
 - [**New configuration options**](#new-configuration-options)
 - [**Renamed configuration options**](#renamed-configuration-options)
 
-
 **Exports**
 
 - [**New export formats**](#new-export-formats)
-    - `yaml`
-    - `php`
+      - `yaml`
+      - `php`
 - [**New default export filenames**](#new-default-export-filenames)
-    - Exported files are no longer prefixed with `zabbix_export_`
-    - Exported files no longer include a timestamp in the filename by default. Newer exports overwrite older ones automatically.
+      - Exported files are no longer prefixed with `zabbix_export_`
+      - Exported files no longer include a timestamp in the filename by default. Newer exports overwrite older ones automatically.
 
 **Commands**
 
 - [**Command invocation syntax**](#command-invocation-syntax)
-    - Using `zabbix-cli -C 'command args ...'` is no longer required.
-    - Commands can be invoked directly with `zabbix-cli command args ...`
+      - Using `zabbix-cli -C 'command args ...'` is no longer required.
+      - Commands can be invoked directly with `zabbix-cli command args ...`
 - [**Command syntax**](#command-syntax)
-    - Commands use positional arguments to a lesser degree than in 2.x. Named options are now preferred.
-    - Legacy positional arguments are still supported, but are deprecated and will generate a warning when used.
+      - Commands use positional arguments to a lesser degree than in 2.x. Named options are now preferred.
+      - Legacy positional arguments are deprecated and will generate a warning when used.
+      - Most prompts have been removed and replaced with named options due to the increase in scope of the commands.
 
 **Output**
 
 - [**JSON output format**](#json-output-format)
-    - The JSON output format has changed. The old format can be enabled with the `app.legacy_json_format` option in the new TOML configuration file format.
-    - When loading configuration from a legacy `.conf`-file, the old format is assumed.
+      - The JSON output format has changed. The old format can be enabled with the `app.legacy_json_format` option in the new TOML configuration file format.
+      - When using a legacy `.conf` configuration file, the old JSON format is assumed.
 
 ## Config file
 
@@ -42,7 +42,7 @@ Multiple changes have been made to the application's configuration file, in term
 
 ### New configuration file format
 
-The configuration file is now in [TOML](https://toml.io/en/) format. The old `.conf`-file format is still supported, but is deprecated and will generate a warning when used. See [configuration](/guide/configuration) for more information on the new format. There is currently no automatic migration of the old configuration file to the new format.
+The configuration file is now in [TOML](https://toml.io/en/) format. The old `.conf` format is deprecated but can still be loaded. Old configs generate a warning when used. See [configuration](/guide/configuration) for more information on the new format. There is currently no automatic migration of the old configuration file to the new format.
 
 ### New default configuration file location
 
@@ -58,14 +58,12 @@ zabbix-cli open config
 
 New configuration options have been introduced to the configuration file:
 
-
 | Option | Description | Default |
 | --- | --- | --- |
 | `app.default_format` | Default output format in the CLI | `table` |
 | `app.legacy_json_format` | Enable [legacy json format](#json-output-format) | `false` |
 
 ### Renamed configuration options
-
 
 Several configuration options have been renamed to better reflect their purpose.
 
@@ -91,7 +89,6 @@ The following table lists the old option names and their new counterparts:
 For backwards compatibility, all the old option names are still supported, but will be removed in a future version.
 
 See [Sample configuration file](/guide/configuration#sample-configuration-file) to see an example of the new configuration file format.
-
 
 ## Exports
 

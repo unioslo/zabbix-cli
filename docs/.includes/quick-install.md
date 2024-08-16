@@ -7,7 +7,7 @@
     pipx install zabbix-cli
     ```
 
-    This will install `zabbix-cli` in an isolated environment, and make it available on your system path.
+    This will install `zabbix-cli` in an isolated environment and make it available on your system path.
 
     {% if install_expand is defined and install_expand == true %}
     ### Multiple installed versions

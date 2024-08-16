@@ -1,10 +1,8 @@
 # Usage
 
-
 ## Interactive mode
 
 Invoking `zabbix-cli` without any arguments will start the application in an interactive shell. This is the default mode of operation, and is the most user-friendly way to use the application.
-
 
 ```bash
 zabbix-cli
@@ -29,7 +27,6 @@ Commands can also be invoked directly from the command line. This is useful for 
 ```bash
 zabbix-cli show_hostgroup "Linux servers"
 ```
-
 
 ## Bulk mode
 
