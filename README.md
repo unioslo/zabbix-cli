@@ -68,13 +68,18 @@ zabbix-cli show_config
 zabbix-cli sample_config
 ```
 
-If you run into problems it is useful to enable logging and set the `DEBUG` level for logging:
+If you run into problems it is useful to enable debug logging in the config file:
 
 ```toml
 [logging]
-logging = ON
-log_level = DEBUG
-log_file = /path/to/log/zabbix-cli.log
+enabled = true
+log_level = "DEBUG"
+```
+
+Find the log file with:
+
+```bash
+zabbix-cli open logs
 ```
 
 ### Authentication
