@@ -4,10 +4,14 @@
 
     ```bash
     pip install pipx
-    pipx install zabbix-cli
+    pipx install git+https://github.com/unioslo/zabbix-cli.git@master
     ```
 
     This will install `zabbix-cli` in an isolated environment and make it available on your system path.
+
+
+    !!! note
+        We are in the process of acquiring the unmaintained PyPI package name `zabbixcli`, which will allow us to publish this package on PyPI under the name `zabbix-cli`. Until then, the package is only available on GitHub.
 
     {% if install_expand is defined and install_expand == true %}
     ### Multiple installed versions
@@ -19,7 +23,7 @@
     If you prefer to install the package with `pip`, you can do so with the following command:
 
     ```bash
-    pip install zabbix-cli
+    pip install git+https://github.com/unioslo/zabbix-cli.git@master
     ```
 
     This will install `zabbix-cli` in your user environment.
