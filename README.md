@@ -28,6 +28,39 @@ pip install git+https://github.com/unioslo/zabbix-cli.git@master
 
 ## Getting started
 
+### Quick start
+
+```bash
+# Initialize the config file with your Zabbix URL
+zabbix-cli init --zabbix-url https://your-zabbix-url.com/
+# Start the REPL
+zabbix-cli
+```
+
+#### Formats
+
+Zabbix-cli supports two output formats: table and JSON. The default format is table, but it can be changed with the `--format` parameter or by setting the `app.output_format` parameter in the config file.
+
+```bash
+# Show hosts in table format (default)
+zabbix-cli show_hosts
+# Show hosts in JSON format
+zabbix-cli --format json show_hosts
+
+# Setting format in REPL
+> --format json show_hosts
+```
+
+### Usage
+
+Zabbix-cli is a command line interface for Zabbix. It can be used in three ways:
+
+1. **Interactive mode**: Start the REPL by running `zabbix-cli`. This will start a shell where you can run multiple commands in a persistent session.
+2. **Single command**: Run a single command by running `zabbix-cli COMMAND`. This will run the command and print the output.
+3. **Batch mode**: Run multiple commands from a file by running `zabbix-cli -f FILE`. The file should contain one command per line.
+
+Command reference can be found in the [online user guide](https://unioslo.github.io/zabbix-cli/guide/introduction/) or by running `zabbix-cli --help`.
+
 ### Configuration
 
 Zabbix-cli needs a config file. This can be created with the `zabbix-cli init` command.
@@ -171,20 +204,6 @@ auth_token = "API_TOKEN"
 [app]
 use_auth_token_file = false
 ```
-
-### Running zabbix-cli
-
-You may run zabbix-cli as a shell/REPL by simply running `zabbix-cli`.
-
-A single command could be run by calling `zabbix-cli` with the command as an argument:
-
-```bash
-zabbix-cli show_hosts
-```
-
-Alternatively you could run multiple commands if you provide a file, with the `-f` parameter, with one command per line in the file.
-
-Get more help and information by running `zabbix-cli --help` and `zabbix-cli -C "help"`.
 
 ## Development
 

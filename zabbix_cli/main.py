@@ -103,7 +103,8 @@ def main_callback(
     ),
     output_format: Optional[OutputFormat] = typer.Option(
         None,
-        "--output-format",
+        "--format",
+        "--output-format",  # DEPRECATED: V2 name for compatibility
         "-o",
         help="Define the output format when running in command-line mode.",
         case_sensitive=False,
