@@ -85,6 +85,12 @@ def run_repl(ctx: typer.Context) -> None:
     start_repl(ctx, prompt_kwargs=prompt_kwargs)
 
 
+def version_callback(value: bool):
+    if value:
+        print(f"zabbix-cli version {__version__}")
+        raise typer.Exit()
+
+
 @app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
@@ -108,6 +114,13 @@ def main_callback(
         "-o",
         help="Define the output format when running in command-line mode.",
         case_sensitive=False,
+    ),
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        help="Show the version of Zabbix-CLI and exit.",
+        is_eager=True,
+        callback=version_callback,
     ),
     # Deprecated option, kept for compatibility with V2
     zabbix_command: Optional[str] = typer.Option(
