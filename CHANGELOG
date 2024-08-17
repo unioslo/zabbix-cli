@@ -24,8 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **New commands:**
   - `add_proxy_to_group`: Add a proxy to a proxy group.
   - `create_templategroup`: Create a template group.
-  - `extend_templategroup`: Add all templates from a group to other group(s) without removing them from the original group.
   - `extend_hostgroup`: Add all hosts from a host group to other host group(s) without removing them from the original group.
+  - `extend_templategroup`: Add all templates from a group to other group(s) without removing them from the original group.
+  - `init`: Initialize the CLI configuration file.
   - `link_template_to_template`: Link template(s) to template(s).
   - `move_hosts`: Move all hosts from one host group to another.
   - `move_templates`: Move all templates from one group to another.
@@ -173,6 +174,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Renamed to `monitor_host`
   - `show_zabbixcli_config`:
     - Renamed to `show_config`
+- `zabbix-cli-init` script.
+  - Replaced by `zabbix-cli init` command.
+- `zabbix-cli-bulk-execution` script.
+  - Replaced by `zabbix-cli --file`.
 
 ### Removed
 

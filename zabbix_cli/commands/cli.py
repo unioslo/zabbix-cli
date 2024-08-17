@@ -224,12 +224,15 @@ def init(
     overwrite: bool = typer.Option(
         False, "--overwrite", help="Overwrite existing config"
     ),
+    url: Optional[str] = typer.Option(
+        None, "--url", "-u", help="Zabbix API URL to use."
+    ),
 ) -> None:
     """Create and initialize config file."""
     from zabbix_cli.config.utils import init_config
 
     try:
-        init_config(config_file=config_file, overwrite=overwrite)
+        init_config(config_file=config_file, overwrite=overwrite, url=url)
     except ConfigExistsError as e:
         raise ZabbixCLIError(f"{e}. Use [option]--overwrite[/] to overwrite it") from e
 
