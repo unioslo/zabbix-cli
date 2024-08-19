@@ -1,11 +1,12 @@
-""" "Module for loading/storing Zabbix API authentication info.
+""" "Module for authenticating with the Zabbix API as well as
+loading/storing authentication information.
 
 Manages the following:
 - Loading and saving auth token files (file containing API session token)
 - Loading and saving auth files (file containing username and password)
 - Loading username and password from environment variables
 - Prompting for username and password
-- Updating the Config object with the loaded authentication information
+- Logging in to the Zabbix API using one of the above methods
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ from zabbix_cli.config.constants import ConfigEnvVars
 from zabbix_cli.exceptions import AuthError
 from zabbix_cli.exceptions import AuthTokenFileError
 from zabbix_cli.exceptions import ZabbixAPIException
+from zabbix_cli.logs import add_user
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import warning
@@ -225,6 +227,8 @@ def login(client: ZabbixAPI, config: Config) -> None:
     token = auth.login()
     if config.app.use_auth_token_file:
         write_auth_token_file(config.api.username, token, config.app.auth_token_file)
+    add_user(config.api.username)
+    logger.info("Logged in as %s", config.api.username)
 
 
 def logout(client: ZabbixAPI, config: Config) -> None:

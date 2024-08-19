@@ -28,6 +28,7 @@ from typer.models import CommandFunctionType
 from typer.models import CommandInfo as TyperCommandInfo
 from typer.models import Default
 
+from zabbix_cli.logs import logger
 from zabbix_cli.state import State
 from zabbix_cli.state import get_state
 
@@ -95,9 +96,6 @@ class StatusCallable(Protocol):
     ) -> Status: ...
 
 
-APP_LOGGER = logging.getLogger("zabbix-cli")
-
-
 class StatefulApp(typer.Typer):
     """A Typer app that provides access to the global state."""
 
@@ -110,7 +108,7 @@ class StatefulApp(typer.Typer):
 
     @property
     def logger(self) -> logging.Logger:
-        return APP_LOGGER
+        return logger
 
     # Methods for adding subcommands and keeping track of hierarchy
     def add_typer(self, typer_instance: Typer, **kwargs: Any) -> None:
