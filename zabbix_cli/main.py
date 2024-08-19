@@ -14,8 +14,7 @@
 # (at your option) any later version.
 #
 # Zabbix-CLI is distributed in the hope that it will be useful,
-# but WITHOUT ANY W
-# ARRANTY; without even the implied warranty of
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
@@ -23,7 +22,6 @@
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import logging
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -36,11 +34,10 @@ from zabbix_cli.__about__ import __version__
 from zabbix_cli.app import app
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
+from zabbix_cli.logs import logger
 
 if TYPE_CHECKING:
     from typing import Any
-
-logger = logging.getLogger("zabbix-cli")
 
 
 def run_repl(ctx: typer.Context) -> None:
@@ -55,8 +52,8 @@ def run_repl(ctx: typer.Context) -> None:
     from zabbix_cli.state import get_state
 
     patch()
-    from click_repl import (  # pyright: ignore[reportUnknownVariableType, reportMissingTypeStubs]
-        repl as start_repl,  # pyright: ignore[reportUnknownVariableType, reportMissingTypeStubs]
+    from click_repl import (  # pyright: ignore[reportMissingTypeStubs]
+        repl as start_repl,  # pyright: ignore[reportUnknownVariableType]
     )
 
     state = get_state()
@@ -136,7 +133,6 @@ def main_callback(
     if "--help" in sys.argv:
         return
 
-    from zabbix_cli.logs import LogContext
     from zabbix_cli.logs import configure_logging
     from zabbix_cli.state import get_state
 
@@ -161,29 +157,27 @@ def main_callback(
     configure_logging(conf.logging)
     state.configure(conf)
 
-    # NOTE: LogContext is kept from V2. Do we still need it?
-    with LogContext(logger, user=conf.api.username):
-        # TODO: look at order of evaluation here. What takes precedence?
-        # Should passing both --input-file and --command be an error? probably
-        if zabbix_command:
-            from zabbix_cli._v2_compat import run_command_from_option
+    # TODO: look at order of evaluation here. What takes precedence?
+    # Should passing both --input-file and --command be an error? probably!
+    if zabbix_command:
+        from zabbix_cli._v2_compat import run_command_from_option
 
-            run_command_from_option(ctx, zabbix_command)
-            return
-        elif input_file:
-            from zabbix_cli.bulk import run_bulk
+        run_command_from_option(ctx, zabbix_command)
+        return
+    elif input_file:
+        from zabbix_cli.bulk import run_bulk
 
-            run_bulk(ctx, input_file)
-        elif ctx.invoked_subcommand is not None:
-            return  # modern alternative to `-C` option to run a single command
-        else:
-            # If no command is passed in, we enter the REPL
-            run_repl(ctx)
+        run_bulk(ctx, input_file)
+    elif ctx.invoked_subcommand is not None:
+        return  # modern alternative to `-C` option to run a single command
+    else:
+        # If no command is passed in, we enter the REPL
+        run_repl(ctx)
 
 
 # TODO: Add a decorator for skipping or some sort of parameter to the existing
 #       StatefulApp.command method that marks a command as not requiring
-#       an existing configuration file.
+#       a configuration file to be loaded.
 SKIPPABLE_COMMANDS = ["open", "sample_config"]
 
 

@@ -30,7 +30,10 @@ from typing import Literal
 if TYPE_CHECKING:
     from zabbix_cli.config.model import LoggingConfig
 
-logger = logging.getLogger(__name__)
+# NOTE: important that this logger is named `zabbix_cli` with an underscore
+# so that modules calling `logging.getLogger(__name__)` inherit the same
+# configuration
+logger = logging.getLogger("zabbix_cli")
 
 DEFAULT_FORMAT = " ".join(
     (
@@ -53,23 +56,6 @@ class ContextFilter(logging.Filter):
         return True
 
 
-class LogContext:
-    """A context that adds ContextFilters to a logger."""
-
-    def __init__(self, logger: logging.Logger, **context: Any) -> None:
-        self.logger = logger
-        self.filters = [ContextFilter(k, context[k]) for k in context]
-
-    def __enter__(self):
-        for f in self.filters:
-            self.logger.addFilter(f)
-        return self.logger
-
-    def __exit__(self, *args: Any, **kwargs: Any) -> None:
-        for f in self.filters:
-            self.logger.removeFilter(f)
-
-
 class SafeRecord(logging.LogRecord):
     """A LogRecord wrapper that returns None for unset fields."""
 
@@ -78,7 +64,7 @@ class SafeRecord(logging.LogRecord):
 
 
 class SafeFormatter(logging.Formatter):
-    """A Formatter that use SafeRecord to avoid failure."""
+    """A Formatter that uses SafeRecord to avoid failure."""
 
     def format(self, record: logging.LogRecord) -> str:
         record = SafeRecord(record)
@@ -103,6 +89,28 @@ def get_log_level(level: LogLevelStr) -> int:
         return logging.NOTSET
 
 
+def add_user(user: str) -> None:
+    """Add a username to the log record."""
+    add_log_context("user", user)
+
+
+def add_log_context(field: str, value: Any) -> None:
+    """Add a ContextFilter filter to the root logger's handlers."""
+    root_logger = logging.getLogger()
+    # In order to affect all loggers, we need to modify the handler itself
+    # rather than the logger's filters. Filters are not propagated to
+    # child loggers, but since they all share the same handler, we can
+    # modify the handler's filters to achieve this.
+    for handler in root_logger.handlers:
+        # Modify existing filter if exists, otherwise add a new one
+        for filter_ in handler.filters:
+            if isinstance(filter_, ContextFilter) and filter_.field == field:
+                filter_.value = value
+                break
+        else:
+            handler.addFilter(ContextFilter(field, value))
+
+
 def configure_logging(config: LoggingConfig | None = None):
     """Configure the root logger."""
     if not config:
@@ -110,12 +118,9 @@ def configure_logging(config: LoggingConfig | None = None):
 
         config = LoggingConfig()
 
-    level = get_log_level(config.log_level)
-    filename = config.log_file
-
-    if config.enabled and filename:
+    if config.enabled and config.log_file:
         # log to given filename
-        handler = logging.FileHandler(filename)
+        handler = logging.FileHandler(config.log_file)
     elif config.enabled:
         # log to stderr
         handler = logging.StreamHandler(sys.stderr)
@@ -123,75 +128,16 @@ def configure_logging(config: LoggingConfig | None = None):
         # disable logging
         handler = logging.NullHandler()
 
+    level = get_log_level(config.log_level)
     handler.setFormatter(SafeFormatter(fmt=DEFAULT_FORMAT))
+
+    # Configure root logger and zabbix-cli logger
     root = logging.getLogger()
     root.handlers.clear()  # clear any existing handlers
-
-    # Log
     root.addHandler(handler)
     root.setLevel(logging.WARNING)
-    zabbix_cli = logging.getLogger("zabbix_cli")
-    zabbix_cli.setLevel(level)
+    logger.setLevel(level)  # configure global app logger
 
     # Also log from HTTPX
     httpx = logging.getLogger("httpx")
     httpx.setLevel(level)
-
-
-#
-# python -m zabbix_cli.logs
-#
-
-
-# def main(inargs: Optional[Sequence[str]] = None):
-#     import argparse
-
-#     from zabbix_cli.config import get_config
-
-#     parser = argparse.ArgumentParser("test log settings")
-#     parser.add_argument("-c", "--config", default=None)
-#     parser.add_argument(
-#         "--level", dest="log_level", default=None, help="override %(dest)s from config"
-#     )
-#     parser.add_argument(
-#         "--file", dest="log_file", default=None, help="override %(dest)s from config"
-#     )
-#     parser.add_argument(
-#         "--enable",
-#         dest="logging",
-#         choices=("ON", "OFF"),
-#         default=None,
-#         help="override %(dest)s from config",
-#     )
-
-#     args = parser.parse_args(inargs)
-#     config = get_config(args.config)
-
-#     for attr in ("logging", "log_level", "log_file"):
-#         value = getattr(args, attr)
-#         if value is not None:
-#             setattr(config, attr, value)
-
-#     configure_logging(config)
-
-#     logger.debug("a debug message")
-#     logger.info("an info message")
-#     logger.warning("a warn message")
-#     logger.error("an error message")
-#     try:
-#         this_name_is_not_in_scope  # noqa: F821 # type: ignore
-#     except NameError:
-#         logger.error("an error message with traceback", exc_info=True)
-
-#     logger.debug("Message without user context")
-#     with LogContext(logger, user="user1"):
-#         logger.debug("Message with context user=user1")
-#         with LogContext(logger, user="user2"):
-#             logger.debug("Message with nested context user=user2")
-#     logger.debug("Message after context")
-
-#     logger.info("done")
-
-
-# if __name__ == "__main__":
-#     main()
