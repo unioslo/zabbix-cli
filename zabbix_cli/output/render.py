@@ -8,7 +8,6 @@ from typing import Dict
 
 import typer
 
-from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.output.console import console
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import success
@@ -53,6 +52,8 @@ def render_result(
     **kwargs
         Additional keyword arguments to pass to the render function.
     """
+    from zabbix_cli.config.constants import OutputFormat
+
     # Short form aliases
     state = get_state()
     fmt = state.config.app.output_format
