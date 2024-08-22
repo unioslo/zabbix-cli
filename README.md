@@ -39,7 +39,7 @@ zabbix-cli
 
 #### Formats
 
-Zabbix-cli supports two output formats: table and JSON. The default format is table, but it can be changed with the `--format` parameter or by setting the `app.output_format` parameter in the config file.
+Zabbix-cli supports two output formats: table and JSON. The default format is table, but it can be changed with the `--format` parameter:
 
 ```bash
 # Show hosts in table format (default)
@@ -49,6 +49,13 @@ zabbix-cli --format json show_hosts
 
 # Setting format in REPL
 > --format json show_hosts
+```
+
+Or by setting the `app.output_format` parameter in the config file:
+
+```toml
+[app]
+output_format = "json"
 ```
 
 ### Usage
@@ -220,6 +227,14 @@ hatch shell
 ```
 
 This will create a new virtual environment, install the required dependencies and enter the environment.
+
+If you do not wish to use Hatch, you can create a virtual environment manually:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -U -e ".[test]"
+```
 
 ### Testing
 
