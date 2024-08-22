@@ -20,11 +20,41 @@ The manual is available online at <https://unioslo.github.io/zabbix-cli/>.
 
 ## Install
 
-Install with pip:
+If you have [uv](https://github.com/astral-sh/uv) installed, trying out Zabbix-cli is as easy as:
+
+```bash
+uvx --from git+https://github.com/unioslo/zabbix-cli.git@master zabbix-cli
+```
+
+Or to install it permanently:
+
+```bash
+uv tool install git+https://github.com/unioslo/zabbix-cli.git@master
+```
+
+### Pip
+
+Install with pip or pipx:
 
 ```bash
 pip install git+https://github.com/unioslo/zabbix-cli.git@master
+# or
+pipx install git+https://github.com/unioslo/zabbix-cli.git@master
 ```
+
+We are in the process of acquiring the name `zabbix-cli` on PyPI. Until then, installation from the GitHub repository is the only option when installing as a Python package.
+
+### Homebrew
+
+A homebrew package exists, but it is not maintained by us. It can be installed with:
+
+```bash
+brew install zabbix-cli
+```
+
+### PyInstaller binaries
+
+Binaries built with PyInstaller can be found on the [releases page](https://github.com/unioslo/zabbix-cli/releases). We build binaries for Linux, macOS and Windows for each release.
 
 ## Getting started
 
@@ -36,6 +66,16 @@ zabbix-cli init --zabbix-url https://your-zabbix-url.com/
 # Start the REPL
 zabbix-cli
 ```
+
+### Usage
+
+Zabbix-cli is a command line interface for Zabbix. It can be used in three ways:
+
+1. **Interactive mode**: Start the REPL by running `zabbix-cli`. This will start a shell where you can run multiple commands in a persistent session.
+2. **Single command**: Run a single command by running `zabbix-cli COMMAND`. This will run the command and print the output.
+3. **Batch mode**: Run multiple commands from a file by running `zabbix-cli -f FILE`. The file should contain one command per line.
+
+Command reference can be found in the [online user guide](https://unioslo.github.io/zabbix-cli/guide/introduction/) or by running `zabbix-cli --help`.
 
 #### Formats
 
@@ -57,16 +97,6 @@ Or by setting the `app.output_format` parameter in the config file:
 [app]
 output_format = "json"
 ```
-
-### Usage
-
-Zabbix-cli is a command line interface for Zabbix. It can be used in three ways:
-
-1. **Interactive mode**: Start the REPL by running `zabbix-cli`. This will start a shell where you can run multiple commands in a persistent session.
-2. **Single command**: Run a single command by running `zabbix-cli COMMAND`. This will run the command and print the output.
-3. **Batch mode**: Run multiple commands from a file by running `zabbix-cli -f FILE`. The file should contain one command per line.
-
-Command reference can be found in the [online user guide](https://unioslo.github.io/zabbix-cli/guide/introduction/) or by running `zabbix-cli --help`.
 
 ### Configuration
 
