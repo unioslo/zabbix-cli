@@ -16,7 +16,6 @@ import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Callable
 from typing import Final
 from typing import List
 from typing import NamedTuple
@@ -41,11 +40,6 @@ if TYPE_CHECKING:
     from zabbix_cli.config.model import Config
     from zabbix_cli.pyzabbix.client import ZabbixAPI
 
-    CredentialsMethod = Callable[[], "Credentials"]
-    UsernamePWMethod = Callable[[], Tuple[Optional[str], Optional[str]]]
-    """Function that returns a username/password tuple or None if not available."""
-
-    AuthMethod = Callable[[], str]
 
 logger = logging.getLogger(__name__)
 
