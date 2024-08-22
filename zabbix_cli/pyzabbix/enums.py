@@ -208,7 +208,7 @@ class APIStrEnum(Choice):
             else:
                 name = str(c.value)
             code = c.value.api_value
-        except ValueError:
+        except (ValueError, ZabbixCLIError):
             name = default
             code = value
         if with_code:

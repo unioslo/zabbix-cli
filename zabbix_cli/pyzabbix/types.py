@@ -126,6 +126,25 @@ assigned as values in a ParamsType.
 """
 
 
+def age_from_datetime(dt: Optional[datetime]) -> Optional[str]:
+    """Returns the age of a datetime object as a human-readable
+    string, or None if the datetime is None."""
+    if not dt:
+        return None
+    n = datetime.now(tz=dt.tzinfo)
+    age = n - dt
+    # strip microseconds
+    return str(age - timedelta(microseconds=age.microseconds))
+
+
+def format_datetime(dt: Optional[datetime]) -> str:
+    """Returns a formatted datetime string, or empty string if the
+    datetime is None."""
+    if not dt:
+        return ""
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
 class ModifyHostItem(TypedDict):
     """Argument for a host ID in an API request."""
 
@@ -394,7 +413,7 @@ class Host(ZabbixAPIBaseModel):
     inventory: DictModel = Field(default_factory=DictModel)
     monitored_by: Optional[MonitoredBy] = None
     proxyid: Optional[str] = Field(
-        None,
+        default=None,
         # Compat for <7.0.0
         validation_alias=AliasChoices("proxyid", "proxy_hostid"),
     )
@@ -402,7 +421,7 @@ class Host(ZabbixAPIBaseModel):
     proxy_groupid: Optional[str] = None  # >= 7.0
     maintenance_status: Optional[str] = None
     active_available: Optional[str] = Field(
-        None,
+        default=None,
         validation_alias=AliasChoices(
             "available",  # < 7.0
             "active_available",  # >= 7.0
@@ -930,7 +949,7 @@ class Event(ZabbixAPIBaseModel):
     object: int
     objectid: str
     acknowledged: int
-    clock: datetime
+    clock: Optional[datetime] = None
     name: str
     value: Optional[int] = None  # docs seem to imply this is optional
     severity: int
@@ -946,12 +965,9 @@ class Event(ZabbixAPIBaseModel):
 
     @computed_field
     @property
-    def age(self) -> str:
+    def age(self) -> Optional[str]:
         """Returns the age of the event as a formatted string."""
-        n = datetime.now(tz=self.clock.tzinfo)
-        age = n - self.clock
-        # strip microseconds
-        return str(age - timedelta(microseconds=age.microseconds))
+        return age_from_datetime(self.clock)
 
     @computed_field
     @property
@@ -1014,8 +1030,8 @@ class Event(ZabbixAPIBaseModel):
                 self.eventid,
                 self.objectid,
                 self.name,
-                self.clock.strftime("%Y-%m-%d %H:%M:%S"),
-                self.age,
+                format_datetime(self.clock),
+                self.age or "",
                 self.acknowledged_str_cell,
                 self.status_str_cell,
             ]
@@ -1025,27 +1041,30 @@ class Event(ZabbixAPIBaseModel):
 
 class Trigger(ZabbixAPIBaseModel):
     triggerid: str
-    description: Optional[str]
-    expression: Optional[str]
-    event_name: str
-    opdata: str
-    comments: str
-    error: str
-    flags: int
-    lastchange: datetime
-    priority: int
-    state: int
-    templateid: Optional[str]
-    type: int
-    url: str
+    """Required for update operations."""
+    description: Optional[str] = None
+    """Required for create operations."""
+    expression: Optional[str] = None
+    """Required for create operations."""
+    event_name: Optional[str] = None
+    opdata: Optional[str] = None
+    comments: Optional[str] = None
+    error: Optional[str] = None
+    flags: Optional[int] = None
+    lastchange: Optional[datetime] = None
+    priority: Optional[int] = None
+    state: Optional[int] = None
+    templateid: Optional[str] = None
+    type: Optional[int] = None
+    url: Optional[str] = None
     url_name: Optional[str] = None  # >6.0
-    value: int
-    recovery_mode: int
-    recovery_expression: str
-    correlation_mode: int
-    correlation_tag: str
-    manual_close: int
-    uuid: str
+    value: Optional[int] = None
+    recovery_mode: Optional[int] = None
+    recovery_expression: Optional[str] = None
+    correlation_mode: Optional[int] = None
+    correlation_tag: Optional[str] = None
+    manual_close: Optional[int] = None
+    uuid: Optional[str] = None
     hosts: List[Host] = []
     # NYI:
     # groups: List[HostGroup] = Field(
@@ -1059,12 +1078,9 @@ class Trigger(ZabbixAPIBaseModel):
 
     @computed_field
     @property
-    def age(self) -> str:
+    def age(self) -> Optional[str]:
         """Returns the age of the event as a formatted string."""
-        n = datetime.now(tz=self.lastchange.tzinfo)
-        age = n - self.lastchange
-        # strip microseconds
-        return str(age - timedelta(microseconds=age.microseconds))
+        return age_from_datetime(self.lastchange)
 
     @computed_field
     @property
@@ -1094,8 +1110,8 @@ class Trigger(ZabbixAPIBaseModel):
                 self.hostname or "",
                 self.description or "",
                 self.severity,
-                self.lastchange.strftime("%Y-%m-%d %H:%M:%S"),
-                self.age,
+                format_datetime(self.lastchange),
+                self.age or "",
             ]
         ]
         return cols, rows
@@ -1193,3 +1209,29 @@ class ImportRules(ZabbixAPIBaseModel):
             rules.templateScreens = cud
 
         return rules
+
+
+def resolve_forward_refs() -> None:
+    """Certain models have forward references that need to be resolved.
+
+    I.e. HostGroup has a field `hosts` that references the Host model,
+    which is defined later in the file. This function resolves those
+    forward references so that we can serialize them properly.
+
+    We do the simplest possible resolution here, which is to just
+    rebuild all the models in the module. This is inefficient, but
+    guarantees we won't have any runtime errors due to unresolved
+    forward references.
+    """
+    for obj in globals().values():
+        if not isinstance(obj, type):
+            continue
+        try:
+            if not issubclass(obj, ZabbixAPIBaseModel):
+                continue
+        except TypeError:
+            continue
+        obj.model_rebuild()
+
+
+resolve_forward_refs()
