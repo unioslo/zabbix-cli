@@ -20,25 +20,18 @@ The manual is available online at <https://unioslo.github.io/zabbix-cli/>.
 
 ## Install
 
-If you have [uv](https://github.com/astral-sh/uv) installed, trying out Zabbix-cli is as easy as:
-
-```bash
-uvx --from git+https://github.com/unioslo/zabbix-cli.git@master zabbix-cli
-```
-
-Or to install it permanently:
+If you have [uv](https://github.com/astral-sh/uv) installed:
 
 ```bash
 uv tool install git+https://github.com/unioslo/zabbix-cli.git@master
+
+# Or if you just want to try out the CLI without installing it
+uvx --from git+https://github.com/unioslo/zabbix-cli.git@master zabbix-cli
 ```
 
-### Pip
-
-Install with pip or pipx:
+Alternatively, you can install the package with pip(x):
 
 ```bash
-pip install git+https://github.com/unioslo/zabbix-cli.git@master
-# or
 pipx install git+https://github.com/unioslo/zabbix-cli.git@master
 ```
 
