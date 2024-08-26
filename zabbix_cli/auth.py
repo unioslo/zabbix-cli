@@ -116,7 +116,9 @@ class Authenticator:
                 )
                 continue
         else:
-            raise AuthError("No authentication method succeeded.")
+            raise AuthError(
+                f"No authentication method succeeded for {self.config.api.url}. Check the logs for more information."
+            )
 
     def do_login(self, credentials: Credentials) -> str:
         """Log in to the Zabbix API using the provided credentials."""
