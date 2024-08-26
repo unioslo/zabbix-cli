@@ -279,7 +279,7 @@ def move_proxy_hosts(
 )
 def load_balance_proxy_hosts(
     ctx: typer.Context,
-    proxies: str = typer.Argument(
+    proxy: str = typer.Argument(
         help="Comma delimited list of proxies to share hosts between.",
         metavar="<proxy1,proxy2,...>",
         show_default=False,
@@ -305,7 +305,7 @@ def load_balance_proxy_hosts(
     from zabbix_cli.commands.results.proxy import LBProxy
     from zabbix_cli.commands.results.proxy import LBProxyResult
 
-    proxy_names = [p.strip() for p in proxies.split(",")]
+    proxy_names = [p.strip() for p in proxy.split(",")]
     if weight:
         weights = parse_int_list_arg(weight)
     else:
@@ -318,21 +318,21 @@ def load_balance_proxy_hosts(
     elif all(w == 0 for w in weights):
         exit_err("All weights cannot be zero.")
 
-    # *_list` vars are ugly, but we already have proxies, so...
-    proxy_list = [app.state.client.get_proxy(p, select_hosts=True) for p in proxy_names]
+    # Fetch proxies one by one to ensure each one exists
+    proxies = [app.state.client.get_proxy(p, select_hosts=True) for p in proxy_names]
 
     # TODO: Make sure list of proxies is in same order we specified them?
 
-    all_hosts = list(itertools.chain.from_iterable(p.hosts for p in proxy_list))
+    all_hosts = list(itertools.chain.from_iterable(p.hosts for p in proxies))
     if not all_hosts:
         exit_err("Proxies have no hosts to load balance.")
     logging.debug(f"Found {len(all_hosts)} hosts to load balance.")
 
     lb_proxies = {
-        p.proxyid: LBProxy(proxy=p, weight=w) for p, w in zip(proxy_list, weights)
+        p.proxyid: LBProxy(proxy=p, weight=w) for p, w in zip(proxies, weights)
     }
     for host in all_hosts:
-        p = random.choices(proxy_list, weights=weights, k=1)[0]
+        p = random.choices(proxies, weights=weights, k=1)[0]
         lb_proxies[p.proxyid].hosts.append(host)
 
     # Abort on failure
@@ -361,7 +361,7 @@ def load_balance_proxy_hosts(
 
     render_result(LBProxyResult(proxies=list(lb_proxies.values())))
     # HACK: render_result doesn't print a message for table results
-    success(f"Load balanced {len(all_hosts)} hosts between {len(proxy_list)} proxies.")
+    success(f"Load balanced {len(all_hosts)} hosts between {len(proxies)} proxies.")
 
 
 @app.command(name="update_hostgroup_proxy", rich_help_panel=HELP_PANEL)
