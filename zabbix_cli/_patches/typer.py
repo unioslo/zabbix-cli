@@ -171,9 +171,9 @@ def patch_get_click_type() -> None:
         elif parameter_info.parser is not None:
             return click.types.FuncParamType(parameter_info.parser)
 
-        elif annotation == str:
+        elif annotation == str:  # noqa: E721
             return click.STRING
-        elif annotation == int:
+        elif annotation == int:  # noqa: E721
             if parameter_info.min is not None or parameter_info.max is not None:
                 min_ = None
                 max_ = None
@@ -184,7 +184,7 @@ def patch_get_click_type() -> None:
                 return click.IntRange(min=min_, max=max_, clamp=parameter_info.clamp)
             else:
                 return click.INT
-        elif annotation == float:
+        elif annotation == float:  # noqa: E721
             if parameter_info.min is not None or parameter_info.max is not None:
                 return click.FloatRange(
                     min=parameter_info.min,
@@ -193,7 +193,7 @@ def patch_get_click_type() -> None:
                 )
             else:
                 return click.FLOAT
-        elif annotation == bool:
+        elif annotation == bool:  # noqa: E721
             return click.BOOL
         elif annotation == UUID:
             return click.UUID

@@ -14,7 +14,7 @@ repos:
       - id: pyupgrade
         args: [--py37-plus, --keep-runtime-typing]
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.5.7"
+    rev: "v0.6.2"
     hooks:
       # Run the linter.
       - id: ruff
@@ -22,7 +22,7 @@ repos:
       # Run the formatter.
       - id: ruff-format
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.375
+    rev: v1.1.377
     hooks:
     - id: pyright
       exclude: ^(tests|scripts|docs)/
