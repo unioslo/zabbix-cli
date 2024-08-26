@@ -33,7 +33,7 @@ dependencies = [
   "typer>=0.7.0",
   "rich>=13.3.1",
   "click-repl==0.2.0",        # 0.3.0 has a bug that breaks the CLI
-  "httpx>=0.26.0",
+  "httpx[socks]>=0.26.0",
   "packaging>=22.0",
   "pydantic>=2.7.0",
   "tomli>=2.0.1",
