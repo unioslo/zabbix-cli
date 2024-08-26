@@ -38,3 +38,17 @@
 
     !!! warning
         The Homebrew package is not maintained by the author of `zabbix-cli`. It may be outdated or contain bugs. For the most up to date version, follow the installation instructions for pipx.
+
+=== "PyInstaller Binary"
+
+    We build binaries with PyInstaller for each tagged release of Zabbix-cli. You can download the latest release from the [GitHub releases page](https://github.com/unioslo/zabbix-cli/releases).
+
+    Depending on your platform, you might need to make the binary executable:
+
+    ```bash
+    # Rename and move the binary to a location in your PATH
+    mv zabbix-cli-ubuntu-22.04-3.12 /usr/local/bin/zabbix-cli
+
+    # Make it executable
+    chmod +x /usr/local/bin/zabbix-cli
+    ```
