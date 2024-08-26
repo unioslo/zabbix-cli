@@ -335,7 +335,7 @@ def move_templates(
             # because inferred type is "list[HostGroup | TemplateGroup]""
             [dest],  # pyright: ignore[reportArgumentType]
         )
-        info(f"Added templates to {dest.name!r}")
+        info(f"Added templates to {dest.name!r}.")
         try:
             app.state.client.remove_templates_from_groups(
                 src.templates,
