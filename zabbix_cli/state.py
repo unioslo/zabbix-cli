@@ -228,6 +228,8 @@ class State:
             or self._client is None
             # OR We want to keep the session alive
             or self.config.app.use_auth_token_file
+            # OR we are using an API token
+            or self.client.use_api_token
         ):
             return
         self.logout()

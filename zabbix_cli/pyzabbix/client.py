@@ -28,6 +28,7 @@ from typing import Tuple
 from typing import Union
 from typing import cast
 
+from packaging.version import InvalidVersion
 from packaging.version import Version
 from pydantic import ValidationError
 
@@ -216,6 +217,7 @@ class ZabbixAPI:
         self.session = self._get_client(verify_ssl=verify_ssl, timeout=timeout)
 
         self.auth = ""
+        self.use_api_token = False
         self.id = 0
 
         server, _, _ = server.partition(RPC_ENDPOINT)
@@ -284,10 +286,10 @@ class ZabbixAPI:
                 f"Failed to connect to Zabbix API at {self.url}"
             ) from e
 
-        self.auth = ""  # clear auth before trying to (re-)login
-
+        self.auth = ""
         if auth_token:
-            auth = auth_token
+            self.use_api_token = True
+            self.auth = auth_token
         else:
             params: ParamsType = {
                 compat.login_user_name(self.version): user,
@@ -303,12 +305,15 @@ class ZabbixAPI:
                 raise ZabbixAPIRequestError(
                     f"Failed to log in to Zabbix API: {e}"
                 ) from e
-        self.auth = str(auth) if auth else ""  # ensure str
-        self.ensure_connected()
+            else:
+                self.auth = str(auth) if auth else ""
+                self.use_api_token = False
+
+        self.ensure_authenticated()
         return self.auth
 
-    def ensure_connected(self) -> None:
-        """Tests the connectivity to the Zabbix API."""
+    def ensure_authenticated(self) -> None:
+        """Test an authenticated Zabbix API session."""
         try:
             self.host.get(output=["hostid"], limit=1)
         except Exception as e:
@@ -350,11 +355,17 @@ class ZabbixAPI:
         as a Version object.
         """
         if self._version is None:
-            self._version = Version(self.apiinfo.version())
+            self._version = self.api_version()
         return self._version
 
-    def api_version(self):
-        return self.apiinfo.version()
+    def api_version(self) -> Version:
+        """Get the version of the Zabbix API as a Version object."""
+        try:
+            return Version(self.apiinfo.version())
+        except ZabbixAPIException as e:
+            raise ZabbixAPIException(f"Failed to get Zabbix API version: {e}") from e
+        except InvalidVersion as e:
+            raise ZabbixAPIException(f"Invalid Zabbix API version: {e}") from e
 
     def do_request(
         self, method: str, params: Optional[ParamsType] = None
