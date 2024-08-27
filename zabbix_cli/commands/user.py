@@ -348,16 +348,17 @@ def create_notification_user(
     event happens.
 
     Sometimes we need to send a notification to a place not owned by any
-    user in particular, e.g. an email list or jabber channel but Zabbix has
-    not the possibility of defining media for a usergroup.
+    user in particular, e.g. an email list or jabber channel but Zabbix does
+    not provide a way to define a media for a user group.
 
-    This is the reason we use [b]notification users[/]. They are users nobody
+    This is the reason we use [i]notification users[/]. They are users nobody
     owns, but that can be used by other users to send notifications to the
     media defined in the notification user profile.
 
     Run [command]show_media_types[/command] to get a list of available media types.
 
-    Falls back on the user group defined in the config file if no user groups are specified.
+    Uses the default notification user group defined in the configuration file
+    if no user groups are specified with [option]--usergroups[/option].
     """
     from zabbix_cli.models import Result
     from zabbix_cli.pyzabbix.types import User
