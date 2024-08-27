@@ -88,8 +88,9 @@ def update_host_proxy(
     proxy: str = typer.Argument(help="Proxy name. Supports wildcards."),
     dryrun: bool = typer.Option(False, help="Preview changes", is_flag=True),
 ) -> None:
-    """Assign one or more hosts to a proxy. Supports wildcards for both hosts and proxy.
+    """Assign hosts to a proxy.
 
+    Supports wildcards for both hosts and proxy names.
     If multiple proxies match the proxy name, the first match is used.
     """
     from zabbix_cli.commands.results.proxy import UpdateHostProxyResult
@@ -291,7 +292,7 @@ def load_balance_proxy_hosts(
         show_default=False,
     ),
 ) -> None:
-    """Spreads hosts between multiple proxies.
+    """Spread hosts between multiple proxies.
 
     Hosts are determined by the hosts monitored by the given proxies
     Hosts monitored by other proxies or not monitored at all are not affected.

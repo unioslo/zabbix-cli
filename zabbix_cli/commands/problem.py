@@ -38,7 +38,7 @@ def acknowledge_event(
     # Legacy positional args
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
-    """Acknowledge event(s) by ID."""
+    """Acknowledge events by ID."""
     from zabbix_cli.commands.results.problem import AcknowledgeEventResult
     from zabbix_cli.models import Result
 
@@ -104,7 +104,7 @@ def acknowledge_trigger_last_event(
     # Legacy positional args
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
-    """Acknowledges the the last event for the given trigger(s)."""
+    """Acknowledge the the last event for the given triggers."""
     from zabbix_cli.commands.results.problem import AcknowledgeTriggerLastEventResult
     from zabbix_cli.models import Result
 
@@ -186,7 +186,7 @@ def show_trigger_events(
     ),
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
-    """Show the latest events for the given trigger(s), host(s), and/or host group(s).
+    """Show the latest events for the given triggers, hosts, and/or host groups.
 
     At least one trigger ID, host or host group must be specified.
     """
@@ -247,7 +247,7 @@ def show_alarms(
     ),
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
-    """Show the latest events for the given trigger(s), host(s), and/or host group(s).
+    """Show the latest events for the given triggers, hosts, and/or host groups.
 
     At least one trigger ID, host or host group must be specified.
     """

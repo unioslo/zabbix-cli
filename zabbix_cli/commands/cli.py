@@ -112,7 +112,7 @@ def open_config_dir(
         help="Specify command to use to use for opening.",
     ),
 ) -> None:
-    """Opens an app directory in the system's file manager.
+    """Open an app directory in the system's file manager.
 
     Use --force to attempt to open when no DISPLAY env var is set.
     """
@@ -265,7 +265,7 @@ def migrate_config(
         conf = app.state.config
         if not conf.app.is_legacy:
             p = f"'{conf.config_path}' " if conf.config_path else ""
-            exit_err(f"Loaded config {p}is not a legacy .conf config file file.")
+            exit_err(f"Loaded config {p}is not a legacy .conf config file.")
 
     if not destination:
         destination = DEFAULT_CONFIG_FILE

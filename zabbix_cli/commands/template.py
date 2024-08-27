@@ -155,7 +155,7 @@ def link_template_to_host(
         help="Preview changes.",
     ),
 ) -> None:
-    """Link template(s) to host(s)."""
+    """Link templates to hosts."""
     from zabbix_cli.commands.results.template import LinkTemplateToHostResult
     from zabbix_cli.models import AggregateResult
 
@@ -227,7 +227,7 @@ def unlink_template_from_host(
         True, "--clear/--no-clear", help="Unlink and clear templates."
     ),
 ) -> None:
-    """Unlinks templates from hosts.
+    """Unlink templates from hosts.
 
     Unlinks and clears by default. Use `--no-clear` to unlink without clearing.
     """
@@ -299,7 +299,7 @@ def link_template_to_template(
         help="Do not actually link templates, just show what would be done.",
     ),
 ) -> None:
-    """Link template(s) to templates(s).
+    """Link templates to templates.
 
     [b]NOTE:[/] Destination templates are the ones that are ultimately modified. Source templates remain unchanged.
     """
@@ -369,7 +369,7 @@ def unlink_template_from_template(
         help="Preview changes.",
     ),
 ) -> None:
-    """Unlink template(s) from templates(s).
+    """Unlink templates from templates.
 
     Unlinks and clears by default. Use `--no-clear` to unlink without clearing.
     [b]NOTE:[/] Destination templates are the ones that are ultimately modified. Source templates remain unchanged.
@@ -419,7 +419,7 @@ def add_template_to_group(
         help="Fail if any host groups or templates aren't found. Should not be used in conjunction with wildcards.",
     ),
 ) -> None:
-    """Add template(s) to group(s).
+    """Add templates to groups.
 
     [bold]NOTE:[/] Group arguments are interpreted as template groups in >= 6.2,
     otherwise as host groups.

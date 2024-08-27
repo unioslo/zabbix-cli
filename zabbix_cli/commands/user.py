@@ -348,16 +348,17 @@ def create_notification_user(
     event happens.
 
     Sometimes we need to send a notification to a place not owned by any
-    user in particular, e.g. an email list or jabber channel but Zabbix has
-    not the possibility of defining media for a usergroup.
+    user in particular, e.g. an email list or jabber channel but Zabbix does
+    not provide a way to define a media for a user group.
 
-    This is the reason we use [b]notification users[/]. They are users nobody
+    This is the reason we use [i]notification users[/]. They are users nobody
     owns, but that can be used by other users to send notifications to the
     media defined in the notification user profile.
 
-    Run [green]show_media_types[/green] to get a list of available media types.
+    Run [command]show_media_types[/command] to get a list of available media types.
 
-    Falls back on the user group defined in the config file if no user groups are specified.
+    Uses the default notification user group defined in the configuration file
+    if no user groups are specified with [option]--usergroups[/option].
     """
     from zabbix_cli.models import Result
     from zabbix_cli.pyzabbix.types import User
@@ -391,7 +392,7 @@ def create_notification_user(
         mt = app.state.client.get_mediatype(mediatype)
     except ZabbixNotFoundError:
         exit_err(
-            f"Media type {mediatype!r} does not exist. Run [green]show_media_types[/green] command to get a list of available media types."
+            f"Media type {mediatype!r} does not exist. Run [command]show_media_types[/command] command to get a list of available media types."
         )
 
     with app.status("Fetching usergroup(s)..."):
@@ -439,7 +440,7 @@ def add_user_to_usergroup(
         help="User groups to add the users to. Comma-separated.",
     ),
 ) -> None:
-    """Adds user(s) to usergroup(s).
+    """Add users to usergroups.
 
     Ignores users not in user groups. Users and groups must exist.
     """
@@ -474,7 +475,7 @@ def remove_user_from_usergroup(
         help="User groups to remove the users from. Comma-separated.",
     ),
 ) -> None:
-    """Removes user(s) from usergroup(s).
+    """Remove users from usergroups.
 
     Ignores users not in user groups. Users and groups must exist.
     """
@@ -708,10 +709,10 @@ def add_usergroup_permissions(
     # Legacy V2 args
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
-    """Gives a user group permissions to host groups and template groups.
+    """Give a user group permissions to host/template groups.
 
-    Run [green]show_hostgroups[/] to get a list of host groups, and
-    [green]show_templategroups --no-templates[/] to get a list of template groups.
+    Run [command]show_hostgroups[/] to get a list of host groups, and
+    [command]show_templategroups --no-templates[/] to get a list of template groups.
     """
     from zabbix_cli.commands.results.user import AddUsergroupPermissionsResult
 

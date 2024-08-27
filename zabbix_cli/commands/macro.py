@@ -85,7 +85,7 @@ def define_host_usermacro(
 def show_host_usermacros(
     hostname_or_id: str = typer.Argument(help="Hostname or ID to show macros for"),
 ) -> None:
-    """Shows all macros defined for a host."""
+    """Show all macros defined for a host."""
     from zabbix_cli.commands.results.macro import ShowHostUserMacrosResult
     from zabbix_cli.models import AggregateResult
 
