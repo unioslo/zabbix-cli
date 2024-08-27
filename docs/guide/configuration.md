@@ -119,7 +119,7 @@ The `app` section contains the configuration for the application, such as defaul
 
 #### `default_hostgroups`
 
-Default host groups to assign to hosts created with `create_host`.
+Default host groups to assign to hosts created with `create_host`. Hosts are always added to these groups unless `--no-default-hostgroup` is provided.
 
 Type: `List[str]`
 
@@ -129,7 +129,7 @@ Default: `["All-hosts"]`
 
 #### `default_admin_usergroups`
 
-Default user groups to give read/write permissions to groups created with `create_hostgroup` and `create_templategroup` commands when no `--rw-groups` option is given.
+Default user groups to give read/write permissions to groups created with `create_hostgroup` and `create_templategroup` when `--rw-groups` option is not provided.
 
 Type: `List[str]`
 
@@ -139,7 +139,7 @@ Default: `[]`
 
 #### `default_create_user_usergroups`
 
-Default user groups to add users created with `create_user` to when `--usergroups` is not given.
+Default user groups to add users created with `create_user` to when `--usergroups` is not provided.
 
 Type: `List[str]`
 
@@ -149,7 +149,7 @@ Default: `[]`
 
 #### `default_notification_users_usergroups`
 
-Default user groups to add notification users created with `create_notification_user` to when `--usergroups` is not given.
+Default user groups to add notification users created with `create_notification_user` to when `--usergroups` is not provided.
 
 Type: `List[str]`
 
