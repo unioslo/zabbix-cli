@@ -31,8 +31,10 @@ from zabbix_cli.exceptions import AuthError
 from zabbix_cli.exceptions import AuthTokenFileError
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.logs import add_user
+from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
+from zabbix_cli.output.console import info
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.prompts import str_prompt
 
@@ -219,12 +221,16 @@ class Authenticator:
 
 
 def login(client: ZabbixAPI, config: Config) -> None:
-    auth = Authenticator(client, config)
-    token = auth.login()
-    if config.app.use_auth_token_file:
-        write_auth_token_file(config.api.username, token, config.app.auth_token_file)
-    add_user(config.api.username)
-    logger.info("Logged in as %s", config.api.username)
+    with err_console.screen():
+        info(f"Logging in to {config.api.url}")
+        auth = Authenticator(client, config)
+        token = auth.login()
+        if config.app.use_auth_token_file:
+            write_auth_token_file(
+                config.api.username, token, config.app.auth_token_file
+            )
+        add_user(config.api.username)
+        logger.info("Logged in as %s", config.api.username)
 
 
 def logout(client: ZabbixAPI, config: Config) -> None:
@@ -311,8 +317,8 @@ def write_auth_token_file(
 
 def clear_auth_token_file(config: Optional[Config] = None) -> None:
     """Clear the contents of the auth token file.
-    Attempts to clear both the new and the old auth token file locations.
 
+    Attempts to clear both the new and the old auth token file locations.
     Optionally also clears the loaded auth token from the config object.
     """
     for file in get_auth_token_file_paths(config):
@@ -328,7 +334,10 @@ def clear_auth_token_file(config: Optional[Config] = None) -> None:
 
 
 def file_has_secure_permissions(file: Path) -> bool:
-    """Check if a file has secure permissions."""
+    """Check if a file has secure permissions.
+
+    Always returns True on Windows.
+    """
     if sys.platform == "win32":
         return True
     return get_file_permissions(file) == SECURE_PERMISSIONS
