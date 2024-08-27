@@ -49,9 +49,7 @@ brew install zabbix-cli
 
 Binaries built with PyInstaller can be found on the [releases page](https://github.com/unioslo/zabbix-cli/releases). We build binaries for Linux, macOS and Windows for each release.
 
-## Getting started
-
-### Quick start
+## Quick start
 
 ```bash
 # Initialize the config file with your Zabbix URL
@@ -60,7 +58,7 @@ zabbix-cli init --zabbix-url https://your-zabbix-url.com/
 zabbix-cli
 ```
 
-### Usage
+## Usage
 
 Zabbix-cli is a command line interface for Zabbix. It can be used in three ways:
 
@@ -70,7 +68,7 @@ Zabbix-cli is a command line interface for Zabbix. It can be used in three ways:
 
 Command reference can be found in the [online user guide](https://unioslo.github.io/zabbix-cli/guide/introduction/) or by running `zabbix-cli --help`.
 
-#### Formats
+## Formats
 
 Zabbix-cli supports two output formats: table and JSON. The default format is table, but it can be changed with the `--format` parameter:
 
@@ -91,7 +89,7 @@ Or by setting the `app.output_format` parameter in the config file:
 output_format = "json"
 ```
 
-### Configuration
+## Configuration
 
 Zabbix-cli needs a config file. This can be created with the `zabbix-cli init` command.
 
@@ -145,22 +143,22 @@ Find the log file with:
 zabbix-cli open logs
 ```
 
-### Authentication
+## Authentication
 
 Zabbix-cli provides several ways to authenticate. They are tried in the following order if multiple are set:
 
-1. API token in config file
-2. API token in file (if `use_auth_token_file=true`)
-3. Username and password in config file
-4. Username and password in auth file
-5. Username and password in environment variables
-6. Username and password from prompt
+1. [API token from config file](#api-token)
+2. [Auth token from auth token file](#auth-token-file)
+3. [Username and password from config file](#config-file)
+4. [Username and password from auth file](#auth-file)
+5. [Username and password from environment variables](#environment-variables)
+6. [Username and password from prompt](#prompt)
 
-#### Username and Password
+### Username and Password
 
-Username and password-based authentication is the default and easiest way to authenticate, but also the least secure.
+Password-based authentication is the default way to authenticate with Zabbix-cli. If the application is unable to determine authentication from other sources, it will prompt for a username and password.
 
-##### Config file
+#### Config file
 
 The password can be set directly in the config file:
 
@@ -171,17 +169,7 @@ username = "Admin"
 password = "zabbix"
 ```
 
-##### Prompt
-
-By omitting the `password` parameter in the config file, you will be prompted for a password when running zabbix-cli:
-
-```toml
-[api]
-zabbix_url = "https://zabbix.example.com/"
-username = "Admin"
-```
-
-##### Auth file
+#### Auth file
 
 An auth file named `.zabbix-cli_auth` can be created in the user's home directory. The content of this file should be in the `USERNAME::PASSWORD` format.
 
@@ -189,14 +177,14 @@ An auth file named `.zabbix-cli_auth` can be created in the user's home director
 echo "Admin::zabbix" > ~/.zabbix-cli_auth
 ```
 
-The file is automatically loaded if it exists and the `password` parameter is not set in the config file. The location of the file can be changed in the config file:
+The location of this file can be changed in the config file:
 
 ```toml
 [app]
 auth_file = "/path/to/auth/file"
 ```
 
-##### Environment variables
+#### Environment variables
 
 The username and password can be set as environment variables:
 
@@ -205,35 +193,51 @@ export ZABBIX_USERNAME="Admin"
 export ZABBIX_PASSWORD="zabbix"
 ```
 
-These are automatically loaded if the `password` parameter is not set in the config file.
+#### Prompt
 
-#### Auth token file
+By omitting the `password` parameter in the config file or when all other authentication methods have been exhausted, you will be prompted for a password when starting zabbix-cli:
 
-Once you have authenticated with a username and password, zabbix-cli will store a session token if you configure `use_auth_token_file=true` in the config. This way you don't need to provide your credentials each time you run zabbix-cli. The token file should also be secured properly.
+```toml
+[api]
+zabbix_url = "https://zabbix.example.com/"
+username = "Admin"
+```
+
+### API token
+
+Zabbix-cli supports authentication with an API token specified directly in the config file:
+
+```toml
+[api]
+auth_token = "API_TOKEN"
+```
+
+### Auth token file
+
+The application can store the auth token returned by the Zabbix API. This is most useful when authenticating with a username and password from a prompt, which would otherwise require you to enter your password every time you start the application.
+
+The feature can be enabled in the config file:
 
 ```toml
 [app]
 use_auth_token_file = true
 ```
 
-The location of the auth token file can be changed in the config file:
+The location of the auth token file can be changed:
 
 ```toml
 [app]
 auth_token_file = "/path/to/auth/token/file"
 ```
 
-#### API token
-
-Zabbix-cli also supports authentication with an API token specified directly in the config file:
+By default, the auth token file is not required to have secure permissions. If you want to require the file to have `600` (rw-------) permissions, you can set `allow_insecure_auth_file=false` in the config file. This has no effect on Windows.
 
 ```toml
-[api]
-auth_token = "API_TOKEN"
-
 [app]
-use_auth_token_file = false
+allow_insecure_auth_file = false
 ```
+
+Zabbix-cli attempts to set `600` permissions when writing the auth token file if `allow_insecure_auth_file=false`.
 
 ## Development
 

@@ -1,17 +1,17 @@
 # Authentication
 
-Zabbix-cli provides several ways to authenticate. They are tried in the following order:
+Zabbix-cli provides several ways to authenticate. They are tried in the following order if multiple are set:
 
-1. [API token in config file](#api-token)
-2. [API token in file (if `use_auth_token_file=true`)](#auth-token-file)
-3. [Username and password in config file](#config-file)
-4. [Username and password in auth file](#auth-file)
-5. [Username and password in environment variables](#environment-variables)
+1. [API token from config file](#api-token)
+2. [Auth token from auth token file](#auth-token-file)
+3. [Username and password from config file](#config-file)
+4. [Username and password from auth file](#auth-file)
+5. [Username and password from environment variables](#environment-variables)
 6. [Username and password from prompt](#prompt)
 
 ## Username and Password
 
-Username and password-based authentication is the default and easiest way to authenticate, but also the least secure.
+Password-based authentication is the default way to authenticate with Zabbix-cli. If the application is unable to determine authentication from other sources, it will prompt for a username and password.
 
 ### Config file
 
@@ -24,16 +24,6 @@ username = "Admin"
 password = "zabbix"
 ```
 
-### Prompt
-
-By omitting the `password` parameter in the config file or all other authentication methods fail, you will be prompted for a password when running zabbix-cli:
-
-```toml
-[api]
-zabbix_url = "https://zabbix.example.com/"
-username = "Admin"
-```
-
 ### Auth file
 
 An auth file named `.zabbix-cli_auth` can be created in the user's home directory. The content of this file should be in the `USERNAME::PASSWORD` format.
@@ -42,11 +32,11 @@ An auth file named `.zabbix-cli_auth` can be created in the user's home director
 echo "Admin::zabbix" > ~/.zabbix-cli_auth
 ```
 
-The file is automatically loaded if it exists. The location of the file can be changed in the config file:
+The location of this file can be changed in the config file:
 
 ```toml
 [app]
-auth_file = "~/.zabbix-cli_auth"
+auth_file = "/path/to/auth/file"
 ```
 
 ### Environment variables
@@ -58,22 +48,34 @@ export ZABBIX_USERNAME="Admin"
 export ZABBIX_PASSWORD="zabbix"
 ```
 
-These are automatically loaded if the `password` parameter is not set in the config file.
+### Prompt
+
+By omitting the `password` parameter in the config file or when all other authentication methods have been exhausted, you will be prompted for a password when starting zabbix-cli:
+
+```toml
+[api]
+zabbix_url = "https://zabbix.example.com/"
+username = "Admin"
+```
+
+## API token
+
+Zabbix-cli supports authentication with an API token specified directly in the config file:
+
+```toml
+[api]
+auth_token = "API_TOKEN"
+```
 
 ## Auth token file
 
-Once you have authenticated with a username and password, zabbix-cli will store a session token if you configure `use_auth_token_file=true` in the config. This way you don't need to provide your credentials each time you run zabbix-cli.
+The application can store the auth token returned by the Zabbix API. This is most useful when authenticating with a username and password from a prompt, which would otherwise require you to enter your password every time you start the application.
+
+The feature can be enabled in the config file:
 
 ```toml
 [app]
 use_auth_token_file = true
-```
-
-If you want the application to only load the file if it has 600 permissions, you can set `allow_insecure_auth_file=false` in the config file:
-
-```toml
-[app]
-allow_insecure_auth_file = false
 ```
 
 The location of the auth token file can be changed in the config file:
@@ -83,14 +85,11 @@ The location of the auth token file can be changed in the config file:
 auth_token_file = "/path/to/auth/token/file"
 ```
 
-## API token
-
-Zabbix-cli also supports authentication with an API token specified directly in the config file:
+By default, the auth token file is not required to have secure permissions. If you want to require the file to have `600` (rw-------) permissions, you can set `allow_insecure_auth_file=false` in the config file. This has no effect on Windows.
 
 ```toml
-[api]
-auth_token = "API_TOKEN"
-
 [app]
-use_auth_token_file = false
+allow_insecure_auth_file = false
 ```
+
+Zabbix-cli attempts to set `600` permissions when writing the auth token file if `allow_insecure_auth_file=false`.
