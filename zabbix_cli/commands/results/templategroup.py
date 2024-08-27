@@ -16,6 +16,7 @@ from zabbix_cli.pyzabbix.types import Template
 from zabbix_cli.pyzabbix.types import TemplateGroup
 
 if TYPE_CHECKING:
+    from zabbix_cli.models import ColsRowsType
     from zabbix_cli.models import RowsType
 
 
@@ -98,3 +99,12 @@ class MoveTemplatesResult(TableRenderable):
             destination=destination.name,
             templates=[template.host for template in source.templates],
         )
+
+    def __cols_rows__(self) -> ColsRowsType:
+        """Only print the template names in the table.
+
+        Source and destination are apparent from the surrounding context.
+        """
+        cols = ["Templates"]
+        rows: RowsType = [["\n".join(self.templates)]]
+        return cols, rows
