@@ -42,7 +42,7 @@ def show_last_values(
     ),
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
-    """Shows the last values of given item(s) of monitored hosts."""
+    """Show the last values of given items of monitored hosts."""
     from zabbix_cli.commands.results.item import ItemResult
     from zabbix_cli.commands.results.item import group_items
     from zabbix_cli.models import AggregateResult

@@ -439,7 +439,7 @@ def add_user_to_usergroup(
         help="User groups to add the users to. Comma-separated.",
     ),
 ) -> None:
-    """Adds user(s) to usergroup(s).
+    """Add users to usergroups.
 
     Ignores users not in user groups. Users and groups must exist.
     """
@@ -474,7 +474,7 @@ def remove_user_from_usergroup(
         help="User groups to remove the users from. Comma-separated.",
     ),
 ) -> None:
-    """Removes user(s) from usergroup(s).
+    """Remove users from usergroups.
 
     Ignores users not in user groups. Users and groups must exist.
     """
@@ -708,7 +708,7 @@ def add_usergroup_permissions(
     # Legacy V2 args
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
-    """Gives a user group permissions to host groups and template groups.
+    """Give a user group permissions to host/template groups.
 
     Run [green]show_hostgroups[/] to get a list of host groups, and
     [green]show_templategroups --no-templates[/] to get a list of template groups.

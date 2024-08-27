@@ -40,9 +40,9 @@ def add_host_to_hostgroup(
         help="Preview changes",
     ),
 ) -> None:
-    """Adds one or more hosts to one or more host groups.
+    """Add hosts to host groups.
 
-    Host{name,group} arguments are interpreted as IDs if they are numeric.
+    Host name and group arguments are interpreted as IDs if they are numeric.
     """
     from zabbix_cli.commands.results.hostgroup import AddHostsToHostGroup
     from zabbix_cli.models import AggregateResult
@@ -92,7 +92,7 @@ def remove_host_from_hostgroup(
         help="Preview changes",
     ),
 ) -> None:
-    """Remove one or more hosts from one or more host groups."""
+    """Remove hosts from host groups."""
     from zabbix_cli.commands.results.hostgroup import RemoveHostsFromHostGroup
     from zabbix_cli.models import AggregateResult
 
@@ -254,7 +254,7 @@ def extend_hostgroup(
         help="Show hosts and groups without making changes.",
     ),
 ) -> None:
-    """Add all hosts from a host group to other host group(s).
+    """Add all hosts from a host group to other host groups.
 
     The source group is not modified. Existing hosts in the destination group(s)
     are not removed or modified.
@@ -397,7 +397,7 @@ def show_hostgroup_permissions(
         None, help="Host group name(s). Comma-separated. Supports wildcards."
     ),
 ) -> None:
-    """Show usergroups with permissions for the given hostgroup. Supports wildcards.
+    """Show usergroups with permissions for the given hostgroup.
 
     Shows permissions for all host groups by default.
     """

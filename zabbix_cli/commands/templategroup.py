@@ -130,7 +130,7 @@ def remove_templategroup(
 ) -> None:
     """Delete a template group.
 
-    NOTE: Calls [green]delete_hostgroup[/] for Zabbix versions < 6.2.0.
+    NOTE: Calls [green]remove_hostgroup[/] for Zabbix <6.2.
     """
     from zabbix_cli.models import Result
 
@@ -156,7 +156,7 @@ def show_templategroup(
         help="Show/hide templates associated with the group.",
     ),
 ) -> None:
-    """Show details for a template groups."""
+    """Show details for a template group."""
     from zabbix_cli.commands.results.templategroup import ShowTemplateGroupResult
 
     tg: HostGroup | TemplateGroup
@@ -200,7 +200,7 @@ def show_templategroups(
         help="Show/hide templates associated with each group.",
     ),
 ) -> None:
-    """Show details for template groups.
+    """Show template groups.
 
     Fetches all groups by default, but can be filtered by name.
     """
@@ -250,7 +250,7 @@ def show_triggers(
         help="Show groups and templates without copying.",
     ),
 ) -> None:
-    """Add all templates from a group to other group(s).
+    """Add all templates from a group to other groups.
 
     Interprets the source group as a template group in >= 6.2, otherwise as a host group.
 
