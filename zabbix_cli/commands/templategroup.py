@@ -67,7 +67,7 @@ def create_templategroup(
 
     Use --no-usergroup-permissions to create a group without assigning user group permissions.
 
-    NOTE: Calls [green]create_hostgroup[/] for Zabbix versions < 6.2.0.
+    NOTE: Calls [command]create_hostgroup[/] for Zabbix versions < 6.2.0.
     """
     from zabbix_cli.models import Result
 
@@ -130,7 +130,7 @@ def remove_templategroup(
 ) -> None:
     """Delete a template group.
 
-    NOTE: Calls [green]remove_hostgroup[/] for Zabbix <6.2.
+    NOTE: Calls [command]remove_hostgroup[/] for Zabbix <6.2.
     """
     from zabbix_cli.models import Result
 
@@ -238,7 +238,7 @@ def show_templategroups(
 
 
 @app.command("extend_templategroup", rich_help_panel=HELP_PANEL)
-def show_triggers(
+def extend_templategroup(
     ctx: typer.Context,
     src_group: str = typer.Argument(help="Group to get templates from."),
     dest_group: str = typer.Argument(
@@ -255,7 +255,7 @@ def show_triggers(
     Interprets the source group as a template group in >= 6.2, otherwise as a host group.
 
     Does not modify the source group or its templates.
-    To remove the templates from the source group, use the [green]move_templates[/] command instead.
+    To remove the templates from the source group, use the [command]move_templates[/] command instead.
     """
     from zabbix_cli.commands.results.templategroup import ExtendTemplateGroupResult
 

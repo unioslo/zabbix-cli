@@ -355,7 +355,7 @@ def create_notification_user(
     owns, but that can be used by other users to send notifications to the
     media defined in the notification user profile.
 
-    Run [green]show_media_types[/green] to get a list of available media types.
+    Run [command]show_media_types[/command] to get a list of available media types.
 
     Falls back on the user group defined in the config file if no user groups are specified.
     """
@@ -391,7 +391,7 @@ def create_notification_user(
         mt = app.state.client.get_mediatype(mediatype)
     except ZabbixNotFoundError:
         exit_err(
-            f"Media type {mediatype!r} does not exist. Run [green]show_media_types[/green] command to get a list of available media types."
+            f"Media type {mediatype!r} does not exist. Run [command]show_media_types[/command] command to get a list of available media types."
         )
 
     with app.status("Fetching usergroup(s)..."):
@@ -710,8 +710,8 @@ def add_usergroup_permissions(
 ) -> None:
     """Give a user group permissions to host/template groups.
 
-    Run [green]show_hostgroups[/] to get a list of host groups, and
-    [green]show_templategroups --no-templates[/] to get a list of template groups.
+    Run [command]show_hostgroups[/] to get a list of host groups, and
+    [command]show_templategroups --no-templates[/] to get a list of template groups.
     """
     from zabbix_cli.commands.results.user import AddUsergroupPermissionsResult
 
