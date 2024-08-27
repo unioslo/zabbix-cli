@@ -460,6 +460,7 @@ def update_host_interface(
         None,
         "--snmp-bulk/--no-snmp-bulk",
         help="Use bulk SNMP requests.",
+        show_default=False,
     ),
     snmp_community: Optional[str] = typer.Option(
         None,
@@ -636,11 +637,13 @@ def show_host(
         None,
         "--maintenance/--no-maintenance",
         help="Maintenance status.",
+        show_default=False,
     ),
     monitored: Optional[bool] = typer.Option(
         None,
         "--monitored/--no-monitored",
         help="Monitoring status.",
+        show_default=False,
     ),
     # This is the legacy filter argument from V2
     filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
@@ -706,11 +709,13 @@ def show_hosts(
         None,
         "--maintenance/--no-maintenance",
         help="Maintenance status.",
+        show_default=False,
     ),
     monitored: Optional[bool] = typer.Option(
         None,
         "--monitored/--unmonitored",
         help="Monitoring status.",
+        show_default=False,
     ),
     limit: int = typer.Option(
         100,

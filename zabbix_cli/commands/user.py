@@ -188,7 +188,10 @@ def update_user(
         case_sensitive=False,
     ),
     autologin: Optional[bool] = typer.Option(
-        None, "--autologin/--no-autologin", help="Enable/disable auto-login"
+        None,
+        "--autologin/--no-autologin",
+        help="Enable/disable auto-login",
+        show_default=False,
     ),
     autologout: Optional[str] = typer.Option(
         None,
