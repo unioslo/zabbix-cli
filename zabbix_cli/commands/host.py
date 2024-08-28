@@ -676,10 +676,6 @@ def show_host(
     render_result(host)
 
 
-MAX_HOSTS = 100
-"""Maximum hosts to show by default."""
-
-
 @app.command(
     name="show_hosts",
     rich_help_panel=HELP_PANEL,
