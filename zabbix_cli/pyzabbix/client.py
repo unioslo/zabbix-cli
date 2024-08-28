@@ -745,6 +745,7 @@ class ZabbixAPI:
             maintenance=maintenance,
             monitored=monitored,
             active_interface=active_interface,
+            limit=1,
         )
         if not hosts:
             raise ZabbixNotFoundError(
@@ -770,7 +771,7 @@ class ZabbixAPI:
         sort_field: Optional[str] = None,
         sort_order: Optional[Literal["ASC", "DESC"]] = None,
         search: bool = True,  # we generally always want to search when multiple hosts are requested
-        # **filter_kwargs,
+        limit: Optional[int] = None,
     ) -> List[Host]:
         """Fetches all hosts matching the given criteria(s).
 
@@ -853,10 +854,26 @@ class ZabbixAPI:
             params["sortfield"] = sort_field
         if sort_order:
             params["sortorder"] = sort_order
+        if limit:
+            params["limit"] = limit
 
         resp: List[Any] = self.host.get(**params) or []
         # TODO add result to cache
-        return [Host(**resp) for resp in resp]
+        return [Host(**r) for r in resp]
+
+    def get_host_count(self) -> int:
+        """Fetches the total number of hosts in the Zabbix server."""
+        return self.count("host")
+
+    def count(self, object_type: str, params: Optional[ParamsType] = None) -> int:
+        """Count the number of objects of a given type."""
+        params = params or {}
+        params["countOutput"] = True
+        try:
+            resp = getattr(self, object_type).get(**params)
+            return int(resp)
+        except (ZabbixAPIException, TypeError, ValueError) as e:
+            raise ZabbixAPICallError(f"Failed to fetch {object_type} count") from e
 
     def create_host(
         self,

@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import re
 from typing import TYPE_CHECKING
+from typing import Dict
 from typing import Optional
 
 from zabbix_cli.exceptions import ZabbixAPICallError
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def get_random_proxy(client: ZabbixAPI, pattern: Optional[str] = None) -> Proxy:
-    """Fetches a random proxy, optionally matching a regex pattern."""
+    """Fetch a random proxy, optionally matching a regex pattern."""
     proxies = client.get_proxies()
     if not proxies:
         raise ZabbixNotFoundError("No proxies found")
@@ -27,3 +28,9 @@ def get_random_proxy(client: ZabbixAPI, pattern: Optional[str] = None) -> Proxy:
         if not proxies:
             raise ZabbixNotFoundError(f"No proxies matching pattern {pattern!r}")
     return random.choice(proxies)
+
+
+def get_proxy_map(client: ZabbixAPI) -> Dict[str, Proxy]:
+    """Fetch all proxies and return a mapping of proxy IDs to Proxy objects."""
+    proxies = client.get_proxies()
+    return {proxy.proxyid: proxy for proxy in proxies}

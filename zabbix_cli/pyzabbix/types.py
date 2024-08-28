@@ -417,13 +417,14 @@ class Host(ZabbixAPIBaseModel):
         # Compat for <7.0.0
         validation_alias=AliasChoices("proxyid", "proxy_hostid"),
     )
-    proxy_address: Optional[str] = None
     proxy_groupid: Optional[str] = None  # >= 7.0
     maintenance_status: Optional[str] = None
+    # active_available is a new field in 7.0.
+    # Previous versions required checking the `available` field of its first interface.
+    # In zabbix-cli v2, this value was serialized as `zabbix_agent`.
     active_available: Optional[str] = Field(
         default=None,
         validation_alias=AliasChoices(
-            "available",  # < 7.0
             "active_available",  # >= 7.0
             "zabbix_agent",  # Zabbix-cli V2 name of this field
         ),
@@ -431,6 +432,9 @@ class Host(ZabbixAPIBaseModel):
     status: Optional[str] = None
     macros: List[Macro] = Field(default_factory=list)
     interfaces: List[HostInterface] = Field(default_factory=list)
+
+    # HACK: Add a field for the host's proxy that we can inject later
+    proxy: Optional[Proxy] = None
 
     def __str__(self) -> str:
         return f"{self.host!r} ({self.hostid})"
@@ -441,6 +445,27 @@ class Host(ZabbixAPIBaseModel):
             "host": self.host,
             "hostid": self.hostid,
         }
+
+    def set_proxy(self, proxy_map: Dict[str, Proxy]) -> None:
+        """Set proxy info for the host given a mapping of proxy IDs to proxies."""
+        if not (proxy := proxy_map.get(str(self.proxyid))):
+            return
+        self.proxy = proxy
+
+    def get_active_status(self, with_code: bool = False) -> str:
+        """Returns the active interface status as a formatted string."""
+        if self.zabbix_version.release >= (7, 0, 0):
+            return ActiveInterface.string_from_value(
+                self.active_available, with_code=with_code
+            )
+        # We are on pre-7.0.0, check the first interface
+        iface = self.interfaces[0] if self.interfaces else None
+        if iface:
+            return ActiveInterface.string_from_value(
+                iface.available, with_code=with_code
+            )
+        else:
+            return ActiveInterface.UNKNOWN.as_status(with_code=with_code)
 
     # Legacy V2 JSON format compatibility
     @field_serializer("maintenance_status", when_used="json")
@@ -455,14 +480,15 @@ class Host(ZabbixAPIBaseModel):
         return v
 
     @computed_field
-    def zabbix_agent(self) -> Optional[Union[int, str]]:
+    @property
+    def zabbix_agent(self) -> str:
         """LEGACY: Serializes the zabbix agent status as a formatted string
         in legacy mode, and as-is in new mode.
         """
         # NOTE: use `self.active_available` instead of `self.zabbix_agent`
         if self.legacy_json_format:
-            return ActiveInterface.string_from_value(self.active_available)
-        return self.active_available
+            return self.get_active_status(with_code=True)
+        return self.get_active_status()
 
     @field_serializer("status", when_used="json")
     def _LEGACY_status_serializer(
@@ -512,10 +538,10 @@ class Host(ZabbixAPIBaseModel):
                 self.host,
                 "\n".join([group.name for group in self.groups]),
                 "\n".join([template.host for template in self.templates]),
-                ActiveInterface.string_from_value(self.active_available),
+                self.zabbix_agent,
                 MaintenanceStatus.string_from_value(self.maintenance_status),
                 MonitoringStatus.string_from_value(self.status),
-                self.proxy_address or "",
+                self.proxy.name if self.proxy else "",
             ]
         ]
         return cols, rows

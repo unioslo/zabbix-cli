@@ -650,6 +650,7 @@ def show_host(
 ) -> None:
     """Show a specific host."""
     from zabbix_cli.commands.results.host import HostFilterArgs
+    from zabbix_cli.pyzabbix.utils import get_proxy_map
 
     args = HostFilterArgs.from_command_args(
         filter_legacy, active, maintenance, monitored
@@ -659,6 +660,7 @@ def show_host(
         hostname_or_id,
         select_groups=True,
         select_templates=True,
+        select_interfaces=True,
         sort_field="host",
         sort_order="ASC",
         search=True,  # we allow wildcard patterns
@@ -666,6 +668,10 @@ def show_host(
         monitored=args.status,
         active_interface=args.active,
     )
+
+    # HACK: inject proxy map to host for rendering
+    proxy_map = get_proxy_map(app.state.client)
+    host.set_proxy(proxy_map)
 
     render_result(host)
 
@@ -733,6 +739,7 @@ def show_hosts(
     """
     from zabbix_cli.commands.results.host import HostFilterArgs
     from zabbix_cli.models import AggregateResult
+    from zabbix_cli.pyzabbix.utils import get_proxy_map
 
     args = HostFilterArgs.from_command_args(
         filter_legacy, active, maintenance, monitored
@@ -749,14 +756,18 @@ def show_hosts(
         maintenance=args.maintenance_status,
         monitored=args.status,
         active_interface=args.active,
+        limit=limit,
     )
 
-    total_hosts = len(hosts)  # store len before limiting
-    if limit:
-        hosts = hosts[: abs(limit)]
+    # HACK: inject proxy map for each host
+    proxy_map = get_proxy_map(app.state.client)
+    for host in hosts:
+        host.set_proxy(proxy_map)
 
     render_result(AggregateResult(result=hosts))
 
+    # TODO: implement paging for large result sets
+    total_hosts = app.state.client.get_host_count()
     if total_hosts > len(hosts):  # we limited the results
         info(
             f"Only showing first {limit} of {total_hosts} hosts. Use [option]--limit 0[/] to show all."
