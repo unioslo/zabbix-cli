@@ -1,5 +1,26 @@
 # Zabbix-cli
 
+<p align="center">
+  <table>
+    <tr>
+        <td>
+            <img width="100%" src="https://github.com/unioslo/zabbix-cli/blob/master/resources/help.png?raw=true">
+        </td>
+        <td>
+            <img width="100%" src="https://github.com/unioslo/zabbix-cli/blob/master/resources/hosts.png?raw=true">
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <img width="100%" src="https://github.com/unioslo/zabbix-cli/blob/master/resources/host-inventory.png?raw=true">
+        </td>
+        <td>
+            <img width="100%" src="https://github.com/unioslo/zabbix-cli/blob/master/resources/proxies.png?raw=true">
+        </td>
+    </tr>
+  </table>
+</p>
+
 <!-- Activate badges when we publish to PyPI -->
 <!-- [![PyPI](https://img.shields.io/pypi/v/zabbix-cli)](https://pypi.org/project/zabbix-cli/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zabbix-cli)](https://pypi.org/project/zabbix-cli/)
@@ -58,6 +79,8 @@ zabbix-cli init --zabbix-url https://your-zabbix-url.com/
 zabbix-cli
 ```
 
+<img width="50%" src="https://github.com/unioslo/zabbix-cli/blob/master/resources/open-autocomplete.png?raw=true">
+
 ## Usage
 
 Zabbix-cli is a command line interface for Zabbix. It can be used in three ways:
@@ -88,6 +111,30 @@ Or by setting the `app.output_format` parameter in the config file:
 [app]
 output_format = "json"
 ```
+
+### Table
+
+<img width="50%" alt="format-table" src="https://github.com/user-attachments/assets/207fa12b-39c6-45b9-9f0e-7f217c723461">
+
+The default rendering mode is a [Rich](https://github.com/Textualize/rich) table that adapts to the width of the terminal.
+
+### JSON
+
+<img width="50%" alt="format-json" src="https://github.com/user-attachments/assets/680f507b-dc2a-41b2-87c4-c3a443d83979">
+
+The JSON output format is always in this format, where `ResultT` is the expected result type:
+
+```json
+{
+  "message": "",
+  "errors": [],
+  "return_code": "Done",
+  "result": ResultT
+}
+```
+
+The type of the `result` field varies based on the command run. For `show_host` it is a single Host object, while for `show_hosts` it is an _array_ of Host objects.
+
 
 ## Configuration
 
