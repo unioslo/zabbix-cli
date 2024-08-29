@@ -59,7 +59,7 @@ zabbix-cli-init = "zabbix_cli.scripts.init:main"
 zabbix-cli-bulk-execution = "zabbix_cli.scripts.bulk_execution:main"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "freezegun"]
+test = ["pytest", "pytest-cov", "freezegun", "inline-snapshot"]
 
 [tool.hatch.version]
 path = "zabbix_cli/__about__.py"
@@ -118,7 +118,12 @@ exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 [tool.ruff]
 src = ["zabbix_cli"]
 extend-exclude = ["zabbix_cli/__init__.py"]
-include = ["pyproject.toml", "zabbix_cli/**/*.py", "scripts/**/*.py"]
+include = [
+  "pyproject.toml",
+  "zabbix_cli/**/*.py",
+  "scripts/**/*.py",
+  "tests/**/*.py",
+]
 
 [tool.pyright]
 pythonVersion = "3.8"
