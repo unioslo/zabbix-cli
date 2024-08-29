@@ -3,7 +3,7 @@
 # Authors:
 # rafael@e-mc2.net / https://e-mc2.net/
 #
-# Copyright (c) 2014-2017 USIT-University of Oslo
+# Copyright (c) 2014-2024 USIT-University of Oslo
 #
 # This file is part of Zabbix-cli
 # https://github.com/unioslo/zabbix-cli
@@ -134,6 +134,7 @@ def main_callback(
         return
 
     from zabbix_cli.logs import configure_logging
+    from zabbix_cli.output.console import configure_console
     from zabbix_cli.state import get_state
 
     if should_skip_configuration(ctx):
@@ -155,6 +156,7 @@ def main_callback(
     logger.debug("Zabbix-CLI started.")
 
     configure_logging(conf.logging)
+    configure_console(conf)
     state.configure(conf)
 
     # TODO: look at order of evaluation here. What takes precedence?
