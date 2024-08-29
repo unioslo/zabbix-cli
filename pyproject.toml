@@ -9,10 +9,14 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = "GPL-3.0-or-later"
 keywords = []
-authors = [
-  { name = "Rafael Martinez Guerrero", email = "rafael@postgresql.org.es" },
-]
 maintainers = [{ name = "Peder Hovdan Andresen", email = "pederhan@uio.no" }]
+authors = [
+  # Historical authors (pre-V3)
+  { name = "Rafael Martinez Guerrero", email = "rafael@postgresql.org.es" },
+  { name = "Paal Braathen", email = "paal.braathen@usit.uio.no" },
+  { name = "Marius Bakke", email = "marius.bakke@usit.uio.no" },
+  { name = "Others (see AUTHORS)" },
+]
 
 classifiers = [
   "Environment :: Console",

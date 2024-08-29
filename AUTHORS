@@ -1,0 +1,32 @@
+# Based on `git shortlog --all -es` with duplicates removed
+
+Alexandru Tică
+Andreas Dobloug
+Boris Manojlovic
+Carl Morten Boger
+Emanuele Borin
+Fabian Arrotin
+Fabian Stelzer
+Florian Tham
+Fredrik Larsen
+Ganesh Hegde
+Herdir
+Jarle Bjørgeengen
+Jean-Baptiste Denis
+Jelmer Vernooĳ
+Kim Rioux-Paradis
+Logan V
+Marius Bakke
+Mathieu Marleix
+Michael Gindonis
+Mustafa Ocak
+Mélissa Bertin
+Paal Braathen
+Peder Hovdan Andresen
+Peet Whittaker
+Petter Reinholdtsen
+Rafael Martinez Guerrero
+Retyunskikh Dmitriy
+Steve McDuff
+Terje Kvernes
+Volker Fröhlich
