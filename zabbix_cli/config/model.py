@@ -49,6 +49,7 @@ from zabbix_cli.config.utils import load_config_toml
 from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
+from zabbix_cli.dirs import mkdir_if_not_exists
 from zabbix_cli.exceptions import ConfigError
 from zabbix_cli.logs import LogLevelStr
 from zabbix_cli.pyzabbix.enums import ExportFormat
@@ -382,10 +383,10 @@ class Config(BaseModel):
 
     def dump_to_file(self, filename: Path) -> None:
         """Dump the configuration to a TOML file."""
-        if not filename.parent.exists():
-            try:
-                filename.parent.mkdir(parents=True)
-            except OSError:
-                logging.error("unable to create directory %r", filename.parent)
-                raise ConfigError(f"unable to create directory {filename.parent}")
-        filename.write_text(self.as_toml(secrets=True))
+        try:
+            mkdir_if_not_exists(filename.parent)
+            filename.write_text(self.as_toml(secrets=True))
+        except OSError as e:
+            raise ConfigError(
+                f"Failed to write configuration file {filename}: {e}"
+            ) from e
