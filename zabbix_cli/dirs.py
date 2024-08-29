@@ -1,6 +1,6 @@
 """Defines directories for the application.
 
-Follows the XDG Base Directory Specification Linux: <https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html>
+Follows the XDG Base Directory Specification on Linux: <https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html>
 See <https://pypi.org/project/platformdirs/> for other platforms.
 """
 
@@ -12,8 +12,12 @@ from typing import NamedTuple
 
 from platformdirs import PlatformDirs
 
-from .__about__ import APP_NAME
-from .__about__ import AUTHOR
+from zabbix_cli.__about__ import APP_NAME
+from zabbix_cli.__about__ import AUTHOR
+from zabbix_cli.exceptions import ZabbixCLIFileError
+
+logger = logging.getLogger(__name__)
+
 
 _PLATFORM_DIR = PlatformDirs(APP_NAME, AUTHOR)
 
@@ -59,23 +63,21 @@ def mkdir_if_not_exists(path: Path) -> None:
     if path.exists():
         return
     try:
-        path.mkdir(parents=True)
+        path.mkdir(parents=True, exist_ok=True)
     except Exception as e:
-        raise e
+        raise ZabbixCLIFileError(f"Failed to create directory {path}: {e}") from e
     else:
-        from .output.console import info
-
-        info(f"Created directory: {path}")
+        logger.info(f"Created directory: {path}")
 
 
 def init_directories() -> None:
-    """Create required directories."""
+    """Create required directories for the application to function."""
     from .output.console import error
     from .output.console import exit_err
 
     for directory in DIRS:
         if directory.path.exists() or not directory.create:
-            logging.debug(
+            logger.debug(
                 "Skipping creating directory '%s'. Exists: %s",
                 directory.path,
                 directory.path.exists(),

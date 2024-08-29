@@ -10,7 +10,6 @@ from typing import Tuple
 
 from zabbix_cli.config.constants import CONFIG_PRIORITY
 from zabbix_cli.config.constants import DEFAULT_CONFIG_FILE
-from zabbix_cli.dirs import mkdir_if_not_exists
 from zabbix_cli.exceptions import ConfigError
 
 if TYPE_CHECKING:
@@ -21,7 +20,12 @@ def load_config_toml(filename: Path) -> Dict[str, Any]:
     """Load a TOML configuration file."""
     import tomli
 
-    return tomli.loads(filename.read_text())
+    try:
+        return tomli.loads(filename.read_text())
+    except tomli.TOMLDecodeError as e:
+        raise ConfigError(f"Error decoding TOML file {filename}: {e}") from e
+    except OSError as e:
+        raise ConfigError(f"Error reading TOML file {filename}: {e}") from e
 
 
 def load_config_conf(filename: Path) -> Dict[str, Any]:
@@ -29,8 +33,13 @@ def load_config_conf(filename: Path) -> Dict[str, Any]:
     import configparser
 
     config = configparser.ConfigParser()
-    config.read_file(filename.open())
-    return {s: dict(config.items(s)) for s in config.sections()}
+    try:
+        config.read_file(filename.open())
+        return {s: dict(config.items(s)) for s in config.sections()}
+    except (configparser.Error, OSError) as e:
+        raise ConfigError(
+            f"Error reading legacy configuration file {filename}: {e}"
+        ) from e
 
 
 def find_config(
@@ -69,20 +78,6 @@ def get_config(filename: Optional[Path] = None) -> Config:
     return Config.from_file(find_config(filename))
 
 
-def create_config_file(
-    config: Config,
-    filename: Path,
-    overwrite: bool = False,
-) -> Path:
-    """Create a default config file."""
-    mkdir_if_not_exists(filename.parent)
-    try:
-        config.dump_to_file(filename)
-    except OSError:
-        raise ConfigError(f"Unable to create config file {filename}")
-    return filename
-
-
 def init_config(
     config: Optional[Config] = None,
     config_file: Optional[Path] = None,
@@ -116,11 +111,16 @@ def init_config(
         config = Config.sample_config()
     if not url:
         url = str_prompt("Zabbix URL (without /api_jsonrpc.php)", url or config.api.url)
-
     config.api.url = url
+
+    # Add username if provided
+    # otherwise auth will prompt for it
+    if username:
+        config.api.username = username
+
     client = ZabbixAPI.from_config(config)
     auth.login(client, config)
 
-    config_file = create_config_file(config, config_file, overwrite=overwrite)
+    config.dump_to_file(config_file)
     info(f"Configuration file created: {config_file}")
     return config_file
