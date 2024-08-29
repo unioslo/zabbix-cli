@@ -47,17 +47,18 @@ def get_extra_dict(**kwargs: Any) -> Dict[str, Any]:
 
     See: https://docs.python.org/3.11/library/logging.html#logging.LogRecord
     """
-    for k, v in list(kwargs.items()):  # must be list to change while iterating
+    for k in list(kwargs):  # iterate over copy while mutating
         if k in RESERVED_EXTRA_KEYS:
-            kwargs[f"{k}_"] = v  # add trailing underscore to avoid collision
-            del kwargs[k]
+            kwargs[f"{k}_"] = kwargs.pop(k)
     return kwargs
 
 
 def debug_kv(key: str, value: Any) -> None:
     """Print and log a key value pair."""
     msg = f"[bold]{key:<20}:[/bold] {value}"
-    logger.debug(msg, extra=get_extra_dict(key=key, value=value))
+    from rich.markup import render
+
+    logger.debug(render(msg).plain, extra=get_extra_dict(key=key, value=value))
     err_console.print(msg)
 
 
