@@ -292,7 +292,7 @@ class ZabbixExporter:
                 raise ZabbixCLIError(
                     f"Failed to create directory {filename.parent}: {e}. Ensure you have permissions to create directories in the export directory."
                 ) from e
-        with open(filename, "w") as f:
+        with open(filename, "w", encoding="utf-8") as f:
             f.write(exported)
         return filename
 
