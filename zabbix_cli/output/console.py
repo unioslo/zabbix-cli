@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
 from typing import List
@@ -15,6 +17,9 @@ from zabbix_cli.output.formatting.path import path_link
 from zabbix_cli.output.style import RICH_THEME
 from zabbix_cli.output.style import Icon
 from zabbix_cli.state import get_state
+
+if TYPE_CHECKING:
+    from zabbix_cli.config.model import Config
 
 # stdout console used to print results
 console = Console(theme=RICH_THEME)
@@ -175,3 +180,24 @@ def print_path(path: Path) -> None:
         highlight=False,
         soft_wrap=True,
     )
+
+
+def disable_color() -> None:
+    """Disable color output in consoles."""
+    console._color_system = None  # pyright: ignore[reportPrivateUsage]
+    err_console._color_system = None  # pyright: ignore[reportPrivateUsage]
+    # HACK: set env var to disable color in Typer console
+    os.environ["NO_COLOR"] = "1"
+
+
+def enable_color() -> None:
+    """Enable color output in consoles if supported."""
+    console._color_system = console._detect_color_system()  # pyright: ignore[reportPrivateUsage]
+    err_console._color_system = console._detect_color_system()  # pyright: ignore[reportPrivateUsage]
+    os.unsetenv("NO_COLOR")  # remove hack
+
+
+def configure_console(config: Config) -> None:
+    """Configure console output based on the application configuration."""
+    if not config.app.use_colors:
+        disable_color()
