@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import NoReturn
 from typing import Optional
 
@@ -148,15 +147,12 @@ def exit_err(
 
     # Render JSON-formatted error message if output format is JSON
     if state.is_config_loaded and state.config.app.output_format == "json":
+        from zabbix_cli.exceptions import get_cause_args
         from zabbix_cli.models import Result
         from zabbix_cli.models import ReturnCode
         from zabbix_cli.output.render import render_json
 
-        errors: List[str] = []
-        if exception:
-            errors.extend(str(a) for a in exception.args)
-            if exception.__cause__:
-                errors.extend(str(a) for a in exception.__cause__.args)
+        errors = get_cause_args(exception)
         render_json(
             Result(message=message, return_code=ReturnCode.ERROR, errors=errors)
         )

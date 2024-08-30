@@ -50,7 +50,7 @@ class AuthError(ZabbixCLIError):
 
     # NOTE: We might still run into the problem of expired tokens, which won't raise
     # this type of error, but instead raise a ZabbixAPIRequestError.
-    # We should probably handle that in the client and raise the appropriate error
+    # We should probably handle that in the client and raise the appropriate exception
 
 
 class AuthTokenFileError(AuthError):
@@ -150,17 +150,23 @@ class HandleFunc(Protocol):
     def __call__(self, e: Any) -> NoReturn: ...
 
 
-def get_cause_args(e: BaseException) -> List[str]:
+def get_cause_args(e: Optional[BaseException]) -> List[str]:
     """Retrieves all args as strings from all exceptions in the cause chain.
     Flattens the args into a single list.
     """
     args: List[str] = []
-    args.extend(e.args)
-    if e.__cause__ is not None:
-        args.extend(str(get_cause_args(e.__cause__)))
+    while e:
+        args.extend(get_exc_args(e))
+        e = e.__cause__
+    return args
+
+
+def get_exc_args(e: BaseException) -> List[str]:
+    """Returns the error message as a string."""
+    args: List[str] = [str(arg) for arg in e.args]
     if isinstance(e, ZabbixAPIRequestError):
         args.append(e.reason())
-    return [str(arg) for arg in args]
+    return args
 
 
 def handle_notraceback(e: Exception) -> NoReturn:
