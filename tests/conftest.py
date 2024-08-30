@@ -7,7 +7,11 @@ import pytest
 import typer
 from typer import Typer
 from typer.testing import CliRunner
+from zabbix_cli.config.model import Config
 from zabbix_cli.main import app
+from zabbix_cli.pyzabbix.client import ZabbixAPI
+from zabbix_cli.state import State
+from zabbix_cli.state import get_state
 
 runner = CliRunner()
 
@@ -39,3 +43,36 @@ def ctx(app: Typer) -> typer.Context:
 @pytest.fixture()
 def data_dir() -> Iterator[Path]:
     yield Path(__file__).parent / "data"
+
+
+@pytest.fixture(name="state")
+def state(config: Config, zabbix_client: ZabbixAPI) -> Iterator[State]:
+    """Return a fresh State object with a config and client.
+
+    The client is not logged in to the Zabbix API.
+
+    Modifies the State singleton to ensure a fresh state is returned
+    each time.
+    """
+    State._instance = None  # pyright: ignore[reportPrivateUsage]
+    state = get_state()
+    # TODO: Use State.configure() instead,
+    #       but that requires patching Zabbix API login
+    state.config = config
+    state.client = zabbix_client
+    yield state
+    # reset after test
+    State._instance = None  # pyright: ignore[reportPrivateUsage]
+
+
+@pytest.fixture(name="config")
+def config() -> Iterator[Config]:
+    """Return a sample config."""
+    yield Config.sample_config()
+
+
+@pytest.fixture(name="zabbix_client")
+def zabbix_client() -> Iterator[ZabbixAPI]:
+    config = Config.sample_config()
+    client = ZabbixAPI.from_config(config)
+    yield client

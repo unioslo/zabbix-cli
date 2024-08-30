@@ -22,9 +22,6 @@ from typing import Union
 
 from zabbix_cli.exceptions import ZabbixCLIError
 
-# TODO: refactor all these `get_*_status` functions to int enums,
-# who all share a common format_code() method
-
 
 # NOTE: consider setting with_code to False by default...
 # The only downside is possibly breaking backwards compatibility
@@ -38,6 +35,10 @@ def _format_code(
 
 
 # LEGACY: Kept for backwards compatibility in JSON output
+# zabbix_cli.pyzabbix.enums.MaintenanceStatus has different string values
+# than the ones used in Zabbix-cli v2. This function is used to map the
+# the API values to the old string values when serializing to JSON.
+# Should be removed when we drop support for legacy JSON output.
 def get_maintenance_status(code: Optional[str], with_code: bool = False) -> str:
     """Get maintenance status from code."""
     maintenance_status = {"0": "No maintenance", "1": "In progress"}
