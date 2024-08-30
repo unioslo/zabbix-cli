@@ -79,7 +79,7 @@ zabbix-cli init --zabbix-url https://your-zabbix-url.com/
 zabbix-cli
 ```
 
-<img width="50%" src="https://github.com/unioslo/zabbix-cli/blob/master/resources/open-autocomplete.png?raw=true">
+<img width="60%" src="https://github.com/unioslo/zabbix-cli/blob/master/resources/open-autocomplete.png?raw=true">
 
 ## Usage
 
