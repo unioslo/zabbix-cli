@@ -114,13 +114,13 @@ output_format = "json"
 
 ### Table
 
-<img width="50%" alt="format-table" src="https://github.com/user-attachments/assets/207fa12b-39c6-45b9-9f0e-7f217c723461">
+<img width="60%" alt="format-table" src="https://github.com/user-attachments/assets/207fa12b-39c6-45b9-9f0e-7f217c723461">
 
 The default rendering mode is a [Rich](https://github.com/Textualize/rich) table that adapts to the width of the terminal.
 
 ### JSON
 
-<img width="50%" alt="format-json" src="https://github.com/user-attachments/assets/680f507b-dc2a-41b2-87c4-c3a443d83979">
+<img width="60%" alt="format-json" src="https://github.com/user-attachments/assets/680f507b-dc2a-41b2-87c4-c3a443d83979">
 
 The JSON output format is always in this format, where `ResultT` is the expected result type:
 
