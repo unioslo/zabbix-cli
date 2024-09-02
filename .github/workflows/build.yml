@@ -19,7 +19,9 @@ jobs:
       - uses: hynek/setup-cached-uv@v2
 
       - name: Install build dependencies
-        run: uv pip install --upgrade build
+        run: |
+          uv venv
+          uv pip install --upgrade build
 
       - name: Build source distribution
         run: python -m build
@@ -48,6 +50,7 @@ jobs:
       - uses: hynek/setup-cached-uv@v2
       - name: Build binary with PyInstaller
         run: |
+          uv venv
           uv pip install -U . pyinstaller
           pyinstaller --onefile zabbix_cli/main.py --name zabbix-cli
 

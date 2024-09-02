@@ -28,11 +28,10 @@ jobs:
           python-version: "3.12"
       - uses: hynek/setup-cached-uv@v2
 
-      - name: Ensure latest pip
-        run: uv pip install --upgrade pip
-
       - name: Install hatch
-        run: uv pip install hatch
+        run: |
+          uv venv
+          uv pip install hatch
 
       - name: Build documentation and publish
         run: hatch run docs:mkdocs gh-deploy --force
