@@ -290,7 +290,7 @@ class HostgroupFlag(APIStrEnum):
 class HostgroupType(APIStrEnum):
     """Hostgroup types."""
 
-    NOT_INTERNAL = APIStr("not_internal", 0)
+    NOT_INTERNAL = APIStr("not internal", 0)
     INTERNAL = APIStr("internal", 1)
 
 
