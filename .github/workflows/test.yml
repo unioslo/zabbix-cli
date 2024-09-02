@@ -28,9 +28,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
+      - uses: hynek/setup-cached-uv@v2
       - name: Install dependencies
         run: |
-          pip install .[test]
+          uv pip install --system .[test]
       - name: Test
         run: python -m pytest -vv
