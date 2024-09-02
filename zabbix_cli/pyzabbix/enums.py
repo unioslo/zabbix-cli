@@ -284,7 +284,7 @@ class HostgroupFlag(APIStrEnum):
     """Hostgroup flags."""
 
     PLAIN = APIStr("plain", 0)
-    DISCOVER = APIStr("discover", 4)
+    DISCOVER = APIStr("discovered", 4)
 
 
 class HostgroupType(APIStrEnum):
