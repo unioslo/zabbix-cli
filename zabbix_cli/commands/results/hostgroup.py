@@ -13,6 +13,7 @@ from zabbix_cli.pyzabbix.enums import HostgroupFlag
 from zabbix_cli.pyzabbix.enums import HostgroupType
 from zabbix_cli.pyzabbix.types import Host
 from zabbix_cli.pyzabbix.types import HostGroup
+from zabbix_cli.pyzabbix.types import HostList
 
 if TYPE_CHECKING:
     from zabbix_cli.models import ColsRowsType
@@ -116,7 +117,7 @@ class HostGroupResult(TableRenderable):
 
     groupid: str
     name: str
-    hosts: List[HostGroupHost] = []
+    hosts: HostList = []
     flags: int
     internal: Optional[int] = None  # <6.2
 
@@ -127,12 +128,10 @@ class HostGroupResult(TableRenderable):
             name=hostgroup.name,
             flags=hostgroup.flags,
             internal=hostgroup.internal,  # <6.2
-            hosts=[
-                HostGroupHost(hostid=host.hostid, host=host.host)
-                for host in hostgroup.hosts
-            ],
+            hosts=hostgroup.hosts,
         )
 
+    # LEGACY
     # Mimicks old behavior by also writing the string representation of the
     # flags and internal fields to the serialized output.
     @computed_field
@@ -140,11 +139,11 @@ class HostGroupResult(TableRenderable):
     def flags_str(self) -> str:
         return HostgroupFlag.string_from_value(self.flags, with_code=False)
 
+    # VERSION: 6.0
+    # Internal groups are not a thing in Zabbix >=6.2
     @computed_field
     @property
     def type(self) -> str:
-        # LEGACY: Drop this when we drop support for <=6.0
-        # Internal groups are not a thing in Zabbix >=6.2
         return HostgroupType.string_from_value(self.internal, with_code=True)
 
     def __cols_rows__(self) -> ColsRowsType:
@@ -154,10 +153,10 @@ class HostGroupResult(TableRenderable):
                 self.groupid,
                 self.name,
                 self.flags_str,
-                ", ".join([host["host"] for host in self.hosts]),
+                ", ".join(host.host for host in self.hosts),
             ]
         ]
-        # LEGACY: Remove this when we drop support for <=6.0
+        # VERSION: 6.0
         if self.zabbix_version.release < (6, 2):
             cols.insert(3, "Type")
             t = HostgroupType.string_from_value(self.internal, with_code=False)

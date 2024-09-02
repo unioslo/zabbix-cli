@@ -30,6 +30,8 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import FieldSerializationInfo
+from pydantic import PlainSerializer
+from pydantic import SerializationInfo
 from pydantic import ValidationError
 from pydantic import ValidationInfo
 from pydantic import ValidatorFunctionWrapHandler
@@ -124,6 +126,26 @@ Can only contain native JSON-serializable types.
 BaseModel objects must be converted to JSON-serializable dicts before being
 assigned as values in a ParamsType.
 """
+
+
+def serialize_host_list_json(
+    hosts: List[Host], info: SerializationInfo
+) -> List[Dict[str, str]]:
+    """Custom JSON serializer for a list of hosts.
+
+    Most of the time we don't want to serialize _all_ fields of a host.
+    This serializer assumes that we want to serialize the minimal representation
+    of hosts unless the context specifies otherwise."""
+    if isinstance(info.context, dict):
+        if info.context.get("full_host"):  # pyright: ignore[reportUnknownMemberType]
+            return [host.model_dump(mode="json") for host in hosts]
+    return [host.model_simple_dump() for host in hosts]
+
+
+HostList = Annotated[
+    List["Host"], PlainSerializer(serialize_host_list_json, when_used="json")
+]
+"""List of hosts that serialize as the minimal representation of a list of hosts."""
 
 
 def age_from_datetime(dt: Optional[datetime]) -> Optional[str]:
@@ -324,7 +346,7 @@ class Template(ZabbixAPIBaseModel):
 
     templateid: str
     host: str
-    hosts: List[Host] = []
+    hosts: HostList = []
     templates: List[Template] = []
     """Child templates (templates inherited from this template)."""
 
@@ -362,7 +384,7 @@ class TemplateGroup(ZabbixAPIBaseModel):
 class HostGroup(ZabbixAPIBaseModel):
     groupid: str
     name: str
-    hosts: List[Host] = []
+    hosts: HostList = []
     flags: int = 0
     internal: Optional[int] = None  # <6.2
     templates: List[Template] = []  # <6.2
@@ -439,7 +461,7 @@ class Host(ZabbixAPIBaseModel):
     def __str__(self) -> str:
         return f"{self.host!r} ({self.hostid})"
 
-    def model_simple_dump(self) -> Dict[str, Any]:
+    def model_simple_dump(self) -> Dict[str, str]:
         """Dump the model with minimal fields for simple output."""
         return {
             "host": self.host,
@@ -620,7 +642,7 @@ class UpdateHostInterfaceDetails(ZabbixAPIBaseModel):
 class Proxy(ZabbixAPIBaseModel):
     proxyid: str
     name: str = Field(..., validation_alias=AliasChoices("host", "name"))
-    hosts: List[Host] = Field(default_factory=list)
+    hosts: HostList = Field(default_factory=list)
     status: Optional[int] = None
     operating_mode: Optional[int] = None
     address: str = Field(
@@ -735,7 +757,7 @@ class Macro(MacroBase):
     hostid: str
     hostmacroid: str
     automatic: Optional[int] = None  # >= 7.0 only. 0 = user, 1 = discovery rule
-    hosts: List[Host] = Field(default_factory=list)
+    hosts: HostList = Field(default_factory=list)
     templates: List[Template] = Field(default_factory=list)
 
 
@@ -758,7 +780,7 @@ class Item(ZabbixAPIBaseModel):
     description: Optional[str] = None
     history: Optional[str] = None
     lastvalue: Optional[str] = None
-    hosts: List[Host] = []
+    hosts: HostList = []
 
     @computed_field
     @property
@@ -947,7 +969,7 @@ class Maintenance(ZabbixAPIBaseModel):
     tags_evaltype: Optional[int] = None
     timeperiods: List[TimePeriod] = []
     tags: List[ProblemTag] = []
-    hosts: List[Host] = []
+    hosts: HostList = []
     hostgroups: List[HostGroup] = Field(
         default_factory=list, validation_alias=AliasChoices("groups", "hostgroups")
     )
@@ -1241,8 +1263,8 @@ def resolve_forward_refs() -> None:
     """Certain models have forward references that need to be resolved.
 
     I.e. HostGroup has a field `hosts` that references the Host model,
-    which is defined later in the file. This function resolves those
-    forward references so that we can serialize them properly.
+    which is defined _after_ the HostGroup model. This function resolves
+    those forward references so that we can serialize them properly.
 
     We do the simplest possible resolution here, which is to just
     rebuild all the models in the module. This is inefficient, but

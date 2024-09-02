@@ -13,6 +13,7 @@ from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import MetaKey
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.pyzabbix.types import Host
+from zabbix_cli.pyzabbix.types import HostList
 from zabbix_cli.pyzabbix.types import Proxy
 from zabbix_cli.pyzabbix.types import ProxyGroup
 
@@ -135,13 +136,6 @@ class ShowProxiesResult(TableRenderable):
     proxy: Proxy
     show_hosts: bool = Field(default=False, exclude=True)
 
-    @model_serializer(when_used="json")
-    def ser_model(self):
-        return {
-            "proxy": self.proxy.model_dump(mode="json", exclude={"hosts"}),
-            "hosts": [h.model_simple_dump() for h in self.proxy.hosts],
-        }
-
     @classmethod
     def from_result(cls, proxy: Proxy, show_hosts: bool = False) -> Self:
         return cls(proxy=proxy, show_hosts=show_hosts)
@@ -177,14 +171,7 @@ class ShowProxiesResult(TableRenderable):
 
 class ShowProxyGroupHostsResult(TableRenderable):
     proxy_group: ProxyGroup
-    hosts: List[Host] = []
-
-    @model_serializer(when_used="json")
-    def ser_model(self):
-        return {
-            "proxy_group": self.proxy_group.model_dump(mode="json"),
-            "hosts": [h.model_simple_dump() for h in self.hosts],
-        }
+    hosts: HostList = []
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["Name", "Hosts"]
