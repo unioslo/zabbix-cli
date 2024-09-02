@@ -30,8 +30,7 @@ jobs:
 
       - name: Install hatch
         run: |
-          uv venv
-          uv pip install hatch
+          uv pip install --system hatch
 
       - name: Build documentation and publish
         run: hatch run docs:mkdocs gh-deploy --force
