@@ -360,7 +360,7 @@ class Config(BaseModel):
         to the new section. I.e. `app.username` -> `api.username`.
         """
         # Only override if `api.username` is not set
-        if self.app.username and not self.api.username:
+        if self.app.username:
             logging.warning(
                 "Config option `app.username` is deprecated and will be removed. Use `api.username` instead."
             )

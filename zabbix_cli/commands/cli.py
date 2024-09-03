@@ -252,8 +252,17 @@ def migrate_config(
     overwrite: bool = typer.Option(
         False, "--overwrite", help="Overwrite destination config file if it exists."
     ),
+    legacy_json: bool = typer.Option(
+        False,
+        "--legacy-json-format",
+        help="Use legacy JSON format mode in the new config file.",
+    ),
 ) -> None:
-    """Migrate a legacy .conf config to a new .toml config."""
+    """Migrate a legacy .conf config to a new .toml config.
+
+    The new config file will be created in the default location if no destination is specified.
+    The new config enables the new JSON format by default.
+    """
     from zabbix_cli.config.constants import DEFAULT_CONFIG_FILE
     from zabbix_cli.config.model import Config
 
@@ -276,6 +285,10 @@ def migrate_config(
         exit_err(
             f"File {destination} already exists. Use [option]--overwrite[/] to overwrite it."
         )
+
+    # Set the legacy JSON format flag in the new file
+    # By default, we move users over to the new format.
+    conf.app.legacy_json_format = legacy_json
 
     try:
         conf.dump_to_file(destination)

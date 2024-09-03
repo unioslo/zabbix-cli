@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- released start -->
 
 <!-- ## [Unreleased] -->
+## 3.0.1
+
+### Fixed
+
+- `migrate_config` not migrating username to the new `api.username` field in the resulting TOML configuration file.
+- `migrate_config` using `legacy_json_format = true` in the resulting TOML configuration file by default.
+  - Can force the old JSON format with the new `--legacy-json-format` flag.
 
 ## 3.0.0
 
