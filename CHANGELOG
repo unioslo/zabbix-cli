@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- ## [Unreleased] -->
 ## 3.0.1
 
+### Changed
+
+- `migrate_config` no longer requires logging in to the Zabbix API.
+
 ### Fixed
 
 - `migrate_config` not migrating username to the new `api.username` field in the resulting TOML configuration file.

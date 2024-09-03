@@ -159,6 +159,11 @@ def main_callback(
     configure_console(conf)
     state.configure(conf)
 
+    if should_skip_login(ctx):
+        return
+
+    state.login()
+
     # TODO: look at order of evaluation here. What takes precedence?
     # Should passing both --input-file and --command be an error? probably!
     if zabbix_command:
@@ -180,12 +185,21 @@ def main_callback(
 # TODO: Add a decorator for skipping or some sort of parameter to the existing
 #       StatefulApp.command method that marks a command as not requiring
 #       a configuration file to be loaded.
-SKIPPABLE_COMMANDS = ["open", "sample_config"]
+SKIP_CONFIG_COMMANDS = ["open", "sample_config"]
 
 
 def should_skip_configuration(ctx: typer.Context) -> bool:
-    """Check if the command should skip loading the configuration file."""
-    return ctx.invoked_subcommand in SKIPPABLE_COMMANDS
+    """Check if the command should skip all configuration of the app."""
+    return ctx.invoked_subcommand in SKIP_CONFIG_COMMANDS
+
+
+SKIP_LOGIN_COMMANDS = ["migrate_config"]
+# This is a subset of SKIP_CONFIG_COMMANDS, so we don't need to repeat its contents
+
+
+def should_skip_login(ctx: typer.Context) -> bool:
+    """Check if the command should skip logging in to the Zabbix API."""
+    return ctx.invoked_subcommand in SKIP_LOGIN_COMMANDS
 
 
 def main() -> int:

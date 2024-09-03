@@ -157,6 +157,11 @@ class State:
                 self._history = InMemoryHistory()
         return self._history
 
+    @property
+    def ready(self) -> bool:
+        """State is configured and ready to use."""
+        return self.is_client_loaded and self.is_config_loaded
+
     def configure(self, config: Config) -> None:
         """Bootstrap the state object with the config and Zabbix API
         client objects. Also bootstraps ZabbixAPIBaseModel class vars.
@@ -164,19 +169,12 @@ class State:
         Should be called once at the beginning of the application's lifetime.
 
         Assigns the loaded config to the global state, as well as instantiating
-        the Zabbix API client object. Uses the authentication info from the config
-        to log into the Zabbix API.
-
-        Finally, the API version is set on the ZabbixAPIBaseModel class, so that
-        we know how to render the results for the given version of the API.
+        the Zabbix API client object.
         """
         from zabbix_cli.pyzabbix.client import ZabbixAPI
 
         self.config = config
-
-        # Create the Zabbix API client object and log in
         self.client = ZabbixAPI.from_config(config)
-        self.login()
 
     def revert_config_overrides(self) -> None:
         """Revert config overrides from CLI args applied in REPL.
@@ -202,7 +200,12 @@ class State:
             self.config = self._config_repl_original.model_copy(deep=True)
 
     def login(self) -> None:
-        """Log in to the Zabbix API."""
+        """Log in to the Zabbix API.
+
+        Uses the authentication info from the config to log into the Zabbix API.
+
+        Also sets the Zabbix API version on the ZabbixAPIBaseModel class,
+        so that each model is aware of which version its data is from."""
         from zabbix_cli import auth
         from zabbix_cli.models import TableRenderable
 
@@ -224,8 +227,7 @@ class State:
         # https://www.zabbix.com/documentation/current/en/manual/api/reference/user/login
         if (
             # State did not finish configuration before termination
-            self._config is None
-            or self._client is None
+            not self.ready
             # OR We want to keep the session alive
             or self.config.app.use_auth_token_file
             # OR we are using an API token
