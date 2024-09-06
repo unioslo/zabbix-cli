@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Status messages when fetching data from the Zabbix API in most `show_*` commands.
 - `--limit` option for most `show_*` commands to limit the number of results shown.
 
+### Fixed
+
+- Markup errors when rendering Zabbix items with keys containing special characters.
+
 ## 3.0.1
 
 ### Changed
