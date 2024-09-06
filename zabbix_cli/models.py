@@ -26,6 +26,7 @@ from strenum import StrEnum
 from typing_extensions import TypeVar
 
 from zabbix_cli.table import get_table
+from zabbix_cli.utils.rich import get_safe_renderable
 
 if TYPE_CHECKING:
     from rich.console import RenderableType
@@ -232,6 +233,10 @@ class TableRenderable(BaseModel):
     def as_table(self) -> Table:
         """Renders a Rich table given the rows and cols generated for the object."""
         cols, rows = self.__cols_rows__()
+        for row in rows:
+            for i, cell in enumerate(row):
+                row[i] = get_safe_renderable(cell)
+
         return get_table(
             cols=cols,
             rows=rows,
