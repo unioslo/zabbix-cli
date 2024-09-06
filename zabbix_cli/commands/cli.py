@@ -10,7 +10,7 @@ from typing import Optional
 import typer
 
 from zabbix_cli.app import app
-from zabbix_cli.commands.common.args import ARG_LIMIT
+from zabbix_cli.commands.common.args import OPTION_LIMIT
 from zabbix_cli.dirs import CONFIG_DIR
 from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
@@ -191,7 +191,7 @@ def login(
 @app.command("show_history", rich_help_panel=HELP_PANEL)
 def show_history(
     ctx: typer.Context,
-    limit: int = ARG_LIMIT,
+    limit: int = OPTION_LIMIT,
     # TODO: Add --session option to limit to current session
     # In order to add that, we need to store the history len at the start of the session
 ) -> None:

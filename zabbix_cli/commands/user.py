@@ -15,7 +15,7 @@ from strenum import StrEnum
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
-from zabbix_cli.commands.common.args import ARG_LIMIT
+from zabbix_cli.commands.common.args import OPTION_LIMIT
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
@@ -655,7 +655,7 @@ def show_usergroups(
         help="Name or ID of the user group(s) to show. Comma-separated. Supports wildcards.",
     ),
     sort: UsergroupSorting = OPTION_SORT_UGROUPS,
-    limit: Optional[int] = ARG_LIMIT,
+    limit: Optional[int] = OPTION_LIMIT,
 ) -> None:
     """Show user groups.
 

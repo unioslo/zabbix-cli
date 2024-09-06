@@ -21,4 +21,4 @@ def get_limit_option(
     )
 
 
-ARG_LIMIT = get_limit_option(0)
+OPTION_LIMIT = get_limit_option(0)

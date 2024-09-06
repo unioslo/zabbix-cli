@@ -9,7 +9,7 @@ import typer
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
-from zabbix_cli.commands.common.args import ARG_LIMIT
+from zabbix_cli.commands.common.args import OPTION_LIMIT
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
@@ -733,7 +733,7 @@ def show_hosts(
         help="Monitoring status.",
         show_default=False,
     ),
-    limit: int = ARG_LIMIT,
+    limit: int = OPTION_LIMIT,
     # V2 Legacy filter argument
     filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
     # TODO: add sorting mode?

@@ -8,7 +8,7 @@ import typer
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
-from zabbix_cli.commands.common.args import ARG_LIMIT
+from zabbix_cli.commands.common.args import OPTION_LIMIT
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.args import parse_list_arg
@@ -42,7 +42,7 @@ def show_last_values(
     group: bool = typer.Option(
         False, "--group", is_flag=True, help="Group items with the same value."
     ),
-    limit: Optional[int] = ARG_LIMIT,
+    limit: Optional[int] = OPTION_LIMIT,
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Show the last values of given items of monitored hosts."""
