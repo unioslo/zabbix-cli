@@ -193,7 +193,14 @@ def add_common_params(
     sort_order: Optional[SortOrder] = None,
     limit: Optional[int] = None,
 ) -> ParamsType:
-    """Add sorting parameters to a params dict."""
+    """Add common GET parameters to a params dict.
+
+    Based on https://www.zabbix.com/documentation/7.0/en/manual/api/reference_commentary#common-get-method-parameters
+
+    NOTE
+    ----
+    `parse_name_or_id_arg` handles the `search*` parameters
+    """
     if sort_field:
         params["sortfield"] = sort_field
     if sort_order:
@@ -1876,15 +1883,19 @@ class ZabbixAPI:
         search: bool = True,
         monitored: bool = False,
         select_hosts: bool = False,
+        limit: Optional[int] = None,
         # TODO: implement interfaces
         # TODO: implement graphs
         # TODO: implement triggers
     ) -> List[Item]:
         params: ParamsType = {"output": "extend"}
-        if names:
-            params["search"] = {"name": names}
-            if search:
-                params["searchWildcardsEnabled"] = True
+        params = parse_name_or_id_arg(
+            params,
+            names,
+            name_param="name",
+            id_param="itemids",
+            search=search,
+        )
         if templates:
             params: ParamsType = {
                 "templateids": [template.templateid for template in templates]
@@ -1893,6 +1904,7 @@ class ZabbixAPI:
             params["monitored"] = monitored  # false by default in API
         if select_hosts:
             params["selectHosts"] = "extend"
+        add_common_params(params, limit=limit)
         try:
             items = self.item.get(**params)
         except ZabbixAPIException as e:
@@ -2335,9 +2347,10 @@ class ZabbixAPI:
     def get_images(self, *image_names: str, select_image: bool = True) -> List[Image]:
         """Fetches images, optionally filtered by name(s)."""
         params: ParamsType = {"output": "extend"}
-        if image_names:
-            params["searchByAny"] = True
-            params["search"] = {"name": image_names}
+        params = parse_name_or_id_arg(
+            params, image_names, name_param="name", id_param="imageids"
+        )
+
         if select_image:
             params["selectImage"] = True
 
@@ -2350,9 +2363,12 @@ class ZabbixAPI:
     def get_maps(self, *map_names: str) -> List[Map]:
         """Fetches maps, optionally filtered by name(s)."""
         params: ParamsType = {"output": "extend"}
-        if map_names:
-            params["searchByAny"] = True
-            params["search"] = {"name": map_names}
+        params = parse_name_or_id_arg(
+            params,
+            map_names,
+            name_param="name",
+            id_param="sysmapids",
+        )
 
         try:
             resp = self.map.get(**params)
@@ -2363,9 +2379,9 @@ class ZabbixAPI:
     def get_media_types(self, *names: str) -> List[MediaType]:
         """Fetches media types, optionally filtered by name(s)."""
         params: ParamsType = {"output": "extend"}
-        if names:
-            params["searchByAny"] = True
-            params["search"] = {"name": names}
+        params = parse_name_or_id_arg(
+            params, names, name_param="name", id_param="mediatypeids"
+        )
 
         try:
             resp = self.mediatype.get(**params)
