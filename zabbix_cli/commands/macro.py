@@ -114,7 +114,6 @@ def show_host_usermacros(
 # TODO: find out what we actually want this command to do.
 # Each user macro belongs to one host, so we can't really list all hosts
 # with a single macro...
-# @macro_cmd.command(name="find", rich_help_panel=HELP_PANEL)
 @app.command(name="show_usermacro_host_list", rich_help_panel=HELP_PANEL, hidden=False)
 def show_usermacro_host_list(
     usermacro: str = typer.Argument(

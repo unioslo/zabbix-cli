@@ -15,6 +15,7 @@ from strenum import StrEnum
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
+from zabbix_cli.commands.common.args import ARG_LIMIT
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
@@ -265,29 +266,58 @@ def show_user(
     render_result(user)
 
 
+class UserSorting(StrEnum):
+    NAME = "name"
+    ID = "id"
+    ROLE = "role"
+
+
 @app.command("show_users", rich_help_panel=HELP_PANEL)
 def show_users(
     ctx: typer.Context,
-    limit: Optional[int] = typer.Option(
-        None, "--limit", help="Limit the number of users shown."
-    ),
-    username: Optional[str] = typer.Option(
-        None, "--username", help="Filter users by username. Supports wildcards."
+    username_or_id: Optional[str] = typer.Argument(
+        None, help="Filter by username or ID. Supports wildcards."
     ),
     role: Optional[UserRole] = typer.Option(
         None,
         "--role",
-        help="Filter users by role.",
+        help="Filter by role.",
         case_sensitive=False,
     ),
+    limit: Optional[int] = typer.Option(
+        None, "--limit", help="Limit the number of users shown."
+    ),
+    sort: Optional[UserSorting] = typer.Option(
+        UserSorting.NAME,
+        "--sort",
+        help="Sort by field.",
+    ),
 ) -> None:
-    """Show all users."""
-    from zabbix_cli.models import AggregateResult
+    """Show users.
 
-    search = bool(username or role)
-    users = app.state.client.get_users(username=username, role=role, search=search)
-    if limit:
-        users = users[: abs(limit)]
+    Users can be filtered by name, ID, or role."""
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.pyzabbix.compat import user_name
+
+    us = parse_list_arg(username_or_id)
+
+    # TODO: move this to the client somehow
+    #       This is also clumsy, because we want users to pass in
+    #       "name", "id", or "role" as arguments to the command,
+    #       but the API expects "userid", "name", or "roleid"
+    sorting = None
+    if sort:
+        if sort == UserSorting.ROLE:
+            sorting = "roleid"
+        elif sort == UserSorting.ID:
+            sorting = "userid"
+        else:
+            sorting = user_name(app.state.client.version)
+
+    with app.status("Fetching users..."):
+        users = app.state.client.get_users(
+            *us, role=role, limit=limit, sort_field=sorting, sort_order="ASC"
+        )
     render_result(AggregateResult(result=users))
 
 
@@ -453,7 +483,7 @@ def add_user_to_usergroup(
     unames = parse_list_arg(usernames)
     ugroups = parse_list_arg(usergroups)
 
-    with app.status("Adding users to user groups"):
+    with app.status("Adding users to user groups..."):
         users = [app.state.client.get_user(u) for u in unames]
         for ugroup in ugroups:
             try:
@@ -530,12 +560,10 @@ def create_usergroup(
             )
         disabled = parse_bool_arg(args[0])
 
-    # Check if group exists already
     with suppress(ZabbixNotFoundError):
         app.state.client.get_usergroup(usergroup)
         exit_err(f"User group {usergroup!r} already exists.")
 
-    # Create group
     with app.status("Creating user group"):
         usergroupid = app.state.client.create_usergroup(
             usergroup, gui_access=gui_access, disabled=disabled
@@ -594,38 +622,66 @@ OPTION_SORT_UGROUPS = typer.Option(
 def show_usergroup(
     ctx: typer.Context,
     usergroup: str = typer.Argument(
-        help="Name of the user group(s) to show. Comma-separated. Supports wildcards.",
+        help="Name or ID of the user group(s) to show. Comma-separated. Supports wildcards.",
     ),
     sort: UsergroupSorting = OPTION_SORT_UGROUPS,
 ) -> None:
-    """Show details for user group(s)."""
+    """Show one or more user groups by name or ID."""
+    _do_show_usergroups(usergroup, sort)
+
+
+@app.command(
+    "show_usergroups",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Show all user groups",
+            "show_usergroups",
+        ),
+        Example(
+            "Show user groups 'Admins' and 'Operators'",
+            "show_usergroup Admins,Operators",
+        ),
+        Example(
+            "Show all user groups containing 'web' sorted by ID",
+            "show_usergroup '*web*' --sort id",
+        ),
+    ],
+)
+def show_usergroups(
+    ctx: typer.Context,
+    usergroup: Optional[str] = typer.Argument(
+        None,
+        help="Name or ID of the user group(s) to show. Comma-separated. Supports wildcards.",
+    ),
+    sort: UsergroupSorting = OPTION_SORT_UGROUPS,
+    limit: Optional[int] = ARG_LIMIT,
+) -> None:
+    """Show user groups.
+
+    Can be filtered by name or ID."""
+    _do_show_usergroups(usergroup, sort=sort, limit=limit)
+
+
+def _do_show_usergroups(
+    usergroup: Optional[str],
+    sort: UsergroupSorting,
+    limit: Optional[int] = None,
+) -> None:
     from zabbix_cli.commands.results.user import ShowUsergroupResult
     from zabbix_cli.models import AggregateResult
 
     ugs = parse_list_arg(usergroup)
-    usergroups = app.state.client.get_usergroups(
-        *ugs, select_users=True, select_rights=True, search=True
-    )
+    with app.status("Fetching user groups..."):
+        usergroups = app.state.client.get_usergroups(
+            *ugs, select_users=True, search=True, limit=limit
+        )
     res: List[ShowUsergroupResult] = []
     for ugroup in usergroups:
         res.append(ShowUsergroupResult.from_usergroup(ugroup))
-
-    render_result(AggregateResult(result=sort_ugroups(res, sort)))
-
-
-@app.command("show_usergroups", rich_help_panel=HELP_PANEL)
-def show_usergroups(
-    ctx: typer.Context, sort: UsergroupSorting = OPTION_SORT_UGROUPS
-) -> None:
-    """Show all user groups."""
-    from zabbix_cli.commands.results.user import ShowUsergroupResult
-    from zabbix_cli.models import AggregateResult
-
-    usergroups = app.state.client.get_usergroups(select_users=True, search=True)
-    res: List[ShowUsergroupResult] = []
-    for ugroup in usergroups:
-        res.append(ShowUsergroupResult.from_usergroup(ugroup))
-    render_result(AggregateResult(result=sort_ugroups(res, sort)))
+    # NOTE: why client-side sorting?
+    res = sort_ugroups(res, sort)
+    render_result(AggregateResult(result=res))
 
 
 @app.command(
@@ -695,12 +751,12 @@ def add_usergroup_permissions(
     usergroup: str = typer.Argument(help="User group to give permissions to."),
     hostgroups: Optional[str] = typer.Option(
         None,
-        "--hostgroups",
+        "--hostgroup",
         help="Comma-separated list of host group names.",
     ),
     templategroups: Optional[str] = typer.Option(
         None,
-        "--templategroups",
+        "--templategroup",
         help="Comma-separated list of template group names.",
     ),
     permission: Optional[UsergroupPermission] = typer.Option(

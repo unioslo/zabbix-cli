@@ -187,6 +187,22 @@ def parse_name_or_id_arg(
     return params
 
 
+def add_common_params(
+    params: ParamsType,
+    sort_field: Optional[Union[str, List[str]]] = None,
+    sort_order: Optional[SortOrder] = None,
+    limit: Optional[int] = None,
+) -> ParamsType:
+    """Add sorting parameters to a params dict."""
+    if sort_field:
+        params["sortfield"] = sort_field
+    if sort_order:
+        params["sortorder"] = sort_order
+    if limit:
+        params["limit"] = limit
+    return params
+
+
 def get_returned_list(returned: Any, key: str, endpoint: str) -> List[str]:
     """Retrieve a list from a given key in a Zabbix API response."""
     if not isinstance(returned, dict):
@@ -430,7 +446,7 @@ class ZabbixAPI:
             else:
                 cls = ZabbixAPIRequestError
             raise cls(
-                f"Error: {resp.error.message}",
+                f"Error: {resp.error.message}: {resp.error.data}",
                 api_response=resp,
                 response=response,
             )
@@ -513,6 +529,7 @@ class ZabbixAPI:
         select_templates: bool = False,
         sort_order: Optional[SortOrder] = None,
         sort_field: Optional[str] = None,
+        limit: Optional[int] = None,
     ) -> List[HostGroup]:
         """Fetches a list of host groups given its name or ID.
 
@@ -550,10 +567,9 @@ class ZabbixAPI:
             params["selectHosts"] = "extend"
         if self.version.release < (6, 2, 0) and select_templates:
             params["selectTemplates"] = "extend"
-        if sort_order:
-            params["sortorder"] = sort_order
-        if sort_field:
-            params["sortfield"] = sort_field
+        add_common_params(
+            params, sort_field=sort_field, sort_order=sort_order, limit=limit
+        )
 
         resp: List[Any] = self.hostgroup.get(**params) or []
         return [HostGroup(**hostgroup) for hostgroup in resp]
@@ -680,10 +696,7 @@ class ZabbixAPI:
 
         if select_templates:
             params["selectTemplates"] = "extend"
-        if sort_order:
-            params["sortorder"] = sort_order
-        if sort_field:
-            params["sortfield"] = sort_field
+        add_common_params(params, sort_field=sort_field, sort_order=sort_order)
 
         try:
             resp: List[Any] = self.templategroup.get(**params) or []
@@ -763,6 +776,7 @@ class ZabbixAPI:
         select_interfaces: bool = False,
         proxy: Optional[Proxy] = None,
         proxy_group: Optional[ProxyGroup] = None,
+        hostgroups: Optional[List[HostGroup]] = None,
         # These params take special API values we don't want to evaluate
         # inside this method, so we delegate it to the enums.
         maintenance: Optional[MaintenanceStatus] = None,
@@ -832,11 +846,12 @@ class ZabbixAPI:
         if filter_params:  # Only add filter if we actually have filter params
             params["filter"] = filter_params
 
+        if hostgroups:
+            params["groupids"] = [group.groupid for group in hostgroups]
         if proxy:
             params["proxyids"] = proxy.proxyid
         if proxy_group:
             params["proxy_groupids"] = proxy_group.proxy_groupid
-
         if select_groups:
             # still returns the result under the "groups" property
             # even if we use the new 6.2 selectHostGroups param
@@ -850,20 +865,17 @@ class ZabbixAPI:
             params["selectMacros"] = "extend"
         if select_interfaces:
             params["selectInterfaces"] = "extend"
-        if sort_field:
-            params["sortfield"] = sort_field
-        if sort_order:
-            params["sortorder"] = sort_order
-        if limit:
-            params["limit"] = limit
+        add_common_params(
+            params, sort_field=sort_field, sort_order=sort_order, limit=limit
+        )
 
         resp: List[Any] = self.host.get(**params) or []
         # TODO add result to cache
         return [Host(**r) for r in resp]
 
-    def get_host_count(self) -> int:
+    def get_host_count(self, params: Optional[ParamsType] = None) -> int:
         """Fetches the total number of hosts in the Zabbix server."""
-        return self.count("host")
+        return self.count("host", params=params)
 
     def count(self, object_type: str, params: Optional[ParamsType] = None) -> int:
         """Count the number of objects of a given type."""
@@ -1081,52 +1093,42 @@ class ZabbixAPI:
 
     def get_usergroup(
         self,
-        name: str,
+        name_or_id: str,
         select_users: bool = False,
         select_rights: bool = False,
-        search: bool = False,
+        search: bool = True,
     ) -> Usergroup:
         """Fetches a user group by name. Always fetches the full contents of the group."""
         groups = self.get_usergroups(
-            name,
+            name_or_id,
             select_users=select_users,
             select_rights=select_rights,
             search=search,
         )
         if not groups:
-            raise ZabbixNotFoundError(f"User group {name!r} not found")
+            raise ZabbixNotFoundError(f"User group {name_or_id!r} not found")
         return groups[0]
 
     def get_usergroups(
         self,
-        *names: str,
+        *names_or_ids: str,
         # See get_usergroup for why these are set to True by default
         select_users: bool = True,
         select_rights: bool = True,
-        search: bool = False,
+        search: bool = True,
+        limit: Optional[int] = None,
     ) -> List[Usergroup]:
         """Fetches all user groups. Optionally includes users and rights."""
         params: ParamsType = {
             "output": "extend",
         }
-        search_params: ParamsType = {}
-
-        if "*" in names:
-            names = tuple()
-        if search:
-            params["searchByAny"] = True  # Union search (default is intersection)
-            params["searchWildcardsEnabled"] = True
-
-        if names:
-            for name in names:
-                name = name.strip()
-                if search:
-                    append_param(search_params, "name", name)
-                else:
-                    params["filter"] = {"name": name}
-
-        if search_params:
-            params["search"] = search_params
+        params = parse_name_or_id_arg(
+            params,
+            names_or_ids,
+            name_param="name",
+            id_param="usrgrpids",
+            search=search,
+        )
 
         # Rights were split into host and template group rights in 6.2.0
         if select_rights:
@@ -1137,6 +1139,7 @@ class ZabbixAPI:
                 params["selectRights"] = "extend"
         if select_users:
             params["selectUsers"] = "extend"
+        add_common_params(params, limit=limit)
 
         try:
             res = self.usergroup.get(**params)
@@ -1464,10 +1467,8 @@ class ZabbixAPI:
         if select_templates:
             params["selectTemplates"] = "extend"
 
-        if sort_field:
-            params["sortfield"] = sort_field
-        if sort_order:
-            params["sortorder"] = sort_order
+        add_common_params(params, sort_field=sort_field, sort_order=sort_order)
+
         try:
             result = self.usermacro.get(**params)
         except ZabbixAPIException as e:
@@ -1508,10 +1509,8 @@ class ZabbixAPI:
         if params.get("search"):
             params["searchWildcardsEnabled"] = True
 
-        if sort_field:
-            params["sortfield"] = sort_field
-        if sort_order:
-            params["sortorder"] = sort_order
+        add_common_params(params, sort_field=sort_field, sort_order=sort_order)
+
         try:
             result = self.usermacro.get(**params)
         except ZabbixAPIException as e:
@@ -1972,24 +1971,27 @@ class ZabbixAPI:
 
     def get_users(
         self,
-        username: Optional[str] = None,
+        *names_or_ids: str,
         role: Optional[UserRole] = None,
-        search: bool = False,
+        search: bool = True,
+        limit: Optional[int] = None,
+        sort_field: Optional[str] = None,
+        sort_order: Optional[SortOrder] = None,
     ) -> List[User]:
         params: ParamsType = {"output": "extend"}
-        filter_params: ParamsType = {}
-        if search:
-            params["searchWildcardsEnabled"] = True
-        if username is not None:
-            if search:
-                params["search"] = {compat.user_name(self.version): username}
-            else:
-                filter_params[compat.user_name(self.version)] = username
+        params = parse_name_or_id_arg(
+            params,
+            names_or_ids,
+            name_param=compat.user_name(self.version),
+            id_param="userids",
+            search=search,
+        )
         if role:
-            filter_params[compat.role_id(self.version)] = role.as_api_value()
+            add_param(
+                params, "filter", compat.role_id(self.version), role.as_api_value()
+            )
 
-        if filter_params:
-            params["filter"] = filter_params
+        add_common_params(params, sort_field, sort_order, limit=limit)
 
         users = self.user.get(**params)
         return [User(**user) for user in users]
@@ -2265,12 +2267,8 @@ class ZabbixAPI:
             params["hostids"] = host_ids
         if object_ids:
             params["objectids"] = object_ids
-        if sort_field:
-            params["sortfield"] = sort_field
-        if sort_order:
-            params["sortorder"] = sort_order
-        if limit:
-            params["limit"] = limit
+        add_common_params(params, sort_field=sort_field, sort_order=sort_order)
+
         try:
             resp = self.event.get(**params)
         except ZabbixAPIException as e:
@@ -2326,10 +2324,8 @@ class ZabbixAPI:
             params["withLastEventUnacknowledged"] = True
         if select_hosts:
             params["selectHosts"] = "extend"
-        if sort_field:
-            params["sortfield"] = sort_field
-        if sort_order:
-            params["sortorder"] = sort_order
+        add_common_params(params, sort_field, sort_order)
+
         try:
             resp = self.trigger.get(**params)
         except ZabbixAPIException as e:

@@ -549,7 +549,7 @@ class Host(ZabbixAPIBaseModel):
             "Name",
             "Host groups",
             "Templates",
-            "Zabbix agent",
+            "Agent",
             "Maintenance",
             "Status",
             "Proxy",

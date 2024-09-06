@@ -1,15 +1,13 @@
-# TODO: move into pyzabbix module
-"""Utility functions."""
+"""Uncategorized utility functions.
+
+Some stemming from Zabbix-cli v2, while others relate to converting
+values and flags from the Zabbix API."""
 
 from __future__ import annotations
 
-import os
 import re
-import subprocess
-import sys
 from datetime import datetime
 from datetime import timedelta
-from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import Final
@@ -330,51 +328,3 @@ def convert_seconds_to_duration(seconds: int) -> str:
         duration += f"{seconds}s"
 
     return duration
-
-
-def sanitize_filename(filename: str) -> str:
-    """Make a filename safe(r) for use in filesystems.
-
-    Very naive implementation that removes illegal characters.
-    Does not check for reserved names or path length.
-    """
-    return re.sub(r"[^\w\-.]", "_", filename)
-
-
-def open_directory(
-    directory: Path, command: Optional[str] = None, force: bool = False
-) -> None:
-    """Open directory in file explorer.
-
-    Prints the path to the directory to stderr if no window server is detected.
-    The path must be a directory, otherwise a ZabbixCLIError is raised.
-
-    Args:
-        directory (Path): The directory to open.
-        command (str, optional): The command to use to open the directory. If `None`, the command is determined based on the platform.
-        force (bool, optional): If `True`, open the directory even if no window server is detected. Defaults to `False`.
-    """
-    try:
-        if not directory.exists():
-            raise FileNotFoundError
-        directory = directory.resolve(strict=True)
-    except FileNotFoundError:
-        raise ZabbixCLIError(f"Directory {directory} does not exist")
-    except OSError:
-        raise ZabbixCLIError(f"Unable to resolve symlinks for {directory}")
-    if not directory.is_dir():
-        raise ZabbixCLIError(f"{directory} is not a directory")
-
-    spath = str(directory)
-    if sys.platform == "win32":
-        subprocess.run([command or "explorer", spath])
-    elif sys.platform == "darwin":
-        subprocess.run([command or "open", spath])
-    else:  # Linux and Unix
-        if not os.environ.get("DISPLAY"):
-            from zabbix_cli.output.console import print_path
-
-            print_path(directory)
-            if not force:
-                return
-        subprocess.run([command or "xdg-open", spath])

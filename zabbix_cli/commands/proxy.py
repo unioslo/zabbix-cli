@@ -429,10 +429,11 @@ def show_proxies(
 
     names_or_ids = parse_list_arg(name_or_id) if name_or_id else None
 
-    proxies = app.state.client.get_proxies(
-        *names_or_ids or "*",
-        select_hosts=True,
-    )
+    with app.status("Fetching proxies..."):
+        proxies = app.state.client.get_proxies(
+            *names_or_ids or "*",
+            select_hosts=True,
+        )
     render_result(
         AggregateResult(
             result=[ShowProxiesResult.from_result(p, show_hosts=hosts) for p in proxies]
@@ -478,20 +479,16 @@ def show_proxy_groups(
     ensure_proxy_group_support()
 
     names_or_ids = parse_list_arg(name_or_id)
-    proxy_names = parse_list_arg(proxies) if proxies else None
+    proxy_names = parse_list_arg(proxies)
 
-    proxy_list: Optional[List[Proxy]] = None
-    if proxy_names:
-        proxy_list = app.state.client.get_proxies(
-            *proxy_names,
-            select_groups=True,
+    with app.status("Fetching proxy groups..."):
+        # Fetch proxies if specified
+        proxy_list = [app.state.client.get_proxy(p) for p in proxy_names]
+        groups = app.state.client.get_proxy_groups(
+            *names_or_ids,
+            proxies=proxy_list,
+            select_proxies=True,
         )
-
-    groups = app.state.client.get_proxy_groups(
-        *names_or_ids,
-        proxies=proxy_list,
-        select_proxies=True,
-    )
 
     render_result(AggregateResult(result=groups))
 
@@ -612,6 +609,9 @@ def show_proxy_group_hosts(
 
     ensure_proxy_group_support()
 
-    group = app.state.client.get_proxy_group(proxygroup)
-    hosts = app.state.client.get_hosts(proxy_group=group)
+    with app.status("Fetching proxy groups...") as status:
+        group = app.state.client.get_proxy_group(proxygroup)
+        status.update("Fetching hosts...")
+        hosts = app.state.client.get_hosts(proxy_group=group)
+
     render_result(ShowProxyGroupHostsResult(proxy_group=group, hosts=hosts))

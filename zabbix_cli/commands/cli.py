@@ -10,6 +10,7 @@ from typing import Optional
 import typer
 
 from zabbix_cli.app import app
+from zabbix_cli.commands.common.args import ARG_LIMIT
 from zabbix_cli.dirs import CONFIG_DIR
 from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
@@ -24,7 +25,7 @@ from zabbix_cli.output.console import print_toml
 from zabbix_cli.output.console import success
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
-from zabbix_cli.utils.utils import open_directory
+from zabbix_cli.utils.fs import open_directory
 
 if TYPE_CHECKING:
     from zabbix_cli.config.model import Config
@@ -190,9 +191,7 @@ def login(
 @app.command("show_history", rich_help_panel=HELP_PANEL)
 def show_history(
     ctx: typer.Context,
-    limit: int = typer.Option(
-        10, "--limit", "-N", help="Limit to last N commands. 0 to disable.", min=0
-    ),
+    limit: int = ARG_LIMIT,
     # TODO: Add --session option to limit to current session
     # In order to add that, we need to store the history len at the start of the session
 ) -> None:
