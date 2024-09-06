@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `show_hosts`: `--hostgroup` option for filtering by host group names or IDs.
+- `show_last_values`: ` Item ID filtering.
 - `show_usergroup`: Group ID filtering.
 - `show_usergroups`: Group name or ID filtering.
 - `show_users`: `--sort` option for sorting results by a field.
