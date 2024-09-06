@@ -210,22 +210,23 @@ def show_templategroups(
     names = parse_list_arg(name)
 
     groups: Union[List[HostGroup], List[TemplateGroup]]
-    if app.state.client.version.release < (6, 2, 0):
-        groups = app.state.client.get_hostgroups(
-            *names,
-            search=True,
-            select_templates=True,
-            sort_field="name",
-            sort_order="ASC",
-        )
-    else:
-        groups = app.state.client.get_templategroups(
-            *names,
-            search=True,
-            select_templates=True,
-            sort_field="name",
-            sort_order="ASC",
-        )
+    with app.status("Fetching template groups..."):
+        if app.state.client.version.release < (6, 2, 0):
+            groups = app.state.client.get_hostgroups(
+                *names,
+                search=True,
+                select_templates=True,
+                sort_field="name",
+                sort_order="ASC",
+            )
+        else:
+            groups = app.state.client.get_templategroups(
+                *names,
+                search=True,
+                select_templates=True,
+                sort_field="name",
+                sort_order="ASC",
+            )
 
     # Sort by name before rendering
     groups = sorted(groups, key=lambda tg: tg.name)  # type: ignore # unable to infer that type doesn't change?

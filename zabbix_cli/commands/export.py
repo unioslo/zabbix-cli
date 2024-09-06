@@ -35,9 +35,9 @@ from zabbix_cli.pyzabbix.enums import ExportFormat
 from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_list_arg
 from zabbix_cli.utils.args import parse_path_arg
+from zabbix_cli.utils.fs import open_directory
+from zabbix_cli.utils.fs import sanitize_filename
 from zabbix_cli.utils.utils import convert_seconds_to_duration
-from zabbix_cli.utils.utils import open_directory
-from zabbix_cli.utils.utils import sanitize_filename
 
 if TYPE_CHECKING:
     from typing_extensions import TypedDict

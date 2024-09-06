@@ -9,6 +9,7 @@ import typer
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
+from zabbix_cli.commands.common.args import OPTION_LIMIT
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
@@ -35,8 +36,8 @@ def create_host(
     ),
     hostgroups: Optional[str] = typer.Option(
         None,
-        "--hostgroups",
-        help=("Hostgroup name(s) or ID(s). Comma-separated."),
+        "--hostgroup",
+        help="Hostgroup name(s) or ID(s). Comma-separated.",
     ),
     proxy: Optional[str] = typer.Option(
         ".+",
@@ -692,6 +693,14 @@ def show_host(
             "Show all hosts with names ending in '.example.com' or '.example.net'",
             "show_hosts '*.example.com,*.example.net'",
         ),
+        Example(
+            "Show all hosts with names ending in '.example.com' or '.example.net'",
+            "show_hosts '*.example.com,*.example.net'",
+        ),
+        Example(
+            "Show all hosts from a given hostgroup",
+            "show_hosts --hostgroup 'Linux servers'",
+        ),
     ],
 )
 def show_hosts(
@@ -700,6 +709,11 @@ def show_hosts(
         None,
         help="Hostname pattern or ID to filter by. Comma-separated. Supports wildcards.",
         show_default=False,
+    ),
+    hostgroup: Optional[str] = typer.Option(
+        None,
+        "--hostgroup",
+        help="Hostgroup name(s) or ID(s). Comma-separated.",
     ),
     active: Optional[ActiveInterface] = typer.Option(
         None,
@@ -719,11 +733,7 @@ def show_hosts(
         help="Monitoring status.",
         show_default=False,
     ),
-    limit: int = typer.Option(
-        100,
-        "--limit",
-        help="Limit number of results. Use 0 to show all.",
-    ),
+    limit: int = OPTION_LIMIT,
     # V2 Legacy filter argument
     filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
     # TODO: add sorting mode?
@@ -737,37 +747,39 @@ def show_hosts(
     from zabbix_cli.models import AggregateResult
     from zabbix_cli.pyzabbix.utils import get_proxy_map
 
+    # Unified parsing of legacy and V3-style filter arguments
     args = HostFilterArgs.from_command_args(
         filter_legacy, active, maintenance, monitored
     )
 
     hostnames_or_ids = parse_list_arg(hostname_or_id)
-    hosts = app.state.client.get_hosts(
-        *hostnames_or_ids or "*",  # default to all hosts wildcard pattern
-        select_groups=True,
-        select_templates=True,
-        sort_field="host",
-        sort_order="ASC",
-        search=True,  # we use a wildcard pattern here!
-        maintenance=args.maintenance_status,
-        monitored=args.status,
-        active_interface=args.active,
-        limit=limit,
-    )
+    hgs = parse_list_arg(hostgroup)
+    hostgroups = [app.state.client.get_hostgroup(hg) for hg in hgs]
+
+    with app.status("Fetching hosts..."):
+        hosts = app.state.client.get_hosts(
+            *hostnames_or_ids or "*",  # default to all hosts wildcard pattern
+            select_groups=True,
+            select_templates=True,
+            sort_field="host",
+            sort_order="ASC",
+            search=True,  # we use a wildcard pattern here!
+            maintenance=args.maintenance_status,
+            monitored=args.status,
+            active_interface=args.active,
+            limit=limit,
+            hostgroups=hostgroups,
+        )
 
     # HACK: inject proxy map for each host
+    # By default, each host only has a proxy ID.
+    # We need to determine inside each host object which
+    # Proxy object to select
     proxy_map = get_proxy_map(app.state.client)
     for host in hosts:
         host.set_proxy(proxy_map)
 
     render_result(AggregateResult(result=hosts))
-
-    # TODO: implement paging for large result sets
-    total_hosts = app.state.client.get_host_count()
-    if total_hosts > len(hosts):  # we limited the results
-        info(
-            f"Only showing first {limit} of {total_hosts} hosts. Use [option]--limit 0[/] to show all."
-        )
 
 
 @app.command(name="show_host_interfaces", rich_help_panel=HELP_PANEL)

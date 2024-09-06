@@ -8,6 +8,7 @@ import typer
 
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
+from zabbix_cli.commands.common.args import OPTION_LIMIT
 from zabbix_cli.commands.host import HELP_PANEL
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
@@ -350,7 +351,7 @@ def show_hostgroup(
     examples=[
         Example(
             "Show all host groups",
-            "show_hostgroups",
+            "show_hostgroups --limit 0",
         ),
         Example(
             "Show all host groups starting with 'Web-'",
@@ -369,8 +370,11 @@ def show_hostgroups(
     select_hosts: bool = typer.Option(
         True, "--hosts/--no-hosts", help="Show hosts in each host group."
     ),
+    limit: int = OPTION_LIMIT,
 ) -> None:
-    """Show details for all host groups."""
+    """Show details for host groups.
+
+    Limits results to 20 by default. Fetching all host groups with hosts can be extremely slow."""
     from zabbix_cli.commands.results.hostgroup import HostGroupResult
     from zabbix_cli.models import AggregateResult
 
@@ -383,6 +387,7 @@ def show_hostgroups(
             search=True,
             sort_field="name",
             sort_order="ASC",
+            limit=limit,
         )
     render_result(
         AggregateResult(
@@ -406,14 +411,15 @@ def show_hostgroup_permissions(
 
     hg_names = parse_list_arg(hostgroups)
 
-    usergroups = app.state.client.get_usergroups()
-    hgs = app.state.client.get_hostgroups(
-        *hg_names,
-        sort_field="name",
-        sort_order="ASC",
-        select_hosts=False,
-        search=True,
-    )
+    with app.status("Fetching host groups..."):
+        usergroups = app.state.client.get_usergroups()
+        hgs = app.state.client.get_hostgroups(
+            *hg_names,
+            sort_field="name",
+            sort_order="ASC",
+            select_hosts=False,
+            search=True,
+        )
 
     result: List[HostGroupPermissions] = []
     for hg in hgs:

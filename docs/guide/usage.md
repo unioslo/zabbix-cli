@@ -38,7 +38,7 @@ The file should contain one command per line, with arguments separated by spaces
 $ cat /path/to/commands.txt
 # This is a comment
 show_hostgroup "Linux servers"
-create_host --host "foo.example.com" --hostgroups "Linux servers,Applications" --proxy .+ --status on --no-default-hostgroup --description "Added in bulk mode"
+create_host --host "foo.example.com" --hostgroup "Linux servers,Applications" --proxy .+ --status on --no-default-hostgroup --description "Added in bulk mode"
 create_hostgroup "My new group"
 add_host_to_hostgroup foo.example.com "My new group"
 ```

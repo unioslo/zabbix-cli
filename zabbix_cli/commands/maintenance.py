@@ -47,12 +47,12 @@ def create_maintenance_definition(
     hosts: Optional[str] = typer.Option(
         None,
         "--host",
-        help="Hosts. Comma-separated.",
+        help="Host(s). Comma-separated.",
     ),
     hostgroups: Optional[str] = typer.Option(
         None,
-        "--hostgroups",
-        help="Host groups. Comma-separated.",
+        "--hostgroup",
+        help="Host group(s). Comma-separated.",
     ),
     period: str = typer.Option(
         "1 hour",
@@ -212,7 +212,9 @@ def show_maintenance_periods(
     from zabbix_cli.models import AggregateResult
 
     mids = parse_list_arg(maintenance_id)
-    maintenances = app.state.client.get_maintenances(maintenance_ids=mids)
+    with app.status("Fetching maintenance periods..."):
+        maintenances = app.state.client.get_maintenances(maintenance_ids=mids)
+
     render_result(
         AggregateResult(
             result=[

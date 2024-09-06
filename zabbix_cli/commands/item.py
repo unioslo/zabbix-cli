@@ -8,8 +8,10 @@ import typer
 from zabbix_cli._v2_compat import ARGS_POSITIONAL
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
+from zabbix_cli.commands.common.args import OPTION_LIMIT
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.render import render_result
+from zabbix_cli.utils.args import parse_list_arg
 
 HELP_PANEL = "Item"
 
@@ -34,12 +36,13 @@ HELP_PANEL = "Item"
 )
 def show_last_values(
     ctx: typer.Context,
-    item_name: str = typer.Argument(
-        help="Name of item(s) to get. Supports wildcards.",
+    item: str = typer.Argument(
+        help="Item names or IDs. Comma-separated. Supports wildcards.",
     ),
     group: bool = typer.Option(
         False, "--group", is_flag=True, help="Group items with the same value."
     ),
+    limit: Optional[int] = OPTION_LIMIT,
     args: Optional[List[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Show the last values of given items of monitored hosts."""
@@ -53,8 +56,11 @@ def show_last_values(
         group = args[0] == "1"
         # No format arg in V2...
 
+    names_or_ids = parse_list_arg(item)
     with app.status("Fetching items..."):
-        items = app.state.client.get_items(item_name, select_hosts=True, monitored=True)
+        items = app.state.client.get_items(
+            *names_or_ids, select_hosts=True, monitored=True, limit=limit
+        )
 
     # HACK: not super elegant, but this allows us to match V2 output while
     # with and without the --group flag, as well as ALSO rendering the entire

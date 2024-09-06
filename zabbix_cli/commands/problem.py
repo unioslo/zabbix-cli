@@ -167,15 +167,12 @@ def show_trigger_events(
     ),
     hostgroups: Optional[str] = typer.Option(
         None,
-        # FIXME: decide between singular and plural option names
         "--hostgroup",
-        "--hostgroups",
         help="Host group(s) to show events for.",
     ),
     hosts: Optional[str] = typer.Option(
         None,
         "--host",
-        "--hosts",
         help="Host(s) to show events for.",
     ),
     limit: int = typer.Option(
@@ -210,14 +207,15 @@ def show_trigger_events(
     hostgroups_list = [app.state.client.get_hostgroup(hg) for hg in hostgroups_args]
     hosts_list = [app.state.client.get_host(host) for host in hosts_args]
 
-    events = app.state.client.get_events(
-        object_ids=trigger_ids,
-        group_ids=[hg.groupid for hg in hostgroups_list],
-        host_ids=[host.hostid for host in hosts_list],
-        sort_field="clock",
-        sort_order="DESC",
-        limit=limit,
-    )
+    with app.status("Fetching events..."):
+        events = app.state.client.get_events(
+            object_ids=trigger_ids,
+            group_ids=[hg.groupid for hg in hostgroups_list],
+            host_ids=[host.hostid for host in hosts_list],
+            sort_field="clock",
+            sort_order="DESC",
+            limit=limit,
+        )
     render_result(AggregateResult(result=events))
 
 
@@ -237,7 +235,7 @@ def show_alarms(
     ),
     hostgroups: Optional[str] = typer.Option(
         None,
-        "--hostgroups",
+        "--hostgroup",
         help="Host group(s) to show alarms for. Comma-separated.",
     ),
     unacknowledged: bool = typer.Option(
@@ -267,16 +265,17 @@ def show_alarms(
 
     hostgroups_args = parse_list_arg(hostgroups)
     hgs = [app.state.client.get_hostgroup(hg) for hg in hostgroups_args]
-    triggers = app.state.client.get_triggers(
-        hostgroups=hgs,
-        description=description,
-        priority=priority,
-        unacknowledged=unacknowledged,
-        select_hosts=True,
-        skip_dependent=True,
-        monitored=True,
-        active=True,
-        expand_description=True,
-        filter={"value": 1},  # why?
-    )
+    with app.status("Fetching triggers..."):
+        triggers = app.state.client.get_triggers(
+            hostgroups=hgs,
+            description=description,
+            priority=priority,
+            unacknowledged=unacknowledged,
+            select_hosts=True,
+            skip_dependent=True,
+            monitored=True,
+            active=True,
+            expand_description=True,
+            filter={"value": 1},  # why?
+        )
     render_result(AggregateResult(result=triggers))
