@@ -19,10 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `show_users`: `--sort` option for sorting results by a field.
 - Status messages when fetching data from the Zabbix API in most `show_*` commands.
 - `--limit` option for most `show_*` commands to limit the number of results shown.
+- Environment variable `ZABBIX_API_TOKEN` for logging in with an API token.
 
 ### Fixed
 
 - Markup errors when rendering Zabbix items with keys containing special characters.
+- Environment variables not matching V2 names.
+  - Before: `ZABBIX_CLI_USERNAME`, `ZABBIX_CLI_PASSWORD`
+  - After: `ZABBIX_USERNAME`, `ZABBIX_PASSWORD`
 
 ## 3.0.1
 

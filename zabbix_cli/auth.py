@@ -84,15 +84,17 @@ class Authenticator:
         If multiple methods are available, they are tried in the following order:
 
         1. API token in config file
-        2. API token in file (if `use_auth_token_file=true`)
-        3. Username and password in config file
-        4. Username and password in auth file
-        5. Username and password in environment variables
-        6. Username and password from prompt
+        2. API token in environment variables
+        3. API token in file (if `use_auth_token_file=true`)
+        4. Username and password in config file
+        5. Username and password in auth file
+        6. Username and password in environment variables
+        7. Username and password from prompt
         """
         for func in [
-            self._get_auth_token_from_config,
-            self._get_auth_token_from_file,
+            self._get_auth_token_config,
+            self._get_auth_token_env,
+            self._get_auth_token_file,
             self._get_username_password_config,
             self._get_username_password_auth_file,
             self._get_username_password_env,
@@ -137,6 +139,10 @@ class Authenticator:
             password=os.environ.get(ConfigEnvVars.PASSWORD),
         )
 
+    def _get_auth_token_env(self) -> Credentials:
+        """Get auth token from environment variables."""
+        return Credentials(auth_token=os.environ.get(ConfigEnvVars.API_TOKEN))
+
     def _get_username_password_auth_file(
         self,
     ) -> Credentials:
@@ -161,10 +167,10 @@ class Authenticator:
         username, password = prompt_username_password(username=self.config.api.username)
         return Credentials(username=username, password=password)
 
-    def _get_auth_token_from_config(self) -> Credentials:
+    def _get_auth_token_config(self) -> Credentials:
         return Credentials(auth_token=self.config.api.auth_token.get_secret_value())
 
-    def _get_auth_token_from_file(self) -> Credentials:
+    def _get_auth_token_file(self) -> Credentials:
         if not self.config.app.use_auth_token_file:
             logger.debug("Not configured to use auth token file.")
             return Credentials()
