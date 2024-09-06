@@ -135,7 +135,6 @@ The JSON output format is always in this format, where `ResultT` is the expected
 
 The type of the `result` field varies based on the command run. For `show_host` it is a single Host object, while for `show_hosts` it is an _array_ of Host objects.
 
-
 ## Configuration
 
 Zabbix-cli needs a config file. This can be created with the `zabbix-cli init` command.
@@ -194,12 +193,13 @@ zabbix-cli open logs
 
 Zabbix-cli provides several ways to authenticate. They are tried in the following order if multiple are set:
 
-1. [API token from config file](#api-token)
-2. [Auth token from auth token file](#auth-token-file)
-3. [Username and password from config file](#config-file)
-4. [Username and password from auth file](#auth-file)
-5. [Username and password from environment variables](#environment-variables)
-6. [Username and password from prompt](#prompt)
+1. [API token from config file](#api-token-config-file)
+2. [API token from environment variables](#api-token-environment-variables)
+3. [Auth token from auth token file](#auth-token-file)
+4. [Username and password from config file](#config-file)
+5. [Username and password from auth file](#auth-file)
+6. [Username and password from environment variables](#environment-variables)
+7. [Username and password from prompt](#prompt)
 
 ### Username and Password
 
@@ -252,25 +252,39 @@ username = "Admin"
 
 ### API token
 
-Zabbix-cli supports authentication with an API token specified directly in the config file:
+API token authentication foregoes the need for a username and password. The token can be an API token created in the web frontend or a user's session token obtained by logging in.
+
+#### API token (config file)
+
+API token can be specified directly in the config file:
 
 ```toml
 [api]
 auth_token = "API_TOKEN"
 ```
 
-### Auth token file
+#### API token (environment variables)
 
-The application can store the auth token returned by the Zabbix API. This is most useful when authenticating with a username and password from a prompt, which would otherwise require you to enter your password every time you start the application.
+API token can be specified as an environment variable:
 
-The feature can be enabled in the config file:
+```bash
+export ZABBIX_API_TOKEN="API TOKEN"
+```
+
+#### Auth token file
+
+The application can store the session token returned by the Zabbix API when logging in to a file on your computer. The file is then used for subsequent sessions to authenticate with the Zabbix API.
+
+This feature useful when authenticating with a username and password from a prompt, which would otherwise require you to enter your password every time you start the application.
+
+The feature is enabled by default in the config file:
 
 ```toml
 [app]
 use_auth_token_file = true
 ```
 
-The location of the auth token file can be changed:
+The location of the auth token file can be changed in the config file:
 
 ```toml
 [app]

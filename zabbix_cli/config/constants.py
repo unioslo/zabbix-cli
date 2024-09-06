@@ -29,8 +29,9 @@ AUTH_FILE = DATA_DIR / ".zabbix-cli_auth"
 
 # Environment variable names
 class ConfigEnvVars:
-    USERNAME = "ZABBIX_CLI_USERNAME"
-    PASSWORD = "ZABBIX_CLI_PASSWORD"
+    USERNAME = "ZABBIX_USERNAME"
+    PASSWORD = "ZABBIX_PASSWORD"
+    API_TOKEN = "ZABBIX_API_TOKEN"
 
 
 class OutputFormat(StrEnum):
