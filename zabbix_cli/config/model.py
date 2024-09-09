@@ -337,7 +337,7 @@ class Config(BaseModel):
     @classmethod
     def from_conf_file(cls, filename: Path) -> Config:
         """Load configuration from a legacy .conf file."""
-        logging.warning("Using legacy config file (%s)", filename)
+        logging.info("Using legacy config file (%s)", filename)
         conf = load_config_conf(filename)
         # Use legacy JSON format if we load from a legacy .conf file
         # and mark the loaded config as stemming from a legacy config file
@@ -359,11 +359,12 @@ class Config(BaseModel):
         """Ensures that options that have moved from one section to another are copied
         to the new section. I.e. `app.username` -> `api.username`.
         """
-        # Only override if `api.username` is not set
+        # Only override if `api.username` is not set (and not using legacy config file)
         if self.app.username:
-            logging.warning(
-                "Config option `app.username` is deprecated and will be removed. Use `api.username` instead."
-            )
+            if not self.app.is_legacy:
+                logging.warning(
+                    "Config option `app.username` is deprecated and will be removed. Use `api.username` instead."
+                )
             self.api.username = self.app.username
         if not self.api.username:
             raise ConfigError("No username specified in the configuration file.")
@@ -373,13 +374,16 @@ class Config(BaseModel):
         """Dump the configuration to a TOML string."""
         import tomli_w
 
-        return tomli_w.dumps(
-            self.model_dump(
-                mode="json",
-                exclude_none=True,  # we shouldn't have any, but just in case
-                context={"secrets": secrets},
+        try:
+            return tomli_w.dumps(
+                self.model_dump(
+                    mode="json",
+                    exclude_none=True,  # we shouldn't have any, but just in case
+                    context={"secrets": secrets},
+                )
             )
-        )
+        except Exception as e:
+            raise ConfigError(f"Failed to serialize configuration to TOML: {e}") from e
 
     def dump_to_file(self, filename: Path) -> None:
         """Dump the configuration to a TOML file."""
