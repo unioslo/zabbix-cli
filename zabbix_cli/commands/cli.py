@@ -240,13 +240,13 @@ def init(
 def migrate_config(
     ctx: typer.Context,
     source: Optional[Path] = typer.Option(
-        None, "--source", "-s", help="Location of the config file."
+        None, "--source", "-s", help="Location of the config file to migrate."
     ),
     destination: Optional[Path] = typer.Option(
         None,
         "--destination",
         "-d",
-        help="Location of the new config file. Uses the default config path if not specified.",
+        help="Path of the new config file to create. Uses the default config path if not specified.",
     ),
     overwrite: bool = typer.Option(
         False, "--overwrite", help="Overwrite destination config file if it exists."
@@ -267,13 +267,18 @@ def migrate_config(
 
     if source:
         conf = Config.from_file(source)
-        if not conf.app.is_legacy:
-            exit_err(f"Config file {source} is not a legacy .conf file.")
     else:
+        if not app.state.is_config_loaded:
+            # this should never happen!
+            exit_err(
+                "Application was unable to load a config. Use [option]--source[/] to specify one."
+            )
         conf = app.state.config
-        if not conf.app.is_legacy:
-            p = f"'{conf.config_path}' " if conf.config_path else ""
-            exit_err(f"Loaded config {p}is not a legacy .conf config file.")
+
+    if not conf.app.is_legacy:
+        exit_err(
+            "Unable to detect legacy config file. Use [option]--source[/] to specify one."
+        )
 
     if not destination:
         destination = DEFAULT_CONFIG_FILE
@@ -289,9 +294,5 @@ def migrate_config(
     # By default, we move users over to the new format.
     conf.app.legacy_json_format = legacy_json
 
-    try:
-        conf.dump_to_file(destination)
-    except Exception as e:
-        exit_err(f"Unable to create config file {destination}: {e}", exception=e)
-    else:
-        success(f"Config migrated to {destination}")
+    conf.dump_to_file(destination)
+    success(f"Config migrated to {destination}")
