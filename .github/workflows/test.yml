@@ -33,4 +33,4 @@ jobs:
         run: |
           uv pip install --system .[test]
       - name: Test
-        run: python -m pytest -vv
+        run: python -m pytest -vv tests
