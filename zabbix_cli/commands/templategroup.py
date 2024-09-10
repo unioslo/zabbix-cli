@@ -43,7 +43,10 @@ if TYPE_CHECKING:
 )
 def create_templategroup(
     ctx: typer.Context,
-    templategroup: str = typer.Argument(help="Name of the group."),
+    templategroup: str = typer.Argument(
+        help="Name of the group.",
+        show_default=False,
+    ),
     rw_groups: Optional[str] = typer.Option(
         None,
         help="User group(s) to give read/write permissions. Comma-separated.",
@@ -126,7 +129,10 @@ def create_templategroup(
 @app.command("remove_templategroup", rich_help_panel=HELP_PANEL)
 def remove_templategroup(
     ctx: typer.Context,
-    templategroup: str = typer.Argument(help="Name of the group to delete."),
+    templategroup: str = typer.Argument(
+        help="Name of the group to delete.",
+        show_default=False,
+    ),
 ) -> None:
     """Delete a template group.
 
@@ -148,7 +154,8 @@ def remove_templategroup(
 def show_templategroup(
     ctx: typer.Context,
     templategroup: str = typer.Argument(
-        help="Name of the group to show. Supports wildcards."
+        help="Name of the group to show. Supports wildcards.",
+        show_default=False,
     ),
     templates: bool = typer.Option(
         True,
@@ -192,7 +199,9 @@ def show_templategroup(
 def show_templategroups(
     ctx: typer.Context,
     name: Optional[str] = typer.Argument(
-        None, help="Name of template group(s). Comma-separated. Supports wildcards."
+        None,
+        help="Name of template group(s). Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
     templates: bool = typer.Option(
         True,
@@ -241,9 +250,13 @@ def show_templategroups(
 @app.command("extend_templategroup", rich_help_panel=HELP_PANEL)
 def extend_templategroup(
     ctx: typer.Context,
-    src_group: str = typer.Argument(help="Group to get templates from."),
+    src_group: str = typer.Argument(
+        help="Group to get templates from.",
+        show_default=False,
+    ),
     dest_group: str = typer.Argument(
-        help="Group(s) to add templates to. Comma-separated. Supports wildcards."
+        help="Group(s) to add templates to. Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
     dryrun: bool = typer.Option(
         False,
@@ -295,9 +308,11 @@ def extend_templategroup(
 def move_templates(
     src_group: str = typer.Argument(
         help="Group to move templates from.",
+        show_default=False,
     ),
     dest_group: str = typer.Argument(
         help="Group to move templates to.",
+        show_default=False,
     ),
     rollback: bool = typer.Option(
         True,

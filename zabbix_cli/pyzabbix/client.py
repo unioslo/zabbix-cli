@@ -2103,6 +2103,7 @@ class ZabbixAPI:
         hostgroups: Optional[List[HostGroup]] = None,
         hosts: Optional[List[Host]] = None,
         name: Optional[str] = None,
+        limit: Optional[int] = None,
     ) -> List[Maintenance]:
         params: ParamsType = {
             "output": "extend",
@@ -2121,6 +2122,7 @@ class ZabbixAPI:
             filter_params["name"] = name
         if filter_params:
             params["filter"] = filter_params
+        params = add_common_params(params, limit=limit)
         resp = self.maintenance.get(**params)
         return [Maintenance(**mt) for mt in resp]
 

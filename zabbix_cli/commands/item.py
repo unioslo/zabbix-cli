@@ -38,6 +38,7 @@ def show_last_values(
     ctx: typer.Context,
     item: str = typer.Argument(
         help="Item names or IDs. Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
     group: bool = typer.Option(
         False, "--group", is_flag=True, help="Group items with the same value."

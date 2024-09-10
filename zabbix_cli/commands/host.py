@@ -33,6 +33,7 @@ def create_host(
     ctx: typer.Context,
     hostname_or_ip: str = typer.Argument(
         help="Hostname or IP",
+        show_default=False,
     ),
     hostgroups: Optional[str] = typer.Option(
         None,
@@ -614,7 +615,10 @@ def monitor_host(
 @app.command(name="remove_host", rich_help_panel=HELP_PANEL)
 def remove_host(
     ctx: typer.Context,
-    hostname: str = typer.Argument(help="Name of host to remove."),
+    hostname: str = typer.Argument(
+        help="Name of host to remove.",
+        show_default=False,
+    ),
 ) -> None:
     """Delete a host."""
     from zabbix_cli.models import Result
@@ -627,7 +631,10 @@ def remove_host(
 @app.command(name="show_host", rich_help_panel=HELP_PANEL)
 def show_host(
     ctx: typer.Context,
-    hostname_or_id: str = typer.Argument(help="Hostname or ID."),
+    hostname_or_id: str = typer.Argument(
+        help="Hostname or ID.",
+        show_default=False,
+    ),
     active: Optional[ActiveInterface] = typer.Option(
         None,
         "--active",
@@ -784,7 +791,10 @@ def show_hosts(
 
 @app.command(name="show_host_interfaces", rich_help_panel=HELP_PANEL)
 def show_host_interfaces(
-    hostname_or_id: str = typer.Argument(help="Hostname or ID"),
+    hostname_or_id: str = typer.Argument(
+        help="Hostname or ID",
+        show_default=False,
+    ),
 ) -> None:
     """Show host interfaces."""
     from zabbix_cli.models import AggregateResult
@@ -795,7 +805,10 @@ def show_host_interfaces(
 
 @app.command(name="show_host_inventory", rich_help_panel=HELP_PANEL)
 def show_host_inventory(
-    hostname_or_id: str = typer.Argument(help="Hostname or ID"),
+    hostname_or_id: str = typer.Argument(
+        help="Hostname or ID",
+        show_default=False,
+    ),
 ) -> None:
     """Show host inventory details for a specific host."""
     # TODO: support undocumented filter argument from V2
@@ -807,9 +820,18 @@ def show_host_inventory(
 @app.command(name="update_host_inventory", rich_help_panel=HELP_PANEL)
 def update_host_inventory(
     ctx: typer.Context,
-    hostname_or_id: str = typer.Argument(help="Hostname or ID of host."),
-    key: str = typer.Argument(help="Inventory key"),
-    value: str = typer.Argument(help="Inventory value"),
+    hostname_or_id: str = typer.Argument(
+        help="Hostname or ID of host.",
+        show_default=False,
+    ),
+    key: str = typer.Argument(
+        help="Inventory key",
+        show_default=False,
+    ),
+    value: str = typer.Argument(
+        help="Inventory value",
+        show_default=False,
+    ),
 ) -> None:
     """Update a host inventory field.
 
