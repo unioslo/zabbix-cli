@@ -22,7 +22,10 @@ HELP_PANEL = "Problem"
 @app.command(name="acknowledge_event", rich_help_panel=HELP_PANEL)
 def acknowledge_event(
     ctx: typer.Context,
-    event_ids: str = typer.Argument(help="Comma-separated list of event ID(s)"),
+    event_ids: str = typer.Argument(
+        help="Comma-separated list of event ID(s)",
+        show_default=False,
+    ),
     message: str = typer.Option(
         "[Zabbix-CLI] Acknowledged via acknowledge_events",
         "--message",

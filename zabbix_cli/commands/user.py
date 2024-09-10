@@ -54,7 +54,10 @@ def get_random_password() -> str:
 @app.command("create_user", rich_help_panel=HELP_PANEL)
 def create_user(
     ctx: typer.Context,
-    username: str = typer.Argument(help="Username of the user to create."),
+    username: str = typer.Argument(
+        help="Username of the user to create.",
+        show_default=False,
+    ),
     first_name: Optional[str] = typer.Option(
         None, "--firstname", help="First name of the user to create."
     ),
@@ -166,7 +169,10 @@ def create_user(
 )
 def update_user(
     ctx: typer.Context,
-    username: str = typer.Argument(help="Username of the user to update"),
+    username: str = typer.Argument(
+        help="Username of the user to update",
+        show_default=False,
+    ),
     first_name: Optional[str] = typer.Option(
         None, "--firstname", help="New first name."
     ),
@@ -241,7 +247,10 @@ def update_user(
 @app.command("remove_user", rich_help_panel=HELP_PANEL)
 def remove_user(
     ctx: typer.Context,
-    username: str = typer.Argument(help="Username to remove."),
+    username: str = typer.Argument(
+        help="Username to remove.",
+        show_default=False,
+    ),
 ) -> None:
     """Remove a user."""
     from zabbix_cli.models import Result
@@ -259,7 +268,10 @@ def remove_user(
 @app.command("show_user", rich_help_panel=HELP_PANEL)
 def show_user(
     ctx: typer.Context,
-    username: str = typer.Argument(help="Username of user"),
+    username: str = typer.Argument(
+        help="Username of user",
+        show_default=False,
+    ),
 ) -> None:
     """Show a user."""
     user = app.state.client.get_user(username)
@@ -276,7 +288,9 @@ class UserSorting(StrEnum):
 def show_users(
     ctx: typer.Context,
     username_or_id: Optional[str] = typer.Argument(
-        None, help="Filter by username or ID. Supports wildcards."
+        None,
+        help="Filter by username or ID. Supports wildcards.",
+        show_default=False,
     ),
     role: Optional[UserRole] = typer.Option(
         None,
@@ -467,10 +481,13 @@ def create_notification_user(
 @app.command("add_user_to_usergroup", rich_help_panel=HELP_PANEL)
 def add_user_to_usergroup(
     ctx: typer.Context,
-    usernames: str = typer.Argument(help="Usernames to add. Comma-separated."),
-    usergroups: Optional[str] = typer.Argument(
-        None,
+    usernames: str = typer.Argument(
+        help="Usernames to add. Comma-separated.",
+        show_default=False,
+    ),
+    usergroups: str = typer.Argument(
         help="User groups to add the users to. Comma-separated.",
+        show_default=False,
     ),
 ) -> None:
     """Add users to usergroups.
@@ -503,9 +520,13 @@ def add_user_to_usergroup(
 @app.command("remove_user_from_usergroup", rich_help_panel=HELP_PANEL)
 def remove_user_from_usergroup(
     ctx: typer.Context,
-    usernames: str = typer.Argument(help="Usernames to remove. Comma-separated."),
+    usernames: str = typer.Argument(
+        help="Usernames to remove. Comma-separated.",
+        show_default=False,
+    ),
     usergroups: str = typer.Argument(
         help="User groups to remove the users from. Comma-separated.",
+        show_default=False,
     ),
 ) -> None:
     """Remove users from usergroups.
@@ -538,7 +559,10 @@ def remove_user_from_usergroup(
 @app.command("create_usergroup", rich_help_panel=HELP_PANEL)
 def create_usergroup(
     ctx: typer.Context,
-    usergroup: str = typer.Argument(help="Name of the user group to create."),
+    usergroup: str = typer.Argument(
+        help="Name of the user group to create.",
+        show_default=False,
+    ),
     gui_access: GUIAccess = typer.Option(
         GUIAccess.DEFAULT.value, "--gui", help="GUI access for the group."
     ),
@@ -623,6 +647,7 @@ def show_usergroup(
     ctx: typer.Context,
     usergroup: str = typer.Argument(
         help="Name or ID of the user group(s) to show. Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
     sort: UsergroupSorting = OPTION_SORT_UGROUPS,
 ) -> None:
@@ -653,6 +678,7 @@ def show_usergroups(
     usergroup: Optional[str] = typer.Argument(
         None,
         help="Name or ID of the user group(s) to show. Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
     sort: UsergroupSorting = OPTION_SORT_UGROUPS,
     limit: Optional[int] = OPTION_LIMIT,
@@ -705,7 +731,8 @@ def _do_show_usergroups(
 def show_usergroup_permissions(
     ctx: typer.Context,
     usergroup: str = typer.Argument(
-        help="Name of user group. Comma-separated. Supports wildcards."
+        help="Name of user group. Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
     sort: UsergroupSorting = OPTION_SORT_UGROUPS,
 ) -> None:
@@ -748,7 +775,10 @@ def show_usergroup_permissions(
 @app.command("update_usergroup_permissions", rich_help_panel=HELP_PANEL)
 def add_usergroup_permissions(
     ctx: typer.Context,
-    usergroup: str = typer.Argument(help="User group to give permissions to."),
+    usergroup: str = typer.Argument(
+        help="User group to give permissions to.",
+        show_default=False,
+    ),
     hostgroups: Optional[str] = typer.Option(
         None,
         "--hostgroup",

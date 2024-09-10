@@ -104,13 +104,16 @@ def _handle_template_arg(
 
 
 ARG_TEMPLATE_NAMES_OR_IDS = typer.Argument(
-    help="Template names or IDs. Comma-separated. Supports wildcards."
+    help="Template names or IDs. Comma-separated. Supports wildcards.",
+    show_default=False,
 )
 ARG_HOSTNAMES_OR_IDS = typer.Argument(
-    help="Hostnames or IDs. Comma-separated. Supports wildcards."
+    help="Hostnames or IDs. Comma-separated. Supports wildcards.",
+    show_default=False,
 )
 ARG_GROUP_NAMES_OR_IDS = typer.Argument(
-    help="Host/template group names or IDs. Comma-separated. Supports wildcards."
+    help="Host/template group names or IDs. Comma-separated. Supports wildcards.",
+    show_default=False,
 )
 
 
@@ -535,7 +538,8 @@ def remove_template_from_group(
 def show_template(
     ctx: typer.Context,
     template_name: str = typer.Argument(
-        help="Template name or ID. Names support wildcards."
+        help="Template name or ID. Names support wildcards.",
+        show_default=False,
     ),
 ) -> None:
     """Show a template."""
@@ -586,7 +590,8 @@ def show_templates(
 def show_items(
     ctx: typer.Context,
     template_name: str = typer.Argument(
-        help="Template name or ID. Supports wildcards."
+        help="Template name or ID. Supports wildcards.",
+        show_default=False,
     ),
 ) -> None:
     """Show a template's items."""

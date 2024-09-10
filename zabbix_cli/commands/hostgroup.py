@@ -21,18 +21,35 @@ from zabbix_cli.utils.args import parse_hostnames_arg
 from zabbix_cli.utils.args import parse_list_arg
 
 
-@app.command("add_host_to_hostgroup", rich_help_panel=HELP_PANEL)
+@app.command(
+    "add_host_to_hostgroup",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Add a host to a host group",
+            "add_host_to_hostgroup 'My host' 'My host group'",
+        ),
+        Example(
+            "Add multiple hosts to a host group",
+            "add_host_to_hostgroup 'host1,host2' 'My host group'",
+        ),
+        Example(
+            "Add multiple hosts to multiple host groups",
+            "add_host_to_hostgroup 'host1,host2' 'My host group,Another group'",
+        ),
+    ],
+)
 def add_host_to_hostgroup(
     ctx: typer.Context,
-    hostnames_or_ids: Optional[str] = typer.Argument(
-        None,
+    hostnames_or_ids: str = typer.Argument(
         help="Host names or IDs. Comma-separated. Supports wildcards.",
         metavar="HOSTS",
+        show_default=False,
     ),
-    hostgroups: Optional[str] = typer.Argument(
-        None,
+    hostgroups: str = typer.Argument(
         help="Host group names or IDs. Comma-separated. Supports wildcards.",
         metavar="HOSTGROUPS",
+        show_default=False,
     ),
     dryrun: bool = typer.Option(
         False,
@@ -76,17 +93,34 @@ def add_host_to_hostgroup(
         success(f"Added {base_msg}.")
 
 
-@app.command("remove_host_from_hostgroup", rich_help_panel=HELP_PANEL)
+@app.command(
+    "remove_host_from_hostgroup",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Remove a host to a host group",
+            "remove_host_from_hostgroup 'My host' 'My host group'",
+        ),
+        Example(
+            "Remove multiple hosts from a host group",
+            "remove_host_from_hostgroup 'host1,host2' 'My host group'",
+        ),
+        Example(
+            "Remove multiple hosts from multiple host groups",
+            "remove_host_from_hostgroup 'host1,host2' 'My host group,Another group'",
+        ),
+    ],
+)
 def remove_host_from_hostgroup(
-    hostnames_or_ids: Optional[str] = typer.Argument(
-        None,
+    hostnames_or_ids: str = typer.Argument(
         help="Host names or IDs. Comma-separated. Supports wildcards.",
         metavar="HOSTS",
+        show_default=False,
     ),
-    hostgroups: Optional[str] = typer.Argument(
-        None,
+    hostgroups: str = typer.Argument(
         help="Host group names or IDs. Comma-separated. Supports wildcards.",
         metavar="HOSTGROUPS",
+        show_default=False,
     ),
     dryrun: bool = typer.Option(
         False,
@@ -143,7 +177,10 @@ def remove_host_from_hostgroup(
     ],
 )
 def create_hostgroup(
-    hostgroup: str = typer.Argument(help="Name of host group."),
+    hostgroup: str = typer.Argument(
+        help="Name of host group.",
+        show_default=False,
+    ),
     rw_groups: Optional[str] = typer.Option(
         None,
         "--rw-groups",
@@ -211,7 +248,8 @@ def create_hostgroup(
 @app.command("remove_hostgroup", rich_help_panel=HELP_PANEL)
 def delete_hostgroup(
     hostgroup: str = typer.Argument(
-        help="Name of host group(s) to delete. Comma-separated."
+        help="Name of host group(s) to delete. Comma-separated.",
+        show_default=False,
     ),
     force: bool = typer.Option(
         False,
@@ -248,9 +286,11 @@ def delete_hostgroup(
 def extend_hostgroup(
     src_group: str = typer.Argument(
         help="Group to get hosts from.",
+        show_default=False,
     ),
     dest_group: str = typer.Argument(
         help="Group(s) to add hosts to. Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
     dryrun: bool = typer.Option(
         False,
@@ -289,9 +329,11 @@ def extend_hostgroup(
 def move_hosts(
     src_group: str = typer.Argument(
         help="Group to move hosts from.",
+        show_default=False,
     ),
     dest_group: str = typer.Argument(
         help="Group to move hosts to.",
+        show_default=False,
     ),
     rollback: bool = typer.Option(
         True,
@@ -338,7 +380,10 @@ def move_hosts(
 @app.command("show_hostgroup", rich_help_panel=HELP_PANEL)
 def show_hostgroup(
     ctx: typer.Context,
-    hostgroup: str = typer.Argument(help="Name of host group."),
+    hostgroup: str = typer.Argument(
+        help="Name of host group.",
+        show_default=False,
+    ),
 ) -> None:
     """Show details of a host group."""
     from zabbix_cli.commands.results.hostgroup import HostGroupResult
@@ -368,7 +413,8 @@ def show_hostgroup(
 )
 def show_hostgroups(
     name: Optional[str] = typer.Argument(
-        None, help="Name of host group(s). Comma-separated. Supports wildcards."
+        help="Name of host group(s). Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
     select_hosts: bool = typer.Option(
         True, "--hosts/--no-hosts", help="Show hosts in each host group."
@@ -401,8 +447,9 @@ def show_hostgroups(
 
 @app.command("show_hostgroup_permissions", rich_help_panel=HELP_PANEL)
 def show_hostgroup_permissions(
-    hostgroups: Optional[str] = typer.Argument(
-        None, help="Host group name(s). Comma-separated. Supports wildcards."
+    hostgroups: str = typer.Argument(
+        help="Host group name(s). Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
 ) -> None:
     """Show usergroups with permissions for the given hostgroup.

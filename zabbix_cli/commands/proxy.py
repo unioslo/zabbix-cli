@@ -83,10 +83,18 @@ def group_hosts_by_proxy(
 def update_host_proxy(
     ctx: typer.Context,
     hostname: str = typer.Argument(
-        help="Hostnames. Comma-separated Supports wildcards."
+        help="Hostnames. Comma-separated Supports wildcards.",
+        show_default=False,
     ),
-    proxy: str = typer.Argument(help="Proxy name. Supports wildcards."),
-    dryrun: bool = typer.Option(False, help="Preview changes", is_flag=True),
+    proxy: str = typer.Argument(
+        help="Proxy name. Supports wildcards.",
+        show_default=False,
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        help="Preview changes",
+        is_flag=True,
+    ),
 ) -> None:
     """Assign hosts to a proxy.
 
@@ -142,7 +150,8 @@ def update_host_proxy(
 def clear_host_proxy(
     ctx: typer.Context,
     hostname: str = typer.Argument(
-        help="Hostnames. Comma-separated Supports wildcards."
+        help="Hostnames. Comma-separated Supports wildcards.",
+        show_default=False,
     ),
     dryrun: bool = typer.Option(False, help="Preview changes", is_flag=True),
 ) -> None:
@@ -208,8 +217,14 @@ def clear_host_proxy(
 )
 def move_proxy_hosts(
     ctx: typer.Context,
-    proxy_src: str = typer.Argument(None, help="Proxy to move hosts from."),
-    proxy_dst: str = typer.Argument(None, help="Proxy to move hosts to."),
+    proxy_src: str = typer.Argument(
+        help="Proxy to move hosts from.",
+        show_default=False,
+    ),
+    proxy_dst: str = typer.Argument(
+        help="Proxy to move hosts to.",
+        show_default=False,
+    ),
     # Prefer --filter over positional arg
     host_filter: Optional[str] = typer.Option(
         None, "--filter", help="Regex pattern of hosts to move."
@@ -369,9 +384,13 @@ def load_balance_proxy_hosts(
 def update_hostgroup_proxy(
     ctx: typer.Context,
     hostgroup: str = typer.Argument(
-        help="Host group(s). Comma-separated. Supports wildcards."
+        help="Host group(s). Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
-    proxy: str = typer.Argument(help="Proxy to assign. Supports wildcards."),
+    proxy: str = typer.Argument(
+        help="Proxy to assign. Supports wildcards.",
+        show_default=False,
+    ),
     dryrun: bool = typer.Option(False, help="Preview changes.", is_flag=True),
 ) -> None:
     """Assign a proxy to all hosts in one or more host groups."""
@@ -409,14 +428,16 @@ def update_hostgroup_proxy(
 @app.command(name="show_proxies", rich_help_panel=HELP_PANEL)
 def show_proxies(
     ctx: typer.Context,
+    name_or_id: Optional[str] = typer.Argument(
+        None,
+        help="Filter by proxy name or ID. Comma-separated. Supports wildcards.",
+        show_default=False,
+    ),
     hosts: bool = typer.Option(
         False,
         "--hosts",
         help="Show hostnames of each host.",
         is_flag=True,
-    ),
-    name_or_id: Optional[str] = typer.Argument(
-        None, help="Filter by proxy name or ID. Comma-separated. Supports wildcards."
     ),
 ) -> None:
     """Show all proxies.
@@ -462,7 +483,9 @@ def show_proxies(
 def show_proxy_groups(
     ctx: typer.Context,
     name_or_id: Optional[str] = typer.Argument(
-        None, help="Filter by proxy name or ID. Comma-separated. Supports wildcards."
+        None,
+        help="Filter by proxy name or ID. Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
     proxies: Optional[str] = typer.Option(
         None,
@@ -505,12 +528,22 @@ def show_proxy_groups(
 )
 def add_proxy_to_group(
     ctx: typer.Context,
-    name_or_id: str = typer.Argument(help="Name or ID of proxy to add."),
-    proxy_group: str = typer.Argument(
-        help="Name or ID of proxy group to add proxy to."
+    name_or_id: str = typer.Argument(
+        help="Name or ID of proxy to add.",
+        show_default=False,
     ),
-    local_address: Optional[str] = typer.Argument(help="Address for active agents."),
-    local_port: Optional[str] = typer.Argument(help="Address for active agents."),
+    proxy_group: str = typer.Argument(
+        help="Name or ID of proxy group to add proxy to.",
+        show_default=False,
+    ),
+    local_address: Optional[str] = typer.Argument(
+        help="Address for active agents.",
+        show_default=False,
+    ),
+    local_port: Optional[str] = typer.Argument(
+        help="Address for active agents.",
+        show_default=False,
+    ),
 ) -> None:
     """Add a proxy to a proxy group.
 
@@ -538,7 +571,10 @@ def add_proxy_to_group(
 @app.command(name="remove_proxy_from_group", rich_help_panel=HELP_PANEL)
 def remove_proxy_from_group(
     ctx: typer.Context,
-    name_or_id: str = typer.Argument(help="Name or ID of proxy to remove."),
+    name_or_id: str = typer.Argument(
+        help="Name or ID of proxy to remove.",
+        show_default=False,
+    ),
 ) -> None:
     """Remove a proxy from a proxy group."""
     ensure_proxy_group_support()
@@ -556,9 +592,13 @@ def remove_proxy_from_group(
 def update_hostgroup_proxygroup(
     ctx: typer.Context,
     hostgroup: str = typer.Argument(
-        help="Host group(s). Comma-separated. Supports wildcards."
+        help="Host group(s). Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
-    proxygroup: str = typer.Argument(help="Proxy group to assign. Supports wildcards."),
+    proxygroup: str = typer.Argument(
+        help="Proxy group to assign. Supports wildcards.",
+        show_default=False,
+    ),
     dryrun: bool = typer.Option(False, help="Preview changes.", is_flag=True),
 ) -> None:
     """Assign a proxy group to all hosts in one or more host groups."""
@@ -601,7 +641,8 @@ def update_hostgroup_proxygroup(
 def show_proxy_group_hosts(
     ctx: typer.Context,
     proxygroup: str = typer.Argument(
-        help="Proxy group name or ID. Supports wildcards."
+        help="Proxy group name or ID. Supports wildcards.",
+        show_default=False,
     ),
 ) -> None:
     """Show all hosts in a proxy group."""

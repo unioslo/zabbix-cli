@@ -6,6 +6,7 @@ import typer
 
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
+from zabbix_cli.commands.common.args import OPTION_LIMIT
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.prompts import str_prompt_optional
 from zabbix_cli.output.render import render_result
@@ -38,6 +39,7 @@ def create_maintenance_definition(
     ctx: typer.Context,
     name: str = typer.Argument(
         help="Maintenance name.",
+        show_default=False,
     ),
     description: Optional[str] = typer.Option(
         None,
@@ -110,7 +112,8 @@ def create_maintenance_definition(
 def remove_maintenance_definition(
     ctx: typer.Context,
     maintenance_id: str = typer.Argument(
-        help="ID(s) of maintenance(s) to remove. Comma-separated."
+        help="ID(s) of maintenance(s) to remove. Comma-separated.",
+        show_default=False,
     ),
 ) -> None:
     """Remove a maintenance definition."""
@@ -202,7 +205,9 @@ def show_maintenance_periods(
     maintenance_id: Optional[str] = typer.Argument(
         None,
         help="Maintenance IDs. Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
+    limit: int = OPTION_LIMIT,
 ) -> None:
     """Show maintenance periods for one or more maintenance definitions.
 
@@ -213,7 +218,9 @@ def show_maintenance_periods(
 
     mids = parse_list_arg(maintenance_id)
     with app.status("Fetching maintenance periods..."):
-        maintenances = app.state.client.get_maintenances(maintenance_ids=mids)
+        maintenances = app.state.client.get_maintenances(
+            maintenance_ids=mids, limit=limit
+        )
 
     render_result(
         AggregateResult(
