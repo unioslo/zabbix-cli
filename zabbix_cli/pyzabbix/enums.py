@@ -359,6 +359,13 @@ class MacroType(APIStrEnum):
     VAULT_SECRET = APIStr("vault secret", 2)
 
 
+class MacroAutomatic(APIStrEnum):
+    """Macro automatic (discovered) status."""
+
+    NO = APIStr("no", 0)  # user managed
+    YES = APIStr("yes", 1)  # managed by discovery rule
+
+
 class MaintenancePeriodType(APIStrEnum):
     """Maintenance period."""
 

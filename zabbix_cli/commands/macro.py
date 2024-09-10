@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 import typer
 
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
+from zabbix_cli.commands.common.args import get_limit_option
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
@@ -22,7 +25,7 @@ def fmt_macro_name(macro: str) -> str:
         macro = "{" + macro
     if not macro.endswith("}"):
         macro = macro + "}"
-    if not macro[1] == "$":
+    if not macro[1] == "$":  # NOTE: refactor could break this
         macro = "{$" + macro[1:]
     return macro
 
@@ -80,7 +83,6 @@ def define_host_usermacro(
     )
 
 
-# @macro_cmd.command(name="list", rich_help_panel=HELP_PANEL)
 @app.command(name="show_host_usermacros", rich_help_panel=HELP_PANEL, hidden=False)
 def show_host_usermacros(
     hostname_or_id: str = typer.Argument(help="Hostname or ID to show macros for"),
@@ -95,15 +97,7 @@ def show_host_usermacros(
     render_result(
         AggregateResult(
             result=[
-                ShowHostUserMacrosResult(
-                    hostmacroid=macro.hostmacroid,
-                    macro=macro.macro,
-                    value=macro.value,
-                    type=macro.type_str,
-                    description=macro.description,
-                    hostid=macro.hostid,
-                    automatic=macro.automatic,
-                )
+                ShowHostUserMacrosResult.from_result(macro)
                 # Sort macros by name when rendering
                 for macro in sorted(host.macros, key=lambda m: m.macro)
             ]
@@ -111,9 +105,6 @@ def show_host_usermacros(
     )
 
 
-# TODO: find out what we actually want this command to do.
-# Each user macro belongs to one host, so we can't really list all hosts
-# with a single macro...
 @app.command(name="show_usermacro_host_list", rich_help_panel=HELP_PANEL, hidden=False)
 def show_usermacro_host_list(
     usermacro: str = typer.Argument(
@@ -122,6 +113,7 @@ def show_usermacro_host_list(
             "Application will automatically format macro names, e.g. `site_url` becomes `{$SITE_URL}`."
         ),
     ),
+    limit: Optional[int] = get_limit_option(),
 ) -> None:
     """Find all hosts with a user macro of the given name.
 
@@ -132,7 +124,10 @@ def show_usermacro_host_list(
     from zabbix_cli.models import AggregateResult
 
     usermacro = fmt_macro_name(usermacro)
-    macros = app.state.client.get_macros(macro_name=usermacro, select_hosts=True)
+    macros = app.state.client.get_macros(
+        macro_name=usermacro, select_hosts=True, limit=limit
+    )
+    macros = [macro for macro in macros if macro.hosts]
 
     # This is a place where we need to differentiate between legacy and
     # new JSON modes instead of sharing a single model and
@@ -155,7 +150,6 @@ def show_usermacro_host_list(
         )
 
 
-# TODO: find out how to log full command invocations (especially in REPL, where we cant use sys.argv)
 @app.command("define_global_macro", rich_help_panel=HELP_PANEL)
 def define_global_macro(
     ctx: typer.Context,
@@ -203,22 +197,38 @@ def show_global_macros(ctx: typer.Context) -> None:
     )
 
 
-@app.command("show_usermacro_template_list", rich_help_panel=HELP_PANEL)
+@app.command(
+    "show_usermacro_template_list",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Show all templates with a user macro named {$SNMP_COMMUNITY}",
+            "show_usermacro_template_list SNMP_COMMUNITY",
+        )
+    ],
+)
 def show_usermacro_template_list(
     ctx: typer.Context,
     macro_name: str = typer.Argument(
         help="Name of the macro to find templates with. Automatically formatted."
     ),
+    limit: Optional[int] = get_limit_option(),
 ) -> None:
     """Find all templates with a user macro of the given name."""
+    import itertools
+
     from zabbix_cli.commands.results.macro import ShowUsermacroTemplateListResult
     from zabbix_cli.models import AggregateResult
 
     macro_name = fmt_macro_name(macro_name)
-    macro = app.state.client.get_macro(macro_name=macro_name, select_templates=True)
-    render_result(
-        AggregateResult(
-            result=[
+    macros = app.state.client.get_macros(
+        macro_name=macro_name, select_templates=True, limit=limit
+    )
+    macros = [macro for macro in macros if macro.templates]
+
+    results = itertools.chain.from_iterable(
+        [
+            [
                 ShowUsermacroTemplateListResult(
                     macro=macro.macro,
                     value=macro.value,
@@ -227,5 +237,12 @@ def show_usermacro_template_list(
                 )
                 for template in macro.templates
             ]
+            for macro in macros
+        ]
+    )
+
+    render_result(
+        AggregateResult(
+            result=list(results),
         )
     )

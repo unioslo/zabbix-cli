@@ -1455,6 +1455,7 @@ class ZabbixAPI:
         select_templates: bool = False,
         sort_field: Optional[str] = "macro",
         sort_order: Optional[SortOrder] = None,
+        limit: Optional[int] = None,
     ) -> List[Macro]:
         params: ParamsType = {"output": "extend"}
 
@@ -1474,7 +1475,9 @@ class ZabbixAPI:
         if select_templates:
             params["selectTemplates"] = "extend"
 
-        add_common_params(params, sort_field=sort_field, sort_order=sort_order)
+        add_common_params(
+            params, sort_field=sort_field, sort_order=sort_order, limit=limit
+        )
 
         try:
             result = self.usermacro.get(**params)

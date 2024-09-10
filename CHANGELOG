@@ -7,7 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## [Unreleased] -->
+## [Unreleased]
+
+### Added
+
+- `show_usermacro_host_list --limit` option to limit the number of results shown.
+- `show_usermacro_template_list --limit` option to limit the number of results shown.
+
+### Changed
+
+- `show_host_usermacros` rendering of `automatic` field.
+  - Now shows a human readable string instead of `0` or `1`.
+
+### Fixed
+
+- `show_usermacro_host_list` not showing all hosts with the given macro.
+- `show_usermacro_template_list` not showing all templates with the given macro.
+
 ## 3.0.2
 
 ### Added

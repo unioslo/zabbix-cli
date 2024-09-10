@@ -8,8 +8,10 @@ from typing import Optional
 
 from pydantic import Field
 from pydantic import model_serializer
+from typing_extensions import Self
 
 from zabbix_cli.models import TableRenderable
+from zabbix_cli.pyzabbix.enums import MacroAutomatic
 from zabbix_cli.pyzabbix.types import Macro
 
 if TYPE_CHECKING:
@@ -18,13 +20,48 @@ if TYPE_CHECKING:
 
 
 class ShowHostUserMacrosResult(TableRenderable):
-    hostmacroid: str = Field(json_schema_extra={"header": "MacroID"})
+    hostmacroid: str
     macro: str
     value: Optional[str] = None
     type: str
     description: Optional[str] = None
-    hostid: str = Field(json_schema_extra={"header": "HostID"})
-    automatic: Optional[int]
+    hostid: str
+    automatic: Optional[int] = None
+
+    @classmethod
+    def from_result(cls, macro: Macro) -> Self:
+        return cls(
+            hostmacroid=macro.hostmacroid,
+            macro=macro.macro,
+            value=macro.value,
+            type=macro.type_str,
+            description=macro.description,
+            hostid=macro.hostid,
+            automatic=macro.automatic,
+        )
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = [
+            "Macro ID",
+            "Macro",
+            "Value",
+            "Type",
+            "Description",
+            "Host ID",
+            "Automatic",
+        ]
+        rows: RowsType = [
+            [
+                self.hostmacroid,
+                self.macro,
+                str(self.value),
+                self.type,
+                self.description or "",
+                self.hostid,
+                MacroAutomatic.string_from_value(self.automatic),
+            ]
+        ]
+        return cols, rows
 
 
 class MacroHostListV2(TableRenderable):
@@ -63,7 +100,7 @@ class MacroHostListV3(TableRenderable):
 class GlobalMacroResult(TableRenderable):
     """Result of `define_global_macro` command."""
 
-    globalmacroid: str
+    globalmacroid: str = Field(json_schema_extra={"header": "Global Macro ID"})
     macro: str
     value: Optional[str] = None  # for usermacro.get calls
 
