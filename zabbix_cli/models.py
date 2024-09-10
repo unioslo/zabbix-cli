@@ -298,5 +298,5 @@ class AggregateResult(BaseResult, Generic[TableRenderableT]):
             if not cols:
                 cols = c
             if r:
-                rows.append(r[0])
+                rows.append(r[0])  # NOTE: why not add all rows?
         return cols, rows
