@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from itertools import chain
 from typing import List
 from typing import Optional
 
@@ -45,6 +44,8 @@ def add_host_to_hostgroup(
 
     Host name and group arguments are interpreted as IDs if they are numeric.
     """
+    import itertools
+
     from zabbix_cli.commands.results.hostgroup import AddHostsToHostGroup
     from zabbix_cli.models import AggregateResult
 
@@ -61,7 +62,7 @@ def add_host_to_hostgroup(
             continue
         result.append(r)
 
-    total_hosts = len(set(chain.from_iterable((r.hosts) for r in result)))
+    total_hosts = len(set(itertools.chain.from_iterable((r.hosts) for r in result)))
     total_hgs = len(result)
 
     if not total_hosts:
@@ -94,6 +95,8 @@ def remove_host_from_hostgroup(
     ),
 ) -> None:
     """Remove hosts from host groups."""
+    import itertools
+
     from zabbix_cli.commands.results.hostgroup import RemoveHostsFromHostGroup
     from zabbix_cli.models import AggregateResult
 
@@ -110,7 +113,7 @@ def remove_host_from_hostgroup(
             continue
         result.append(r)
 
-    total_hosts = len(set(chain.from_iterable((r.hosts) for r in result)))
+    total_hosts = len(set(itertools.chain.from_iterable((r.hosts) for r in result)))
     total_hgs = len(result)
 
     render_result(AggregateResult(result=result))
