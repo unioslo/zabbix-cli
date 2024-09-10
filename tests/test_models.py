@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import logging
 from typing import List
 
 import pytest
+from inline_snapshot import snapshot
+from pydantic import BaseModel
 from pydantic import Field
+from pytest import LogCaptureFixture
 from zabbix_cli.models import MetaKey
 from zabbix_cli.models import TableRenderable
 
@@ -61,3 +65,46 @@ def test_all_metakeys() -> None:
     assert t.__cols__() == ["Foo Header"]
     assert t.__rows__() == [["foo|bar"]]
     assert t.__cols_rows__() == (["Foo Header"], [["foo|bar"]])
+
+
+def test_rows_with_unknown_base_model(caplog: LogCaptureFixture) -> None:
+    """Test that we log when we try to render a BaseModel
+    instance that does not inherit from TableRenderable."""
+
+    class FooModel(BaseModel):
+        foo: str
+        bar: int
+        baz: float
+        qux: List[str]
+
+    class TestTableRenderable(TableRenderable):
+        foo: FooModel
+
+    t = TestTableRenderable(foo=FooModel(foo="foo", bar=1, baz=1.0, qux=["a", "b"]))
+
+    caplog.set_level(logging.WARNING)
+
+    # Non-TableRenderable models are rendered as JSON
+    assert t.__rows__() == snapshot(
+        [
+            [
+                """\
+{
+  "foo": "foo",
+  "bar": 1,
+  "baz": 1.0,
+  "qux": [
+    "a",
+    "b"
+  ]
+}\
+"""
+            ]
+        ]
+    )
+
+    # Check that we logged info on what happened and how we got there
+    assert caplog.record_tuples == snapshot(
+        [("zabbix_cli", 30, "Cannot render FooModel as a table.")]
+    )
+    assert caplog.records[0].stack_info is not None

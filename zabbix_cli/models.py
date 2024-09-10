@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from enum import Enum
 from typing import TYPE_CHECKING
 from typing import Any
@@ -25,6 +24,7 @@ from pydantic.fields import FieldInfo
 from strenum import StrEnum
 from typing_extensions import TypeVar
 
+from zabbix_cli.logs import logger
 from zabbix_cli.table import get_table
 from zabbix_cli.utils.rich import get_safe_renderable
 
@@ -190,7 +190,7 @@ class TableRenderable(BaseModel):
                 fields[field_name] = value.as_table()
             elif isinstance(value, BaseModel):
                 # Fall back to rendering as JSON string
-                logging.warning(
+                logger.warning(
                     "Cannot render %s as a table.",
                     value.__class__.__name__,
                     stack_info=True,  # we want to know how we got here
