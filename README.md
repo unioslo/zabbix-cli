@@ -1,5 +1,11 @@
 # Zabbix-cli
 
+<!-- Activate badges when we publish to PyPI -->
+<!-- [![PyPI](https://img.shields.io/pypi/v/zabbix-cli)](https://pypi.org/project/zabbix-cli/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zabbix-cli)](https://pypi.org/project/zabbix-cli/)
+![PyPI - License](https://img.shields.io/pypi/l/zabbix-cli)(https://pypi.org/project/zabbix-cli/) -->
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/unioslo/zabbix-cli/test.yml?branch=master&label=tests)
+
 <p align="center">
   <table>
     <tr>
@@ -20,12 +26,6 @@
     </tr>
   </table>
 </p>
-
-<!-- Activate badges when we publish to PyPI -->
-<!-- [![PyPI](https://img.shields.io/pypi/v/zabbix-cli)](https://pypi.org/project/zabbix-cli/)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zabbix-cli)](https://pypi.org/project/zabbix-cli/)
-![PyPI - License](https://img.shields.io/pypi/l/zabbix-cli)(https://pypi.org/project/zabbix-cli/) -->
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/unioslo/zabbix-cli/test.yml?branch=master&label=tests)
 
 **Zabbix-CLI v3 has been completely rewritten from the ground up. The old version can be found [here](https://github.com/unioslo/zabbix-cli/tree/2.3.2).**
 
