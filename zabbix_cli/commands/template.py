@@ -589,9 +589,16 @@ def show_items(
         help="Template name or ID. Supports wildcards."
     ),
 ) -> None:
-    """Show items that belong to a template."""
+    """Show a template's items."""
     from zabbix_cli.models import AggregateResult
 
     template = app.state.client.get_template(template_name)
     items = app.state.client.get_items(templates=[template])
-    render_result(AggregateResult(result=items))
+    # NOTE: __title__ is ignored by Pydantic when used as a kwarg
+    # when instantiating a model. We either need to subclass AggregateResult
+    # or set it after instantiation.
+    # Ideally, we would rename the field to `table_title` and make it an actual field
+    # but that clashes with our existing `__<option>__` pattern for overriding
+    res = AggregateResult(result=items)
+    res.__title__ = template.host
+    render_result(res)
