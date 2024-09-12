@@ -28,9 +28,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: hynek/setup-cached-uv@v2
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
       - name: Install dependencies
         run: |
-          uv pip install --system .[test]
+          uv sync --all-extras --dev
       - name: Test
-        run: python -m pytest -vv tests
+        run: uv run pytest -vv tests
