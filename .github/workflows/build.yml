@@ -18,17 +18,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - uses: hynek/setup-cached-uv@v2
 
-      # NOTE: need to install build in a venv because of immutable OS?
-      # Caused by: failed to create directory `/usr/local/lib/python3.10/dist-packages/pyproject_hooks-1.1.0.dist-info`
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+
       - name: Install build dependencies
-        run: |
-          uv venv
-          uv pip install --upgrade build
+        run: uv pip sync --all-extras --dev
 
       - name: Build source distribution
-        run: .venv/bin/python -m build
+        run: uv run python -m build
 
       - uses: actions/upload-artifact@v4
         with:
@@ -51,11 +49,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: hynek/setup-cached-uv@v2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: Install build dependencies
+        run: uv pip sync --all-extras --dev
+
       - name: Build binary with PyInstaller
-        run: |
-          uv pip install --system -U . pyinstaller
-          pyinstaller --onefile zabbix_cli/main.py --name zabbix-cli
+        run: uv run pyinstaller --onefile zabbix_cli/main.py --name zabbix-cli
 
       - name: Rename binary
         run: |
