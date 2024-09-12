@@ -60,6 +60,7 @@ zabbix-cli-bulk-execution = "zabbix_cli.scripts.bulk_execution:main"
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-cov", "freezegun", "inline-snapshot"]
+build = ["pyinstaller", "build"]
 
 [tool.hatch.version]
 path = "zabbix_cli/__about__.py"
