@@ -110,6 +110,7 @@ class Authenticator:
                 )
                 token = self.do_login(credentials)
                 logger.info("Logged in with %s", func.__name__)
+                self.update_config(credentials)
                 return token
             except ZabbixAPIException as e:
                 logger.warning("Failed to log in with %s: %s", func.__name__, e)
@@ -131,6 +132,17 @@ class Authenticator:
             password=credentials.password,
             auth_token=credentials.auth_token,
         )
+
+    def update_config(self, credentials: Credentials) -> None:
+        """Update the config with the provided credentials."""
+        from pydantic import SecretStr
+
+        if credentials.username:
+            self.config.api.username = credentials.username
+        if credentials.password:
+            self.config.api.password = SecretStr(credentials.password)
+        if credentials.auth_token:
+            self.config.api.auth_token = SecretStr(credentials.auth_token)
 
     def _get_username_password_env(self) -> Credentials:
         """Get username and password from environment variables."""

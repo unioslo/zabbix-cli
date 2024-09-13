@@ -243,7 +243,7 @@ class LoggingConfig(BaseModel):
         # Changed in V3: logging -> enabled (we also allow enable [why?])
         validation_alias=AliasChoices("logging", "enabled", "enable"),
     )
-    log_level: LogLevelStr = "ERROR"
+    log_level: LogLevelStr = "INFO"
     log_file: Optional[Path] = (
         # TODO: define this default path elsewhere
         LOGS_DIR / "zabbix-cli.log"

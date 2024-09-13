@@ -34,6 +34,7 @@ from zabbix_cli.__about__ import __version__
 from zabbix_cli.app import app
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
+from zabbix_cli.logs import configure_logging
 from zabbix_cli.logs import logger
 
 if TYPE_CHECKING:
@@ -137,12 +138,9 @@ def main_callback(
     from zabbix_cli.output.console import configure_console
     from zabbix_cli.state import get_state
 
-    if should_skip_configuration(ctx):
-        return
-
     state = get_state()
-    if state.is_config_loaded:
-        conf = state.config
+    if should_skip_configuration(ctx) or state.is_config_loaded:
+        conf = state.config  # uses a default config
     else:
         conf = get_config(config_file)
 
@@ -185,25 +183,30 @@ def main_callback(
 # TODO: Add a decorator for skipping or some sort of parameter to the existing
 #       StatefulApp.command method that marks a command as not requiring
 #       a configuration file to be loaded.
-SKIP_CONFIG_COMMANDS = ["open", "sample_config"]
 
 
 def should_skip_configuration(ctx: typer.Context) -> bool:
     """Check if the command should skip all configuration of the app."""
-    return ctx.invoked_subcommand in SKIP_CONFIG_COMMANDS
-
-
-SKIP_LOGIN_COMMANDS = ["migrate_config"]
-# This is a subset of SKIP_CONFIG_COMMANDS, so we don't need to repeat its contents
+    return ctx.invoked_subcommand in ["open", "sample_config", "show_dirs", "init"]
 
 
 def should_skip_login(ctx: typer.Context) -> bool:
     """Check if the command should skip logging in to the Zabbix API."""
-    return ctx.invoked_subcommand in SKIP_LOGIN_COMMANDS
+
+    if should_skip_configuration(ctx):
+        return True
+    return ctx.invoked_subcommand in ["migrate_config"]
 
 
 def main() -> int:
     """Main entry point for the CLI."""
+    # Configure logging with default settings
+    # We override this later with a custom config in main_callback()
+    # but we need the basic configuration in order to log to a file without leaking
+    # logs to stderr for all code that runs _before_ we call configure_logging()
+    # in main_callback()
+    configure_logging()
+
     try:
         app()
     except Exception as e:

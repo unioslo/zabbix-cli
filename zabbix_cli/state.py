@@ -26,6 +26,7 @@ and other stateful objects.
 # in this one place is convenient.
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Optional
@@ -40,6 +41,8 @@ if TYPE_CHECKING:
 
     from zabbix_cli.config.model import Config
     from zabbix_cli.pyzabbix.client import ZabbixAPI
+
+logger = logging.getLogger(__name__)
 
 
 class State:
@@ -65,6 +68,9 @@ class State:
 
     _config: Optional[Config] = None
     """Current Config object (may have overrides)."""
+
+    _config_loaded: bool = False
+    """Config has been loaded from file."""
 
     _config_repl_original: Optional[Config] = None
     """Config object when the REPL was first launched."""
@@ -101,19 +107,29 @@ class State:
 
     @property
     def config(self) -> Config:
-        from zabbix_cli.exceptions import ZabbixCLIError
-
         if self._config is None:
-            raise ZabbixCLIError("Config not configured")
+            from zabbix_cli.config.model import Config
+            from zabbix_cli.logs import configure_logging
+
+            # HACK: configure logging with sample config
+            # in order to log the debug message to the log file
+            config = Config.sample_config()
+            configure_logging(config.logging)
+            logger.debug(
+                "Using sample config file as fallback.",
+                stacklevel=2,  # See who called this
+            )
+            return config
         return self._config
 
     @config.setter
     def config(self, config: Config) -> None:
         self._config = config
+        self._config_loaded = True
 
     @property
     def is_config_loaded(self) -> bool:
-        return self._config is not None
+        return self._config_loaded
 
     @property
     def console(self) -> Console:

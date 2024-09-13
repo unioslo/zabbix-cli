@@ -19,7 +19,7 @@ def get_safe_renderable(renderable: RenderableType) -> RenderableType:
     return renderable
 
 
-def get_text(text: str) -> Text:
+def get_text(text: str, log: bool = True) -> Text:
     """Interpret text as markup-styled text, or plain text if it fails."""
     try:
         return Text.from_markup(text)
@@ -28,5 +28,8 @@ def get_text(text: str) -> Text:
         # In most cases, this will be due to some Zabbix item key that looks
         # like a markup tag, e.g. `system.cpu.load[percpu,avg]`
         # but we need to log it nonetheless for other cases
-        logger.debug("Markup error when rendering text: '%s': %s", text, e)
+        # However, we don't want to log when we're removing markup
+        # from log records, so we have a `log` parameter to control this.
+        if log:
+            logger.debug("Markup error when rendering text: '%s': %s", text, e)
         return Text(text)
