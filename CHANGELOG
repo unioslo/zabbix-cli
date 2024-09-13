@@ -22,11 +22,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Now shows a human readable string instead of `0` or `1`.
 - Example formatting.
 - Hide defaults for required positional arguments.
+- `show_dirs` and `init` no longer requires logging in to the Zabbix API or an existing configuration file.
+- Log record format:
+  - No longer includes the process ID.
+  - Now includes filename, line number and function name.
+- Rich markup is no longer included in log messages.
+- Accessing the config when it is not loaded now uses the same sample config as `sample_config` instead of raising an exception.
 
 ### Fixed
 
 - `show_usermacro_host_list` not showing all hosts with the given macro.
 - `show_usermacro_template_list` not showing all templates with the given macro.
+- Auth token file using username from config file instead of from prompt.
 
 ## 3.0.2
 

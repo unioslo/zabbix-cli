@@ -13,8 +13,8 @@ app = typer.Typer(name="zabbix-cli-init", help="Set up Zabbix-CLI configuration"
 
 @app.callback(invoke_without_command=True)
 def main_callback(
-    zabbix_url: str = typer.Option(
-        "https://zabbix.example.com",
+    zabbix_url: Optional[str] = typer.Option(
+        None,
         "--url",
         "--zabbix-url",
         "-z",

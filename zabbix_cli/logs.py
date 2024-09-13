@@ -38,10 +38,20 @@ logger = logging.getLogger("zabbix_cli")
 DEFAULT_FORMAT = " ".join(
     (
         "%(asctime)s",
-        "[%(name)s][%(user)s][%(process)d][%(levelname)s]:",
+        "[%(name)s][%(user)s][%(levelname)s][%(filename)s:%(lineno)d %(funcName)s]:",
         "%(message)s",
     )
 )
+
+
+def remove_markup(text: str) -> str:
+    """Remove Rich markup from a string."""
+    from zabbix_cli.utils.rich import get_text
+
+    # NOTE: we cannot EVER log when removing markup from a record, since
+    # we would infinitely recurse into this function
+    t = get_text(text, log=False)
+    return t.plain
 
 
 class ContextFilter(logging.Filter):
@@ -68,6 +78,7 @@ class SafeFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         record = SafeRecord(record)
+        record.msg = remove_markup(record.msg)
         return super().format(record)
 
 
@@ -117,6 +128,8 @@ def configure_logging(config: LoggingConfig | None = None):
         from zabbix_cli.config.model import LoggingConfig
 
         config = LoggingConfig()
+        # unconfigured logging uses debug log level to catch everything
+        config.log_level = "DEBUG"
 
     if config.enabled and config.log_file:
         # log to given filename
@@ -135,7 +148,7 @@ def configure_logging(config: LoggingConfig | None = None):
     root = logging.getLogger()
     root.handlers.clear()  # clear any existing handlers
     root.addHandler(handler)
-    root.setLevel(logging.WARNING)
+    root.setLevel(level)
     logger.setLevel(level)  # configure global app logger
 
     # Also log from HTTPX

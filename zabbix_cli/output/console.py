@@ -141,9 +141,6 @@ def exit_err(
         Additional keyword arguments to pass to the extra dict.
     """
     state = get_state()
-    if not state.is_config_loaded:
-        # HACK: prevents unconfigured logger from printing to stderr
-        kwargs["log"] = False
 
     # Render JSON-formatted error message if output format is JSON
     if state.is_config_loaded and state.config.app.output_format == "json":
