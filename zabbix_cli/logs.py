@@ -23,6 +23,7 @@ from __future__ import annotations
 import collections
 import logging
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Literal
@@ -122,6 +123,17 @@ def add_log_context(field: str, value: Any) -> None:
             handler.addFilter(ContextFilter(field, value))
 
 
+def get_file_handler_safe(filename: Path) -> logging.Handler:
+    """Return a FileHandler that does not fail if the file cannot be opened.
+
+    Returns a stderr StreamHandler if the file cannot be opened."""
+    try:
+        return logging.FileHandler(filename)
+    except Exception as e:
+        logger.error("Could not open log file %s for writing: %s", filename, e)
+        return logging.StreamHandler()
+
+
 def configure_logging(config: LoggingConfig | None = None):
     """Configure the root logger."""
     if not config:
@@ -133,7 +145,7 @@ def configure_logging(config: LoggingConfig | None = None):
 
     if config.enabled and config.log_file:
         # log to given filename
-        handler = logging.FileHandler(config.log_file)
+        handler = get_file_handler_safe(config.log_file)
     elif config.enabled:
         # log to stderr
         handler = logging.StreamHandler(sys.stderr)
