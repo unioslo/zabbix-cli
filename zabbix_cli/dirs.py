@@ -14,7 +14,6 @@ from platformdirs import PlatformDirs
 
 from zabbix_cli.__about__ import APP_NAME
 from zabbix_cli.__about__ import AUTHOR
-from zabbix_cli.exceptions import ZabbixCLIFileError
 
 logger = logging.getLogger(__name__)
 
@@ -54,20 +53,6 @@ DIRS = [
     # Exports directory is created on demand
     Directory("Exports", EXPORT_DIR, create=False),
 ]
-
-
-def mkdir_if_not_exists(path: Path) -> None:
-    """Create a directory if it does not exist.
-    Returns the path if it was created, otherwise None.
-    """
-    if path.exists():
-        return
-    try:
-        path.mkdir(parents=True, exist_ok=True)
-    except Exception as e:
-        raise ZabbixCLIFileError(f"Failed to create directory {path}: {e}") from e
-    else:
-        logger.info(f"Created directory: {path}")
 
 
 def init_directories() -> None:

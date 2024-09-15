@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import re
 import subprocess
@@ -10,6 +11,8 @@ from typing import Optional
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixCLIFileError
 from zabbix_cli.exceptions import ZabbixCLIFileNotFoundError
+
+logger = logging.getLogger(__name__)
 
 
 def read_file(file: Path) -> str:
@@ -61,6 +64,21 @@ def open_directory(
             if not force:
                 return
         subprocess.run([command or "xdg-open", spath])
+
+
+def mkdir_if_not_exists(path: Path) -> None:
+    """Create a directory for a given path if it does not exist.
+
+    Returns the path if it was created, otherwise None.
+    """
+    if path.exists():
+        return
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        raise ZabbixCLIFileError(f"Failed to create directory {path}: {e}") from e
+    else:
+        logger.info(f"Created directory: {path}")
 
 
 def sanitize_filename(filename: str) -> str:

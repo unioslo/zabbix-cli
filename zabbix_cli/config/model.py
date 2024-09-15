@@ -49,10 +49,10 @@ from zabbix_cli.config.utils import load_config_toml
 from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
-from zabbix_cli.dirs import mkdir_if_not_exists
 from zabbix_cli.exceptions import ConfigError
 from zabbix_cli.logs import LogLevelStr
 from zabbix_cli.pyzabbix.enums import ExportFormat
+from zabbix_cli.utils.fs import mkdir_if_not_exists
 
 
 class BaseModel(PydanticBaseModel):

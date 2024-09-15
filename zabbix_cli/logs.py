@@ -127,7 +127,10 @@ def get_file_handler_safe(filename: Path) -> logging.Handler:
     """Return a FileHandler that does not fail if the file cannot be opened.
 
     Returns a stderr StreamHandler if the file cannot be opened."""
+    from zabbix_cli.utils.fs import mkdir_if_not_exists
+
     try:
+        mkdir_if_not_exists(filename.parent)
         return logging.FileHandler(filename)
     except Exception as e:
         logger.error("Could not open log file %s for writing: %s", filename, e)
