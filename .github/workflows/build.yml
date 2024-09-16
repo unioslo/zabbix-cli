@@ -36,7 +36,6 @@ jobs:
 
   build_pyinstaller:
     name: Build pyinstaller binary
-    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -45,6 +44,9 @@ jobs:
         include:
           - os: ubuntu-latest
             container: centos:8
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+
     steps:
       - uses: actions/checkout@v4
 
