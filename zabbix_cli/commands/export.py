@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import time
 from datetime import datetime
-from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -137,9 +136,6 @@ class ZabbixExporter:
         }
 
         self.check_export_types()
-        self._export = partial(
-            self.client.export_configuration, pretty=self.pretty, format=self.format
-        )
 
     def run(self) -> List[Path]:
         """Run exporters."""
