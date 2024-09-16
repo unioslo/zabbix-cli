@@ -23,7 +23,7 @@ jobs:
         uses: astral-sh/setup-uv@v2
 
       - name: Install build dependencies
-        run: uv pip sync --all-extras --dev
+        run: uv sync --all-extras --dev
 
       - name: Build source distribution
         run: uv run python -m build
@@ -57,7 +57,7 @@ jobs:
         uses: astral-sh/setup-uv@v2
 
       - name: Install build dependencies
-        run: uv pip sync --all-extras --dev
+        run: uv sync --all-extras --dev
 
       - name: Build binary with PyInstaller
         run: uv run pyinstaller --onefile zabbix_cli/main.py --name zabbix-cli
