@@ -121,12 +121,13 @@ exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 [tool.ruff]
 src = ["zabbix_cli"]
 extend-exclude = ["zabbix_cli/__init__.py"]
-include = [
+extend-include = [
   "pyproject.toml",
   "zabbix_cli/**/*.py",
   "scripts/**/*.py",
   "tests/**/*.py",
 ]
+
 
 [tool.pyright]
 pythonVersion = "3.8"
