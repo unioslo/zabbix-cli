@@ -68,7 +68,9 @@ def state(config: Config, zabbix_client: ZabbixAPI) -> Iterator[State]:
 @pytest.fixture(name="config")
 def config() -> Iterator[Config]:
     """Return a sample config."""
-    yield Config.sample_config()
+    conf = Config.sample_config()
+    conf.logging.log_file = None  # don't try to write to a file
+    yield conf
 
 
 @pytest.fixture(name="zabbix_client")
