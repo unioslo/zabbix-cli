@@ -107,4 +107,7 @@ def test_rows_with_unknown_base_model(caplog: LogCaptureFixture) -> None:
     assert caplog.record_tuples == snapshot(
         [("zabbix_cli", 30, "Cannot render FooModel as a table.")]
     )
-    assert caplog.records[0].stack_info is not None
+    record = caplog.records[0]
+    assert record.funcName == "__rows__"
+    assert record.stack_info is not None
+    assert "test_rows_with_unknown_base_model" in record.stack_info
