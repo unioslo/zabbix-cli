@@ -1,4 +1,0 @@
-version=3
-
-opts="repacksuffix=+dfsg,dversionmangle=s/\+dfsg//g,filenamemangle=s/(?:.*?)?v?(\d[\d.]*)\.tar\.gz/zabbix-cli-$1.tar.gz/" \
-  https://github.com/unioslo/zabbix-cli/releases .*/archive/v?(\d[\d.-]+)\.(?:tar(?:\.gz|\.bz2)?|tgz)
