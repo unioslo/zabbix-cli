@@ -62,31 +62,33 @@ def debug_kv(key: str, value: Any) -> None:
     msg = f"[bold]{key:<20}:[/bold] {value}"
     from rich.markup import render
 
-    logger.debug(render(msg).plain, extra=get_extra_dict(key=key, value=value))
+    logger.debug(
+        render(msg).plain, extra=get_extra_dict(key=key, value=value), stacklevel=2
+    )
     err_console.print(msg)
 
 
 def debug(message: str, icon: str = "", *args: Any, **kwargs: Any) -> None:
     """Log with INFO level and print an informational message."""
-    logger.debug(message, extra=get_extra_dict(**kwargs))
+    logger.debug(message, extra=get_extra_dict(**kwargs), stacklevel=2)
     err_console.print(message)
 
 
 def info(message: str, icon: str = Icon.INFO, *args: Any, **kwargs: Any) -> None:
     """Log with INFO level and print an informational message."""
-    logger.info(message, extra=get_extra_dict(**kwargs))
+    logger.info(message, extra=get_extra_dict(**kwargs), stacklevel=2)
     err_console.print(f"[success]{icon}[/] {message}")
 
 
 def success(message: str, icon: str = Icon.OK, **kwargs: Any) -> None:
     """Log with INFO level and print a success message."""
-    logger.info(message, extra=get_extra_dict(**kwargs))
+    logger.info(message, extra=get_extra_dict(**kwargs), stacklevel=2)
     err_console.print(f"[success]{icon}[/] {message}")
 
 
 def warning(message: str, icon: str = Icon.WARNING, **kwargs: Any) -> None:
     """Log with WARNING level and optionally print a warning message."""
-    logger.warning(message, extra=get_extra_dict(**kwargs))
+    logger.warning(message, extra=get_extra_dict(**kwargs), stacklevel=2)
     err_console.print(f"[warning]{icon} {message}[/]")
 
 
@@ -99,7 +101,9 @@ def error(
 ) -> None:
     """Log with ERROR level and print an error message."""
     if log:  # we can disable logging when the logger isn't set up yet
-        logger.error(message, extra=get_extra_dict(**kwargs), exc_info=exc_info)
+        logger.error(
+            message, extra=get_extra_dict(**kwargs), exc_info=exc_info, stacklevel=2
+        )
     err_console.print(f"[error]{icon} ERROR: {message}")
 
 
