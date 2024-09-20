@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from httpx import ConnectError
     from httpx import RequestError
     from httpx import Response as HTTPResponse
+    from pydantic import BaseModel
     from pydantic import ValidationError
 
     from zabbix_cli.pyzabbix.types import ParamsType
@@ -59,6 +60,27 @@ class AuthTokenFileError(AuthError):
 
 class AuthTokenError(AuthError):
     """Auth token (not file) error."""
+
+
+class PluginError(ZabbixCLIError):
+    """Plugin error."""
+
+
+class PluginLoadError(PluginError):
+    """Error loading a plugin."""
+
+    msg = "Error loading plugin '{plugin_name}'"
+
+    def __init__(self, plugin_name: str, plugin_config: BaseModel) -> None:
+        self.plugin_name = plugin_name
+        self.plugin_config = plugin_config
+        super().__init__(self.msg.format(plugin_name=plugin_name))
+
+
+class PluginPostImportError(PluginLoadError):
+    """Error running post-import configuration for a plugin."""
+
+    msg = "Error running post-import configuration for plugin '{plugin_name}'"
 
 
 class ZabbixAPIException(ZabbixCLIError):

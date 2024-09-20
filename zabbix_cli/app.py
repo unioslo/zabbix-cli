@@ -23,7 +23,9 @@ from typing import Union
 
 import typer
 from typer.core import TyperCommand
+from typer.core import TyperGroup
 from typer.main import Typer
+from typer.main import get_group
 from typer.models import CommandFunctionType
 from typer.models import CommandInfo as TyperCommandInfo
 from typer.models import Default
@@ -134,6 +136,10 @@ class StatefulApp(typer.Typer):
         for parent in self.parents():
             app = parent
         return app
+
+    def as_click_group(self) -> TyperGroup:
+        """Return the Typer app as a Click group."""
+        return get_group(self)
 
     def command(
         self,

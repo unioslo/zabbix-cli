@@ -36,6 +36,7 @@ from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
 from zabbix_cli.logs import configure_logging
 from zabbix_cli.logs import logger
+from zabbix_cli.plugins import load_plugins
 
 if TYPE_CHECKING:
     from typing import Any
@@ -53,9 +54,7 @@ def run_repl(ctx: typer.Context) -> None:
     from zabbix_cli.state import get_state
 
     patch()
-    from click_repl import (  # pyright: ignore[reportMissingTypeStubs]
-        repl as start_repl,  # pyright: ignore[reportUnknownVariableType]
-    )
+    from zabbix_cli._patches.click_repl import repl as start_repl
 
     state = get_state()
 
@@ -80,7 +79,7 @@ def run_repl(ctx: typer.Context) -> None:
         state.revert_config_overrides()
 
     prompt_kwargs: Dict[str, Any] = {"pre_run": pre_run, "history": state.history}
-    start_repl(ctx, prompt_kwargs=prompt_kwargs)
+    start_repl(ctx, prompt_kwargs=prompt_kwargs, app=app)
 
 
 def version_callback(value: bool):
@@ -161,6 +160,8 @@ def main_callback(
         return
 
     state.login()
+
+    load_plugins(state.config)
 
     # TODO: look at order of evaluation here. What takes precedence?
     # Should passing both --input-file and --command be an error? probably!

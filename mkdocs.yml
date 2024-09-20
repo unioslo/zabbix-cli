@@ -99,6 +99,9 @@ nav:
     - Migration: guide/migration.md
     - Commands:
       - guide/commands/*.md
+  - Plugins:
+    - Introduction: plugins/index.md
+    - Writing plugins: plugins/writing-plugins.md
   # - Reference:
   #   - reference/*.md
   # - contributing.md

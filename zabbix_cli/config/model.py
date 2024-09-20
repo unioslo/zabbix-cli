@@ -23,6 +23,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -30,6 +31,7 @@ from pydantic import AliasChoices
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import RootModel
 from pydantic import SecretStr
 from pydantic import SerializationInfo
 from pydantic import ValidationError
@@ -276,6 +278,17 @@ class LoggingConfig(BaseModel):
         return v
 
 
+class PluginConfig(BaseModel):
+    module: str
+    enabled: bool = True
+    strict: bool = False
+    """Fail if plugin cannot be loaded."""
+
+
+class PluginsConfig(RootModel[Dict[str, PluginConfig]]):
+    root: Dict[str, PluginConfig] = Field(default_factory=dict)
+
+
 class Config(BaseModel):
     api: APIConfig = Field(
         default_factory=APIConfig,
@@ -289,6 +302,7 @@ class Config(BaseModel):
     )
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     config_path: Optional[Path] = Field(default=None, exclude=True)
+    plugins: PluginsConfig = Field(default_factory=PluginsConfig)
 
     @classmethod
     def sample_config(cls) -> Config:
