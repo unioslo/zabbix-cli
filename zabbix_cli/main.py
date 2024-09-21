@@ -160,9 +160,8 @@ def main_callback(
         return
 
     state.login()
-
     load_plugins(state.config)
-
+    app.configure_plugins()
     # TODO: look at order of evaluation here. What takes precedence?
     # Should passing both --input-file and --command be an error? probably!
     if zabbix_command:
