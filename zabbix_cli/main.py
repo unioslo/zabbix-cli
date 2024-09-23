@@ -126,11 +126,6 @@ def main_callback(
         help="Zabbix-CLI command to execute when running in command-line mode.",
         hidden=True,
     ),
-    arg: Optional[str] = typer.Argument(
-        None,
-        help="Zabbix-CLI command to execute when running in command-line mode.",
-        hidden=True,
-    ),
 ) -> None:
     # Don't run callback if --help is passed in
     # https://github.com/tiangolo/typer/issues/55
