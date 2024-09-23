@@ -160,7 +160,7 @@ def my_command() -> None:
 
 #### Automatic plugin name detection
 
-The plugin name argument can be omitted to let the application automatically determine the plugin name based on the name of the module.
+The plugin name argument can be omitted to let the application automatically determine the plugin name to use based on the name of the module.
 
 ```python
 # /path/to/my_plugin.py
