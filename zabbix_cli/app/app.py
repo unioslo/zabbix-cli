@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from rich.style import StyleType
 
     from zabbix_cli.config.model import Config
+    from zabbix_cli.config.model import PluginConfig
 
 
 class Example(NamedTuple):
@@ -214,3 +215,21 @@ class StatefulApp(typer.Typer):
     @property
     def status(self) -> StatusCallable:
         return self.state.err_console.status
+
+    def get_plugin_config(self, name: Optional[str] = None) -> PluginConfig:
+        """Get a plugin's configuration by name.
+
+        If no module name is provided, the caller's module name
+        is used to determine the plugin name.
+        """
+        # Get caller's module name
+        if name is None:
+            frame = inspect.stack()[1]
+            mod = inspect.getmodule(frame[0])
+            if not mod:
+                from zabbix_cli.exceptions import PluginError
+
+                raise PluginError("Could not determine plugin module name")
+            name = mod.__name__
+            _, _, name = name.rpartition(".")
+        return self.state.config.plugins.get(name)

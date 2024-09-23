@@ -5,6 +5,8 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 from zabbix_cli.config.model import Config
+from zabbix_cli.config.model import PluginConfig
+from zabbix_cli.config.model import PluginsConfig
 
 
 def test_config_default() -> None:
@@ -94,3 +96,46 @@ def test_load_config_file(
     assert conf.config_path == config_path
     assert conf.app.is_legacy is False
     assert conf.app.legacy_json_format is False
+
+
+def test_plugins_config_get() -> None:
+    """Test that we can get a plugin configuration."""
+    config = PluginsConfig(
+        root={
+            "test1": PluginConfig(
+                enabled=True,
+                module="zabbix_cli.plugins.test1",
+            ),
+            "test2": PluginConfig(
+                enabled=True,
+                module="zabbix_cli.plugins.test2",
+            ),
+        }
+    )
+    assert config.get("test1")
+    assert config.get("test2")
+    with pytest.raises(KeyError):
+        config.get("test3")
+
+    # With default value
+    assert not config.get("test3", None)
+
+
+def test_plugin_config_get() -> None:
+    config = PluginConfig(module="test")
+    assert config.get("module") == "test"
+
+    # With default
+    assert config.get("missing", None) is None
+    assert config.get("missing", "default") == "default"
+
+    # Extra values
+    config = PluginConfig(
+        module="test",
+        extra1="extra1",
+        extra2=2,
+        extra3=True,
+    )
+    assert config.get("extra1") == "extra1"
+    assert config.get("extra2") == 2
+    assert config.get("extra3") is True

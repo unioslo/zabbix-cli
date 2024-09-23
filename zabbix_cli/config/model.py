@@ -25,7 +25,9 @@ from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Literal
 from typing import Optional
+from typing import overload
 
 from pydantic import AliasChoices
 from pydantic import BaseModel as PydanticBaseModel
@@ -292,6 +294,24 @@ class PluginConfig(BaseModel):
 
 class PluginsConfig(RootModel[Dict[str, PluginConfig]]):
     root: Dict[str, PluginConfig] = Field(default_factory=dict)
+
+    @overload
+    def get(self, key: str) -> PluginConfig:
+        """Get a plugin configuration by name.
+
+        Raises a `KeyError` if the plugin is not found."""
+
+    @overload
+    def get(self, key: str, default: Literal[None] = None) -> Optional[PluginConfig]:
+        """Get a plugin configuration by name.
+
+        Returns `None` if the plugin is not found."""
+
+    def get(self, key: str, default: Any = ...) -> PluginConfig | None:
+        """Get a plugin configuration by name."""
+        if default is not ...:
+            return self.root.get(key, default)
+        return self.root[key]
 
 
 class Config(BaseModel):
