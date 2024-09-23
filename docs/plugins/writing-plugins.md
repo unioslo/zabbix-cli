@@ -41,7 +41,7 @@ def my_command(
 
 ### Post-import configuration
 
-The module can define a function called `__configure__` that will be called after the module is imported. This can be used to perform any necessary setup or configuration for the plugin. The function should take a single argument, the `PluginConfig` object that contains the configuration for the plugin.
+The module can define a function called `__configure__` that will be called after the application has finished its own configuration. This function can be used to perform any necessary setup or configuration that the plugin requires. The function takes a single `PluginConfig` argument.
 
 ```python
 from zabbix_cli.app import app
@@ -63,6 +63,12 @@ The sky is the limit when it comes to what you can do in the `__configure__` fun
 
 ## Configuration
 
+Each plugin requires its own configuration entry in the config file.
+
+### Required options
+
+#### `module`
+
 The plugin must also be configured in the config file. Each plugin should be defined as a subsection of the `plugins` section in the config file.
 
 ```toml
@@ -74,14 +80,20 @@ module = "path.to.my_plugin"
 
 The `module` key can be a module path or a a file path. If using a file path, it is highly recommended to use an absolute path.
 
-We can also selectively disable plugins by setting the `enabled` key to `false`.
+### Optional options
+
+#### `enabled`
+
+Plugins can be selectively disabled by setting the `enabled` option to `false`.
 
 ```toml
 [plugins.my_plugin]
 enabled = false
 ```
 
-Or try to load the plugin if it exists, but do not fail if it does not.
+#### `optional`
+
+The `optional` option can be used to mark a plugin as optional. This means that the application will not raise an error if the plugin module cannot be imported. Failure to import will always be logged regardless of this setting.
 
 ```toml
 [plugins.my_plugin]
@@ -90,7 +102,7 @@ optional = true
 
 ### Extra options
 
-The plugin configuration can contain any number of extra options that can be used by the plugin module. These options can be accessed through the `PluginConfig` object that is passed to the `__configure__` function.
+The plugin configuration can contain any number of extra options that the plugin module can access. These options can be accessed through the `PluginConfig` object that is passed to the `__configure__` function.
 
 ```toml
 [plugins.my_plugin]
@@ -125,4 +137,37 @@ def __configure__(config: PluginConfig) -> None:
 
     # Use our config options:
     app.state.client.session.headers["X-Plugin-Header"] = config.get("extra_option_str")
+```
+
+### Accessing plugin configuration from commands
+
+Inside commands, the `PluginConfig` object can be accessed through the `app.get_plugin_config()` method.
+
+The name of the plugin as denoted by the configuration file entry is passed as an argument to the method. The plugin name must match the key in the `plugins` section of the config file. If no configuration can be found, a `KeyError` will be raised.
+
+```toml
+[plugins.my_plugin]
+```
+
+```python
+from zabbix_cli.app import app
+
+
+@app.command()
+def my_command() -> None:
+    config = app.get_plugin_config("my_plugin")
+```
+
+#### Automatic plugin name detection
+
+The plugin name argument can be omitted to let the application automatically determine the plugin name based on the name of the module.
+
+```python
+# /path/to/my_plugin.py
+from zabbix_cli.app import app
+
+
+@app.command()
+def my_command() -> None:
+    config = app.get_plugin_config() # gets the config for "my_plugin"
 ```
