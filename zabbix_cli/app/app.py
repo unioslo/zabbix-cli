@@ -214,24 +214,3 @@ class StatefulApp(typer.Typer):
     @property
     def status(self) -> StatusCallable:
         return self.state.err_console.status
-
-
-app = StatefulApp(
-    name="zabbix-cli",
-    help="Zabbix-CLI is a command line interface for Zabbix.",
-    add_completion=True,
-    rich_markup_mode="rich",
-)
-
-from zabbix_cli.commands import cli  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import export  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import host  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import hostgroup  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import item  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import macro  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import maintenance  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import problem  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import proxy  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import template  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import templategroup  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import user  # type: ignore # noqa: E402, F401
