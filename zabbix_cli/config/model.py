@@ -284,6 +284,11 @@ class PluginConfig(BaseModel):
     optional: bool = False
     """Do not raise an error if the plugin fails to load."""
 
+    model_config = ConfigDict(extra="allow")
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return getattr(self, key, default)
+
 
 class PluginsConfig(RootModel[Dict[str, PluginConfig]]):
     root: Dict[str, PluginConfig] = Field(default_factory=dict)

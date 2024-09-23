@@ -41,12 +41,12 @@ def my_command(
 
 ### Post-import configuration
 
-The module can define a function called `__post_import__` that will be called after the module is imported. This can be used to perform any necessary setup or configuration for the plugin. The function should take a single argument, the `PluginConfig` object that contains the configuration for the plugin.
+The module can define a function called `__configure__` that will be called after the module is imported. This can be used to perform any necessary setup or configuration for the plugin. The function should take a single argument, the `PluginConfig` object that contains the configuration for the plugin.
 
 ```python
 from zabbix_cli.app import app
 
-def __post_import__(config: PluginConfig) -> None:
+def __configure__(config: PluginConfig) -> None:
     from zabbix_cli.logs import logger
     logger.info(f"Running post-import configuration for {config.module}")
 
@@ -59,7 +59,7 @@ def __post_import__(config: PluginConfig) -> None:
     app.state.config.api.legacy_json_format = False
 ```
 
-The sky is the limit when it comes to what you can do in the `__post_import__` function. However, be aware that modiyfing certain config options will not have any effect. This is especially true for the `api` section of the config file, as the API client is loaded and connected to the Zabbix API before the plugin modules are loaded.
+The sky is the limit when it comes to what you can do in the `__configure__` function. However, be aware that modiyfing certain config options will not have any effect. This is especially true for the `api` section of the config file, as the API client is loaded and connected to the Zabbix API before the plugin modules are loaded.
 
 ## Configuration
 
@@ -73,3 +73,56 @@ module = "path.to.my_plugin"
 ```
 
 The `module` key can be a module path or a a file path. If using a file path, it is highly recommended to use an absolute path.
+
+We can also selectively disable plugins by setting the `enabled` key to `false`.
+
+```toml
+[plugins.my_plugin]
+enabled = false
+```
+
+Or try to load the plugin if it exists, but do not fail if it does not.
+
+```toml
+[plugins.my_plugin]
+optional = true
+```
+
+### Extra options
+
+The plugin configuration can contain any number of extra options that can be used by the plugin module. These options can be accessed through the `PluginConfig` object that is passed to the `__configure__` function.
+
+```toml
+[plugins.my_plugin]
+module = "path.to.my_plugin"
+extra_option_str = "Some value"
+extra_option_int = 42
+```
+
+These options are not type-checked, so it is up to the plugin module to handle them correctly.
+
+```python
+from zabbix_cli.app import app
+
+def __configure__(config: PluginConfig) -> None:
+    opt = config.get("extra_option_str")
+
+    # Either convert to str or assert
+    assert isinstance(opt, str)
+    opt = str(opt)
+
+    # Types from the TOML file are preserved
+    opt = config.get("extra_option_int")
+    assert isinstance(opt, int)
+
+    # We can also pass a default value for unset options
+    opt = config.get("extra_option_float", 3.14)
+    assert isinstance(opt, float)
+
+    # No default value returns None for unset options
+    opt = config.get("non_existent_option")
+    assert opt is None
+
+    # Use our config options:
+    app.state.client.session.headers["X-Plugin-Header"] = config.get("extra_option_str")
+```
