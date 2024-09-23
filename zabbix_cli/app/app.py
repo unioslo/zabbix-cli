@@ -31,6 +31,7 @@ from typer.models import CommandFunctionType
 from typer.models import CommandInfo as TyperCommandInfo
 from typer.models import Default
 
+from zabbix_cli.app.plugins import PluginLoader
 from zabbix_cli.logs import logger
 from zabbix_cli.state import State
 from zabbix_cli.state import get_state
@@ -39,6 +40,8 @@ if TYPE_CHECKING:
     from rich.console import RenderableType
     from rich.status import Status
     from rich.style import StyleType
+
+    from zabbix_cli.config.model import Config
 
 
 class Example(NamedTuple):
@@ -103,14 +106,12 @@ class StatefulApp(typer.Typer):
     """A Typer app that provides access to the global state."""
 
     parent: Optional[StatefulApp]
-    click_command: Optional[TyperGroup]
     plugins: Dict[str, ModuleType]
 
     # NOTE: might be a good idea to add a typing.Unpack definition for the kwargs?
     def __init__(self, **kwargs: Any) -> None:
         self.parent = None
-        self.click_command = None
-        self.plugins = {}
+        self._plugin_loader = PluginLoader()
         super().__init__(**kwargs)
 
     @property
@@ -128,14 +129,13 @@ class StatefulApp(typer.Typer):
         kwargs.setdefault("rich_help_panel", "Subcommands")
         self.add_typer(app, **kwargs)
 
-    def add_plugin(self, name: str, plugin: ModuleType) -> None:
-        self.plugins[name] = plugin
+    def load_plugins(self, config: Config) -> None:
+        """Load plugins."""
+        self._plugin_loader.load_plugins(config)
 
-    def configure_plugins(self) -> None:
-        """Runs post-import configuration for all plugins."""
-        from zabbix_cli.plugins import run_plugins_post_import
-
-        run_plugins_post_import(self.plugins, self.state.config)
+    def configure_plugins(self, config: Config) -> None:
+        """Configure plugins."""
+        self._plugin_loader.configure_plugins(config)
 
     def parents(self) -> Iterable[StatefulApp]:
         """Get all parent apps."""
@@ -201,40 +201,6 @@ class StatefulApp(typer.Typer):
             return f
 
         return decorator
-
-    # PATCH: Override __call__ to store the click command, so we can add new commands
-    # to it from plugins, etc.
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        import sys
-
-        from typer.main import (
-            _typer_developer_exception_attr_name,  # pyright: ignore[reportPrivateUsage]
-        )
-        from typer.main import except_hook
-        from typer.models import DeveloperExceptionConfig
-
-        if sys.excepthook != except_hook:
-            sys.excepthook = except_hook
-        try:
-            self.click_command = self.as_click_group()
-            return self.click_command(*args, **kwargs)
-        except Exception as e:
-            # Set a custom attribute to tell the hook to show nice exceptions for user
-            # code. An alternative/first implementation was a custom exception with
-            # raise custom_exc from e
-            # but that means the last error shown is the custom exception, not the
-            # actual error. This trick improves developer experience by showing the
-            # actual error last.
-            setattr(
-                e,
-                _typer_developer_exception_attr_name,
-                DeveloperExceptionConfig(
-                    pretty_exceptions_enable=self.pretty_exceptions_enable,
-                    pretty_exceptions_show_locals=self.pretty_exceptions_show_locals,
-                    pretty_exceptions_short=self.pretty_exceptions_short,
-                ),
-            )
-            raise e
 
     @property
     def state(self) -> State:

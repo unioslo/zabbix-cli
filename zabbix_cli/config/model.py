@@ -281,8 +281,8 @@ class LoggingConfig(BaseModel):
 class PluginConfig(BaseModel):
     module: str
     enabled: bool = True
-    strict: bool = False
-    """Fail if plugin cannot be loaded."""
+    optional: bool = False
+    """Do not raise an error if the plugin fails to load."""
 
 
 class PluginsConfig(RootModel[Dict[str, PluginConfig]]):

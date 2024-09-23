@@ -36,7 +36,6 @@ from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
 from zabbix_cli.logs import configure_logging
 from zabbix_cli.logs import logger
-from zabbix_cli.plugins import load_plugins
 
 if TYPE_CHECKING:
     from typing import Any
@@ -127,6 +126,11 @@ def main_callback(
         help="Zabbix-CLI command to execute when running in command-line mode.",
         hidden=True,
     ),
+    arg: Optional[str] = typer.Argument(
+        None,
+        help="Zabbix-CLI command to execute when running in command-line mode.",
+        hidden=True,
+    ),
 ) -> None:
     # Don't run callback if --help is passed in
     # https://github.com/tiangolo/typer/issues/55
@@ -160,8 +164,13 @@ def main_callback(
         return
 
     state.login()
-    load_plugins(state.config)
-    app.configure_plugins()
+
+    # Load and configure plugins
+    # NOTE: In the future, loading plugins will happen at an earlier
+    # stage in the app lifecycle, hence the separation of these two steps.
+    app.load_plugins(state.config)
+    app.configure_plugins(state.config)
+
     # TODO: look at order of evaluation here. What takes precedence?
     # Should passing both --input-file and --command be an error? probably!
     if zabbix_command:
