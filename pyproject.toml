@@ -36,7 +36,7 @@ classifiers = [
 dependencies = [
   "typer>=0.9.0",
   "rich>=13.3.1",
-  "click-repl==0.2.0",        # 0.3.0 has a bug that breaks the CLI
+  "click-repl==0.2.0",                                  # 0.3.0 has a bug that breaks the CLI
   "httpx[socks]>=0.26.0",
   "packaging>=22.0",
   "pydantic>=2.7.0",
@@ -45,6 +45,7 @@ dependencies = [
   "platformdirs>=2.5.4",
   "strenum>=0.4.15",
   "typing-extensions>=4.8.0",
+  "importlib-metadata>=8.5.0; python_version < '3.10'",
 ]
 dynamic = ["version"]
 
@@ -131,7 +132,7 @@ extend-include = [
 
 
 [tool.pyright]
-pythonVersion = "3.8"
+pythonVersion = "3.10"
 venvPath = "."
 venv = ".venv"
 ignore = ["zabbix_cli/commands/_dev.py"]

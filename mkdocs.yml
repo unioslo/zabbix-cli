@@ -101,7 +101,8 @@ nav:
       - guide/commands/*.md
   - Plugins:
     - Introduction: plugins/index.md
-    - Writing plugins: plugins/writing-plugins.md
+    - Local plugins: plugins/local-plugins.md
+    - External plugins: plugins/external-plugins.md
   # - Reference:
   #   - reference/*.md
   # - contributing.md

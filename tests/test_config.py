@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from inline_snapshot import snapshot
 from pydantic import ValidationError
 from zabbix_cli.config.model import Config
 from zabbix_cli.config.model import PluginConfig
@@ -114,11 +115,7 @@ def test_plugins_config_get() -> None:
     )
     assert config.get("test1")
     assert config.get("test2")
-    with pytest.raises(KeyError):
-        config.get("test3")
-
-    # With default value
-    assert not config.get("test3", None)
+    assert not config.get("test3")
 
 
 def test_plugin_config_get() -> None:
@@ -126,7 +123,7 @@ def test_plugin_config_get() -> None:
     assert config.get("module") == "test"
 
     # With default
-    assert config.get("missing", None) is None
+    assert config.get("missing") is None
     assert config.get("missing", "default") == "default"
 
     # Extra values
@@ -139,3 +136,48 @@ def test_plugin_config_get() -> None:
     assert config.get("extra1") == "extra1"
     assert config.get("extra2") == 2
     assert config.get("extra3") is True
+
+
+def test_plugin_config_set() -> None:
+    config = PluginConfig()
+
+    # Existing model field
+    config.set("module", "new")
+    assert config.module == "new"
+
+    # New attribute/field
+    config.set("extra", "new")
+    assert config.extra == "new"
+
+    # Any type goes
+    obj = object()
+    config.set("object", obj)
+    assert config.object is obj
+
+    # Instantiated with extra values
+    config = PluginConfig(
+        module="test",
+        extra1="extra1",
+        extra2=2,
+        extra3=True,
+    )
+
+    # Override existing values
+    config.set("extra1", "new")
+    config.set("extra2", 3)
+    config.set("extra3", False)
+
+    assert config.extra1 == "new"
+    assert config.extra2 == 3
+    assert config.extra3 is False
+
+    assert config.model_dump() == snapshot(
+        {
+            "module": "test",
+            "enabled": True,
+            "optional": False,
+            "extra1": "new",
+            "extra2": 3,
+            "extra3": False,
+        }
+    )

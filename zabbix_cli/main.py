@@ -36,6 +36,7 @@ from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
 from zabbix_cli.logs import configure_logging
 from zabbix_cli.logs import logger
+from zabbix_cli.state import get_state
 
 if TYPE_CHECKING:
     from typing import Any
@@ -90,6 +91,9 @@ def version_callback(value: bool):
 @app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
+    # NOTE: this is just a dummy-argument to show the help message for
+    # --config in the CLI. The actual parsing of the config argument
+    # happens in main().
     config_file: Optional[Path] = typer.Option(
         None,
         "--config",
@@ -132,9 +136,7 @@ def main_callback(
     if "--help" in sys.argv:
         return
 
-    from zabbix_cli.logs import configure_logging
     from zabbix_cli.output.console import configure_console
-    from zabbix_cli.state import get_state
 
     state = get_state()
     if should_skip_configuration(ctx) or state.is_config_loaded:
@@ -151,19 +153,13 @@ def main_callback(
 
     logger.debug("Zabbix-CLI started.")
 
-    configure_logging(conf.logging)
     configure_console(conf)
-    state.configure(conf)
 
     if should_skip_login(ctx):
         return
 
     state.login()
-
-    # Load and configure plugins
-    # NOTE: In the future, loading plugins will happen at an earlier
-    # stage in the app lifecycle, hence the separation of these two steps.
-    app.load_plugins(state.config)
+    # Configure plugins after login
     app.configure_plugins(state.config)
 
     # TODO: look at order of evaluation here. What takes precedence?
@@ -202,14 +198,46 @@ def should_skip_login(ctx: typer.Context) -> bool:
     return ctx.invoked_subcommand in ["migrate_config"]
 
 
+def _parse_config_arg() -> Optional[Path]:
+    """Returns the value of the `--config/-c` argument from the
+    command line arguments and returns its value if it exists.
+
+    This is a hack to enable loading the config _before_ the main
+    application is run, so that we can load plugins and configure
+    logging correctly.
+    """
+    args = sys.argv
+
+    opts = ["--config", "-c"]
+    for opt in opts:
+        if opt in args:
+            index = args.index(opt)
+            break
+    else:
+        return None
+    if not len(args) > index + 1 or not (conf := args[index + 1].strip()):
+        from zabbix_cli.output.console import exit_err
+
+        exit_err("No value provided for --config/-c argument.")
+
+    # Remove the argument and its value from sys.argv
+    args.pop(index)
+    args.pop(index + 1)
+
+    return Path(conf)
+
+
 def main() -> int:
     """Main entry point for the CLI."""
-    # Configure logging with default settings
-    # We override this later with a custom config in main_callback()
-    # but we need the basic configuration in order to log to a file without leaking
-    # logs to stderr for all code that runs _before_ we call configure_logging()
-    # in main_callback()
-    configure_logging()
+    state = get_state()
+
+    # Try to find config if it exists
+    # But don't fail if it doesn't.
+    conf = _parse_config_arg()
+    config = get_config(conf)
+    state.configure(config)
+    configure_logging(state.config.logging)
+    app.load_plugins(state.config)
 
     try:
         app()
@@ -220,9 +248,6 @@ def main() -> int:
     else:
         print("\nDone, thank you for using Zabbix-CLI")
     finally:
-        from zabbix_cli.state import get_state
-
-        state = get_state()
         state.logout_on_exit()
         logger.debug("Zabbix-CLI stopped.")
     return 0

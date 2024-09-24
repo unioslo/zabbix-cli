@@ -25,9 +25,7 @@ from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Literal
 from typing import Optional
-from typing import overload
 
 from pydantic import AliasChoices
 from pydantic import BaseModel as PydanticBaseModel
@@ -281,37 +279,46 @@ class LoggingConfig(BaseModel):
 
 
 class PluginConfig(BaseModel):
-    module: str
+    module: str = ""
+    """Name or path to module to load.
+
+    Should always be specified for plugins loaded from local modules.
+    Can be omitted for plugins loaded from entry points.
+    TOML table name is used as the module name for entry point plugins."""
+
     enabled: bool = True
     optional: bool = False
     """Do not raise an error if the plugin fails to load."""
 
     model_config = ConfigDict(extra="allow")
 
-    def get(self, key: str, default: Any = None) -> Any:
-        return getattr(self, key, default)
+    def get(self, key: str, default: Any = None, strict: bool = False) -> Any:
+        """Get a plugin configuration value by key.
+
+        If `strict` is True, raise an error if the key doesn't exist.
+        Otherwise, return the `default` value if the key is missing.
+        """
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            if strict:
+                raise ConfigError(f"Plugin configuration key '{key}' not found")
+            return default
+
+    def set(self, key: str, value: Any) -> None:
+        """Set a plugin configuration value by key."""
+        setattr(self, key, value)
 
 
 class PluginsConfig(RootModel[Dict[str, PluginConfig]]):
     root: Dict[str, PluginConfig] = Field(default_factory=dict)
 
-    @overload
-    def get(self, key: str) -> PluginConfig:
-        """Get a plugin configuration by name.
-
-        Raises a `KeyError` if the plugin is not found."""
-
-    @overload
-    def get(self, key: str, default: Literal[None] = None) -> Optional[PluginConfig]:
-        """Get a plugin configuration by name.
-
-        Returns `None` if the plugin is not found."""
-
-    def get(self, key: str, default: Any = ...) -> PluginConfig | None:
+    def get(self, key: str, strict: bool = False) -> PluginConfig | None:
         """Get a plugin configuration by name."""
-        if default is not ...:
-            return self.root.get(key, default)
-        return self.root[key]
+        conf = self.root.get(key)
+        if conf is None and strict:
+            raise ConfigError(f"Plugin {key} not found in configuration")
+        return conf
 
 
 class Config(BaseModel):
@@ -350,7 +357,7 @@ class Config(BaseModel):
                 # Failed to find both .toml and .conf files
                 from zabbix_cli.config.utils import init_config
 
-                fp = init_config()
+                fp = init_config(config_file=filename)
                 if not fp.exists():
                     raise ConfigError(
                         "Failed to create configuration file. Run [command]zabbix-cli-init[/] to create one."

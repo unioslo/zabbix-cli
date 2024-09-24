@@ -71,7 +71,7 @@ class PluginLoadError(PluginError):
 
     msg = "Error loading plugin '{plugin_name}'"
 
-    def __init__(self, plugin_name: str, plugin_config: BaseModel) -> None:
+    def __init__(self, plugin_name: str, plugin_config: BaseModel | None) -> None:
         self.plugin_name = plugin_name
         self.plugin_config = plugin_config
         super().__init__(self.msg.format(plugin_name=plugin_name))

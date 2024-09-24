@@ -32,6 +32,7 @@ from typer.models import CommandInfo as TyperCommandInfo
 from typer.models import Default
 
 from zabbix_cli.app.plugins import PluginLoader
+from zabbix_cli.exceptions import PluginError
 from zabbix_cli.logs import logger
 from zabbix_cli.state import State
 from zabbix_cli.state import get_state
@@ -132,7 +133,7 @@ class StatefulApp(typer.Typer):
 
     def load_plugins(self, config: Config) -> None:
         """Load plugins."""
-        self._plugin_loader.load_plugins(config)
+        self._plugin_loader.load(config)
 
     def configure_plugins(self, config: Config) -> None:
         """Configure plugins."""
@@ -216,20 +217,13 @@ class StatefulApp(typer.Typer):
     def status(self) -> StatusCallable:
         return self.state.err_console.status
 
-    def get_plugin_config(self, name: Optional[str] = None) -> PluginConfig:
+    def get_plugin_config(self, name: str) -> PluginConfig:
         """Get a plugin's configuration by name.
 
         If no module name is provided, the caller's module name
         is used to determine the plugin name.
         """
-        # Get caller's module name
-        if name is None:
-            frame = inspect.stack()[1]
-            mod = inspect.getmodule(frame[0])
-            if not mod:
-                from zabbix_cli.exceptions import PluginError
-
-                raise PluginError("Could not determine plugin module name")
-            name = mod.__name__
-            _, _, name = name.rpartition(".")
-        return self.state.config.plugins.get(name)
+        conf = self.state.config.plugins.get(name)
+        if not conf:
+            raise PluginError(f"Plugin {name} not found in configuration")
+        return conf

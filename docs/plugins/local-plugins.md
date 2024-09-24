@@ -1,17 +1,18 @@
-# Writing plugins
+# Local plugins
 
-A plugin is simply a Python module that is loaded by the application. You can define whatever functionality you want in a plugin, while having access to the same functionality and application state as the built-in commands.
+A local plugin is a Python module containing user-defined code that the application can load on startup. When the appliation reads the configuration file, it will attempt to import any plugins defined in the `plugins` section.
 
-A plugin consists of two parts:
+A local plugin consists of two parts:
 
 1. [Python module](#python-module)
 2. [Config file entry](#configuration)
 
 ## Python module
 
-A plugin module can contain anything, but typically we want to import `zabbix_cli.app.app` to access the application state, define new commands, modify existing commands, etc.
+A plugin module can in theory contain anything, but typically we want to import `zabbix_cli.app.app` to access the application state, define new commands, modify existing commands, etc. The following is a simple example of a plugin module:
 
-```python
+```Python
+# /path/to/my_plugin.py
 from __future__ import annotations
 
 from typing import Optional
@@ -21,6 +22,11 @@ from zabbix_cli.app import app
 from zabbix_cli.render import render_result
 
 
+def __configure__(config: PluginConfig) -> None:
+    # This function is called after the application has finished its own configuration
+    pass
+
+
 # Header for the rich help panel shown in the --help output
 CATEGORY = "My custom commands"
 
@@ -28,8 +34,8 @@ CATEGORY = "My custom commands"
 @app.command(name="my_command", rich_help_panel=CATEGORY)
 def my_command(
     ctx: typer.Context,
-    arg1: str = typer.Argument(help="Some argument"),
-    opt1: Optional[str] = typer.Option(None, help="Some option"),
+    arg1: str = typer.Argument(help="Some positional argument"),
+    opt1: Optional[str] = typer.Option(None, "--opt1", "-O", help="Some named option"),
 ) -> None:
     """Short description of the command."""
     # We can use the Zabbix API client
@@ -45,9 +51,11 @@ The module can define a function called `__configure__` that will be called afte
 
 ```python
 from zabbix_cli.app import app
+import logging
+
+logger = logging.getLogger(__name__)
 
 def __configure__(config: PluginConfig) -> None:
-    from zabbix_cli.logs import logger
     logger.info(f"Running post-import configuration for {config.module}")
 
     # We can access anything we need from the application state as long as the plugin module imports `zabbix_cli.app.app`
@@ -59,7 +67,7 @@ def __configure__(config: PluginConfig) -> None:
     app.state.config.api.legacy_json_format = False
 ```
 
-The sky is the limit when it comes to what you can do in the `__configure__` function. However, be aware that modiyfing certain config options will not have any effect. This is especially true for the `api` section of the config file, as the API client is loaded and connected to the Zabbix API before the plugin modules are loaded.
+The sky is the limit when it comes to what you can do in the `__configure__` function. However, be aware that modifying certain config options will not have any effect. This is especially true for the `api` section of the config file, as the API client is loaded and connected to the Zabbix API before the plugin modules are loaded.
 
 ## Configuration
 
@@ -93,7 +101,7 @@ enabled = false
 
 #### `optional`
 
-The `optional` option can be used to mark a plugin as optional. This means that the application will not raise an error if the plugin module cannot be imported. Failure to import will always be logged regardless of this setting.
+The `optional` option can be used to mark a plugin as optional, meaning the application will not raise an error if the plugin module cannot be imported.
 
 ```toml
 [plugins.my_plugin]
@@ -143,11 +151,15 @@ def __configure__(config: PluginConfig) -> None:
 
 Inside commands, the `PluginConfig` object can be accessed through the `app.get_plugin_config()` method.
 
-The name of the plugin as denoted by the configuration file entry is passed as an argument to the method. The plugin name must match the key in the `plugins` section of the config file. If no configuration can be found, a `KeyError` will be raised.
+The name of the plugin, as denoted by its `[plugins]` key, is passed as the argument to the method. If no configuration can be found, a `zabbix_cli.exceptions.PluginError` exception will be raised.
+
+Given the following configuration:
 
 ```toml
 [plugins.my_plugin]
 ```
+
+We can access its configuration like this:
 
 ```python
 from zabbix_cli.app import app
@@ -156,18 +168,4 @@ from zabbix_cli.app import app
 @app.command()
 def my_command() -> None:
     config = app.get_plugin_config("my_plugin")
-```
-
-#### Automatic plugin name detection
-
-The plugin name argument can be omitted to let the application automatically determine the plugin name to use based on the name of the module.
-
-```python
-# /path/to/my_plugin.py
-from zabbix_cli.app import app
-
-
-@app.command()
-def my_command() -> None:
-    config = app.get_plugin_config() # gets the config for "my_plugin"
 ```
