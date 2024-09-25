@@ -20,12 +20,16 @@
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import functools
 import logging
 from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Type
+from typing import TypeVar
+from typing import overload
 
 from pydantic import AliasChoices
 from pydantic import BaseModel as PydanticBaseModel
@@ -34,6 +38,7 @@ from pydantic import Field
 from pydantic import RootModel
 from pydantic import SecretStr
 from pydantic import SerializationInfo
+from pydantic import TypeAdapter
 from pydantic import ValidationError
 from pydantic import ValidationInfo
 from pydantic import field_serializer
@@ -52,9 +57,13 @@ from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
 from zabbix_cli.exceptions import ConfigError
+from zabbix_cli.exceptions import ConfigOptionNotFound
+from zabbix_cli.exceptions import PluginConfigTypeError
 from zabbix_cli.logs import LogLevelStr
 from zabbix_cli.pyzabbix.enums import ExportFormat
 from zabbix_cli.utils.fs import mkdir_if_not_exists
+
+T = TypeVar("T")
 
 
 class BaseModel(PydanticBaseModel):
@@ -278,6 +287,13 @@ class LoggingConfig(BaseModel):
         return v
 
 
+# Can consider moving this elsewhere
+@functools.lru_cache(maxsize=None)
+def _get_type_adapter(type: Type[T]) -> TypeAdapter[T]:
+    """Get a type adapter for a given type."""
+    return TypeAdapter(type)
+
+
 class PluginConfig(BaseModel):
     module: str = ""
     """Name or path to module to load.
@@ -292,18 +308,40 @@ class PluginConfig(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    def get(self, key: str, default: Any = None, strict: bool = False) -> Any:
+    @overload
+    def get(self, key: str) -> Any: ...
+
+    @overload
+    def get(self, key: str, type: Type[T]) -> T: ...
+
+    def get(
+        self,
+        key: str,
+        type: Type[T] = object,
+    ) -> T | Any:
         """Get a plugin configuration value by key.
 
-        If `strict` is True, raise an error if the key doesn't exist.
-        Otherwise, return the `default` value if the key is missing.
+        Optionally validate the value as a specific type.
         """
         try:
-            return getattr(self, key)
+            attr = getattr(self, key)
+            if type is object:
+                return attr
+            adapter = _get_type_adapter(type)
+            return adapter.validate_python(attr)
         except AttributeError:
-            if strict:
-                raise ConfigError(f"Plugin configuration key '{key}' not found")
-            return default
+            raise ConfigOptionNotFound(f"Plugin configuration key '{key}' not found")
+        except ValidationError as e:
+            raise PluginConfigTypeError(
+                f"Plugin config key '{key}' failed to validate as type {type}: {e}"
+            ) from e
+
+    def get_optional(self, key: str, type: Type[T] = object) -> T | None:
+        """Get a plugin configuration value by key, or None if it doesn't exist."""
+        try:
+            return self.get(key, type)
+        except ConfigOptionNotFound:
+            return None
 
     def set(self, key: str, value: Any) -> None:
         """Set a plugin configuration value by key."""

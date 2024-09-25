@@ -8,6 +8,8 @@ from pydantic import ValidationError
 from zabbix_cli.config.model import Config
 from zabbix_cli.config.model import PluginConfig
 from zabbix_cli.config.model import PluginsConfig
+from zabbix_cli.exceptions import ConfigOptionNotFound
+from zabbix_cli.exceptions import PluginConfigTypeError
 
 
 def test_config_default() -> None:
@@ -122,20 +124,47 @@ def test_plugin_config_get() -> None:
     config = PluginConfig(module="test")
     assert config.get("module") == "test"
 
-    # With default
-    assert config.get("missing") is None
-    assert config.get("missing", "default") == "default"
+    # Missing option
+    with pytest.raises(ConfigOptionNotFound):
+        assert config.get("missing") is None
 
     # Extra values
     config = PluginConfig(
         module="test",
-        extra1="extra1",
+        extra1="foo",
         extra2=2,
         extra3=True,
+        extra4=[1, 2, 3],
     )
-    assert config.get("extra1") == "extra1"
+    assert config.get("extra1") == "foo"
     assert config.get("extra2") == 2
     assert config.get("extra3") is True
+    assert config.get("extra4") == [1, 2, 3]
+
+    # With type validation
+    assert config.get("extra1", str) == "foo"
+    assert config.get("extra2", int) == 2
+    assert config.get("extra3", bool) is True
+    assert config.get("extra4", list) == [1, 2, 3]
+
+    # Type validation with coercion
+    assert config.get("extra3", int) == 1
+    assert config.get("extra4", tuple) == (1, 2, 3)
+    # Cannot coerce int to str by default in Pydantic
+    with pytest.raises(PluginConfigTypeError):
+        assert config.get("extra2", str) == "2"
+
+
+def test_plugin_config_get_optional() -> None:
+    config = PluginConfig(module="test")
+
+    # Existing option
+    assert config.get_optional("module") == "test"
+    assert config.get_optional("module", str) == "test"
+
+    # Missing option
+    assert config.get_optional("missing") is None
+    assert config.get_optional("missing", str) is None
 
 
 def test_plugin_config_set() -> None:

@@ -42,6 +42,10 @@ class ConfigExistsError(ConfigError):
     """Configuration file already exists."""
 
 
+class ConfigOptionNotFound(ConfigError):
+    """Configuration option is missing from the loaded config."""
+
+
 class CommandFileError(ZabbixCLIError):
     """Error running bulk commands from a file."""
 
@@ -64,6 +68,14 @@ class AuthTokenError(AuthError):
 
 class PluginError(ZabbixCLIError):
     """Plugin error."""
+
+
+class PluginConfigError(PluginError, ConfigError):
+    """Plugin configuration error."""
+
+
+class PluginConfigTypeError(PluginConfigError):
+    """Plugin configuration type error."""
 
 
 class PluginLoadError(PluginError):

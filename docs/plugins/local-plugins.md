@@ -115,41 +115,46 @@ The plugin configuration can contain any number of extra options that the plugin
 ```toml
 [plugins.my_plugin]
 module = "path.to.my_plugin"
-extra_option_str = "Some value"
+extra_option_str = "foo"
 extra_option_int = 42
+extra_option_list = ["a", "b", "c"]
 ```
 
-These options are not type-checked, so it is up to the plugin module to handle them correctly.
+These options are not type-checked by default. However, when fetching these values, one can pass in a type hint to assert that the value is of the correct type. The `PluginConfig` class provides the methods `get()` and `get_optional()` for fetching values. The latter of which returns `None` if the config option is not set.
 
 ```python
 from zabbix_cli.app import app
 
 def __configure__(config: PluginConfig) -> None:
-    opt = config.get("extra_option_str")
+    opt1 = config.get("extra_option_str", str)
 
-    # Either convert to str or assert
-    assert isinstance(opt, str)
-    opt = str(opt)
+    opt2 = config.get("extra_option_int")
+    # reveal_type(opt2) # reveals Any because no type hint
+    # Types from the TOML file are preserved even without hints
+    assert isinstance(opt2, int)
 
-    # Types from the TOML file are preserved
-    opt = config.get("extra_option_int")
-    assert isinstance(opt, int)
+    # We can validate more complex types too
+    opt4 = config.get("extra_option_list", list[str])
 
-    # We can also pass a default value for unset options
-    opt = config.get("extra_option_float", 3.14)
-    assert isinstance(opt, float)
+    # get_optional() returns None if the option is not set
+    opt4 = config.get_optional("non_existent_option")
+    assert opt4 is None
 
-    # No default value returns None for unset options
-    opt = config.get("non_existent_option")
-    assert opt is None
+    # Type hints are supported here too
+    opt5 = config.get_optional("non_existent_option", str)
+    # reveal_type(opt5) # reveals Optional[str]
+    assert opt5 is None
 
     # Use our config options:
-    app.state.client.session.headers["X-Plugin-Header"] = config.get("extra_option_str")
+    app.state.client.session.headers["X-Plugin-Header"] = config.get("extra_option_str", str)
 ```
+
+!!! note
+    The interface for accessing config options may be expanded in the future. The current positional arguments will never change, but new keyword arguments may be added.
 
 ### Accessing plugin configuration from commands
 
-Inside commands, the `PluginConfig` object can be accessed through the `app.get_plugin_config()` method.
+Inside commands, the plugin's configuration can be accessed through the `app.get_plugin_config()` method.
 
 The name of the plugin, as denoted by its `[plugins]` key, is passed as the argument to the method. If no configuration can be found, a `zabbix_cli.exceptions.PluginError` exception will be raised.
 
