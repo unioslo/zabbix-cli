@@ -177,3 +177,6 @@ from zabbix_cli.app import app
 def my_command() -> None:
     config = app.get_plugin_config("my_plugin")
 ```
+
+!!! note
+    Should no config be available, an empty `PluginConfig` is returned. This is to facilitate external plugins that do not _require_ a configuration to be defined.

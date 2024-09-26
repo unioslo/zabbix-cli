@@ -32,7 +32,6 @@ from typer.models import CommandInfo as TyperCommandInfo
 from typer.models import Default
 
 from zabbix_cli.app.plugins import PluginLoader
-from zabbix_cli.exceptions import PluginError
 from zabbix_cli.logs import logger
 from zabbix_cli.state import State
 from zabbix_cli.state import get_state
@@ -220,10 +219,14 @@ class StatefulApp(typer.Typer):
     def get_plugin_config(self, name: str) -> PluginConfig:
         """Get a plugin's configuration by name.
 
-        If no module name is provided, the caller's module name
-        is used to determine the plugin name.
+        Returns an empty PluginConfig object if no config is found.
         """
         conf = self.state.config.plugins.get(name)
         if not conf:
-            raise PluginError(f"Plugin {name} not found in configuration")
+            # NOTE: can we import this top-level? We have probably already imported
+            # the config at this point? Unless we refactor config loading _again_...?
+            from zabbix_cli.config.model import PluginConfig
+
+            logger.error(f"Plugin '{name}' not found in configuration")
+            return PluginConfig()
         return conf
