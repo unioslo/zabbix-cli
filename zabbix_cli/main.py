@@ -36,6 +36,7 @@ from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
 from zabbix_cli.logs import configure_logging
 from zabbix_cli.logs import logger
+from zabbix_cli.output.console import configure_console
 from zabbix_cli.state import get_state
 
 if TYPE_CHECKING:
@@ -136,8 +137,6 @@ def main_callback(
     if "--help" in sys.argv:
         return
 
-    from zabbix_cli.output.console import configure_console
-
     state = get_state()
     if should_skip_configuration(ctx) or state.is_config_loaded:
         conf = state.config  # uses a default config
@@ -153,13 +152,14 @@ def main_callback(
 
     logger.debug("Zabbix-CLI started.")
 
-    configure_console(conf)
-
     if should_skip_login(ctx):
         return
 
     state.login()
-    # Configure plugins after login
+    # Configure plugins _after_ login
+    # That is a promise we make to plugins so that they can do whatever
+    # they want in their configure method - such as interacting with the API
+    # or using the determined Zabbix API version.
     app.configure_plugins(state.config)
 
     # TODO: look at order of evaluation here. What takes precedence?
@@ -199,12 +199,16 @@ def should_skip_login(ctx: typer.Context) -> bool:
 
 
 def _parse_config_arg() -> Optional[Path]:
-    """Returns the value of the `--config/-c` argument from the
-    command line arguments and returns its value if it exists.
+    """Get a custom config file path from the command line arguments.
 
-    This is a hack to enable loading the config _before_ the main
-    application is run, so that we can load plugins and configure
-    logging correctly.
+    Modifies sys.argv in place to remove the --config/-c option and its
+    argument in order to load the config before instantiating the Typer app.
+
+    This hack enables us to read plugins from the configuration file
+    in order to load them before we call `app()`. This enables commands
+    from plugins to be used in single-command mode as well as showing up
+    when the user types `--help`. Otherwise, the plugin commands would
+    not be registered to the active Click command group that drives the CLI.
     """
     opts = ["--config", "-c"]
     for opt in opts:
@@ -229,12 +233,15 @@ def main() -> int:
     """Main entry point for the CLI."""
     state = get_state()
 
-    # Try to find config if it exists
-    # But don't fail if it doesn't.
+    # Load config before launching the app in order to:
+    # - configure logging
+    # - configure console output
+    # - load plugins defined in the config
     conf = _parse_config_arg()
     config = get_config(conf)
     state.configure(config)
     configure_logging(state.config.logging)
+    configure_console(config)
     app.load_plugins(state.config)
 
     try:
