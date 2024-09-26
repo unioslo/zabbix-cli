@@ -86,7 +86,8 @@ extra_option_1 = "Some value"
 extra_option_2 = 42
 ```
 
-Unlike local plugins, external plugins do not _require_ a configuration entry to be loaded. The application is able to automatically detect the plugin and load it using its metadata. However, should you want to disable an external plugin without having to uninstall it, you can set the `enabled` option to `false` in the configuration file.
+Unlike local plugins, external plugins do not _require_ a configuration entry to be loaded. The application is able to automatically detect the plugin and load it using its metadata.
+However, the option is there if you want to provide users with additional configuration options for your plugin. This configuration section can also be used to disable a plugin without having to uninstall it by setting `enabled = false`.
 
 !!! note
-    If rewriting a local plugin as an external one, remember to remove the `module` key from the configuration file.
+    If rewriting a local plugin as an external one, remember to remove the `module` key from the plugin's configuration.
