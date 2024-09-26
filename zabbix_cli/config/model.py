@@ -29,6 +29,7 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import TypeVar
+from typing import Union
 from typing import overload
 
 from pydantic import AliasChoices
@@ -294,6 +295,9 @@ def _get_type_adapter(type: Type[T]) -> TypeAdapter[T]:
     return TypeAdapter(type)
 
 
+NotSet = object()
+
+
 class PluginConfig(BaseModel):
     module: str = ""
     """Name or path to module to load.
@@ -308,23 +312,60 @@ class PluginConfig(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
+    # No default no type
     @overload
     def get(self, key: str) -> Any: ...
 
+    # Type with no default
     @overload
-    def get(self, key: str, type: Type[T]) -> T: ...
+    def get(self, key: str, *, type: Type[T]) -> T: ...
+
+    # No type with default
+    @overload
+    def get(self, key: str, default: T) -> Any | T: ...
+
+    # Type with default
+    @overload
+    def get(
+        self,
+        key: str,
+        default: T,
+        type: Type[T],
+    ) -> T: ...
+
+    # Union type with no default
+    @overload
+    def get(
+        self,
+        key: str,
+        *,
+        type: Optional[Type[T]],
+    ) -> Optional[T]: ...
+
+    # Union type with default
+    @overload
+    def get(
+        self,
+        key: str,
+        default: Optional[T],
+        type: Optional[Type[T]],
+    ) -> Optional[T]: ...
 
     def get(
         self,
         key: str,
-        type: Type[T] = object,
-    ) -> T | Any:
+        default: Union[T, Any] = NotSet,
+        type: Optional[Type[T]] = object,
+    ) -> Union[T, Optional[T], Any]:
         """Get a plugin configuration value by key.
 
         Optionally validate the value as a specific type.
         """
         try:
-            attr = getattr(self, key)
+            if default is not NotSet:
+                attr = getattr(self, key, default)
+            else:
+                attr = getattr(self, key)
             if type is object:
                 return attr
             adapter = _get_type_adapter(type)
@@ -336,13 +377,6 @@ class PluginConfig(BaseModel):
                 f"Plugin config key '{key}' failed to validate as type {type}: {e}"
             ) from e
 
-    def get_optional(self, key: str, type: Type[T] = object) -> T | None:
-        """Get a plugin configuration value by key, or None if it doesn't exist."""
-        try:
-            return self.get(key, type)
-        except ConfigOptionNotFound:
-            return None
-
     def set(self, key: str, value: Any) -> None:
         """Set a plugin configuration value by key."""
         setattr(self, key, value)
@@ -351,7 +385,7 @@ class PluginConfig(BaseModel):
 class PluginsConfig(RootModel[Dict[str, PluginConfig]]):
     root: Dict[str, PluginConfig] = Field(default_factory=dict)
 
-    def get(self, key: str, strict: bool = False) -> PluginConfig | None:
+    def get(self, key: str, strict: bool = False) -> Optional[PluginConfig]:
         """Get a plugin configuration by name."""
         conf = self.root.get(key)
         if conf is None and strict:

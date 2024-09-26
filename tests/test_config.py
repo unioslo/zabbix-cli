@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
+from typing import Union
 
 import pytest
 from inline_snapshot import snapshot
@@ -124,9 +126,18 @@ def test_plugin_config_get() -> None:
     config = PluginConfig(module="test")
     assert config.get("module") == "test"
 
+    # With type validation
+    assert config.get("module", type=str) == "test"
+
     # Missing option
     with pytest.raises(ConfigOptionNotFound):
         assert config.get("missing") is None
+
+    # Default value
+    assert config.get("missing", "default") == "default"
+
+    # Default value with type validation
+    assert config.get("missing", "default", type=str) == "default"
 
     # Extra values
     config = PluginConfig(
@@ -142,29 +153,46 @@ def test_plugin_config_get() -> None:
     assert config.get("extra4") == [1, 2, 3]
 
     # With type validation
-    assert config.get("extra1", str) == "foo"
-    assert config.get("extra2", int) == 2
-    assert config.get("extra3", bool) is True
-    assert config.get("extra4", list) == [1, 2, 3]
+    assert config.get("extra1", type=str) == "foo"
+    assert config.get("extra2", type=int) == 2
+    assert config.get("extra3", type=bool) is True
+    assert config.get("extra4", type=list) == [1, 2, 3]
 
     # Type validation with coercion
-    assert config.get("extra3", int) == 1
-    assert config.get("extra4", tuple) == (1, 2, 3)
+    assert config.get("extra3", type=int) == 1
+    assert config.get("extra4", type=tuple) == (1, 2, 3)
     # Cannot coerce int to str by default in Pydantic
     with pytest.raises(PluginConfigTypeError):
-        assert config.get("extra2", str) == "2"
+        assert config.get("extra2", type=str) == "2"
 
 
-def test_plugin_config_get_optional() -> None:
-    config = PluginConfig(module="test")
+def test_config_get_with_annotations() -> None:
+    """Test PluginConfig.get with more complex annotations"""
+    config = PluginConfig(
+        module="test",
+        extra1="foo",
+        extra2=2,
+        extra3=True,
+        extra4=[1, 2, 3],
+        extra5={"foo": [1, 2, 3]},
+    )
 
-    # Existing option
-    assert config.get_optional("module") == "test"
-    assert config.get_optional("module", str) == "test"
+    assert config.get("extra1", type=Optional[str]) == "foo"
+    assert config.get("extra1", 123, type=Optional[str]) == "foo"
+    assert config.get("extra1", type=Union[str, int])
 
-    # Missing option
-    assert config.get_optional("missing") is None
-    assert config.get_optional("missing", str) is None
+    # Invalid default type
+    with pytest.raises(PluginConfigTypeError):
+        config.get("wrong", 123, type=Optional[str])
+    assert config.get("wrong", "123", type=Optional[str]) == "123"
+
+    # List type
+    assert config.get("extra4", type=list) == [1, 2, 3]
+    assert config.get("extra4", type=list[int]) == [1, 2, 3]
+
+    # Dict type
+    assert config.get("extra5", type=dict) == {"foo": [1, 2, 3]}
+    assert config.get("extra5", type=dict[str, list[int]]) == {"foo": [1, 2, 3]}
 
 
 def test_plugin_config_set() -> None:

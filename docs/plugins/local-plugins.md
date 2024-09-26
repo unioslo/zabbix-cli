@@ -120,37 +120,40 @@ extra_option_int = 42
 extra_option_list = ["a", "b", "c"]
 ```
 
-These options are not type-checked by default. However, when fetching these values, one can pass in a type hint to assert that the value is of the correct type. The `PluginConfig` class provides the methods `get()` and `get_optional()` for fetching values. The latter of which returns `None` if the config option is not set.
+These options are not type-checked by default. However, when fetching these values, one can pass in a type hint to assert that the value is of the correct type. The `PluginConfig` class provides the method `get()` for fetching values from the config. The method takes the key of the option as the first argument, and an optional default value as the second argument. The method also takes an optional type hint as the third argument `type`.
 
 ```python
 from zabbix_cli.app import app
 
 def __configure__(config: PluginConfig) -> None:
-    opt1 = config.get("extra_option_str", str)
+    # Access extra options
+    opt1 = config.get("extra_option_str")
 
+    # Validate the type of the option
+    # Also lets type checkers know the type of the variable
+    opt1 = config.get("extra_option_str", type=str)
+
+    # Types are optional
     opt2 = config.get("extra_option_int")
     # reveal_type(opt2) # reveals Any because no type hint
-    # Types from the TOML file are preserved even without hints
+    # Types from the TOML file are preserved
     assert isinstance(opt2, int)
 
     # We can validate more complex types too
-    opt4 = config.get("extra_option_list", list[str])
+    opt4 = config.get("extra_option_list", type=list[str])
 
-    # get_optional() returns None if the option is not set
-    opt4 = config.get_optional("non_existent_option")
-    assert opt4 is None
+    # We can also provide a default value
+    opt4 = config.get("non_existent_option", "default")
+    assert opt4 == "default"
 
     # Type hints are supported here too
-    opt5 = config.get_optional("non_existent_option", str)
-    # reveal_type(opt5) # reveals Optional[str]
+    opt5 = config.get("non_existent_option", "default", type=str)
+    # reveal_type(opt5) # reveals str
     assert opt5 is None
 
     # Use our config options:
-    app.state.client.session.headers["X-Plugin-Header"] = config.get("extra_option_str", str)
+    app.state.client.session.headers["X-Plugin-Header"] = config.get("extra_option_str", type=str)
 ```
-
-!!! note
-    The interface for accessing config options may be expanded in the future. The current positional arguments will never change, but new keyword arguments may be added.
 
 ### Accessing plugin configuration from commands
 
