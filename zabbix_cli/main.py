@@ -206,24 +206,22 @@ def _parse_config_arg() -> Optional[Path]:
     application is run, so that we can load plugins and configure
     logging correctly.
     """
-    args = sys.argv
-
     opts = ["--config", "-c"]
     for opt in opts:
-        if opt in args:
-            index = args.index(opt)
+        if opt in sys.argv:
+            index = sys.argv.index(opt)
             break
     else:
         return None
-    if not len(args) > index + 1 or not (conf := args[index + 1].strip()):
+
+    # If we have the option, we need an argument
+    if not len(sys.argv) > index + 1 or not (conf := sys.argv[index + 1].strip()):
         from zabbix_cli.output.console import exit_err
 
         exit_err("No value provided for --config/-c argument.")
 
     # Remove the argument and its value from sys.argv
-    args.pop(index)
-    args.pop(index + 1)
-
+    sys.argv = sys.argv[:index] + sys.argv[index + 2 :]
     return Path(conf)
 
 
