@@ -74,7 +74,7 @@ class PluginConfigError(PluginError, ConfigError):
     """Plugin configuration error."""
 
 
-class PluginConfigTypeError(PluginConfigError):
+class PluginConfigTypeError(PluginConfigError, TypeError):
     """Plugin configuration type error."""
 
 
