@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Union
 
@@ -188,11 +191,15 @@ def test_config_get_with_annotations() -> None:
 
     # List type
     assert config.get("extra4", type=list) == [1, 2, 3]
-    assert config.get("extra4", type=list[int]) == [1, 2, 3]
+    assert config.get("extra4", type=List[int]) == [1, 2, 3]
+    if sys.version_info >= (3, 9):
+        assert config.get("extra4", type=list[int]) == [1, 2, 3]
 
     # Dict type
     assert config.get("extra5", type=dict) == {"foo": [1, 2, 3]}
-    assert config.get("extra5", type=dict[str, list[int]]) == {"foo": [1, 2, 3]}
+    assert config.get("extra5", type=Dict[str, List[int]]) == {"foo": [1, 2, 3]}
+    if sys.version_info >= (3, 9):
+        assert config.get("extra5", type=dict[str, list[int]]) == {"foo": [1, 2, 3]}
 
 
 def test_plugin_config_set() -> None:
