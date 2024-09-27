@@ -9,7 +9,7 @@ External plugins are plugins that are packaged as Python packages and can be ins
 
 Assuming you have written a plugin module as outlined on the [local plugins](./local-plugins.md) page, you can package it as a Python package that defines an entry point for Zabbix-CLI to discover.
 
-An example plugin can be found here: <https://github.com/pederhan/zabbix-cli-plugin-entrypoint>
+A complete example of an external plugin can be found here: <https://github.com/pederhan/zabbix-cli-plugin-entrypoint>
 
 ### Directory structure
 
@@ -98,8 +98,25 @@ How to install the plugins depends on how Zabbix-CLI is installed. The plugin mu
 
 ### uv
 
-If Zabbix-CLI is installed with `uv tool`, the plugin can be installed with `uv tool install --with`:
+`uv` can install plugins using the same `uv tool install` command, but with the `--with` flag:
 
 ```bash
-uv tool install --with your_plugin_name
+uv tool install git+https://github.com/unioslo/zabbix-cli.git@master --with your_plugin_name
+```
+
+### pipx
+
+`pipx` Zabbix-CLI installations require the plugin to be injected into the environment:
+
+```bash
+pipx install git+https://github.com/unioslo/zabbix-cli.git@master
+pipx inject zabbix-cli your_plugin_name
+```
+
+### pip
+
+If Zabbix-CLI is installed with `pip`, the plugin can be installed as a regular Python package:
+
+```bash
+pip install your_plugin_name
 ```
