@@ -91,3 +91,15 @@ However, the option is there if you want to provide users with additional config
 
 !!! note
     If rewriting a local plugin as an external one, remember to remove the `module` key from the plugin's configuration.
+
+## Installing the plugin
+
+How to install the plugins depends on how Zabbix-CLI is installed. The plugin must be installed in the same Python environment as Zabbix-CLI, which is different with each installation method.
+
+### uv
+
+If Zabbix-CLI is installed with `uv tool`, the plugin can be installed with `uv tool install --with`:
+
+```bash
+uv tool install --with your_plugin_name
+```

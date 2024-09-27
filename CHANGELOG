@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Plugin support. See the [plugins documentation](https://unioslo.github.io/zabbix-cli/plugins/) for more information.
 
+### Changed
+
+- `--config` now always creates the config file at the given location if it doesn't exist.
+- `show_config` now shows the absolute path to the active configuration file.
+
 ## 3.0.3
 
 ### Added

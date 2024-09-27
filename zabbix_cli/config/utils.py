@@ -64,7 +64,7 @@ def find_config(
     return None
 
 
-def get_config(filename: Optional[Path] = None) -> Config:
+def get_config(filename: Optional[Path] = None, init: bool = False) -> Config:
     """Get a configuration object.
 
     Args:
@@ -75,7 +75,7 @@ def get_config(filename: Optional[Path] = None) -> Config:
     """
     from zabbix_cli.config.model import Config
 
-    return Config.from_file(find_config(filename))
+    return Config.from_file(filename, init=init)
 
 
 def init_config(

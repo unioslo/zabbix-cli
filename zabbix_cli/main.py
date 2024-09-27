@@ -136,14 +136,12 @@ def main_callback(
         return
 
     state = get_state()
-    if should_skip_configuration(ctx) or state.is_config_loaded:
-        conf = state.config  # uses a default config
-    else:
-        conf = get_config(config_file)
+    if not should_skip_configuration(ctx) and not state.is_config_loaded:
+        state.config = get_config(config_file, init=True)
 
     # Config overrides are always applied
     if output_format is not None:
-        conf.app.output_format = output_format
+        state.config.app.output_format = output_format
 
     if state.repl:
         return  # In REPL already; no need to re-configure.
@@ -222,8 +220,8 @@ def _parse_config_arg() -> Optional[Path]:
 
         exit_err("No value provided for --config/-c argument.")
 
-    # Remove the argument and its value from sys.argv
-    sys.argv = sys.argv[:index] + sys.argv[index + 2 :]
+    # # Remove the argument and its value from sys.argv
+    # sys.argv = sys.argv[:index] + sys.argv[index + 2 :]
     return Path(conf)
 
 
@@ -236,7 +234,7 @@ def main() -> int:
     # - configure console output
     # - load local plugins (defined in the config)
     conf = _parse_config_arg()
-    config = get_config(conf)
+    config = get_config(conf, init=False)
     state.config = config
     app.load_plugins(state.config)
 

@@ -414,7 +414,7 @@ class Config(BaseModel):
         return cls(api=APIConfig(url="https://zabbix.example.com", username="Admin"))
 
     @classmethod
-    def from_file(cls, filename: Optional[Path] = None) -> Config:
+    def from_file(cls, filename: Optional[Path] = None, init: bool = False) -> Config:
         """Load configuration from a file.
 
         Attempts to find a config file to load if none is specified.
@@ -422,11 +422,18 @@ class Config(BaseModel):
         Prioritizes V3 .toml config files, but falls back
         to legacy V2 .conf config files if no .toml config file can be found.
         """
-        fp = find_config(filename)
-        if not fp:  # We didn't find a .toml file, so try to find a legacy .conf file
-            fp = find_config(filename, CONFIG_PRIORITY_LEGACY)
-            if not fp:
-                # Failed to find both .toml and .conf files
+        if filename:
+            fp = filename
+        else:
+            fp = find_config(filename)
+            if (
+                not fp
+            ):  # We didn't find a .toml file, so try to find a legacy .conf file
+                fp = find_config(filename, CONFIG_PRIORITY_LEGACY)
+
+        # Failed to find both .toml and .conf files
+        if not fp or not fp.exists():
+            if init:
                 from zabbix_cli.config.utils import init_config
 
                 fp = init_config(config_file=filename)
@@ -434,6 +441,9 @@ class Config(BaseModel):
                     raise ConfigError(
                         "Failed to create configuration file. Run [command]zabbix-cli-init[/] to create one."
                     )
+            else:
+                return cls.sample_config()
+
         if fp.suffix == ".conf":
             return cls.from_conf_file(fp)
         else:
