@@ -43,7 +43,7 @@ def show_config(ctx: typer.Context) -> None:
     config = app.state.config
     print_toml(config.as_toml())
     if config.config_path:
-        info(f"Config file: {config.config_path}")
+        info(f"Config file: {config.config_path.absolute()}")
 
 
 class DirectoryType(Enum):
