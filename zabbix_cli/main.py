@@ -203,8 +203,8 @@ def _parse_config_arg() -> Optional[Path]:
     argument in order to load the config before instantiating the Typer app.
 
     This hack enables us to read plugins from the configuration file
-    in order to load them before we call `app()`. This enables commands
-    from plugins to be used in single-command mode as well as showing up
+    and load them _before_ we call `app()`. This lets commands defined
+    in plugins to be used in single-command mode as well as showing up
     when the user types `--help`. Otherwise, the plugin commands would
     not be registered to the active Click command group that drives the CLI.
     """
