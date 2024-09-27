@@ -67,7 +67,7 @@ def __configure__(config: PluginConfig) -> None:
     app.state.config.api.legacy_json_format = False
 ```
 
-The sky is the limit when it comes to what you can do in the `__configure__` function. However, be aware that modifying certain config options will not have any effect. This is especially true for the `api` section of the config file, as the API client is loaded and connected to the Zabbix API before the plugin modules are loaded.
+The sky is the limit when it comes to what you can do in the `__configure__` function. However, be aware that modifying certain config options will not have any effect. This is especially true for the `api` section of the config file, since the applicaiton has already configured the API client by the time the plugin is loaded.
 
 ## Configuration
 
@@ -154,6 +154,9 @@ def __configure__(config: PluginConfig) -> None:
     # Use our config options:
     app.state.client.session.headers["X-Plugin-Header"] = config.get("extra_option_str", type=str)
 ```
+
+!!! tip
+    Providing a type for the `get()` method will also give you better auto completion and type checking in your editor.
 
 ### Accessing plugin configuration from commands
 
