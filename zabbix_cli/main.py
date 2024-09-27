@@ -34,9 +34,7 @@ from zabbix_cli.__about__ import __version__
 from zabbix_cli.app import app
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
-from zabbix_cli.logs import configure_logging
 from zabbix_cli.logs import logger
-from zabbix_cli.output.console import configure_console
 from zabbix_cli.state import get_state
 
 if TYPE_CHECKING:
@@ -236,12 +234,10 @@ def main() -> int:
     # Load config before launching the app in order to:
     # - configure logging
     # - configure console output
-    # - load plugins defined in the config
+    # - load local plugins (defined in the config)
     conf = _parse_config_arg()
     config = get_config(conf)
-    state.configure(config)
-    configure_logging(state.config.logging)
-    configure_console(config)
+    state.config = config
     app.load_plugins(state.config)
 
     try:

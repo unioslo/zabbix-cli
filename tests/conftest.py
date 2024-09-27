@@ -56,8 +56,6 @@ def state(config: Config, zabbix_client: ZabbixAPI) -> Iterator[State]:
     """
     State._instance = None  # pyright: ignore[reportPrivateUsage]
     state = get_state()
-    # TODO: Use State.configure() instead,
-    #       but that requires patching Zabbix API login
     state.config = config
     state.client = zabbix_client
     yield state
@@ -66,10 +64,13 @@ def state(config: Config, zabbix_client: ZabbixAPI) -> Iterator[State]:
 
 
 @pytest.fixture(name="config")
-def config() -> Iterator[Config]:
+def config(tmp_path: Path) -> Iterator[Config]:
     """Return a sample config."""
     conf = Config.sample_config()
-    conf.logging.log_file = None  # don't try to write to a file
+    # Set up logging for the test environment
+    log_file = tmp_path / "zabbix-cli.log"
+    conf.logging.log_file = log_file
+    conf.logging.log_level = "DEBUG"  # we want to see all logs
     yield conf
 
 

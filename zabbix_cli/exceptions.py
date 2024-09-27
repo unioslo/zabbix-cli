@@ -251,8 +251,8 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
         # Clear token file and from the config object
         error("Auth token expired. You must re-authenticate.")
         clear_auth_token_file(state.config)
-        if state.repl:  # kinda hacky
-            state.configure(state.config)
+        if state.repl:  # Hack: run login flow again in REPL
+            state.login()
         # NOTE: ideally we automatically re-run the command here, but that's
         # VERY hacky and could lead to unexpected behavior.
         raise SystemExit(1)  # Exit without a message
