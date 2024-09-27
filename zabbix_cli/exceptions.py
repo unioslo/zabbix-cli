@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from httpx import ConnectError
     from httpx import RequestError
     from httpx import Response as HTTPResponse
+    from pydantic import BaseModel
     from pydantic import ValidationError
 
     from zabbix_cli.pyzabbix.types import ParamsType
@@ -41,6 +42,10 @@ class ConfigExistsError(ConfigError):
     """Configuration file already exists."""
 
 
+class ConfigOptionNotFound(ConfigError):
+    """Configuration option is missing from the loaded config."""
+
+
 class CommandFileError(ZabbixCLIError):
     """Error running bulk commands from a file."""
 
@@ -59,6 +64,35 @@ class AuthTokenFileError(AuthError):
 
 class AuthTokenError(AuthError):
     """Auth token (not file) error."""
+
+
+class PluginError(ZabbixCLIError):
+    """Plugin error."""
+
+
+class PluginConfigError(PluginError, ConfigError):
+    """Plugin configuration error."""
+
+
+class PluginConfigTypeError(PluginConfigError, TypeError):
+    """Plugin configuration type error."""
+
+
+class PluginLoadError(PluginError):
+    """Error loading a plugin."""
+
+    msg = "Error loading plugin '{plugin_name}'"
+
+    def __init__(self, plugin_name: str, plugin_config: BaseModel | None) -> None:
+        self.plugin_name = plugin_name
+        self.plugin_config = plugin_config
+        super().__init__(self.msg.format(plugin_name=plugin_name))
+
+
+class PluginPostImportError(PluginLoadError):
+    """Error running post-import configuration for a plugin."""
+
+    msg = "Error running post-import configuration for plugin '{plugin_name}'"
 
 
 class ZabbixAPIException(ZabbixCLIError):
@@ -217,8 +251,8 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
         # Clear token file and from the config object
         error("Auth token expired. You must re-authenticate.")
         clear_auth_token_file(state.config)
-        if state.repl:  # kinda hacky
-            state.configure(state.config)
+        if state.repl:  # Hack: run login flow again in REPL
+            state.login()
         # NOTE: ideally we automatically re-run the command here, but that's
         # VERY hacky and could lead to unexpected behavior.
         raise SystemExit(1)  # Exit without a message

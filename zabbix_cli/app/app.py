@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import inspect
 import logging
+from types import ModuleType
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
@@ -23,11 +24,14 @@ from typing import Union
 
 import typer
 from typer.core import TyperCommand
+from typer.core import TyperGroup
 from typer.main import Typer
+from typer.main import get_group
 from typer.models import CommandFunctionType
 from typer.models import CommandInfo as TyperCommandInfo
 from typer.models import Default
 
+from zabbix_cli.app.plugins import PluginLoader
 from zabbix_cli.logs import logger
 from zabbix_cli.state import State
 from zabbix_cli.state import get_state
@@ -36,6 +40,9 @@ if TYPE_CHECKING:
     from rich.console import RenderableType
     from rich.status import Status
     from rich.style import StyleType
+
+    from zabbix_cli.config.model import Config
+    from zabbix_cli.config.model import PluginConfig
 
 
 class Example(NamedTuple):
@@ -100,10 +107,12 @@ class StatefulApp(typer.Typer):
     """A Typer app that provides access to the global state."""
 
     parent: Optional[StatefulApp]
+    plugins: Dict[str, ModuleType]
 
     # NOTE: might be a good idea to add a typing.Unpack definition for the kwargs?
     def __init__(self, **kwargs: Any) -> None:
         self.parent = None
+        self._plugin_loader = PluginLoader()
         super().__init__(**kwargs)
 
     @property
@@ -121,6 +130,14 @@ class StatefulApp(typer.Typer):
         kwargs.setdefault("rich_help_panel", "Subcommands")
         self.add_typer(app, **kwargs)
 
+    def load_plugins(self, config: Config) -> None:
+        """Load plugins."""
+        self._plugin_loader.load(config)
+
+    def configure_plugins(self, config: Config) -> None:
+        """Configure plugins."""
+        self._plugin_loader.configure_plugins(config)
+
     def parents(self) -> Iterable[StatefulApp]:
         """Get all parent apps."""
         app = self
@@ -134,6 +151,10 @@ class StatefulApp(typer.Typer):
         for parent in self.parents():
             app = parent
         return app
+
+    def as_click_group(self) -> TyperGroup:
+        """Return the Typer app as a Click group."""
+        return get_group(self)
 
     def command(
         self,
@@ -195,23 +216,17 @@ class StatefulApp(typer.Typer):
     def status(self) -> StatusCallable:
         return self.state.err_console.status
 
+    def get_plugin_config(self, name: str) -> PluginConfig:
+        """Get a plugin's configuration by name.
 
-app = StatefulApp(
-    name="zabbix-cli",
-    help="Zabbix-CLI is a command line interface for Zabbix.",
-    add_completion=True,
-    rich_markup_mode="rich",
-)
+        Returns an empty PluginConfig object if no config is found.
+        """
+        conf = self.state.config.plugins.get(name)
+        if not conf:
+            # NOTE: can we import this top-level? We have probably already imported
+            # the config at this point? Unless we refactor config loading _again_...?
+            from zabbix_cli.config.model import PluginConfig
 
-from zabbix_cli.commands import cli  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import export  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import host  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import hostgroup  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import item  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import macro  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import maintenance  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import problem  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import proxy  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import template  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import templategroup  # type: ignore # noqa: E402, F401
-from zabbix_cli.commands import user  # type: ignore # noqa: E402, F401
+            logger.error(f"Plugin '{name}' not found in configuration")
+            return PluginConfig()
+        return conf

@@ -17,8 +17,9 @@ my_tests/
 # Hatch Pyapp
 pyapp
 
-# Dev commands
+# Dev commands and directories
 zabbix_cli/commands/_dev.py
+dev/
 
 # Auto-generated docs files
 docs/guide/commands/

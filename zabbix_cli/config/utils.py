@@ -85,6 +85,7 @@ def init_config(
     # Compatibility with V2 zabbix-cli-init args
     url: Optional[str] = None,
     username: Optional[str] = None,
+    login: bool = False,
 ) -> Path:
     """Creates required directories and boostraps config with
     options required to connect to the Zabbix API.
@@ -118,8 +119,9 @@ def init_config(
     if username:
         config.api.username = username
 
-    client = ZabbixAPI.from_config(config)
-    auth.login(client, config)
+    if login:
+        client = ZabbixAPI.from_config(config)
+        auth.login(client, config)
 
     config.dump_to_file(config_file)
     info(f"Configuration file created: {config_file}")

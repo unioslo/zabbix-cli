@@ -93,13 +93,13 @@ class TableRenderable(BaseModel):
     This is a class variable that can be overridden, which causes all
     subclasses to use the new value.
 
-    This class variable is set by `State.configure` based on the connected
+    This class variable is set by `State.login` based on the connected
     Zabbix server API version. Assumes latest released version by default.
     """
     legacy_json_format: ClassVar[bool] = False
     """Use the legacy JSON format when rendered as JSON.
 
-    This class variable is set by `State.configure` based on the
+    This class variable is set by `State.login` based on the
     current configuration. Assumes new JSON format by default."""
 
     empty_ok: bool = Field(default=False, exclude=True)

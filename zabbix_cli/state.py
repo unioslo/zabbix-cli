@@ -112,7 +112,7 @@ class State:
             from zabbix_cli.logs import configure_logging
 
             # HACK: configure logging with sample config
-            # in order to log the debug message to the log file
+            # in order to log the debug message to the default log file
             config = Config.sample_config()
             configure_logging(config.logging)
             logger.debug(
@@ -124,7 +124,14 @@ class State:
 
     @config.setter
     def config(self, config: Config) -> None:
+        """Set the configuration object and update active configuration of
+        loggers, consoles, etc."""
+        from zabbix_cli.logs import configure_logging
+        from zabbix_cli.output.console import configure_console
+
         self._config = config
+        configure_logging(config.logging)
+        configure_console(config)
         self._config_loaded = True
 
     @property
@@ -178,20 +185,6 @@ class State:
         """State is configured and ready to use."""
         return self.is_client_loaded and self.is_config_loaded
 
-    def configure(self, config: Config) -> None:
-        """Bootstrap the state object with the config and Zabbix API
-        client objects. Also bootstraps ZabbixAPIBaseModel class vars.
-
-        Should be called once at the beginning of the application's lifetime.
-
-        Assigns the loaded config to the global state, as well as instantiating
-        the Zabbix API client object.
-        """
-        from zabbix_cli.pyzabbix.client import ZabbixAPI
-
-        self.config = config
-        self.client = ZabbixAPI.from_config(config)
-
     def revert_config_overrides(self) -> None:
         """Revert config overrides from CLI args applied in REPL.
 
@@ -224,6 +217,9 @@ class State:
         so that each model is aware of which version its data is from."""
         from zabbix_cli import auth
         from zabbix_cli.models import TableRenderable
+        from zabbix_cli.pyzabbix.client import ZabbixAPI
+
+        self.client = ZabbixAPI.from_config(self.config)
 
         auth.login(self.client, self.config)
         TableRenderable.zabbix_version = self.client.version

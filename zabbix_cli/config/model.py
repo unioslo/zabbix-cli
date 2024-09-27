@@ -20,18 +20,26 @@
 # along with Zabbix-CLI.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import functools
 import logging
 from pathlib import Path
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Type
+from typing import TypeVar
+from typing import Union
+from typing import overload
 
 from pydantic import AliasChoices
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import RootModel
 from pydantic import SecretStr
 from pydantic import SerializationInfo
+from pydantic import TypeAdapter
 from pydantic import ValidationError
 from pydantic import ValidationInfo
 from pydantic import field_serializer
@@ -50,9 +58,13 @@ from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
 from zabbix_cli.exceptions import ConfigError
+from zabbix_cli.exceptions import ConfigOptionNotFound
+from zabbix_cli.exceptions import PluginConfigTypeError
 from zabbix_cli.logs import LogLevelStr
 from zabbix_cli.pyzabbix.enums import ExportFormat
 from zabbix_cli.utils.fs import mkdir_if_not_exists
+
+T = TypeVar("T")
 
 
 class BaseModel(PydanticBaseModel):
@@ -276,6 +288,111 @@ class LoggingConfig(BaseModel):
         return v
 
 
+# Can consider moving this elsewhere
+@functools.lru_cache(maxsize=None)
+def _get_type_adapter(type: Type[T]) -> TypeAdapter[T]:
+    """Get a type adapter for a given type."""
+    return TypeAdapter(type)
+
+
+NotSet = object()
+
+
+class PluginConfig(BaseModel):
+    module: str = ""
+    """Name or path to module to load.
+
+    Should always be specified for plugins loaded from local modules.
+    Can be omitted for plugins loaded from entry points.
+    TOML table name is used as the module name for entry point plugins."""
+
+    enabled: bool = True
+    optional: bool = False
+    """Do not raise an error if the plugin fails to load."""
+
+    model_config = ConfigDict(extra="allow")
+
+    # No default no type
+    @overload
+    def get(self, key: str) -> Any: ...
+
+    # Type with no default
+    @overload
+    def get(self, key: str, *, type: Type[T]) -> T: ...
+
+    # No type with default
+    @overload
+    def get(self, key: str, default: T) -> Any | T: ...
+
+    # Type with default
+    @overload
+    def get(
+        self,
+        key: str,
+        default: T,
+        type: Type[T],
+    ) -> T: ...
+
+    # Union type with no default
+    @overload
+    def get(
+        self,
+        key: str,
+        *,
+        type: Optional[Type[T]],
+    ) -> Optional[T]: ...
+
+    # Union type with default
+    @overload
+    def get(
+        self,
+        key: str,
+        default: Optional[T],
+        type: Optional[Type[T]],
+    ) -> Optional[T]: ...
+
+    def get(
+        self,
+        key: str,
+        default: Union[T, Any] = NotSet,
+        type: Optional[Type[T]] = object,
+    ) -> Union[T, Optional[T], Any]:
+        """Get a plugin configuration value by key.
+
+        Optionally validate the value as a specific type.
+        """
+        try:
+            if default is not NotSet:
+                attr = getattr(self, key, default)
+            else:
+                attr = getattr(self, key)
+            if type is object:
+                return attr
+            adapter = _get_type_adapter(type)
+            return adapter.validate_python(attr)
+        except AttributeError:
+            raise ConfigOptionNotFound(f"Plugin configuration key '{key}' not found")
+        except ValidationError as e:
+            raise PluginConfigTypeError(
+                f"Plugin config key '{key}' failed to validate as type {type}: {e}"
+            ) from e
+
+    def set(self, key: str, value: Any) -> None:
+        """Set a plugin configuration value by key."""
+        setattr(self, key, value)
+
+
+class PluginsConfig(RootModel[Dict[str, PluginConfig]]):
+    root: Dict[str, PluginConfig] = Field(default_factory=dict)
+
+    def get(self, key: str, strict: bool = False) -> Optional[PluginConfig]:
+        """Get a plugin configuration by name."""
+        conf = self.root.get(key)
+        if conf is None and strict:
+            raise ConfigError(f"Plugin {key} not found in configuration")
+        return conf
+
+
 class Config(BaseModel):
     api: APIConfig = Field(
         default_factory=APIConfig,
@@ -289,6 +406,7 @@ class Config(BaseModel):
     )
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     config_path: Optional[Path] = Field(default=None, exclude=True)
+    plugins: PluginsConfig = Field(default_factory=PluginsConfig)
 
     @classmethod
     def sample_config(cls) -> Config:
@@ -311,7 +429,7 @@ class Config(BaseModel):
                 # Failed to find both .toml and .conf files
                 from zabbix_cli.config.utils import init_config
 
-                fp = init_config()
+                fp = init_config(config_file=filename)
                 if not fp.exists():
                     raise ConfigError(
                         "Failed to create configuration file. Run [command]zabbix-cli-init[/] to create one."

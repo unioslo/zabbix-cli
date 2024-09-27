@@ -71,14 +71,11 @@ def test_debug_kv(
     caplog.set_level(logging.DEBUG)
     debug_kv("some", "error")
     captured = capsys.readouterr()
-    assert captured.err == snapshot(
-        """\
-some                : error
-"""
-    )
+    assert captured.err == snapshot("some                : error\n")
     assert caplog.record_tuples == snapshot(
         [("zabbix_cli", 10, "some                : error")]
     )
+    assert caplog.records[0].funcName == snapshot("test_debug_kv")
 
 
 def test_debug(
@@ -87,12 +84,9 @@ def test_debug(
     caplog.set_level(logging.DEBUG)
     debug("Some error")
     captured = capsys.readouterr()
-    assert captured.err == snapshot(
-        """\
-Some error
-"""
-    )
+    assert captured.err == snapshot("Some error\n")
     assert caplog.record_tuples == snapshot([("zabbix_cli", 10, "Some error")])
+    assert caplog.records[0].funcName == snapshot("test_debug")
 
 
 def test_info(
@@ -101,12 +95,9 @@ def test_info(
     caplog.set_level(logging.INFO)
     info("Some error")
     captured = capsys.readouterr()
-    assert captured.err == snapshot(
-        """\
-! Some error
-"""
-    )
+    assert captured.err == snapshot("! Some error\n")
     assert caplog.record_tuples == snapshot([("zabbix_cli", 20, "Some error")])
+    assert caplog.records[0].funcName == snapshot("test_info")
 
 
 def test_success(
@@ -115,12 +106,9 @@ def test_success(
     caplog.set_level(logging.INFO)
     success("Some error")
     captured = capsys.readouterr()
-    assert captured.err == snapshot(
-        """\
-✓ Some error
-"""
-    )
+    assert captured.err == snapshot("✓ Some error\n")
     assert caplog.record_tuples == snapshot([("zabbix_cli", 20, "Some error")])
+    assert caplog.records[0].funcName == snapshot("test_success")
 
 
 def test_warning(
@@ -129,12 +117,9 @@ def test_warning(
     caplog.set_level(logging.INFO)
     warning("Some error")
     captured = capsys.readouterr()
-    assert captured.err == snapshot(
-        """\
-⚠ Some error
-"""
-    )
+    assert captured.err == snapshot("⚠ Some error\n")
     assert caplog.record_tuples == snapshot([("zabbix_cli", 30, "Some error")])
+    assert caplog.records[0].funcName == snapshot("test_warning")
 
 
 def test_error(
@@ -143,12 +128,9 @@ def test_error(
     caplog.set_level(logging.INFO)
     error("Some error")
     captured = capsys.readouterr()
-    assert captured.err == snapshot(
-        """\
-✗ ERROR: Some error
-"""
-    )
+    assert captured.err == snapshot("✗ ERROR: Some error\n")
     assert caplog.record_tuples == snapshot([("zabbix_cli", 40, "Some error")])
+    assert caplog.records[0].funcName == snapshot("test_error")
 
 
 def test_exit_err_table(
@@ -160,11 +142,7 @@ def test_exit_err_table(
     with pytest.raises(SystemExit):
         exit_err("Some error")
     captured = capsys.readouterr()
-    assert captured.err == snapshot(
-        """\
-✗ ERROR: Some error
-"""
-    )
+    assert captured.err == snapshot("✗ ERROR: Some error\n")
     assert captured.out == snapshot("")
 
 
@@ -175,11 +153,7 @@ def test_exit_err_json(
     with pytest.raises(SystemExit):
         exit_err("Some error")
     captured = capsys.readouterr()
-    assert captured.err == snapshot(
-        """\
-✗ ERROR: Some error
-"""
-    )
+    assert captured.err == snapshot("✗ ERROR: Some error\n")
     assert captured.out == snapshot(
         """\
 {
@@ -203,11 +177,7 @@ def test_exit_err_json_with_errors(
     with pytest.raises(SystemExit):
         exit_err("Some error", exception=outer_exc)
     captured = capsys.readouterr()
-    assert captured.err == snapshot(
-        """\
-✗ ERROR: Some error
-"""
-    )
+    assert captured.err == snapshot("✗ ERROR: Some error\n")
     assert captured.out == snapshot(
         """\
 {
@@ -244,11 +214,7 @@ def test_exit_err_json_with_zabbix_api_request_error(
     with pytest.raises(SystemExit):
         exit_err("Some error", exception=outer_exc)
     captured = capsys.readouterr()
-    assert captured.err == snapshot(
-        """\
-✗ ERROR: Some error
-"""
-    )
+    assert captured.err == snapshot("✗ ERROR: Some error\n")
     assert captured.out == snapshot(
         """\
 {
