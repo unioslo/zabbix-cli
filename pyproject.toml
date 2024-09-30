@@ -104,6 +104,7 @@ dependencies = [
   "mkdocs-literate-nav",
   "mkdocs-simple-hooks",
   "mkdocs-gen-files",
+  "mkdocs-glightbox",
   "sanitize-filename",
   "jinja2",
   "pyyaml",
@@ -120,6 +121,13 @@ omit = ["zabbix_cli/__about__.py"]
 [tool.coverage.report]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
+[tool.pyright]
+pythonVersion = "3.10"
+venvPath = "."
+venv = ".venv"
+ignore = ["zabbix_cli/commands/_dev.py"]
+typeCheckingMode = "strict"
+
 [tool.ruff]
 src = ["zabbix_cli"]
 extend-exclude = ["zabbix_cli/__init__.py"]
@@ -129,14 +137,6 @@ extend-include = [
   "scripts/**/*.py",
   "tests/**/*.py",
 ]
-
-
-[tool.pyright]
-pythonVersion = "3.10"
-venvPath = "."
-venv = ".venv"
-ignore = ["zabbix_cli/commands/_dev.py"]
-typeCheckingMode = "strict"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

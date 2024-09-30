@@ -1,15 +1,15 @@
 # External plugins
 
 !!! important
-    This page assumes you have read the [local plugins](./local-plugins.md) page to understand the basics of writing plugins.
+    This page assumes you have read the [Writing plugins](./guide.md) page to understand the basics of writing plugins.
 
 External plugins are plugins that are packaged as Python packages and can be installed with Pip. Using [`pyproject.toml` entry points](https://packaging.python.org/en/latest/specifications/entry-points/), the application can automatically discover and load these plugins.
 
+A complete example of an external plugin can be found here: <https://github.com/pederhan/zabbix-cli-plugin-entrypoint>
+
 ## Packaging your plugin
 
-Assuming you have written a plugin module as outlined on the [local plugins](./local-plugins.md) page, you can package it as a Python package that defines an entry point for Zabbix-CLI to discover.
-
-A complete example of an external plugin can be found here: <https://github.com/pederhan/zabbix-cli-plugin-entrypoint>
+Assuming you have written a plugin module as outlined in[Writing plugins](./guide.md), you can package it as a Python package that defines an entry point for Zabbix-CLI to discover. Similar to local plugins, the entry point is a Python file or module that contains the plugin's functionality, except for external plugins, the entry point is defined in the `pyproject.toml` file - _not_ the configuration file.
 
 ### Directory structure
 
@@ -17,7 +17,7 @@ The plugin package should have the following directory structure:
 
 ```plaintext
 .
-├── your_plugin/
+├── my_plugin/
 │   ├── __init__.py
 │   └── plugin.py
 └── pyproject.toml
@@ -28,7 +28,7 @@ Alternatively, if using the src layout:
 ```plaintext
 .
 ├── src/
-│   └── your_plugin/
+│   └── my_plugin/
 │       ├── __init__.py
 │       └── plugin.py
 └── pyproject.toml
@@ -36,7 +36,7 @@ Alternatively, if using the src layout:
 
 ### pyproject.toml
 
-The package must contain a `pyproject.toml` file that instructs your package manager how to build and install the package. This is a good starting point for a `pyproject.toml` file using `hatchling` as the build backend:
+The package must contain a `pyproject.toml` file that instructs your package manager how to build and install the package. The following is a good starting point for a project using `hatchling` as the build backend:
 
 ```toml
 [build-system]
@@ -44,7 +44,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "your_plugin_name"
+name = "my_plugin"
 authors = [
     {name = "Firstname Lastname", email = "mail@example.com"},
 ]
@@ -61,7 +61,7 @@ dependencies = [
 allow-direct-references = true
 
 [project.entry-points.'zabbix-cli.plugins']
-your_plugin_name = "your_plugin_name.plugin"
+my_plugin = "my_plugin.plugin"
 ```
 
 #### Alternative build backends
@@ -76,11 +76,13 @@ build-backend = "setuptools.build_meta"
 
 ### Configuring the plugin
 
-Much like local plugins, external plugins define their configuration in the application's configuration file. The name of the plugin in the configuration file must match the name of the entry point defined in the `pyproject.toml` file. Given that we used the entry point `your_plugin_name`, the configuration should look like this:
+Much like local plugins, external plugins define their configuration in the application's configuration file, except for external plugins the configuration is entirely optional.
+
+The name of the plugin in the configuration file must match the name of the entry point defined in the `pyproject.toml` file. Given that we used the entry point `my_plugin`, its configuration should look like this:
 
 ```toml
-[plugins.your_plugin_name]
-# module can be omitted for external plugins
+[plugins.my_plugin]
+# module must be omitted for external plugins
 enabled = true
 extra_option_1 = "Some value"
 extra_option_2 = 42
@@ -101,7 +103,7 @@ How to install the plugins depends on how Zabbix-CLI is installed. The plugin mu
 `uv` can install plugins using the same `uv tool install` command, but with the `--with` flag:
 
 ```bash
-uv tool install git+https://github.com/unioslo/zabbix-cli.git@master --with your_plugin_name
+uv tool install git+https://github.com/unioslo/zabbix-cli.git@master --with my_plugin
 ```
 
 ### pipx
@@ -110,7 +112,7 @@ uv tool install git+https://github.com/unioslo/zabbix-cli.git@master --with your
 
 ```bash
 pipx install git+https://github.com/unioslo/zabbix-cli.git@master
-pipx inject zabbix-cli your_plugin_name
+pipx inject zabbix-cli my_plugin
 ```
 
 ### pip
@@ -118,5 +120,5 @@ pipx inject zabbix-cli your_plugin_name
 If Zabbix-CLI is installed with `pip`, the plugin can be installed as a regular Python package:
 
 ```bash
-pip install your_plugin_name
+pip install my_plugin
 ```
