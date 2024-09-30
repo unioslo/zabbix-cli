@@ -119,7 +119,7 @@ You are free to perform any configuration you want in the `__configure__` functi
 
 ## Configuration
 
-Plugins are configured in the application's configuration file. Given that we have a plugin named `my_plugin`, its configuratio file entry should look like this:
+Plugins are configured in the application's configuration file. Given that we have a plugin named `my_plugin`, its configuration file entry should look like this:
 
 ```toml
 [plugins.my_plugin]
