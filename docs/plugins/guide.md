@@ -65,7 +65,7 @@ def my_command() -> None:
 This will print messages to the console with the same formatting as the built-in commands:
 
 <figure markdown="span">
-  ![Console output](/static/img/plugins/console01.png){ width="100%" }
+  ![Console output](../static/img/plugins/console01.png){ width="100%" }
 </figure>
 
 ## Command arguments
@@ -356,7 +356,7 @@ sudo py-spy record --subprocesses -o profile.svg --format speedscope -- zabbix-c
 You can then take the generated SVG file and upload it to <https://www.speedscope.app/> to visualize the profile.
 
 <figure markdown="span">
-  ![Speescope profiling](/static/img/plugins/speedscope.png){ width="100%" }
+  ![Speescope profiling](../static/img/plugins/speedscope.png){ width="100%" }
   <figcaption>Visual profiling with speedscope</figcaption>
 </figure>
 

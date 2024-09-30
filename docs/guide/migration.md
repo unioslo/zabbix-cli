@@ -42,7 +42,7 @@ Multiple changes have been made to the application's configuration file, in term
 
 ### New configuration file format
 
-The configuration file is now in [TOML](https://toml.io/en/) format. The old `.conf` format is deprecated but can still be loaded. Old configs generate a warning when used. See [configuration](/guide/configuration) for more information on the new format.
+The configuration file is now in [TOML](https://toml.io/en/) format. The old `.conf` format is deprecated but can still be loaded. Old configs generate a warning when used. See [configuration](./configuration.md) for more information on the new format.
 
 An old configuration file can be migrated using the `migrate_config` command:
 
@@ -60,7 +60,7 @@ zabbix-cli migrate_config --source /path/to/old/config.conf --destination /path/
 
 ### New default configuration file location
 
-The location of the configuration file is now determined by [platformdirs](https://pypi.org/project/platformdirs/). See [Configuration](/guide/configuration) for a brief summary of the new default location.
+The location of the configuration file is now determined by [platformdirs](https://pypi.org/project/platformdirs/). See [Configuration](./configuration.md) for a brief summary of the new default location.
 
 To open the default configuration file directory, use the command:
 
@@ -102,7 +102,7 @@ The following table lists the old option names and their new counterparts:
 
 For backwards compatibility, all the old option names are still supported, but will be removed in a future version.
 
-See [Sample configuration file](/guide/configuration#sample-configuration-file) to see an example of the new configuration file format.
+See [Sample configuration file](./configuration.md#sample-configuration-file) to see an example of the new configuration file format.
 
 ## Exports
 

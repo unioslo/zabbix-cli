@@ -259,7 +259,7 @@ Default: `true`
 
 #### `legacy_json_format`
 
-Whether to use the legacy JSON format (pre-Zabbix CLI 3.0), where the output is a JSON mapping with numeric string keys for each result. See the [migration guide](/guide/migration) for more information.
+Whether to use the legacy JSON format (pre-Zabbix CLI 3.0), where the output is a JSON mapping with numeric string keys for each result. See the [migration guide](./migration.md) for more information.
 
 Type: `bool`
 
