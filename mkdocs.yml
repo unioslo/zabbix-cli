@@ -31,6 +31,7 @@ watch:
 plugins:
   - autorefs
   - search
+  - glightbox # images
   - mkdocs-simple-hooks:
       hooks:
         # NOTE: we would like to run this on_pre_build, but it causes an infinite
@@ -74,6 +75,7 @@ markdown_extensions:
   - attr_list
   - def_list
   - footnotes
+  - md_in_html
   - pymdownx.details
   - pymdownx.inlinehilite
   - pymdownx.snippets
@@ -86,6 +88,8 @@ markdown_extensions:
   - mdx_gh_links:
       user: unioslo
       repo: zabbix-cli
+  - toc:
+      toc_depth: 3
 
 nav:
   - Home:
@@ -101,8 +105,9 @@ nav:
       - guide/commands/*.md
   - Plugins:
     - Introduction: plugins/index.md
-    - Local plugins: plugins/local-plugins.md
-    - External plugins: plugins/external-plugins.md
+    - plugins/guide.md
+    - plugins/local-plugins.md
+    - plugins/external-plugins.md
   # - Reference:
   #   - reference/*.md
   # - contributing.md
