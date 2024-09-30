@@ -338,6 +338,9 @@ def my_command(ctx: typer.Context, name: str = typer.Argument()) -> None:
 
 ### Profiling
 
+!!! warning
+    `py-spy` does not support Python 3.12 at the time of writing.
+
 Consider using `py-spy` to profile the application before you package and distribute your plugin to ensure that it does not have a significant impact on the application's startup time. Profiling `--help` lets us profile the application startup time before any network I/O can occur.
 
 Install `py-spy` with:
@@ -346,18 +349,17 @@ Install `py-spy` with:
 pip install py-spy
 ```
 
-!!! warning
-    `py-spy` does not support Python 3.12 at the time of writing.
+We can then use `py-spy` to profile the different imports the application performs and generate an SVG file:
 
 ```bash
 sudo py-spy record --subprocesses -o profile.svg --format speedscope -- zabbix-cli --help
 ```
 
-You can then take the generated SVG file and upload it to <https://www.speedscope.app/> to visualize the profile.
+The generated SVG file can be viewed on its own, or uploaded to the [speedscope](https://www.speedscope.app/) web application for a more interactive experience.
 
 <figure markdown="span">
   ![Speescope profiling](../static/img/plugins/speedscope.png){ width="100%" }
   <figcaption>Visual profiling with speedscope</figcaption>
 </figure>
 
-The width of a bar indicates the time in milliseconds the given import adds, while its depth indicates the statements executed as a result of the import. A wide bar indicates a slow import, and can often be traced back to a cascade of imports and/or time-consuming operations in the imported module(s).
+The width of a bar indicates the time in milliseconds the given import adds, while its height indicates the number of stack frames generated as a result. A wide bar indicates a slow import, and can often be traced back to a cascade of numerous dependent imports and/or specific time-consuming imports.
