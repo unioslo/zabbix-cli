@@ -168,10 +168,12 @@ extra_option_int = 42
 extra_option_list = ["a", "b", "c"]
 ```
 
-These options are not type-checked by default. However, when fetching these values, one can pass in a type hint to assert that the value is of the correct type. The `PluginConfig` class provides the method `get()` for fetching values from the config. The method takes the key of the option as the first argument, and an optional default value as the second argument. The method also takes an optional type hint as the third argument `type`.
+The `PluginConfig.get()` method can be used to retrieve the value of these extra options. The method takes the key of the option as the first argument, and an optional default value as the second argument. The method also takes an optional type hint as the third argument `type`.
 
 ```python
 from zabbix_cli.app import app
+from zabbix_cli.config.model import PluginConfig
+
 
 def __configure__(config: PluginConfig) -> None:
     # Access extra options
@@ -189,6 +191,7 @@ def __configure__(config: PluginConfig) -> None:
 
     # We can validate more complex types too
     opt4 = config.get("extra_option_list", type=list[str])
+    # reveal_type(opt4) # reveals list[str]
 
     # We can also provide a default value
     opt4 = config.get("non_existent_option", "default")
@@ -197,10 +200,12 @@ def __configure__(config: PluginConfig) -> None:
     # Type hints are supported here too
     opt5 = config.get("non_existent_option", "default", type=str)
     # reveal_type(opt5) # reveals str
-    assert opt5 is None
+    assert opt5 == "default"
 
     # Use our config options:
-    app.state.client.session.headers["X-Plugin-Header"] = config.get("extra_option_str", type=str)
+    app.state.client.session.headers["X-Plugin-Header"] = config.get(
+        "extra_option_str", type=str
+    )
 ```
 
 !!! tip
