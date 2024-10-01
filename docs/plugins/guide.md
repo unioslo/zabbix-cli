@@ -1,6 +1,10 @@
 # Writing plugins
 
-This guide goes over the basics of writing a local plugin that adds new commands to the application.
+This guide goes over everything required to write a local plugin loaded by the application on startup.
+
+## Basics
+
+### Directory structure
 
 Start off by creating a new directory containing a Python module that defines the plugin, as well as an `__init__.py` file:
 
@@ -11,11 +15,11 @@ Start off by creating a new directory containing a Python module that defines th
     └── plugin.py
 ```
 
-The `__init__.py` file can be empty, but it must exist in order for Python to treat the directory as a package. The `plugin.py` file is where the plugin's functionality is defined. Defining your plugin as a package lets you split your plugin into multiple files, making it easier to manage as it grows in complexity. It also allows you to more easily publish the plugin as an external package later on should you choose to do so.
+The `__init__.py` file can be empty, but it's a good practice to define one for Python to treat the directory as a package. The `plugin.py` file is where the plugin's functionality is defined. Defining your plugin as a package lets you split your plugin into multiple files, making it easier to manage as it grows in complexity. It also allows you to more easily publish the plugin as an external package later on should you choose to do so.
 
-## Basics
+### Module
 
-In order to define new commands, we need to import `zabbix_cli.app.app` in our plugin file. This is the main Typer application object that we will use to access the application state and define new commands with. A simple command that prints a message to the console can be defined like this:
+In order to define new commands in our plugin module, we need to import `zabbix_cli.app.app`. This is the main Typer application object that we will use to access the application state and define new commands with. A simple command that prints a message to the console can be defined like this:
 
 ```python
 # /path/to/my_plugin/plugin.py
@@ -26,21 +30,69 @@ def my_command() -> None:
     print("Hello, world!")
 ```
 
-## Printing messages
+### Activating the plugin
 
-There are several ways to improve even the basic example above. The application provides several convience methods for printing messages to the console with specific formatting, which we can use in commands to print messages consistent with the rest of the application. These are:
+We will look at plugin configuration more in-depth in the [Configuration](#configuration) section, but for now, we can add the plugin to the configuration file like this:
+
+```toml
+[plugins.my_plugin]
+module = "/path/to/my_plugin/my_plugin.py"
+```
+
+This tells the application to load the plugin module when it starts up.
+
+Running `zabbix-cli --help` should now show the new command in the list of available commands.
+
+<figure markdown="span">
+  ![Console output](../static/img/plugins/help_empty.png){ width="100%" }
+  <figcaption>The command from the plugin is loaded</figcaption>
+</figure>
+
+However, we can see that the command does not have a description or belong to any particular category. In the next section we will look at adding help text to commands and defining a category.
+
+### Help text and categories
+
+Commands can have a long and short description and belong to a category. The category is used to group commands in the help output. We can define a category for our plugin commands by providing an argument to the `rich_help_panel` parameter when defining the command. This will add a new section to the help output with the given name we chose.
+
+```python
+RICH_HELP_PANEL = "My custom commands"
+
+@app.command(name="my_command", rich_help_panel=RICH_HELP_PANEL)
+def my_command() -> None:
+    """Short description of the command.
+
+    Longer description going over the command in more detail.
+    """
+    print("Hello, world!")
+```
+
+The command will now be added to its own category in the help output:
+
+<figure markdown="span">
+  ![Console output](../static/img/plugins/help_cat.png){ width="100%" }
+</figure>
+
+Invoking `zabbix-cli my_command --help` shows the long description we provided:
+
+<figure markdown="span">
+  ![Console output](../static/img/plugins/help_command_empty.png){ width="100%" }
+</figure>
+
+### Printing messages
+
+One of the most common operations in a CLI is printing messages to the console. The application provides several convience methods for printing messages to the console with specific formatting, which we can use in our commands to print messages consistent with the rest of the application. These are:
 
 - `zabbix_cli.output.console.success`
 - `zabbix_cli.output.console.info`
 - `zabbix_cli.output.console.warning`
 - `zabbix_cli.output.console.error`
 
-As well as [Rich](https://rich.readthedocs.io/en/latest/introduction.html) Console objects for stdout and stderr:
+As well as [Rich](https://rich.readthedocs.io/en/latest/introduction.html) Console objects for stdout and stderr for more advanced formatting:
 
 - `zabbix_cli.output.console.console`
 - `zabbix_cli.output.console.err_console`
 
-We can thus rewrite the command to print any number of different messages to the console:
+We can use these to print to the console like this:
 
 ```python
 from zabbix_cli.app import app
@@ -62,13 +114,13 @@ def my_command() -> None:
     console.print("Output of some sort")
 ```
 
-This will print messages to the console with the same formatting as the built-in commands:
+This will print messages to the console using the same formatting as the built-in commands:
 
 <figure markdown="span">
   ![Console output](../static/img/plugins/console01.png){ width="100%" }
 </figure>
 
-## Command arguments
+### Command arguments
 
 In general, it is best to refer to the [Typer](https://typer.tiangolo.com/tutorial/) documentation when it comes to defining command arguments. However, a minimal example is provided here, showing how to define a command with a positional argument and a named option and use them to interact with the Zabbix API client:
 
@@ -93,7 +145,7 @@ def my_command(
     render_result(host)
 ```
 
-## Post-import configuration
+### Post-import configuration
 
 The module can define a function called `__configure__` that will be called after the application has finished its own configuration. This function can be used to perform any necessary setup or configuration that the plugin requires. The function takes a single `PluginConfig` argument.
 
@@ -117,7 +169,7 @@ def __configure__(config: PluginConfig) -> None:
 
 You are free to perform any configuration you want in the `__configure__` function. However, be aware that modifying certain config options, especially those found in `app.state.config.api`, will not have any effect on the rest of the application. By the time `__configure__` is called, the application has already configured the API client.
 
-## Configuration
+### Configuration file
 
 Plugins are configured in the application's configuration file. Given that we have a plugin named `my_plugin`, its configuration file entry should look like this:
 
@@ -127,7 +179,7 @@ Plugins are configured in the application's configuration file. Given that we ha
 
 Depending on whether you are writing a local or external plugin, the configuration requires different options. External plugins do not require _any_ configuration by default, while local plugins _must_ have a `module` key defined.
 
-### `module`
+#### `module`
 
 Local plugins must define this key. Its value can be a module path or a a file path. If using a file path, it is highly recommended to use an absolute path.
 
@@ -138,7 +190,7 @@ module = "/path/to/my_plugin/my_plugin.py"
 # module = "path.to.my_plugin"
 ```
 
-### `enabled`
+#### `enabled`
 
 Enable or disable plugin. Plugins are enabled by default unless otherwise specified.
 
@@ -147,7 +199,7 @@ Enable or disable plugin. Plugins are enabled by default unless otherwise specif
 enabled = false
 ```
 
-### `optional`
+#### `optional`
 
 Mark a plugin as optional, meaning the application will not exit if the plugin module cannot be imported. This is useful for plugins that are not required for the application to function. Plugins are not optional by default.
 
@@ -156,7 +208,7 @@ Mark a plugin as optional, meaning the application will not exit if the plugin m
 optional = true
 ```
 
-### Extra options
+#### Extra options
 
 The plugin configuration can contain any number of extra options that the plugin module can access. These options can be accessed through the `PluginConfig` object that is passed to the `__configure__` function.
 
@@ -237,6 +289,113 @@ def my_command() -> None:
 !!! note
     Should no config be available, an empty `PluginConfig` is returned. This is to facilitate external plugins that do not _require_ a configuration to be defined.
 
+## Advanced
+
+### Rendering
+
+Most zabbix-cli commands render a table or JSON depdening on the active output format. The functionality that powers this is the `zabbix_cli.models.TableRenderable` class. This class is a Pydantic model that can be subclassed and used to define data models that the application can render.
+
+```python
+from typing import List
+
+from zabbix_cli.models import TableRenderable
+from zabbix_cli.output.render import render_result
+
+
+class MyModel(TableRenderable):
+    host: str
+    status: str
+    ip: str
+    templates: List[str]
+
+
+@app.command(name="my_command")
+def my_command() -> None:
+    m = MyModel(
+        host="foo.example.com",
+        status="Good",
+        ip="192.168.0.2",
+        templates=["Template OS Linux", "Template App MySQL"],
+    )
+    render_result(m)
+```
+
+Invoking the command will render the model as a table:
+
+```bash
+zabbix-cli my_command
+```
+
+![Console output](../static/img/plugins/render_table.png){ width="75%" }
+
+Adding `-o json` will render the model as JSON:
+
+```bash
+zabbix-cli -o json my_command
+```
+
+```json
+{
+  "message": "",
+  "errors": [],
+  "return_code": "Done",
+  "result": {
+    "host": "foo.example.com",
+    "status": "Good",
+    "ip": "192.168.0.2",
+    "templates": [
+      "Template OS Linux",
+      "Template App MySQL"
+    ]
+  }
+}
+```
+
+### Field-level customization
+
+By default, column headers and cells are determined by the field names and values of the model. We can customize this behavior by adding metadata to the model fields using something called "Meta Keys". These are special keys that can be added to the `json_schema_extra` dict of a field to change how it is rendered.
+
+#### Column headers
+
+If we just want to change the column header for a single field, we can pass a `zabbix_cli.models.MetaKey` object to the field's `json_schema_extra` dict when defining it:
+
+```python
+from pydantic import Field
+from zabbix_cli.models import MetaKey
+from zabbix_cli.models import TableRenderable
+
+
+class MyModel(TableRenderable):
+    host: str
+    status: str
+    ip: str = Field(..., json_schema_extra={MetaKey.HEADER: "IP Address"})
+    templates: List[str]
+```
+
+This will change the column header for the `ip` field to "IP Address":
+
+![Console output](../static/img/plugins/render_header.png){ width="75%" }
+
+#### Lists
+
+Lists are rendered as newline-separated strings by default. We can change this by passing a `zabbix_cli.models.MetaKey` object to the field's `json_schema_extra` dict with the `MetaKey.JOIN_CHAR` key set to the desired separator:
+
+```python
+from pydantic import Field
+from zabbix_cli.models import MetaKey
+from zabbix_cli.models import TableRenderable
+
+class MyModel(TableRenderable):
+    host: str
+    status: str
+    ip: str
+    templates: List[str] = Field(..., json_schema_extra={MetaKey.JOIN_CHAR: ", "})
+```
+
+This will render the `templates` field as a comma-separated string:
+
+![Console output](../static/img/plugins/render_list.png){ width="75%" }
+
 ## Example
 
 A complete example of a plugin that defines a new command and uses the plugin configuration to set a custom HTTP header on the Zabbix API client:
@@ -287,6 +446,8 @@ The application at large makes use of inline imports inside functions to improve
 1. `zabbix_cli.pyzabbix.types`
 2. `zabbix_cli.pyzabbix.models`
 3. `zabbix_cli.commands.results`
+
+### Inline imports
 
 Consider creating a separate module for your own models that you can import inside your commands that need them. This will prevent a cascade of imports that can add several hundred milliseconds of startup time to the application. Pydantic is notoriously slow at defining models, so avoiding importing these modules until they are needed is crucial.
 
@@ -346,7 +507,7 @@ def my_command(ctx: typer.Context, name: str = typer.Argument()) -> None:
 !!! warning
     `py-spy` does not support Python 3.12 at the time of writing.
 
-Consider using `py-spy` to profile the application before you package and distribute your plugin to ensure that it does not have a significant impact on the application's startup time. Profiling `--help` lets us profile the application startup time before any network I/O can occur.
+Consider using [`py-spy`](https://github.com/benfred/py-spy) to profile the application before you package and distribute your plugin to ensure that it does not have a significant impact on the application's startup time. Profiling `--help` lets us profile the application startup time before any network I/O can occur.
 
 Install `py-spy` with:
 
