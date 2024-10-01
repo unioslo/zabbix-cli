@@ -113,14 +113,14 @@ extra_option_2 = 42
 
 ## Installation
 
-How to install the plugins depends on how Zabbix-CLI is installed. The plugin must be installed in the same Python environment as Zabbix-CLI, which is different with each installation method.
+How to install the plugins depends on how Zabbix-CLI is installed. The plugin must be installed in the same Python environment as Zabbix-CLI, which is different for each installation method.
 
 ### uv
 
 `uv` can install plugins using the same `uv tool install` command, but with the `--with` flag:
 
 ```bash
-uv tool install git+https://github.com/unioslo/zabbix-cli.git@master --with my_plugin
+uv tool install zabbix-cli-uio --with my_plugin
 ```
 
 ### pipx
@@ -128,8 +128,8 @@ uv tool install git+https://github.com/unioslo/zabbix-cli.git@master --with my_p
 `pipx` Zabbix-CLI installations require the plugin to be injected into the environment:
 
 ```bash
-pipx install git+https://github.com/unioslo/zabbix-cli.git@master
-pipx inject zabbix-cli my_plugin
+pipx install zabbix-cli-uio
+pipx inject zabbix-cli-uio my_plugin
 ```
 
 ### pip
