@@ -66,6 +66,10 @@ build = ["pyinstaller", "build"]
 [tool.hatch.version]
 path = "zabbix_cli/__about__.py"
 
+[tool.hatch.build.targets.sdist]
+include = ["zabbix_cli", "AUTHORS", "CHANGELOG"]
+exclude = [".venv*"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["zabbix_cli"]
 
