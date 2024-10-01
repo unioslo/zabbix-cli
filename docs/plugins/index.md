@@ -3,7 +3,7 @@
 !!! warning "Work in progress"
     The plugin system is still under development and may change in future releases.
 
-The functionality of the application can be extended using user-defined plugins. Plugins can be used to add new commands, modify existing commands, or add new functionality to the application. Plugins can installed as local Python modules or external Python packages.
+The functionality of the application can be extended with user-defined plugins. Plugins can be used to add new commands, modify existing commands, or add new functionality to the application. Plugins can installed as local Python modules or external Python packages.
 
 ## Local plugins
 

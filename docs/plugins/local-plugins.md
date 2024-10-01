@@ -33,4 +33,4 @@ It is recommended to use an absolute path to the plugin file. This ensures that 
 
 ### Module path
 
-One can also use a Python module path to the plugin file. This is useful if the plugin is part of a larger Python package. The path must be available in the Python path (`$PYTHONPATH`) for the application to find it. The import path can point to the plugin file itself or the directory containing it as long as ``__init__.py` is present and imports the plugin file.
+One can also use a Python module path to the plugin file. This is useful if the plugin is part of a larger Python package. The path must be available in the Python path (`$PYTHONPATH`) for the application to find it. The import path can point to the plugin file itself or the directory containing it as long as `__init__.py` is present and imports the plugin file.
