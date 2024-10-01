@@ -1,9 +1,8 @@
 # Zabbix-cli
 
-<!-- Activate badges when we publish to PyPI -->
-<!-- [![PyPI](https://img.shields.io/pypi/v/zabbix-cli)](https://pypi.org/project/zabbix-cli/)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zabbix-cli)](https://pypi.org/project/zabbix-cli/)
-![PyPI - License](https://img.shields.io/pypi/l/zabbix-cli)(https://pypi.org/project/zabbix-cli/) -->
+[![PyPI](https://img.shields.io/pypi/v/zabbix-cli-uio)](https://pypi.org/project/zabbix-cli-uio/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zabbix-cli-uio)](<https://pypi.org/project/zabbix-cli-uio/>)
+[![PyPI - License](https://img.shields.io/pypi/l/zabbix-cli-uio)](<https://pypi.org/project/zabbix-cli-uio/>)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/unioslo/zabbix-cli/test.yml?branch=master&label=tests)
 
 <p align="center">
@@ -43,22 +42,27 @@ The manual is available online at <https://unioslo.github.io/zabbix-cli/>.
 
 ### From source
 
-[uv](https://github.com/astral-sh/uv):
+#### pip(x)
 
 ```bash
-uv tool install git+https://github.com/unioslo/zabbix-cli.git@master
-
-# Or if you just want to try out the CLI without installing it
-uvx --from git+https://github.com/unioslo/zabbix-cli.git@master zabbix-cli
+pipx install zabbix-cli-uio
 ```
 
-pip(x):
+#### [uv](https://github.com/astral-sh/uv)
 
 ```bash
-pipx install git+https://github.com/unioslo/zabbix-cli.git@master
+uv tool install zabbix-cli-uio
 ```
 
-We are in the process of acquiring the name `zabbix-cli` on PyPI. Until then, installation from the GitHub repository is the only option when installing as a Python package.
+If you just want to try out the CLI without installing it:
+
+```bash
+
+uvx --from zabbix-cli-uio zabbix-cli
+```
+
+> [!NOTE]
+> We are in the process of acquiring the name `zabbix-cli` on PyPI. Until then, installation must be done via the mirror package `zabbix-cli-uio`.
 
 ### Homebrew
 

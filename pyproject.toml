@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 description = "ZABBIX-CLI - Zabbix terminal client"
-name = "zabbix-cli"
+name = "zabbix-cli-uio"
 readme = "README.md"
 requires-python = ">=3.8"
 license = "GPL-3.0-or-later"
@@ -66,6 +66,9 @@ build = ["pyinstaller", "build"]
 [tool.hatch.version]
 path = "zabbix_cli/__about__.py"
 
+[tool.hatch.build.targets.wheel]
+packages = ["zabbix_cli"]
+
 [tool.hatch.build.targets.app]
 pyapp-version = "0.12.0"
 python-version = "3.11"
@@ -77,7 +80,7 @@ dependencies = [
   # optional dependencies
   "ruff",
   "pyright",
-  "zabbix_cli[test]",
+  "zabbix-cli-uio[test]",
 ]
 installer = "uv"
 
