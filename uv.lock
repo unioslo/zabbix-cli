@@ -819,8 +819,8 @@ wheels = [
 ]
 
 [[package]]
-name = "zabbix-cli"
-version = "3.1.0"
+name = "zabbix-cli-uio"
+version = "3.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "click-repl" },
