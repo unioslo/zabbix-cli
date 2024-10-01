@@ -12,18 +12,18 @@ theme:
     accent: orange
   language: en
   features:
-    - navigation.instant
     - navigation.tracking
     - content.code.annotate
     - content.code.copy
     - content.tabs.link
     - content.action.edit
-    - toc.integrate
     - toc.follow
     - navigation.path
     - navigation.top
     - navigation.tabs
     - navigation.footer
+    - navigation.sections
+    - navigation.indexes
 
 watch:
   - zabbix_cli
