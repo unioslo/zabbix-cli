@@ -326,9 +326,7 @@ Invoking the command will render the model as a table:
 zabbix-cli my_command
 ```
 
-<figure markdown="span">
-  ![Console output](../static/img/plugins/render_table.png){ width="100%" }
-</figure>
+![Console output](../static/img/plugins/render_table.png){ width="75%" }
 
 Adding `-o json` will render the model as JSON:
 
@@ -353,9 +351,13 @@ zabbix-cli -o json my_command
 }
 ```
 
-### Customizing table rendering
+### Field-level customization
 
-By default, the column headers for tables are inferred from the model attributes. However, we can customize this in several different ways. If we just want to change the column header for a single field, we can pass a `zabbix_cli.models.MetaKey` object to the field's `json_schema_extra` dict when defining it:
+By default, column headers and cells are determined by the field names and values of the model. We can customize this behavior by adding metadata to the model fields using something called "Meta Keys". These are special keys that can be added to the `json_schema_extra` dict of a field to change how it is rendered.
+
+#### Column headers
+
+If we just want to change the column header for a single field, we can pass a `zabbix_cli.models.MetaKey` object to the field's `json_schema_extra` dict when defining it:
 
 ```python
 from pydantic import Field
@@ -372,9 +374,27 @@ class MyModel(TableRenderable):
 
 This will change the column header for the `ip` field to "IP Address":
 
-<figure markdown="span">
-  ![Console output](../static/img/plugins/render_header.png){ width="100%" }
-</figure>
+![Console output](../static/img/plugins/render_header.png){ width="75%" }
+
+#### Lists
+
+Lists are rendered as newline-separated strings by default. We can change this by passing a `zabbix_cli.models.MetaKey` object to the field's `json_schema_extra` dict with the `MetaKey.JOIN_CHAR` key set to the desired separator:
+
+```python
+from pydantic import Field
+from zabbix_cli.models import MetaKey
+from zabbix_cli.models import TableRenderable
+
+class MyModel(TableRenderable):
+    host: str
+    status: str
+    ip: str
+    templates: List[str] = Field(..., json_schema_extra={MetaKey.JOIN_CHAR: ", "})
+```
+
+This will render the `templates` field as a comma-separated string:
+
+![Console output](../static/img/plugins/render_list.png){ width="75%" }
 
 ## Example
 
@@ -487,7 +507,7 @@ def my_command(ctx: typer.Context, name: str = typer.Argument()) -> None:
 !!! warning
     `py-spy` does not support Python 3.12 at the time of writing.
 
-Consider using `py-spy` to profile the application before you package and distribute your plugin to ensure that it does not have a significant impact on the application's startup time. Profiling `--help` lets us profile the application startup time before any network I/O can occur.
+Consider using [`py-spy`](https://github.com/benfred/py-spy) to profile the application before you package and distribute your plugin to ensure that it does not have a significant impact on the application's startup time. Profiling `--help` lets us profile the application startup time before any network I/O can occur.
 
 Install `py-spy` with:
 
