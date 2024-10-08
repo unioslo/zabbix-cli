@@ -63,14 +63,13 @@ def create_templategroup(
 ) -> None:
     """Create a new template group.
 
-    Assigns permissions for user groups defined in configuration file if no user groups are specified.
+    Assigns default user group permissions by default.
 
-    --rw-groups uses the default admin user groups if not specified.
-    --ro-groups uses the default create user groups if not specified.
+    * [option]--rw-groups[/] defaults to config option [configopt]app.default_admin_usergroups[/].
+    * [option]--ro-groups[/] defaults to config option [configopt]app.default_create_user_usergroups[/].
+    * Use [option]--no-usergroup-permissions[/] to create a group without any user group permissions.
 
-    Use --no-usergroup-permissions to create a group without assigning user group permissions.
-
-    NOTE: Calls [command]create_hostgroup[/] for Zabbix versions < 6.2.0.
+    [b]NOTE:[/] Calls [command]create_hostgroup[/] for Zabbix versions < 6.2.0.
     """
     from zabbix_cli.models import Result
 
