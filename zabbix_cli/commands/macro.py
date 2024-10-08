@@ -10,6 +10,7 @@ from zabbix_cli.app import Example
 from zabbix_cli.app import app
 from zabbix_cli.commands.common.args import get_limit_option
 from zabbix_cli.config.constants import OutputFormat
+from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.render import render_result
@@ -19,6 +20,10 @@ HELP_PANEL = "Macro"
 
 def fmt_macro_name(macro: str) -> str:
     """Format macro name for use in a query."""
+    macro = macro.strip()
+    if not macro:
+        # TODO: More specific exception class
+        raise ZabbixCLIError("Macro name cannot be empty.")
     if not macro.isupper():
         macro = macro.upper()
     if not macro.startswith("{"):
@@ -27,6 +32,8 @@ def fmt_macro_name(macro: str) -> str:
         macro = macro + "}"
     if not macro[1] == "$":  # NOTE: refactor could break this
         macro = "{$" + macro[1:]
+    if macro == "{$}":
+        raise ZabbixCLIError(f"Invalid macro name {macro!r}")
     return macro
 
 
