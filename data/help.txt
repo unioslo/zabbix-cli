@@ -1,0 +1,145 @@
+                                                                                          
+ Usage: zabbix-cli [OPTIONS] COMMAND [ARGS]...                                            
+                                                                                          
+ Zabbix-CLI is a command line interface for Zabbix.                                       
+                                                                                          
+╭─ Options ──────────────────────────────────────────────────────────────────────────────╮
+│ --config                  -c      PATH              Alternate configuration file to    │
+│                                                     use.                               │
+│                                                     [default: None]                    │
+│ --file,--input-file       -f      PATH              File with Zabbix-CLI commands to   │
+│                                                     be executed in bulk mode.          │
+│                                                     [default: None]                    │
+│ --format,--output-format  -o      [csv|json|table]  Define the output format when      │
+│                                                     running in command-line mode.      │
+│                                                     [default: None]                    │
+│ --version                                           Show the version of Zabbix-CLI and │
+│                                                     exit.                              │
+│ --install-completion                                Install completion for the current │
+│                                                     shell.                             │
+│ --show-completion                                   Show completion for the current    │
+│                                                     shell, to copy it or customize the │
+│                                                     installation.                      │
+│ --help                                              Show this message and exit.        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Problem ──────────────────────────────────────────────────────────────────────────────╮
+│ acknowledge_event                Acknowledge events by ID.                             │
+│ acknowledge_trigger_last_event   Acknowledge the the last event for the given          │
+│                                  triggers.                                             │
+│ show_alarms                      Show the latest events for the given triggers, hosts, │
+│                                  and/or host groups.                                   │
+│ show_trigger_events              Show the latest events for the given triggers, hosts, │
+│                                  and/or host groups.                                   │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Host ─────────────────────────────────────────────────────────────────────────────────╮
+│ add_host_to_hostgroup            Add hosts to host groups.                             │
+│ create_host                      Create a host.                                        │
+│ create_host_interface            Create a host interface.                              │
+│ create_hostgroup                 Create a new host group.                              │
+│ extend_hostgroup                 Add all hosts from a host group to other host groups. │
+│ monitor_host                     Monitor or unmonitor a host.                          │
+│ move_hosts                       Move all hosts from one host group to another.        │
+│ remove_host                      Delete a host.                                        │
+│ remove_host_from_hostgroup       Remove hosts from host groups.                        │
+│ remove_host_interface            Remove a host interface.                              │
+│ remove_hostgroup                 Delete a host group.                                  │
+│ show_host                        Show a specific host.                                 │
+│ show_host_interfaces             Show host interfaces.                                 │
+│ show_host_inventory              Show host inventory details for a specific host.      │
+│ show_hostgroup                   Show details of a host group.                         │
+│ show_hostgroup_permissions       Show usergroups with permissions for the given        │
+│                                  hostgroup.                                            │
+│ show_hostgroups                  Show details for host groups.                         │
+│ show_hosts                       Show all hosts.                                       │
+│ update_host_interface            Update a host interface.                              │
+│ update_host_inventory            Update a host inventory field.                        │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Proxy ────────────────────────────────────────────────────────────────────────────────╮
+│ add_proxy_to_group               Add a proxy to a proxy group.                         │
+│ clear_host_proxy                 Clear the proxy for one or more hosts.                │
+│ load_balance_proxy_hosts         Spread hosts between multiple proxies.                │
+│ move_proxy_hosts                 Move hosts from one proxy to another.                 │
+│ remove_proxy_from_group          Remove a proxy from a proxy group.                    │
+│ show_proxies                     Show all proxies.                                     │
+│ show_proxy_group_hosts           Show all hosts in a proxy group.                      │
+│ show_proxy_groups                Show all proxy groups and their proxies.              │
+│ update_host_proxy                Assign hosts to a proxy.                              │
+│ update_hostgroup_proxy           Assign a proxy to all hosts in one or more host       │
+│                                  groups.                                               │
+│ update_hostgroup_proxygroup      Assign a proxy group to all hosts in one or more host │
+│                                  groups.                                               │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Template ─────────────────────────────────────────────────────────────────────────────╮
+│ add_template_to_group            Add templates to groups.                              │
+│ create_templategroup             Create a new template group.                          │
+│ extend_templategroup             Add all templates from a group to other groups.       │
+│ link_template_to_host            Link templates to hosts.                              │
+│ link_template_to_template        Link templates to templates.                          │
+│ move_templates                   Move all templates from one group to another.         │
+│ remove_template_from_group       Remove templates from groups.                         │
+│ remove_templategroup             Delete a template group.                              │
+│ show_items                       Show a template's items.                              │
+│ show_template                    Show a template.                                      │
+│ show_templategroup               Show details for a template group.                    │
+│ show_templategroups              Show template groups.                                 │
+│ show_templates                   Show one or more templates.                           │
+│ unlink_template_from_host        Unlink templates from hosts.                          │
+│ unlink_template_from_template    Unlink templates from templates.                      │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ User ─────────────────────────────────────────────────────────────────────────────────╮
+│ add_user_to_usergroup            Add users to usergroups.                              │
+│ add_usergroup_permissions        Give a user group permissions to host/template        │
+│                                  groups.                                               │
+│ create_notification_user         Create a notification user.                           │
+│ create_user                      Create a user.                                        │
+│ create_usergroup                 Create a user group.                                  │
+│ remove_user                      Remove a user.                                        │
+│ remove_user_from_usergroup       Remove users from usergroups.                         │
+│ show_media_types                 Show all available media types.                       │
+│ show_user                        Show a user.                                          │
+│ show_usergroup                   Show one or more user groups by name or ID.           │
+│ show_usergroup_permissions       Show permissions for one or more user groups.         │
+│ show_usergroups                  Show user groups.                                     │
+│ show_users                       Show users.                                           │
+│ update_user                      Update a user.                                        │
+│ update_usergroup_permissions     Give a user group permissions to host/template        │
+│                                  groups.                                               │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Maintenance ──────────────────────────────────────────────────────────────────────────╮
+│ create_maintenance_definition    Create a new one-time maintenance definition.         │
+│ remove_maintenance_definition    Remove a maintenance definition.                      │
+│ show_maintenance_definitions     Show maintenance definitions for IDs, host groups or  │
+│                                  hosts.                                                │
+│ show_maintenance_periods         Show maintenance periods for one or more maintenance  │
+│                                  definitions.                                          │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Macro ────────────────────────────────────────────────────────────────────────────────╮
+│ define_global_macro              Create a global macro.                                │
+│ define_host_usermacro            Create or update a host usermacro.                    │
+│ show_global_macros               Show all global macros.                               │
+│ show_host_usermacros             Show all macros defined for a host.                   │
+│ show_usermacro_host_list         Find all hosts with a user macro of the given name.   │
+│ show_usermacro_template_list     Find all templates with a user macro of the given     │
+│                                  name.                                                 │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Import/Export ────────────────────────────────────────────────────────────────────────╮
+│ export_configuration             Export Zabbix configuration for one or more           │
+│                                  components.                                           │
+│ import_configuration             Import Zabbix configuration from file, directory or   │
+│                                  glob pattern.                                         │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ CLI ──────────────────────────────────────────────────────────────────────────────────╮
+│ init                             Create and initialize config file.                    │
+│ login                            Reauthenticate with the Zabbix API.                   │
+│ migrate_config                   Migrate a legacy .conf config to a new .toml config.  │
+│ open                             Open an app directory in the system's file manager.   │
+│ sample_config                    Print a sample configuration file.                    │
+│ show_config                      Show the current application configuration.           │
+│ show_dirs                        Show the default directories used by the application. │
+│ show_history                     Show the command history.                             │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Item ─────────────────────────────────────────────────────────────────────────────────╮
+│ show_last_values                 Show the last values of given items of monitored      │
+│                                  hosts.                                                │
+╰────────────────────────────────────────────────────────────────────────────────────────╯
+
