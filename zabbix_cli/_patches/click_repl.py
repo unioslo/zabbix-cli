@@ -65,6 +65,14 @@ def repl(  # noqa: C901
         available_commands = group_ctx.command.commands
     available_commands.pop(repl_command_name, None)
 
+    # Remove hidden commands
+    available_commands = {
+        cmd_name: cmd_obj
+        for cmd_name, cmd_obj in available_commands.items()
+        if not cmd_obj.hidden
+    }
+
+    group.commands = available_commands
     prompt_kwargs = bootstrap_prompt(prompt_kwargs, group)
 
     if isatty:
