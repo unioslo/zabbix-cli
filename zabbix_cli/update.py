@@ -557,11 +557,11 @@ class InstallationMethodDetector:
 
 
 UPDATERS: Dict[InstallationMethod, Type[Updater]] = {
-    InstallationMethod.GIT: GitUpdater,
-    InstallationMethod.PIP: PipUpdater,
-    InstallationMethod.PIPX: PipxUpdater,
     InstallationMethod.PYINSTALLER: PyInstallerUpdater,
-    InstallationMethod.UV: UvUpdater,
+    # InstallationMethod.GIT: GitUpdater,
+    # InstallationMethod.PIP: PipUpdater,
+    # InstallationMethod.PIPX: PipxUpdater,
+    # InstallationMethod.UV: UvUpdater,
 }
 
 
