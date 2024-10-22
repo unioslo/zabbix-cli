@@ -66,7 +66,7 @@ uvx --from zabbix-cli-uio zabbix-cli
 
 ### Homebrew
 
-A homebrew package exists, but it is maintained by a 3rd party. It can be installed with:
+A homebrew package exists, but it is maintained by a third party. It can be installed with:
 
 ```bash
 brew install zabbix-cli
