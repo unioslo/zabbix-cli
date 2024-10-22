@@ -42,39 +42,39 @@ The manual is available online at <https://unioslo.github.io/zabbix-cli/>.
 
 ### From source
 
+> [!NOTE]
+> We are in the process of acquiring the name `zabbix-cli` on PyPI. Until then, installation must be done via the mirror package `zabbix-cli-uio`.
+
 #### pip(x)
 
 ```bash
 pipx install zabbix-cli-uio
 ```
 
-#### [uv](https://github.com/astral-sh/uv)
+#### [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ```bash
 uv tool install zabbix-cli-uio
 ```
 
-If you just want to try out the CLI without installing it:
+#### [uvx](https://docs.astral.sh/uv/#tool-management)
 
 ```bash
 
 uvx --from zabbix-cli-uio zabbix-cli
 ```
 
-> [!NOTE]
-> We are in the process of acquiring the name `zabbix-cli` on PyPI. Until then, installation must be done via the mirror package `zabbix-cli-uio`.
-
 ### Homebrew
 
-A homebrew package exists, but it is not maintained by us. It can be installed with:
+A homebrew package exists, but it is maintained by a third party. It can be installed with:
 
 ```bash
 brew install zabbix-cli
 ```
 
-### PyInstaller binaries
+### Binary
 
-Binaries built with PyInstaller can be found on the [releases page](https://github.com/unioslo/zabbix-cli/releases). We build binaries for Linux, macOS and Windows for each release.
+Binaries built with PyInstaller can be found on the [releases page](https://github.com/unioslo/zabbix-cli/releases). We build binaries for Linux (x86), macOS (ARM) and Windows (x86) for each release.
 
 ## Quick start
 

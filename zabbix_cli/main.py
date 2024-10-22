@@ -183,7 +183,13 @@ def main_callback(
 
 def should_skip_configuration(ctx: typer.Context) -> bool:
     """Check if the command should skip all configuration of the app."""
-    return ctx.invoked_subcommand in ["open", "sample_config", "show_dirs", "init"]
+    return ctx.invoked_subcommand in [
+        "update",
+        "open",
+        "sample_config",
+        "show_dirs",
+        "init",
+    ]
 
 
 def should_skip_login(ctx: typer.Context) -> bool:
@@ -229,16 +235,15 @@ def main() -> int:
     """Main entry point for the CLI."""
     state = get_state()
 
-    # Load config before launching the app in order to:
-    # - configure logging
-    # - configure console output
-    # - load local plugins (defined in the config)
-    conf = _parse_config_arg()
-    config = get_config(conf, init=False)
-    state.config = config
-    app.load_plugins(state.config)
-
     try:
+        # Load config before launching the app in order to:
+        # - configure logging
+        # - configure console output
+        # - load local plugins (defined in the config)
+        conf = _parse_config_arg()
+        config = get_config(conf, init=False)
+        state.config = config
+        app.load_plugins(state.config)
         app()
     except Exception as e:
         from zabbix_cli.exceptions import handle_exception

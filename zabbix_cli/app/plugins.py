@@ -104,7 +104,7 @@ class PluginLoader:
                 # By default, broken plugings will not break the application
                 # unless they are explicitly marked as required in the config.
                 # This is a deviation from the standard behavior of plugins, but
-                # since these are 3rd party plugins, we want to be more lenient
+                # since these are third party plugins, we want to be more lenient
                 # and not break the entire application if a plugin is broken.
                 if not conf or not conf.optional:
                     raise PluginLoadError(plugin.name, conf) from e
