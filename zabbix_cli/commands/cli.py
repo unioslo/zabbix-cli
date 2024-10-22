@@ -296,3 +296,18 @@ def migrate_config(
 
     conf.dump_to_file(destination)
     success(f"Config migrated to {destination}")
+
+
+@app.command("update", rich_help_panel=HELP_PANEL, hidden=True)
+def update_application(ctx: typer.Context) -> None:
+    """Update the application to the latest version.
+
+    Primarily intended for use with PyInstaller builds, but can also be
+    used for updating other installations (except Homebrew)."""
+    from zabbix_cli.update import update
+
+    info = update()
+    if info:
+        success(f"Application updated to {info.version}")
+    else:
+        success("Application updated.")

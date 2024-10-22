@@ -6,4 +6,4 @@ Zabbix CLI is a command line application for interacting with Zabbix version 6 o
 
     {% include-markdown ".includes/quick-install.md" %}
 
-    For the next steps or ways to customize the installation, head over to the detailed [installation](./guide/installation.md) guide.
+For the next steps or ways to customize the installation, head over to the detailed [installation](./guide/installation.md) guide.
