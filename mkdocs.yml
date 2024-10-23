@@ -101,6 +101,7 @@ nav:
     - Authentication: guide/authentication.md
     - Usage: guide/usage.md
     - Migration: guide/migration.md
+    - Bulk Operations: guide/bulk.md
     - Commands:
       - guide/commands/*.md
   - Plugins:

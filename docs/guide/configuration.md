@@ -225,6 +225,8 @@ Type: `str`
 
 Default: `"table"`
 
+Choices: `"table"`, `"json"`
+
 ----
 
 #### `history`
@@ -244,6 +246,16 @@ File for storing the history of commands.
 Type: `str`
 
 Default: `"<DATA_DIR>/zabbix-cli/history"`
+
+----
+
+#### `bulk_mode`
+
+Strictness of error handling in bulk operations. If `strict`, the operation will stop at the first error. If `continue`, the operation will continue after errors and report them afterwards. If `skip`, the operation will skip invalid lines in bulk file, as well as ignore all errors when executing the operation.
+
+Type: `str`
+
+Choices: `"strict"`, `"continue"`, `"skip"`
 
 ----
 

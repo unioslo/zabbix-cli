@@ -168,7 +168,7 @@ def main_callback(
     elif input_file:
         from zabbix_cli.bulk import run_bulk
 
-        run_bulk(ctx, input_file)
+        run_bulk(ctx, input_file, state.config.app.bulk_mode)
     elif ctx.invoked_subcommand is not None:
         return  # modern alternative to `-C` option to run a single command
     else:
