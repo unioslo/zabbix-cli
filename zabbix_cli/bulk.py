@@ -38,19 +38,16 @@ class LineParseError(CommandFileError):
     """Line cannot be parsed."""
 
 
-# NOTE: These are named *Error, but should not be considered errors
-# We should always catch them. They are used for flow control + testing.
-
-
-class SkippableLineError(LineParseError):
+# NOTE: these exceptions are used for control flow only
+class SkippableLine(LineParseError):
     """Line will be skipped during parsing."""
 
 
-class EmptyLineError(SkippableLineError):
+class EmptyLine(SkippableLine):
     """Line is empty."""
 
 
-class CommentLineError(SkippableLineError):
+class CommentLine(SkippableLine):
     """Line is a comment."""
 
 
@@ -75,17 +72,17 @@ class BulkCommand(BaseModel):
         str,
         Union[KwargType, Sequence[KwargType]],
     ] = Field(default_factory=dict)
-    line_number: int
+    line_number: int = 0
 
     @classmethod
-    def from_line(cls, line: str, lineno: int, ctx: typer.Context) -> Self:
+    def from_line(cls, line: str, ctx: typer.Context, line_number: int = 0) -> Self:
         """Parse a command line into a BulkCommand."""
         # Early returns for empty lines and comments
         line = line.strip()
         if not line:
-            raise EmptyLineError("Cannot parse empty line")
+            raise EmptyLine("Cannot parse empty line")
         if line.startswith("#"):
-            raise CommentLineError("Cannot parse comment line")
+            raise CommentLine("Cannot parse comment line")
 
         # Split the line into tokens, handling quotes and comments
         tokens = shlex.split(line, comments=True)
@@ -188,7 +185,7 @@ class BulkCommand(BaseModel):
                     opts = "/".join(str(p) for p in param.opts)
                     raise CommandFileError(f"Missing required option {opts}")
 
-        return cls(command=cmd.name, kwargs=kwargs, line_number=lineno)
+        return cls(command=cmd.name, kwargs=kwargs, line_number=line_number)
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self}>"
@@ -334,9 +331,9 @@ class BulkRunner:
 
         for lineno, line in enumerate(contents.splitlines(), start=1):
             try:
-                command = BulkCommand.from_line(line, lineno, self.ctx)
+                command = BulkCommand.from_line(line, self.ctx, line_number=lineno)
                 commands.append(command)
-            except SkippableLineError:
+            except SkippableLine:
                 self.executions.append(
                     CommandExecution(
                         BulkCommand(
@@ -368,5 +365,5 @@ class BulkRunner:
 
 
 def run_bulk(ctx: typer.Context, file: Path) -> None:
-    runner = BulkRunner(ctx, file, mode=BulkRunnerMode.SKIP_ERRORS)
+    runner = BulkRunner(ctx, file, mode=BulkRunnerMode.CONTINUE)
     runner.run_bulk()
