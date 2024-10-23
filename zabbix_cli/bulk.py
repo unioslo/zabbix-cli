@@ -25,6 +25,7 @@ import typer
 import typer.core
 from pydantic import BaseModel
 from pydantic import Field
+from strenum import StrEnum
 from typing_extensions import Self
 
 from zabbix_cli.exceptions import CommandFileError
@@ -93,7 +94,7 @@ class BulkCommand(BaseModel):
         cmd_name = tokens[0]
         cmd = get_command_by_name(ctx, cmd_name)
         if not cmd.name:
-            raise LineParseError(f"Invalid command {cmd_name}")
+            raise LineParseError(f"Invalid command '{cmd_name}'")
 
         # Create parameter lookup tables for easier access
         param_by_opt = {
@@ -117,7 +118,7 @@ class BulkCommand(BaseModel):
             # Handle options
             if token.startswith("-") and len(token) > 1:
                 if token not in param_by_opt:
-                    raise LineParseError(f"Invalid option {token}")
+                    raise LineParseError(f"Invalid option '{token}'")
 
                 param = param_by_opt[token]
                 if not param.name:
@@ -209,16 +210,12 @@ class CommandExecution:
     line_number: Optional[int] = None
 
 
-class BulkRunnerMode(Enum):
+class BulkRunnerMode(StrEnum):
     """Mode of operation for BulkRunner."""
 
     STRICT = "strict"  # Stop on first error
     CONTINUE = "continue"  # Continue on errors, report at end
-    SKIP_ERRORS = "skip_errors"  # Skip lines that can't be parsed
-
-
-class BulkResultCounter(Counter[CommandResult]):
-    pass
+    SKIP = "skip"  # Skip lines that can't be parsed
 
 
 class BulkRunner:
@@ -232,34 +229,44 @@ class BulkRunner:
         self.file = file
         self.mode = mode
         self.executions: List[CommandExecution] = []
+        """Commands that were executed."""
+        self.skipped: List[CommandExecution] = []
+        """Lines that were skipped during parsing."""
 
     @contextmanager
     def _command_context(self, command: BulkCommand, line_number: Optional[int] = None):
         """Context manager for command execution with proper error handling."""
-        try:
-            yield
+
+        def add_success():
             self.executions.append(
                 CommandExecution(
                     command, CommandResult.SUCCESS, line_number=line_number
                 )
             )
             logger.info("Command succeeded: %s", command)
-        except (SystemExit, typer.Exit) as e:
-            self.executions.append(
-                CommandExecution(
-                    command, CommandResult.FAILURE, error=e, line_number=line_number
-                )
-            )
-            logger.debug("Command exited: %s - %s", command, e)
-            if self.mode == BulkRunnerMode.STRICT:
-                raise CommandFileError(f"Command failed: {command}") from e
-        except Exception as e:
+
+        def add_failure(e: BaseException) -> None:
             self.executions.append(
                 CommandExecution(
                     command, CommandResult.FAILURE, error=e, line_number=line_number
                 )
             )
             logger.error("Command failed: %s - %s", command, e)
+
+        try:
+            yield
+            add_success()
+        except (SystemExit, typer.Exit) as e:
+            # If we get return code 0 on an exit, we consider it a success
+            code = e.code if isinstance(e, SystemExit) else e.exit_code
+            if code == 0:
+                add_success()
+            else:
+                add_failure(e)
+                if self.mode == BulkRunnerMode.STRICT:
+                    raise CommandFileError(f"Command failed: {command}") from e
+        except Exception as e:
+            add_failure(e)
             if self.mode == BulkRunnerMode.STRICT:
                 raise CommandFileError(f"Command failed: {command}") from e
 
@@ -329,33 +336,29 @@ class BulkRunner:
 
         commands: List[BulkCommand] = []
 
+        def add_skipped(
+            line: str, line_number: int, error: Optional[BaseException] = None
+        ) -> None:
+            self.skipped.append(
+                CommandExecution(
+                    BulkCommand(command=line, line_number=line_number),
+                    CommandResult.SKIPPED,
+                    error=error,
+                    line_number=line_number,
+                )
+            )
+
         for lineno, line in enumerate(contents.splitlines(), start=1):
             try:
                 command = BulkCommand.from_line(line, self.ctx, line_number=lineno)
                 commands.append(command)
             except SkippableLine:
-                self.executions.append(
-                    CommandExecution(
-                        BulkCommand(
-                            command="", kwargs={}, line_number=lineno
-                        ),  # dummy command
-                        CommandResult.SKIPPED,
-                        line_number=lineno,
-                    )
-                )
+                logger.debug("Skipping line %d: %s", lineno, line)
+                add_skipped(line, lineno)
             except Exception as e:
-                if self.mode == BulkRunnerMode.SKIP_ERRORS:
+                if self.mode == BulkRunnerMode.SKIP:
+                    add_skipped(line, lineno, e)
                     logger.warning("Skipping invalid line %d: %s", lineno, e)
-                    self.executions.append(
-                        CommandExecution(
-                            BulkCommand(
-                                command=line.strip(), kwargs={}, line_number=lineno
-                            ),
-                            CommandResult.FAILURE,
-                            error=e,
-                            line_number=lineno,
-                        )
-                    )
                 else:
                     raise CommandFileError(
                         f"Unable to parse line {lineno} '{line}': {e}"
@@ -364,6 +367,6 @@ class BulkRunner:
         return commands
 
 
-def run_bulk(ctx: typer.Context, file: Path) -> None:
-    runner = BulkRunner(ctx, file, mode=BulkRunnerMode.CONTINUE)
+def run_bulk(ctx: typer.Context, file: Path, mode: BulkRunnerMode) -> None:
+    runner = BulkRunner(ctx, file, mode)
     runner.run_bulk()

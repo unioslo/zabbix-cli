@@ -4,11 +4,19 @@ from pathlib import Path
 
 import pytest
 import typer
+from zabbix_cli.app.app import StatefulApp
 from zabbix_cli.bulk import BulkCommand
 from zabbix_cli.bulk import BulkRunner
+from zabbix_cli.bulk import BulkRunnerMode
+from zabbix_cli.bulk import CommandExecution
+from zabbix_cli.bulk import CommandResult
 from zabbix_cli.bulk import CommentLine
 from zabbix_cli.bulk import EmptyLine
 from zabbix_cli.exceptions import CommandFileError
+from zabbix_cli.exceptions import ZabbixCLIError
+from zabbix_cli.output.console import exit_err
+from zabbix_cli.output.console import exit_ok
+from zabbix_cli.output.console import info
 
 
 @pytest.mark.parametrize(
@@ -186,6 +194,53 @@ show_templategroup mygroup --no-templates
     )
 
 
+@pytest.mark.parametrize(
+    "mode",
+    [BulkRunnerMode.STRICT, BulkRunnerMode.CONTINUE],
+)
+def test_bulk_runner_mode_invalid_line_strict(
+    tmp_path: Path, ctx: typer.Context, mode: BulkRunnerMode
+) -> None:
+    """Test loading a command file with invalid lines in strict/continue mode."""
+    file = tmp_path / "commands.txt"
+    file.write_text(
+        """# comment
+        21321asdasdadas # not a valid command
+        """
+    )
+    b = BulkRunner(ctx, file, mode=mode)
+    with pytest.raises(CommandFileError):
+        b.load_command_file()
+
+
+def test_bulk_runner_mode_invalid_line_skip(tmp_path: Path, ctx: typer.Context) -> None:
+    """Test loading a command file with invalid lines in skip mode."""
+    file = tmp_path / "commands.txt"
+    file.write_text(
+        """\
+# comment
+21321asdasdadas # not a valid command
+"""
+    )
+    b = BulkRunner(ctx, file, mode=BulkRunnerMode.SKIP)
+    commands = b.load_command_file()
+    assert len(commands) == 0
+    assert len(b.executions) == 0
+    assert len(b.skipped) == 2  # comment, invalid
+    expect = CommandExecution(
+        BulkCommand(command="21321asdasdadas # not a valid command", line_number=2),
+        CommandResult.SKIPPED,
+        ZabbixCLIError("Command 21321asdasdadas not found."),
+        line_number=2,
+    )
+    result = b.skipped[1]
+    assert result.command == expect.command
+    assert result.result == expect.result
+    assert result.error.args == expect.error.args
+    assert type(result.error) is type(expect.error)  # noqa
+    assert result.line_number == expect.line_number
+
+
 def test_load_command_file_not_found(tmp_path: Path, ctx: typer.Context) -> None:
     """Test loading a command file that does not exist."""
     file = tmp_path / "commands.txt"
@@ -193,3 +248,57 @@ def test_load_command_file_not_found(tmp_path: Path, ctx: typer.Context) -> None
     b = BulkRunner(ctx, file)
     with pytest.raises(CommandFileError):
         b.load_command_file()
+
+
+@pytest.mark.parametrize("mode", [BulkRunnerMode.STRICT, BulkRunnerMode.CONTINUE])
+def test_bulk_runner_exit_code_handling(
+    tmp_path: Path, app: StatefulApp, ctx: typer.Context, mode: BulkRunnerMode
+) -> None:
+    """Test handling of exit codes."""
+    file = tmp_path / "commands.txt"
+    file.write_text(
+        """\
+# comment
+no_exit
+exits_ok
+exits_error
+"""
+    )
+
+    @app.command(name="exits_ok")
+    def exits_ok() -> None:
+        exit_ok("This command exits with code 0")
+
+    @app.command(name="exits_error")
+    def exits_error() -> None:
+        exit_err("This command exits with code 1")
+
+    @app.command(name="no_exit")
+    def on_exit() -> None:
+        info("We just print a message here")
+
+    import typer
+    import typer.core
+
+    cmd = typer.main.get_command(app)
+    ctx.command = cmd
+
+    b = BulkRunner(ctx, file, mode)
+    with pytest.raises(CommandFileError) as excinfo:
+        b.run_bulk()
+
+    assert len(b.executions) == 3
+    assert b.executions[0].result == CommandResult.SUCCESS
+    assert b.executions[1].result == CommandResult.SUCCESS
+    assert b.executions[2].result == CommandResult.FAILURE
+
+    # Differing error messages between strict and continue
+    exc = excinfo.exconly()
+    if mode == BulkRunnerMode.STRICT:
+        assert (
+            exc
+            == "zabbix_cli.exceptions.CommandFileError: Command failed: command='exits_error' kwargs={} line_number=4"
+        )
+    else:
+        assert "zabbix_cli.exceptions.CommandFileError: 1 commands failed:" in exc
+        assert "Line 4: command='exits_error' kwargs={} line_number=4 (1)" in exc
