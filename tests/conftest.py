@@ -5,8 +5,8 @@ from typing import Iterator
 
 import pytest
 import typer
-from typer import Typer
 from typer.testing import CliRunner
+from zabbix_cli.app import StatefulApp
 from zabbix_cli.config.model import Config
 from zabbix_cli.main import app
 from zabbix_cli.pyzabbix.client import ZabbixAPI
@@ -17,7 +17,7 @@ runner = CliRunner()
 
 
 @pytest.fixture(name="app")
-def _app() -> Iterator[Typer]:
+def _app() -> Iterator[StatefulApp]:
     yield app
 
 
@@ -26,7 +26,7 @@ def app_runner():
 
 
 @pytest.fixture
-def ctx(app: Typer) -> typer.Context:
+def ctx(app: StatefulApp) -> typer.Context:
     """Create context for the main command."""
     # Use the CliRunner to invoke a command and capture the context
     obj = {}
