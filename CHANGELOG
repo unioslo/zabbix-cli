@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## [Unreleased] -->
+## [Unreleased]
+
+### Added
+
+- Configurable error handling modes for bulk mode under `app.bulk_mode`:
+  - `strict`: Stop on first error.
+  - `continue`: Continue on command execution error, report at the end.
+  - `ignore`: Ignore all errors, including command file parsing errors.
 
 ## [3.1.3]
 

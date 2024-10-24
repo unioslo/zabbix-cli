@@ -48,6 +48,7 @@ from pydantic import model_validator
 from typing_extensions import Self
 
 from zabbix_cli._v2_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
+from zabbix_cli.bulk import BulkRunnerMode
 from zabbix_cli.config.constants import AUTH_FILE
 from zabbix_cli.config.constants import AUTH_TOKEN_FILE
 from zabbix_cli.config.constants import OutputFormat
@@ -188,6 +189,9 @@ class AppConfig(BaseModel):
     output_format: OutputFormat = OutputFormat.TABLE
     history: bool = True
     history_file: Path = DATA_DIR / "history"
+    bulk_mode: BulkRunnerMode = Field(
+        default=BulkRunnerMode.STRICT, description="Bulk mode error handling."
+    )
 
     # Legacy options
     allow_insecure_auth_file: bool = Field(
