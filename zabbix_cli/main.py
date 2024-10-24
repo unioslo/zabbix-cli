@@ -90,9 +90,6 @@ def version_callback(value: bool):
 @app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
-    # NOTE: this is just a dummy-argument to show the help message for
-    # --config in the CLI. The actual parsing of the config argument
-    # happens in main().
     config_file: Optional[Path] = typer.Option(
         None,
         "--config",
@@ -153,9 +150,8 @@ def main_callback(
 
     state.login()
     # Configure plugins _after_ login
-    # That is a promise we make to plugins so that they can do whatever
-    # they want in their configure method - such as interacting with the API
-    # or using the determined Zabbix API version.
+    # This allows plugins to use the Zabbix API client + more
+    # in their __configure__ functions.
     app.configure_plugins(state.config)
 
     # TODO: look at order of evaluation here. What takes precedence?
@@ -225,9 +221,6 @@ def _parse_config_arg() -> Optional[Path]:
         from zabbix_cli.output.console import exit_err
 
         exit_err("No value provided for --config/-c argument.")
-
-    # # Remove the argument and its value from sys.argv
-    # sys.argv = sys.argv[:index] + sys.argv[index + 2 :]
     return Path(conf)
 
 
@@ -249,8 +242,6 @@ def main() -> int:
         from zabbix_cli.exceptions import handle_exception
 
         handle_exception(e)
-    else:
-        print("\nDone, thank you for using Zabbix-CLI")
     finally:
         state.logout_on_exit()
         logger.debug("Zabbix-CLI stopped.")
