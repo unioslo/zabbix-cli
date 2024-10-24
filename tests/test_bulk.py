@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 import typer
+from inline_snapshot import snapshot
 from zabbix_cli.app.app import StatefulApp
 from zabbix_cli.bulk import BulkCommand
 from zabbix_cli.bulk import BulkRunner
@@ -131,66 +132,104 @@ create_user username --firstname name --lastname surname --passwd mypass # trail
 acknowledge_event 123,456,789 --message "foo message" --close
 # Command with negative flag
 show_templategroup mygroup --no-templates
+# Command with optional boolean flags
+show_host *.example.com --no-maintenance --monitored
+# Command with enum option (human-readable string)
+show_host *.example.com --active available
+# Command with enum option (API values)
+show_host *.example.com --active 0
+show_host *.example.com --active 1
+show_host *.example.com --active 2
 # we will end with a blank line
 """
     )
     b = BulkRunner(ctx, file)
     commands = b.load_command_file()
-    assert len(commands) == 6
-    assert commands[0] == BulkCommand(command="show_zabbixcli_config", line_number=2)
-    assert commands[1] == BulkCommand(
-        command="create_user",
-        kwargs={
-            "username": "username",
-            "first_name": "name",
-            "last_name": "surname",
-            "args": ["mypass", "1", "1", "86400", "1,2"],
-        },
-        line_number=4,
-    )
-    assert commands[2] == BulkCommand(
-        command="create_user",
-        kwargs={
-            "username": "username",
-            "first_name": "name",
-            "last_name": "surname",
-            "password": "mypass",
-            "role": "1",
-            "autologin": True,
-            "autologout": "86400",
-            "groups": "1,2",
-            "args": [],
-        },
-        line_number=5,
-    )
-    assert commands[3] == BulkCommand(
-        command="create_user",
-        kwargs={
-            "username": "username",
-            "first_name": "name",
-            "last_name": "surname",
-            "password": "mypass",
-            "args": [],
-        },
-        line_number=7,
-    )
-    assert commands[4] == BulkCommand(
-        command="acknowledge_event",
-        kwargs={
-            "event_ids": "123,456,789",
-            "message": "foo message",
-            "close": True,
-            "args": [],
-        },
-        line_number=9,
-    )
-    assert commands[5] == BulkCommand(
-        command="show_templategroup",
-        kwargs={
-            "templategroup": "mygroup",
-            "templates": False,
-        },
-        line_number=11,
+    assert len(commands) == snapshot(11)
+    assert commands == snapshot(
+        [
+            BulkCommand(command="show_zabbixcli_config", kwargs={}, line_number=2),
+            BulkCommand(
+                command="create_user",
+                kwargs={
+                    "username": "username",
+                    "args": ["mypass", "1", "1", "86400", "1,2"],
+                    "first_name": "name",
+                    "last_name": "surname",
+                },
+                line_number=4,
+            ),
+            BulkCommand(
+                command="create_user",
+                kwargs={
+                    "username": "username",
+                    "args": [],
+                    "first_name": "name",
+                    "last_name": "surname",
+                    "password": "mypass",
+                    "role": "1",
+                    "autologin": True,
+                    "autologout": "86400",
+                    "groups": "1,2",
+                },
+                line_number=5,
+            ),
+            BulkCommand(
+                command="create_user",
+                kwargs={
+                    "username": "username",
+                    "args": [],
+                    "first_name": "name",
+                    "last_name": "surname",
+                    "password": "mypass",
+                },
+                line_number=7,
+            ),
+            BulkCommand(
+                command="acknowledge_event",
+                kwargs={
+                    "event_ids": "123,456,789",
+                    "args": [],
+                    "message": "foo message",
+                    "close": True,
+                },
+                line_number=9,
+            ),
+            BulkCommand(
+                command="show_templategroup",
+                kwargs={"templategroup": "mygroup", "templates": False},
+                line_number=11,
+            ),
+            BulkCommand(
+                command="show_host",
+                kwargs={
+                    "hostname_or_id": "*.example.com",
+                    "maintenance": False,
+                    "monitored": True,
+                },
+                line_number=13,
+            ),
+            BulkCommand(
+                command="show_host",
+                kwargs={"hostname_or_id": "*.example.com", "active": "available"},
+                line_number=15,
+            ),
+            BulkCommand(
+                command="show_host",
+                kwargs={"hostname_or_id": "*.example.com", "active": "0"},
+                line_number=17,
+            ),
+            BulkCommand(
+                command="show_host",
+                kwargs={"hostname_or_id": "*.example.com", "active": "1"},
+                line_number=18,
+            ),
+            BulkCommand(
+                command="show_host",
+                kwargs={"hostname_or_id": "*.example.com", "active": "2"},
+                line_number=19,
+            ),
+        ]
     )
 
 
