@@ -9,12 +9,10 @@ from zabbix_cli.app.app import StatefulApp
 from zabbix_cli.bulk import BulkCommand
 from zabbix_cli.bulk import BulkRunner
 from zabbix_cli.bulk import BulkRunnerMode
-from zabbix_cli.bulk import CommandExecution
 from zabbix_cli.bulk import CommandResult
 from zabbix_cli.bulk import CommentLine
 from zabbix_cli.bulk import EmptyLine
 from zabbix_cli.exceptions import CommandFileError
-from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import exit_ok
 from zabbix_cli.output.console import info
@@ -258,26 +256,28 @@ def test_bulk_runner_mode_invalid_line_skip(tmp_path: Path, ctx: typer.Context) 
     file.write_text(
         """\
 # comment
+show_host *.example.com --active 0
 21321asdasdadas # not a valid command
+create_host foo.example.com --hostgroup "Linux servers"
 """
     )
     b = BulkRunner(ctx, file, mode=BulkRunnerMode.SKIP)
     commands = b.load_command_file()
-    assert len(commands) == 0
+    assert len(commands) == 2  # show_host, create_host
     assert len(b.executions) == 0
-    assert len(b.skipped) == 2  # comment, invalid
-    expect = CommandExecution(
-        BulkCommand(command="21321asdasdadas # not a valid command", line_number=2),
-        CommandResult.SKIPPED,
-        ZabbixCLIError("Command 21321asdasdadas not found."),
-        line_number=2,
-    )
+    assert len(b.skipped) == 2  # comment, invalid command
+
+    # First line is comment
+    # Second line is invalid command
     result = b.skipped[1]
-    assert result.command == expect.command
-    assert result.result == expect.result
-    assert result.error.args == expect.error.args
-    assert type(result.error) is type(expect.error)  # noqa
-    assert result.line_number == expect.line_number
+    assert result.command == snapshot(
+        BulkCommand(command="21321asdasdadas # not a valid command", line_number=3)
+    )
+    assert result.result == CommandResult.SKIPPED
+    assert repr(result.error) == snapshot(
+        "ZabbixCLIError('Command 21321asdasdadas not found.')"
+    )
+    assert result.line_number == snapshot(3)
 
 
 def test_load_command_file_not_found(tmp_path: Path, ctx: typer.Context) -> None:
