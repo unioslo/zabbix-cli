@@ -3,6 +3,7 @@ from __future__ import annotations
 from itertools import chain
 from typing import TYPE_CHECKING
 from typing import List
+from typing import Optional
 from typing import Union
 
 import typer
@@ -555,26 +556,27 @@ def show_template(
 @app.command("show_templates", rich_help_panel=HELP_PANEL)
 def show_templates(
     ctx: typer.Context,
-    templates: str = typer.Argument(
-        "*",
+    templates: Optional[str] = typer.Argument(
+        None,
         help="Template name(s) or ID(s). Comma-separated. Supports wildcards.",
+        show_default=False,
     ),
 ) -> None:
-    """Show one or more templates.
+    """Show all templates.
 
     Shows all templates by default. The template name can be a pattern containing wildcards.
     Names and IDs cannot be mixed.
     """
     from zabbix_cli.models import AggregateResult
 
-    args = parse_list_arg(templates)
-    tmpls = app.state.client.get_templates(
-        *args,
+    template_names_or_ids = parse_list_arg(templates)
+    tpls = app.state.client.get_templates(
+        *template_names_or_ids,
         select_hosts=True,
         select_templates=True,
         select_parent_templates=True,
     )
-    render_result(AggregateResult(result=tmpls))
+    render_result(AggregateResult(result=tpls))
 
 
 @app.command(

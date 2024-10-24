@@ -765,7 +765,7 @@ def show_hosts(
 
     with app.status("Fetching hosts..."):
         hosts = app.state.client.get_hosts(
-            *hostnames_or_ids or "*",  # default to all hosts wildcard pattern
+            *hostnames_or_ids,
             select_groups=True,
             select_templates=True,
             sort_field="host",

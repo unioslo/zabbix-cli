@@ -448,11 +448,11 @@ def show_proxies(
     from zabbix_cli.commands.results.proxy import ShowProxiesResult
     from zabbix_cli.models import AggregateResult
 
-    names_or_ids = parse_list_arg(name_or_id) if name_or_id else None
+    names_or_ids = parse_list_arg(name_or_id)
 
     with app.status("Fetching proxies..."):
         proxies = app.state.client.get_proxies(
-            *names_or_ids or "*",
+            *names_or_ids,
             select_hosts=True,
         )
     render_result(
