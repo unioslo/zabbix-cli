@@ -1,0 +1,37 @@
+[api]
+url = "https://zabbix.example.com"
+username = "Admin"
+password = ""
+auth_token = ""
+verify_ssl = true
+
+[app]
+default_hostgroups = [
+    "All-hosts",
+]
+default_admin_usergroups = []
+default_create_user_usergroups = []
+default_notification_users_usergroups = [
+    "All-notification-users",
+]
+export_directory = "/home/runner/.local/share/zabbix-cli/exports"
+export_format = "json"
+export_timestamps = false
+use_colors = true
+use_auth_token_file = true
+auth_token_file = "/home/runner/.local/share/zabbix-cli/.zabbix-cli_auth_token"
+auth_file = "/home/runner/.local/share/zabbix-cli/.zabbix-cli_auth"
+use_paging = false
+output_format = "table"
+history = true
+history_file = "/home/runner/.local/share/zabbix-cli/history"
+bulk_mode = "strict"
+allow_insecure_auth_file = true
+legacy_json_format = false
+
+[logging]
+enabled = true
+log_level = "INFO"
+log_file = "/home/runner/.local/state/zabbix-cli/log/zabbix-cli.log"
+
+[plugins]
