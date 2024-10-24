@@ -14,18 +14,12 @@
 
     {% include-markdown ".includes/admonition-pypi.md" %}
 
-=== "pip(x)"
+=== "pipx"
 
     Install with [`pipx`](https://pipx.pypa.io/stable/) to avoid conflicts with other Python packages in your system:
 
     ```bash
     pipx install zabbix-cli-uio
-    ```
-
-    If you prefer to install the package with `pip`:
-
-    ```bash
-    pip install zabbix-cli-uio
     ```
 
     {% include-markdown ".includes/admonition-pypi.md" %}
@@ -43,17 +37,8 @@
 
 === "Binary"
 
-    We build binaries with PyInstaller for each tagged release of Zabbix-cli. You can download the latest release from the [GitHub releases page](https://github.com/unioslo/zabbix-cli/releases).
+    Binaries are built with PyInstaller for each release and can be downloaded from the [GitHub releases page](https://github.com/unioslo/zabbix-cli/releases). Download the correct binary for your platform and save it as `zabbix-cli`.
 
-    Depending on your platform, you might need to make the binary executable and move it to a location in your `PATH`. Linux users can follow these steps:
+    !!! warning "Linux & macOS"
 
-    ```bash
-    # Download the latest release and name it "zabbix-cli"
-    curl -L -o zabbix-cli https://github.com/unioslo/zabbix-cli/releases/latest/download/zabbix-cli-ubuntu-latest-3.12
-
-    # Make it executable
-    chmod +x zabbix-cli
-
-    # Move the binary to a location in your PATH
-    mv zabbix-cli /usr/local/bin/zabbix-cli
-    ```
+        Remember to make the binary executable with `chmod +x zabbix-cli`.

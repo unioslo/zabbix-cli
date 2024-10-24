@@ -2,13 +2,11 @@
 
 The application is primarily distributed with `pip`, but other installation methods are available.
 
-## Install Zabbix CLI
+## Install
 
-{% set install_expand = true %}
 {% include-markdown ".includes/quick-install.md" %}
 
-
-## Upgrade Zabbix CLI
+## Upgrade
 
 The upgrade process depends on the chosen installation method.
 
