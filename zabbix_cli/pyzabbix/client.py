@@ -162,6 +162,8 @@ def parse_name_or_id_arg(
 ) -> ParamsType:
     """Parse a tuple of names or IDs and add them to an existing params dict."""
     search_params = search_params or {}
+
+    # If we have a wildcard, we can omit names or IDs entirely
     if "*" in names_or_ids:
         names_or_ids = tuple()
 
@@ -2211,7 +2213,7 @@ class ZabbixAPI:
             change_to_cause=change_to_cause,
             change_to_symptom=change_to_symptom,
         )
-        params: ParamsType = {"eventids": event_ids, "action": action}
+        params: ParamsType = {"eventids": list(event_ids), "action": action}
         if message:
             params["message"] = message
         try:
