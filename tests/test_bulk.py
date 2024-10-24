@@ -23,7 +23,9 @@ from zabbix_cli.output.console import info
     [
         pytest.param(
             "show_zabbixcli_config",
-            BulkCommand(command="show_zabbixcli_config", kwargs={}),
+            BulkCommand(
+                command="show_zabbixcli_config", kwargs={}, line="show_zabbixcli_config"
+            ),
             id="simple",
         ),
         pytest.param(
@@ -42,6 +44,7 @@ from zabbix_cli.output.console import info
                         "groups",
                     ],
                 },
+                line="create_user username name surname passwd role autologin autologout groups",
             ),
             id="Legacy positional args",
         ),
@@ -60,6 +63,7 @@ from zabbix_cli.output.console import info
                     "groups": "1,2",
                     "args": [],
                 },
+                line="create_user username --firstname name --lastname surname --passwd mypass --role 1  --autologin --autologout 86400 --groups '1,2'",
             ),
             id="args and kwargs",
         ),
@@ -72,6 +76,7 @@ from zabbix_cli.output.console import info
                     "password": "mypass",
                     "args": ["myname", "surname"],
                 },
+                line="create_user username myname --passwd mypass surname",
             ),
             id="kwarg between args",
         ),
@@ -86,6 +91,7 @@ from zabbix_cli.output.console import info
                     "role": "1",
                     "args": [],
                 },
+                line="create_user myuser --firstname myname --passwd mypasswd --role 1 # comment here --option value",
             ),
             id="Trailing comment",
         ),
@@ -146,7 +152,12 @@ show_host *.example.com --active 2
     assert len(commands) == snapshot(11)
     assert commands == snapshot(
         [
-            BulkCommand(command="show_zabbixcli_config", kwargs={}, line_number=2),
+            BulkCommand(
+                command="show_zabbixcli_config",
+                kwargs={},
+                line="show_zabbixcli_config # next line will be blank",
+                line_number=2,
+            ),
             BulkCommand(
                 command="create_user",
                 kwargs={
@@ -155,6 +166,7 @@ show_host *.example.com --active 2
                     "first_name": "name",
                     "last_name": "surname",
                 },
+                line="create_user username --firstname name --lastname surname mypass 1 1 86400 1,2",
                 line_number=4,
             ),
             BulkCommand(
@@ -170,6 +182,7 @@ show_host *.example.com --active 2
                     "autologout": "86400",
                     "groups": "1,2",
                 },
+                line="create_user username --firstname name --lastname surname --passwd mypass --role 1  --autologin --autologout 86400 --groups '1,2'",
                 line_number=5,
             ),
             BulkCommand(
@@ -181,6 +194,7 @@ show_host *.example.com --active 2
                     "last_name": "surname",
                     "password": "mypass",
                 },
+                line="create_user username --firstname name --lastname surname --passwd mypass # trailing comment",
                 line_number=7,
             ),
             BulkCommand(
@@ -191,11 +205,13 @@ show_host *.example.com --active 2
                     "message": "foo message",
                     "close": True,
                 },
+                line='acknowledge_event 123,456,789 --message "foo message" --close',
                 line_number=9,
             ),
             BulkCommand(
                 command="show_templategroup",
                 kwargs={"templategroup": "mygroup", "templates": False},
+                line="show_templategroup mygroup --no-templates",
                 line_number=11,
             ),
             BulkCommand(
@@ -205,26 +221,31 @@ show_host *.example.com --active 2
                     "maintenance": False,
                     "monitored": True,
                 },
+                line="show_host *.example.com --no-maintenance --monitored",
                 line_number=13,
             ),
             BulkCommand(
                 command="show_host",
                 kwargs={"hostname_or_id": "*.example.com", "active": "available"},
+                line="show_host *.example.com --active available",
                 line_number=15,
             ),
             BulkCommand(
                 command="show_host",
                 kwargs={"hostname_or_id": "*.example.com", "active": "0"},
+                line="show_host *.example.com --active 0",
                 line_number=17,
             ),
             BulkCommand(
                 command="show_host",
                 kwargs={"hostname_or_id": "*.example.com", "active": "1"},
+                line="show_host *.example.com --active 1",
                 line_number=18,
             ),
             BulkCommand(
                 command="show_host",
                 kwargs={"hostname_or_id": "*.example.com", "active": "2"},
+                line="show_host *.example.com --active 2",
                 line_number=19,
             ),
         ]
@@ -335,9 +356,7 @@ exits_error
     exc = excinfo.exconly()
     if mode == BulkRunnerMode.STRICT:
         assert (
-            exc
-            == "zabbix_cli.exceptions.CommandFileError: Command failed: command='exits_error' kwargs={} line_number=4"
+            exc == "zabbix_cli.exceptions.CommandFileError: Command failed: exits_error"
         )
     else:
-        assert "zabbix_cli.exceptions.CommandFileError: 1 commands failed:" in exc
-        assert "Line 4: command='exits_error' kwargs={} line_number=4 (1)" in exc
+        assert "zabbix_cli.exceptions.CommandFileError: 1 commands failed:\nLine 4: exits_error (1)"

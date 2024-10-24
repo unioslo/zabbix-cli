@@ -68,12 +68,18 @@ class ParsedOption:
 class BulkCommand(BaseModel):
     """A command to be run in bulk."""
 
-    command: str
+    command: str  # parsed command name without arguments
     kwargs: Dict[
         str,
         Union[KwargType, Sequence[KwargType]],
     ] = Field(default_factory=dict)
+    line: str = ""  # original line from file
     line_number: int = 0
+
+    def __str__(self) -> str:
+        if self.line:
+            return self.line
+        return f"{self.command} {self.kwargs}"
 
     @classmethod
     def from_line(cls, line: str, ctx: typer.Context, line_number: int = 0) -> Self:
@@ -186,7 +192,7 @@ class BulkCommand(BaseModel):
                     opts = "/".join(str(p) for p in param.opts)
                     raise CommandFileError(f"Missing required option {opts}")
 
-        return cls(command=cmd.name, kwargs=kwargs, line_number=line_number)
+        return cls(command=cmd.name, kwargs=kwargs, line_number=line_number, line=line)
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self}>"
@@ -252,6 +258,8 @@ class BulkRunner:
                 )
             )
             logger.error("Command failed: %s - %s", command, e)
+            if self.mode == BulkRunnerMode.STRICT:
+                raise CommandFileError(f"Command failed: {command}") from e
 
         try:
             yield
@@ -263,12 +271,8 @@ class BulkRunner:
                 add_success()
             else:
                 add_failure(e)
-                if self.mode == BulkRunnerMode.STRICT:
-                    raise CommandFileError(f"Command failed: {command}") from e
         except Exception as e:
             add_failure(e)
-            if self.mode == BulkRunnerMode.STRICT:
-                raise CommandFileError(f"Command failed: {command}") from e
 
     def run_bulk(self) -> Counter[CommandResult]:
         """Run commands in bulk from a file where each line is a CLI command.
