@@ -311,6 +311,7 @@ class ZabbixAPI:
                 f"Failed to connect to Zabbix API at {self.url}"
             ) from e
 
+        logger.debug("Logging in to Zabbix API at %s", self.url)
         self.auth = ""
         if auth_token:
             self.use_api_token = True
