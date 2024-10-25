@@ -34,7 +34,6 @@ from zabbix_cli.logs import add_user
 from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
-from zabbix_cli.output.console import info
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.prompts import str_prompt
 
@@ -175,9 +174,12 @@ class Authenticator:
     def _get_username_password_prompt(
         self,
     ) -> Credentials:
-        """Get username and password from prompt."""
-        username, password = prompt_username_password(username=self.config.api.username)
-        return Credentials(username=username, password=password)
+        """Get username and password from a prompt in a separate screen."""
+        with err_console.screen():
+            username, password = prompt_username_password(
+                username=self.config.api.username
+            )
+            return Credentials(username=username, password=password)
 
     def _get_auth_token_config(self) -> Credentials:
         return Credentials(auth_token=self.config.api.auth_token.get_secret_value())
@@ -239,16 +241,12 @@ class Authenticator:
 
 
 def login(client: ZabbixAPI, config: Config) -> None:
-    with err_console.screen():
-        info(f"Logging in to {config.api.url}")
-        auth = Authenticator(client, config)
-        token = auth.login()
-        if config.app.use_auth_token_file:
-            write_auth_token_file(
-                config.api.username, token, config.app.auth_token_file
-            )
-        add_user(config.api.username)
-        logger.info("Logged in as %s", config.api.username)
+    auth = Authenticator(client, config)
+    token = auth.login()
+    if config.app.use_auth_token_file:
+        write_auth_token_file(config.api.username, token, config.app.auth_token_file)
+    add_user(config.api.username)
+    logger.info("Logged in as %s", config.api.username)
 
 
 def logout(client: ZabbixAPI, config: Config) -> None:

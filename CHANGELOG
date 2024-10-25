@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `continue`: Continue on command execution error, report at the end.
   - `ignore`: Ignore all errors, including command file parsing errors.
 
+### Fixed
+
+- Screen flickering on application startup when not authenticating via username and password prompt.
+
 ## [3.1.3]
 
 ### Fixed
