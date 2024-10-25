@@ -106,67 +106,6 @@ _register_internal_command(
 )
 
 
-# class ClickCompleter(Completer):
-#     def __init__(self, cli: click.Group) -> None:
-#         self.cli = cli
-
-#     def get_completions(
-#         self, document: Document, complete_event: CompleteEvent
-#     ) -> Generator[Any, Any, None]:
-#         # Code analogous to click._bashcomplete.do_complete
-
-#         try:
-#             args = shlex.split(document.text_before_cursor)
-#         except ValueError:
-#             # Invalid command, perhaps caused by missing closing quotation.
-#             return
-
-#         cursor_within_command = (
-#             document.text_before_cursor.rstrip() == document.text_before_cursor
-#         )
-
-#         if args and cursor_within_command:
-#             # We've entered some text and no space, give completions for the
-#             # current word.
-#             incomplete = args.pop()
-#         else:
-#             # We've not entered anything, either at all or for the current
-#             # command, so give all relevant completions for this context.
-#             incomplete = ""
-#         # Resolve context based on click version
-#         ctx = click.shell_completion._resolve_context(self.cli, {}, "", args)  # pyright: ignore[reportPrivateUsage]
-
-#         choices: List[Completion] = []
-#         for param in ctx.command.params:
-#             if isinstance(param, click.Option):
-#                 for options in (param.opts, param.secondary_opts):
-#                     for o in options:
-#                         choices.append(
-#                             Completion(
-#                                 str(o), -len(incomplete), display_meta=param.help
-#                             )
-#                         )
-#             elif isinstance(param, click.Argument):
-#                 if isinstance(param.type, click.Choice):
-#                     for choice in param.type.choices:
-#                         choices.append(Completion(str(choice), -len(incomplete)))
-
-#         if isinstance(ctx.command, click.MultiCommand):
-#             for name in ctx.command.list_commands(ctx):
-#                 command = ctx.command.get_command(ctx, name)
-#                 choices.append(
-#                     Completion(
-#                         str(name),
-#                         -len(incomplete),
-#                         display_meta=getattr(command, "short_help"),
-#                     )
-#                 )
-
-#         for item in choices:
-#             if item.text.startswith(incomplete):
-#                 yield item
-
-
 def bootstrap_prompt(
     prompt_kwargs: Optional[Dict[str, Any]],
     group: click.Group,
