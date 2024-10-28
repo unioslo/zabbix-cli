@@ -351,14 +351,15 @@ def parse_export_types_callback(
 )
 def export_configuration(
     ctx: typer.Context,
-    directory: Optional[str] = typer.Option(
+    directory: Optional[Path] = typer.Option(
         None,
         "--directory",
         help="Directory to export configuration to. Overrides directory in config.",
+        writable=True,
+        file_okay=False,
     ),
     # NOTE: We can't accept comma-separated values AND multiple values when using enums!
     # Typer performs its parsing before callbacks are run, sadly.
-    # This was called
     types: List[ExportType] = typer.Option(
         [],
         "--type",
@@ -426,7 +427,7 @@ def export_configuration(
     if args:
         if not len(args) == 3:
             exit_err("Invalid number of arguments. Use options instead.")
-        directory = args[0]
+        directory = parse_path_arg(args[0])
         types = parse_export_types(parse_list_arg(args[1]))
         names = args[2]
         # No format arg in V2...
@@ -436,10 +437,7 @@ def export_configuration(
             "--legacy-filenames is deprecated and will be removed in a future version."
         )
 
-    if directory:
-        exportdir = parse_path_arg(directory)
-    else:
-        exportdir = app.state.config.app.export_directory
+    exportdir = directory or app.state.config.app.export_directory
 
     # V2 compat: passing in #all# exports all names
     if names == "#all#":
