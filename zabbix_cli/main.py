@@ -135,8 +135,8 @@ def main_callback(
     if output_format is not None:
         state.config.app.output_format = output_format
 
-    if state.repl:
-        return  # In REPL already; no need to re-configure.
+    if state.repl or state.bulk:
+        return  # In REPL or bulk mode already; no need to re-configure.
 
     logger.debug("Zabbix-CLI started.")
 

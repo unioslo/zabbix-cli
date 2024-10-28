@@ -13,14 +13,9 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Counter
-from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Sequence
-from typing import Union
 
-import click
-import click.core
 import typer
 import typer.core
 from pydantic import BaseModel
@@ -29,7 +24,8 @@ from strenum import StrEnum
 from typing_extensions import Self
 
 from zabbix_cli.exceptions import CommandFileError
-from zabbix_cli.utils.commands import get_command_by_name
+from zabbix_cli.output.console import warning
+from zabbix_cli.state import get_state
 from zabbix_cli.utils.fs import read_file
 
 logger = logging.getLogger(__name__)
@@ -52,37 +48,20 @@ class CommentLine(SkippableLine):
     """Line is a comment."""
 
 
-KwargType = Union[str, bool, int, float, None]
-KwargsDict = Dict[str, Union[KwargType, Sequence[KwargType]]]
-
-
-@dataclass
-class ParsedOption:
-    """Represents a parsed command line option."""
-
-    name: str
-    value: Union[KwargType, Sequence[KwargType]]
-    is_multiple: bool = False
-
-
 class BulkCommand(BaseModel):
     """A command to be run in bulk."""
 
-    command: str  # parsed command name without arguments
-    kwargs: Dict[
-        str,
-        Union[KwargType, Sequence[KwargType]],
-    ] = Field(default_factory=dict)
+    args: List[str] = Field(default_factory=list)
     line: str = ""  # original line from file
     line_number: int = 0
 
     def __str__(self) -> str:
         if self.line:
             return self.line
-        return f"{self.command} {self.kwargs}"
+        return " ".join(self.args)
 
     @classmethod
-    def from_line(cls, line: str, ctx: typer.Context, line_number: int = 0) -> Self:
+    def from_line(cls, line: str, line_number: int = 0) -> Self:
         """Parse a command line into a BulkCommand."""
         # Early returns for empty lines and comments
         line = line.strip()
@@ -92,107 +71,10 @@ class BulkCommand(BaseModel):
             raise CommentLine("Cannot parse comment line")
 
         # Split the line into tokens, handling quotes and comments
-        tokens = shlex.split(line, comments=True)
-        if not tokens:
+        args = shlex.split(line, comments=True)
+        if not args:
             raise LineParseError("No command specified")
-
-        # Get the command and validate it exists
-        cmd_name = tokens[0]
-        cmd = get_command_by_name(ctx, cmd_name)
-        if not cmd.name:
-            raise LineParseError(f"Invalid command '{cmd_name}'")
-
-        # Create parameter lookup tables for easier access
-        param_by_opt = {
-            opt: param
-            for param in cmd.params
-            if param.name
-            for opt in (list(param.opts) + list(param.secondary_opts))
-        }
-        positional_params = [
-            p for p in cmd.params if isinstance(p, typer.core.TyperArgument)
-        ]
-
-        parsed_options: Dict[str, ParsedOption] = {}
-        positional_args: List[str] = []
-
-        # Parse options and arguments
-        i = 1
-        while i < len(tokens):
-            token = tokens[i]
-
-            # Handle options
-            if token.startswith("-") and len(token) > 1:
-                if token not in param_by_opt:
-                    raise LineParseError(f"Invalid option '{token}'")
-
-                param = param_by_opt[token]
-                if not param.name:
-                    raise LineParseError(f"Unnamed parameter {param}")
-
-                # Handle boolean flags
-                if param.type == click.BOOL:
-                    value = True
-                    if param.secondary_opts and token in param.secondary_opts:
-                        value = False
-                    parsed_options[param.name] = ParsedOption(param.name, value)
-                    i += 1
-                    continue
-
-                # Handle options that take values
-                if i + 1 >= len(tokens):
-                    raise LineParseError(f"Missing value for option {token}")
-
-                value = tokens[i + 1]
-                if param.multiple:
-                    if param.name not in parsed_options:
-                        parsed_options[param.name] = ParsedOption(
-                            param.name, [], is_multiple=True
-                        )
-                    parsed_options[param.name].value.append(value)  # type: ignore
-                else:
-                    parsed_options[param.name] = ParsedOption(param.name, value)
-                i += 2
-            else:
-                positional_args.append(token)
-                i += 1
-
-        # Process positional arguments
-        kwargs: KwargsDict = {}
-        remaining_args = positional_args.copy()
-
-        for param in positional_params:
-            if not param.name:
-                continue
-
-            if param.required and not remaining_args:
-                raise CommandFileError(
-                    f"Missing required positional argument {param.human_readable_name}"
-                )
-
-            if param.nargs == 1 and remaining_args:
-                kwargs[param.name] = remaining_args.pop(0)
-            elif param.nargs != 1:
-                value = (
-                    remaining_args
-                    if param.nargs == -1
-                    else remaining_args[: param.nargs]
-                )
-                kwargs[param.name] = value
-                remaining_args = remaining_args[len(value) :]
-
-        # Add parsed options to kwargs
-        for opt in parsed_options.values():
-            kwargs[opt.name] = opt.value
-
-        # Validate required options
-        for param in cmd.params:
-            if isinstance(param, typer.core.TyperOption) and param.required:
-                if param.name not in kwargs:
-                    opts = "/".join(str(p) for p in param.opts)
-                    raise CommandFileError(f"Missing required option {opts}")
-
-        return cls(command=cmd.name, kwargs=kwargs, line_number=line_number, line=line)
+        return cls(args=args, line=line, line_number=line_number)
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self}>"
@@ -240,13 +122,13 @@ class BulkRunner:
         """Lines that were skipped during parsing."""
 
     @contextmanager
-    def _command_context(self, command: BulkCommand, line_number: Optional[int] = None):
+    def _command_context(self, command: BulkCommand):
         """Context manager for command execution with proper error handling."""
 
-        def add_success():
+        def add_success() -> None:
             self.executions.append(
                 CommandExecution(
-                    command, CommandResult.SUCCESS, line_number=line_number
+                    command, CommandResult.SUCCESS, line_number=command.line_number
                 )
             )
             logger.info("Command succeeded: %s", command)
@@ -254,12 +136,15 @@ class BulkRunner:
         def add_failure(e: BaseException) -> None:
             self.executions.append(
                 CommandExecution(
-                    command, CommandResult.FAILURE, error=e, line_number=line_number
+                    command,
+                    CommandResult.FAILURE,
+                    error=e,
+                    line_number=command.line_number,
                 )
             )
             logger.error("Command failed: %s - %s", command, e)
             if self.mode == BulkRunnerMode.STRICT:
-                raise CommandFileError(f"Command failed: {command}") from e
+                raise CommandFileError(f"Command failed: [command]{command}[/]") from e
 
         try:
             yield
@@ -296,11 +181,12 @@ class BulkRunner:
         create_host test000002.example.net --hostgroup All-manual-hosts --proxy .+ --status 1
         """
         commands = self.load_command_file()
+        group = self.ctx.command
 
         for command in commands:
-            cmd = get_command_by_name(self.ctx, command.command)
-            with self._command_context(command, command.line_number):
-                self.ctx.invoke(cmd, **command.kwargs)
+            with group.make_context(None, command.args, parent=self.ctx) as ctx:
+                with self._command_context(command):
+                    group.invoke(ctx)
 
         # Generate summary
         results: Counter[CommandResult] = Counter()
@@ -320,7 +206,7 @@ class BulkRunner:
         # In CONTINUE mode, raise error if any commands failed
         if self.mode == BulkRunnerMode.CONTINUE and results[CommandResult.FAILURE] > 0:
             failed_commands = [
-                f"Line {e.line_number}: {e.command} ({e.error})"
+                f"Line {e.line_number}: [command]{e.command}[/] [i]({e.error})[/]"
                 for e in self.executions
                 if e.result == CommandResult.FAILURE
             ]
@@ -345,7 +231,7 @@ class BulkRunner:
         ) -> None:
             self.skipped.append(
                 CommandExecution(
-                    BulkCommand(command=line, line_number=line_number),
+                    BulkCommand(line=line, line_number=line_number),
                     CommandResult.SKIPPED,
                     error=error,
                     line_number=line_number,
@@ -354,7 +240,7 @@ class BulkRunner:
 
         for lineno, line in enumerate(contents.splitlines(), start=1):
             try:
-                command = BulkCommand.from_line(line, self.ctx, line_number=lineno)
+                command = BulkCommand.from_line(line, line_number=lineno)
                 commands.append(command)
             except SkippableLine:
                 logger.debug("Skipping line %d: %s", lineno, line)
@@ -362,7 +248,9 @@ class BulkRunner:
             except Exception as e:
                 if self.mode == BulkRunnerMode.SKIP:
                     add_skipped(line, lineno, e)
-                    logger.warning("Skipping invalid line %d: %s", lineno, e)
+                    warning(
+                        f"Ignoring invalid line {lineno}: [i default]{line}[/] ({e})"
+                    )
                 else:
                     raise CommandFileError(
                         f"Unable to parse line {lineno} '{line}': {e}"
@@ -372,5 +260,12 @@ class BulkRunner:
 
 
 def run_bulk(ctx: typer.Context, file: Path, mode: BulkRunnerMode) -> None:
+    state = get_state()
     runner = BulkRunner(ctx, file, mode)
-    runner.run_bulk()
+    try:
+        state.bulk = True
+        runner.run_bulk()
+    finally:
+        state.bulk = False
+        state.logout_on_exit()
+        logger.debug("Bulk execution complete.")
