@@ -23,27 +23,23 @@ from zabbix_cli.output.console import info
     [
         pytest.param(
             "show_zabbixcli_config",
-            BulkCommand(
-                command="show_zabbixcli_config", kwargs={}, line="show_zabbixcli_config"
-            ),
+            BulkCommand(args=["show_zabbixcli_config"], line="show_zabbixcli_config"),
             id="simple",
         ),
         pytest.param(
             "create_user username name surname passwd role autologin autologout groups",
             BulkCommand(
-                command="create_user",
-                kwargs={
-                    "username": "username",
-                    "args": [
-                        "name",
-                        "surname",
-                        "passwd",
-                        "role",
-                        "autologin",
-                        "autologout",
-                        "groups",
-                    ],
-                },
+                args=[
+                    "create_user",
+                    "username",
+                    "name",
+                    "surname",
+                    "passwd",
+                    "role",
+                    "autologin",
+                    "autologout",
+                    "groups",
+                ],
                 line="create_user username name surname passwd role autologin autologout groups",
             ),
             id="Legacy positional args",
@@ -51,18 +47,23 @@ from zabbix_cli.output.console import info
         pytest.param(
             "create_user username --firstname name --lastname surname --passwd mypass --role 1  --autologin --autologout 86400 --groups '1,2'",
             BulkCommand(
-                command="create_user",
-                kwargs={
-                    "username": "username",
-                    "first_name": "name",
-                    "last_name": "surname",
-                    "password": "mypass",
-                    "role": "1",
-                    "autologin": True,
-                    "autologout": "86400",
-                    "groups": "1,2",
-                    "args": [],
-                },
+                args=[
+                    "create_user",
+                    "username",
+                    "--firstname",
+                    "name",
+                    "--lastname",
+                    "surname",
+                    "--passwd",
+                    "mypass",
+                    "--role",
+                    "1",
+                    "--autologin",
+                    "--autologout",
+                    "86400",
+                    "--groups",
+                    "1,2",
+                ],
                 line="create_user username --firstname name --lastname surname --passwd mypass --role 1  --autologin --autologout 86400 --groups '1,2'",
             ),
             id="args and kwargs",
@@ -70,12 +71,14 @@ from zabbix_cli.output.console import info
         pytest.param(
             "create_user username myname --passwd mypass surname",
             BulkCommand(
-                command="create_user",
-                kwargs={
-                    "username": "username",
-                    "password": "mypass",
-                    "args": ["myname", "surname"],
-                },
+                args=[
+                    "create_user",
+                    "username",
+                    "myname",
+                    "--passwd",
+                    "mypass",
+                    "surname",
+                ],
                 line="create_user username myname --passwd mypass surname",
             ),
             id="kwarg between args",
@@ -83,42 +86,42 @@ from zabbix_cli.output.console import info
         pytest.param(
             "create_user myuser --firstname myname --passwd mypasswd --role 1 # comment here --option value",
             BulkCommand(
-                command="create_user",
-                kwargs={
-                    "username": "myuser",
-                    "first_name": "myname",
-                    "password": "mypasswd",
-                    "role": "1",
-                    "args": [],
-                },
+                args=[
+                    "create_user",
+                    "myuser",
+                    "--firstname",
+                    "myname",
+                    "--passwd",
+                    "mypasswd",
+                    "--role",
+                    "1",
+                ],
                 line="create_user myuser --firstname myname --passwd mypasswd --role 1 # comment here --option value",
             ),
             id="Trailing comment",
         ),
         pytest.param(
             "",
-            BulkCommand(command=""),
+            BulkCommand(),
             id="fails (empty)",
             marks=pytest.mark.xfail(raises=EmptyLine, strict=True),
         ),
         pytest.param(
             "#",
-            BulkCommand(command=""),
+            BulkCommand(),
             id="fails (comment symbol)",
             marks=pytest.mark.xfail(raises=CommentLine, strict=True),
         ),
         pytest.param(
             "# create_user myuser myname mypasswd --role 1",
-            BulkCommand(command=""),
+            BulkCommand(),
             id="fails (commented out line)",
             marks=pytest.mark.xfail(raises=CommentLine, strict=True),
         ),
     ],
 )
-def test_bulk_command_from_line(
-    ctx: typer.Context, line: str, expect: BulkCommand
-) -> None:
-    assert BulkCommand.from_line(line, ctx) == expect
+def test_bulk_command_from_line(line: str, expect: BulkCommand) -> None:
+    assert BulkCommand.from_line(line) == expect
 
 
 def test_load_command_file(tmp_path: Path, ctx: typer.Context) -> None:
@@ -153,98 +156,100 @@ show_host *.example.com --active 2
     assert commands == snapshot(
         [
             BulkCommand(
-                command="show_zabbixcli_config",
-                kwargs={},
+                args=["show_zabbixcli_config"],
                 line="show_zabbixcli_config # next line will be blank",
                 line_number=2,
             ),
             BulkCommand(
-                command="create_user",
-                kwargs={
-                    "username": "username",
-                    "args": ["mypass", "1", "1", "86400", "1,2"],
-                    "first_name": "name",
-                    "last_name": "surname",
-                },
+                args=[
+                    "create_user",
+                    "username",
+                    "--firstname",
+                    "name",
+                    "--lastname",
+                    "surname",
+                    "mypass",
+                    "1",
+                    "1",
+                    "86400",
+                    "1,2",
+                ],
                 line="create_user username --firstname name --lastname surname mypass 1 1 86400 1,2",
                 line_number=4,
             ),
             BulkCommand(
-                command="create_user",
-                kwargs={
-                    "username": "username",
-                    "args": [],
-                    "first_name": "name",
-                    "last_name": "surname",
-                    "password": "mypass",
-                    "role": "1",
-                    "autologin": True,
-                    "autologout": "86400",
-                    "groups": "1,2",
-                },
+                args=[
+                    "create_user",
+                    "username",
+                    "--firstname",
+                    "name",
+                    "--lastname",
+                    "surname",
+                    "--passwd",
+                    "mypass",
+                    "--role",
+                    "1",
+                    "--autologin",
+                    "--autologout",
+                    "86400",
+                    "--groups",
+                    "1,2",
+                ],
                 line="create_user username --firstname name --lastname surname --passwd mypass --role 1  --autologin --autologout 86400 --groups '1,2'",
                 line_number=5,
             ),
             BulkCommand(
-                command="create_user",
-                kwargs={
-                    "username": "username",
-                    "args": [],
-                    "first_name": "name",
-                    "last_name": "surname",
-                    "password": "mypass",
-                },
+                args=[
+                    "create_user",
+                    "username",
+                    "--firstname",
+                    "name",
+                    "--lastname",
+                    "surname",
+                    "--passwd",
+                    "mypass",
+                ],
                 line="create_user username --firstname name --lastname surname --passwd mypass # trailing comment",
                 line_number=7,
             ),
             BulkCommand(
-                command="acknowledge_event",
-                kwargs={
-                    "event_ids": "123,456,789",
-                    "args": [],
-                    "message": "foo message",
-                    "close": True,
-                },
+                args=[
+                    "acknowledge_event",
+                    "123,456,789",
+                    "--message",
+                    "foo message",
+                    "--close",
+                ],
                 line='acknowledge_event 123,456,789 --message "foo message" --close',
                 line_number=9,
             ),
             BulkCommand(
-                command="show_templategroup",
-                kwargs={"templategroup": "mygroup", "templates": False},
+                args=["show_templategroup", "mygroup", "--no-templates"],
                 line="show_templategroup mygroup --no-templates",
                 line_number=11,
             ),
             BulkCommand(
-                command="show_host",
-                kwargs={
-                    "hostname_or_id": "*.example.com",
-                    "maintenance": False,
-                    "monitored": True,
-                },
+                args=["show_host", "*.example.com", "--no-maintenance", "--monitored"],
                 line="show_host *.example.com --no-maintenance --monitored",
                 line_number=13,
             ),
             BulkCommand(
-                command="show_host",
-                kwargs={"hostname_or_id": "*.example.com", "active": "available"},
+                args=["show_host", "*.example.com", "--active", "available"],
                 line="show_host *.example.com --active available",
                 line_number=15,
             ),
             BulkCommand(
-                command="show_host",
-                kwargs={"hostname_or_id": "*.example.com", "active": "0"},
+                args=["show_host", "*.example.com", "--active", "0"],
                 line="show_host *.example.com --active 0",
                 line_number=17,
             ),
             BulkCommand(
-                command="show_host",
-                kwargs={"hostname_or_id": "*.example.com", "active": "1"},
+                args=["show_host", "*.example.com", "--active", "1"],
                 line="show_host *.example.com --active 1",
                 line_number=18,
             ),
             BulkCommand(
-                command="show_host",
-                kwargs={"hostname_or_id": "*.example.com", "active": "2"},
+                args=["show_host", "*.example.com", "--active", "2"],
                 line="show_host *.example.com --active 2",
                 line_number=19,
             ),
@@ -262,9 +267,10 @@ def test_bulk_runner_mode_invalid_line_strict(
     """Test loading a command file with invalid lines in strict/continue mode."""
     file = tmp_path / "commands.txt"
     file.write_text(
-        """# comment
-        21321asdasdadas # not a valid command
-        """
+        """\
+# comment
+show_host "*.example.com # Missing closing quote
+"""
     )
     b = BulkRunner(ctx, file, mode=mode)
     with pytest.raises(CommandFileError):
@@ -278,7 +284,7 @@ def test_bulk_runner_mode_invalid_line_skip(tmp_path: Path, ctx: typer.Context) 
         """\
 # comment
 show_host *.example.com --active 0
-21321asdasdadas # not a valid command
+show_host "*.example.com # Missing closing quote
 create_host foo.example.com --hostgroup "Linux servers"
 """
     )
@@ -292,12 +298,12 @@ create_host foo.example.com --hostgroup "Linux servers"
     # Second line is invalid command
     result = b.skipped[1]
     assert result.command == snapshot(
-        BulkCommand(command="21321asdasdadas # not a valid command", line_number=3)
+        BulkCommand(
+            line='show_host "*.example.com # Missing closing quote', line_number=3
+        )
     )
     assert result.result == CommandResult.SKIPPED
-    assert repr(result.error) == snapshot(
-        "ZabbixCLIError('Command 21321asdasdadas not found.')"
-    )
+    assert repr(result.error) == snapshot("ValueError('No closing quotation')")
     assert result.line_number == snapshot(3)
 
 
@@ -356,7 +362,11 @@ exits_error
     exc = excinfo.exconly()
     if mode == BulkRunnerMode.STRICT:
         assert (
-            exc == "zabbix_cli.exceptions.CommandFileError: Command failed: exits_error"
+            exc
+            == "zabbix_cli.exceptions.CommandFileError: Command failed: [command]exits_error[/]: 1"
         )
     else:
-        assert "zabbix_cli.exceptions.CommandFileError: 1 commands failed:\nLine 4: exits_error (1)"
+        assert (
+            exc
+            == "zabbix_cli.exceptions.CommandFileError: 1 commands failed:\nLine 4: [command]exits_error[/] [i](1)[/]"
+        )
