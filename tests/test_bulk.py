@@ -363,7 +363,10 @@ exits_error
     if mode == BulkRunnerMode.STRICT:
         assert (
             exc
-            == "zabbix_cli.exceptions.CommandFileError: Command failed: [command]exits_error[/]"
+            == "zabbix_cli.exceptions.CommandFileError: Command failed: [command]exits_error[/]: 1"
         )
     else:
-        assert "zabbix_cli.exceptions.CommandFileError: 1 commands failed:\nLine 4: exits_error (1)"
+        assert (
+            exc
+            == "zabbix_cli.exceptions.CommandFileError: 1 commands failed:\nLine 4: [command]exits_error[/] [i](1)[/]"
+        )
