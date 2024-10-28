@@ -1463,7 +1463,7 @@ class ZabbixAPI:
         params: ParamsType = {"output": "extend"}
 
         if host:
-            add_param(params, "search", "hostids", host.hostid)
+            params["hostids"] = host.hostid
 
         if macro_name:
             add_param(params, "search", "macro", macro_name)
