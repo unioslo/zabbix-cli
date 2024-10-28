@@ -142,9 +142,12 @@ class BulkRunner:
                     line_number=command.line_number,
                 )
             )
-            logger.error("Command failed: %s - %s", command, e)
             if self.mode == BulkRunnerMode.STRICT:
-                raise CommandFileError(f"Command failed: [command]{command}[/]") from e
+                raise CommandFileError(
+                    f"Command failed: [command]{command}[/]: {e}"
+                ) from e
+            else:
+                logger.error("Command failed: %s - %s", command, e)
 
         try:
             yield
