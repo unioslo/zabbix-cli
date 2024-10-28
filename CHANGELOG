@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Screen flickering on application startup when not authenticating via username and password prompt.
+- `define_host_usermacro` not working as expected when using a macro name that already exists elsewhere.
 
 ## [3.1.3]
 
