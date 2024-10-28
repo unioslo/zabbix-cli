@@ -129,20 +129,6 @@ wheels = [
 ]
 
 [[package]]
-name = "click-repl"
-version = "0.2.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click" },
-    { name = "prompt-toolkit" },
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/60/30/11d3f09eff5ae3627bca79563855035e8d241444520500a3c7914eae6a74/click-repl-0.2.0.tar.gz", hash = "sha256:cd12f68d745bf6151210790540b4cb064c7b13e571bc64b6957d98d120dacfd8", size = 5743 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/33/15f401400cc0cf2470aa777d225e772f83a68541495e015d2fa5c77d33d0/click_repl-0.2.0-py3-none-any.whl", hash = "sha256:94b3fbbc9406a236f176e0506524b2937e4b23b6f4c0c0b2a0a83f8a64e9194b", size = 5163 },
-]
-
-[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -446,14 +432,14 @@ wheels = [
 
 [[package]]
 name = "prompt-toolkit"
-version = "3.0.47"
+version = "3.0.48"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "wcwidth" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/47/6d/0279b119dafc74c1220420028d490c4399b790fc1256998666e3a341879f/prompt_toolkit-3.0.47.tar.gz", hash = "sha256:1e1b29cb58080b1e69f207c893a1a7bf16d127a5c30c9d17a25a5d77792e5360", size = 425859 }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/4f/feb5e137aff82f7c7f3248267b97451da3644f6cdc218edfe549fb354127/prompt_toolkit-3.0.48.tar.gz", hash = "sha256:d6623ab0477a80df74e646bdbc93621143f5caf104206aa29294d53de1a03d90", size = 424684 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e8/23/22750c4b768f09386d1c3cc4337953e8936f48a888fa6dddfb669b2c9088/prompt_toolkit-3.0.47-py3-none-any.whl", hash = "sha256:0d7bfa67001d5e39d02c224b663abc33687405033a8c422d0d675a5a13361d10", size = 386411 },
+    { url = "https://files.pythonhosted.org/packages/a9/6a/fd08d94654f7e67c52ca30523a178b3f8ccc4237fce4be90d39c938a831a/prompt_toolkit-3.0.48-py3-none-any.whl", hash = "sha256:f49a827f90062e411f1ce1f854f2aedb3c23353244f8108b89283587397ac10e", size = 386595 },
 ]
 
 [[package]]
@@ -820,14 +806,14 @@ wheels = [
 
 [[package]]
 name = "zabbix-cli-uio"
-version = "3.1.1"
+version = "3.1.3"
 source = { editable = "." }
 dependencies = [
-    { name = "click-repl" },
     { name = "httpx", extra = ["socks"] },
     { name = "importlib-metadata", marker = "python_full_version < '3.10'" },
     { name = "packaging" },
     { name = "platformdirs" },
+    { name = "prompt-toolkit" },
     { name = "pydantic" },
     { name = "rich" },
     { name = "strenum" },
@@ -852,13 +838,13 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "build", marker = "extra == 'build'" },
-    { name = "click-repl", specifier = "==0.2.0" },
     { name = "freezegun", marker = "extra == 'test'" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.26.0" },
     { name = "importlib-metadata", marker = "python_full_version < '3.10'", specifier = ">=8.5.0" },
     { name = "inline-snapshot", marker = "extra == 'test'" },
     { name = "packaging", specifier = ">=22.0" },
     { name = "platformdirs", specifier = ">=2.5.4" },
+    { name = "prompt-toolkit", specifier = ">=3.0.47" },
     { name = "pydantic", specifier = ">=2.7.0" },
     { name = "pyinstaller", marker = "extra == 'build'" },
     { name = "pytest", marker = "extra == 'test'" },

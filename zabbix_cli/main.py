@@ -45,15 +45,10 @@ def run_repl(ctx: typer.Context) -> None:
     from rich.console import Group
     from rich.panel import Panel
 
-    # Patch click-repl THEN import it
-    # Apply patches here to avoid impacting startup time of the CLI
-    from zabbix_cli._patches.click_repl import patch
     from zabbix_cli.output.console import console
     from zabbix_cli.output.style import green
+    from zabbix_cli.repl.repl import repl as start_repl
     from zabbix_cli.state import get_state
-
-    patch()
-    from zabbix_cli._patches.click_repl import repl as start_repl
 
     state = get_state()
 
@@ -78,7 +73,7 @@ def run_repl(ctx: typer.Context) -> None:
         state.revert_config_overrides()
 
     prompt_kwargs: Dict[str, Any] = {"pre_run": pre_run, "history": state.history}
-    start_repl(ctx, prompt_kwargs=prompt_kwargs, app=app)
+    start_repl(ctx, app, prompt_kwargs=prompt_kwargs)
 
 
 def version_callback(value: bool):
@@ -190,7 +185,6 @@ def should_skip_configuration(ctx: typer.Context) -> bool:
 
 def should_skip_login(ctx: typer.Context) -> bool:
     """Check if the command should skip logging in to the Zabbix API."""
-
     if should_skip_configuration(ctx):
         return True
     return ctx.invoked_subcommand in ["migrate_config"]
