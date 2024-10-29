@@ -45,12 +45,6 @@ The manual is available online at <https://unioslo.github.io/zabbix-cli/>.
 > [!NOTE]
 > We are in the process of acquiring the name `zabbix-cli` on PyPI. Until then, installation must be done via the mirror package `zabbix-cli-uio`.
 
-#### pip(x)
-
-```bash
-pipx install zabbix-cli-uio
-```
-
 #### [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ```bash
@@ -62,6 +56,12 @@ uv tool install zabbix-cli-uio
 ```bash
 
 uvx --from zabbix-cli-uio zabbix-cli
+```
+
+#### [pipx](https://pipx.pypa.io/stable/)
+
+```bash
+pipx install zabbix-cli-uio
 ```
 
 ### Homebrew
