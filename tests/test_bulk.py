@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 import pytest
 import typer
@@ -9,6 +10,7 @@ from zabbix_cli.app.app import StatefulApp
 from zabbix_cli.bulk import BulkCommand
 from zabbix_cli.bulk import BulkRunner
 from zabbix_cli.bulk import BulkRunnerMode
+from zabbix_cli.bulk import CommandExecution
 from zabbix_cli.bulk import CommandResult
 from zabbix_cli.bulk import CommentLine
 from zabbix_cli.bulk import EmptyLine
@@ -343,9 +345,6 @@ exits_error
     def on_exit() -> None:
         info("We just print a message here")
 
-    import typer
-    import typer.core
-
     cmd = typer.main.get_command(app)
     ctx.command = cmd
 
@@ -370,3 +369,290 @@ exits_error
             exc
             == "zabbix_cli.exceptions.CommandFileError: 1 commands failed:\nLine 4: [command]exits_error[/] [i](1)[/]"
         )
+
+
+@pytest.mark.parametrize(
+    "mode", [BulkRunnerMode.STRICT, BulkRunnerMode.CONTINUE, BulkRunnerMode.SKIP]
+)
+def test_bulk_commands_complex(
+    tmp_path: Path, app: StatefulApp, ctx: typer.Context, mode: BulkRunnerMode
+) -> None:
+    """Test bulk execution of commands with multiple options and arguments."""
+    file = tmp_path / "commands.txt"
+    file.write_text(
+        """\
+# comment
+# Every type of option and argument
+mixed_command "some arg" "optional arg" --opt value --reqopt 42 --flag --boolopt
+mixed_command "some arg" "optional arg" --opt value --reqopt 42 --flag --no-boolopt
+# Again with short options (no optional arg)
+mixed_command "some arg" -O value -R 123 -F --boolopt
+mixed_command "some arg" -O value -R 123 -F --no-boolopt
+# Omit optional options
+mixed_command "some arg" -O value -R 123
+# Only required arguments/options
+mixed_command "some arg" --reqopt 42
+# Only arguments (with quotes)
+only_args "arg1" "arg2" "arg3"
+# Only arguments (no quotes)
+only_args arg1 arg2 arg3
+# Only options
+only_options --opt1 value --opt2 value --opt3 42 --opt4 42
+only_options -O "str" -S "Optional[str]" -I 42 -N 42
+"""
+    )
+
+    @app.command(name="mixed_command")
+    def mixed_command(
+        ctx: typer.Context,
+        reqarg: str = typer.Argument(),
+        optarg: Optional[str] = typer.Argument(None),
+        opt: Optional[str] = typer.Option(None, "--opt", "-O"),
+        reqopt: int = typer.Option(
+            ...,  # type: ignore
+            "--reqopt",
+            "-R",
+        ),
+        flag: bool = typer.Option(False, "--flag", "-F", is_flag=True),
+        boolopt: Optional[bool] = typer.Option(
+            False,
+            # Not specifying anything here should generate the options
+            # --boolopt / --no-boolopt
+        ),
+    ) -> None:
+        """Command with every type of option and argument"""
+        exit_ok("Running mixed_command")
+
+    @app.command(name="only_args")
+    def only_args(
+        ctx: typer.Context,
+        arg1: str = typer.Argument(),
+        arg2: str = typer.Argument("default value"),
+        arg3: Optional[str] = typer.Argument(None),
+    ) -> None:
+        exit_ok("Running only_args")
+
+    @app.command(name="only_options")
+    def only_options(
+        ctx: typer.Context,
+        opt1: str = typer.Option(..., "--opt1", "-O"),
+        opt2: Optional[str] = typer.Option(None, "--opt2", "-S"),
+        opt3: int = typer.Option(..., "--opt3", "-I"),
+        opt4: Optional[int] = typer.Option(None, "--opt4", "-N"),
+    ) -> None:
+        exit_ok("Running only_options")
+
+    cmd = typer.main.get_command(app)
+    ctx.command = cmd
+
+    b = BulkRunner(ctx, file, mode)
+    b.run_bulk()
+
+    assert len(b.executions) == snapshot(10)
+    assert b.executions == snapshot(
+        [
+            CommandExecution(
+                command=BulkCommand(
+                    args=[
+                        "mixed_command",
+                        "some arg",
+                        "optional arg",
+                        "--opt",
+                        "value",
+                        "--reqopt",
+                        "42",
+                        "--flag",
+                        "--boolopt",
+                    ],
+                    line='mixed_command "some arg" "optional arg" --opt value --reqopt 42 --flag --boolopt',
+                    line_number=3,
+                ),
+                result=CommandResult.SUCCESS,
+                line_number=3,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    args=[
+                        "mixed_command",
+                        "some arg",
+                        "optional arg",
+                        "--opt",
+                        "value",
+                        "--reqopt",
+                        "42",
+                        "--flag",
+                        "--no-boolopt",
+                    ],
+                    line='mixed_command "some arg" "optional arg" --opt value --reqopt 42 --flag --no-boolopt',
+                    line_number=4,
+                ),
+                result=CommandResult.SUCCESS,
+                line_number=4,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    args=[
+                        "mixed_command",
+                        "some arg",
+                        "-O",
+                        "value",
+                        "-R",
+                        "123",
+                        "-F",
+                        "--boolopt",
+                    ],
+                    line='mixed_command "some arg" -O value -R 123 -F --boolopt',
+                    line_number=6,
+                ),
+                result=CommandResult.SUCCESS,
+                line_number=6,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    args=[
+                        "mixed_command",
+                        "some arg",
+                        "-O",
+                        "value",
+                        "-R",
+                        "123",
+                        "-F",
+                        "--no-boolopt",
+                    ],
+                    line='mixed_command "some arg" -O value -R 123 -F --no-boolopt',
+                    line_number=7,
+                ),
+                result=CommandResult.SUCCESS,
+                line_number=7,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    args=["mixed_command", "some arg", "-O", "value", "-R", "123"],
+                    line='mixed_command "some arg" -O value -R 123',
+                    line_number=9,
+                ),
+                result=CommandResult.SUCCESS,
+                line_number=9,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    args=["mixed_command", "some arg", "--reqopt", "42"],
+                    line='mixed_command "some arg" --reqopt 42',
+                    line_number=11,
+                ),
+                result=CommandResult.SUCCESS,
+                line_number=11,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    args=["only_args", "arg1", "arg2", "arg3"],
+                    line='only_args "arg1" "arg2" "arg3"',
+                    line_number=13,
+                ),
+                result=CommandResult.SUCCESS,
+                line_number=13,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    args=["only_args", "arg1", "arg2", "arg3"],
+                    line="only_args arg1 arg2 arg3",
+                    line_number=15,
+                ),
+                result=CommandResult.SUCCESS,
+                line_number=15,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    args=[
+                        "only_options",
+                        "--opt1",
+                        "value",
+                        "--opt2",
+                        "value",
+                        "--opt3",
+                        "42",
+                        "--opt4",
+                        "42",
+                    ],
+                    line="only_options --opt1 value --opt2 value --opt3 42 --opt4 42",
+                    line_number=17,
+                ),
+                result=CommandResult.SUCCESS,
+                line_number=17,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    args=[
+                        "only_options",
+                        "-O",
+                        "str",
+                        "-S",
+                        "Optional[str]",
+                        "-I",
+                        "42",
+                        "-N",
+                        "42",
+                    ],
+                    line='only_options -O "str" -S "Optional[str]" -I 42 -N 42',
+                    line_number=18,
+                ),
+                result=CommandResult.SUCCESS,
+                line_number=18,
+            ),
+        ]
+    )
+    assert len(b.skipped) == snapshot(8)
+    assert b.skipped == snapshot(
+        [
+            CommandExecution(
+                command=BulkCommand(line="# comment", line_number=1),
+                result=CommandResult.SKIPPED,
+                line_number=1,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    line="# Every type of option and argument", line_number=2
+                ),
+                result=CommandResult.SKIPPED,
+                line_number=2,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    line="# Again with short options (no optional arg)", line_number=5
+                ),
+                result=CommandResult.SKIPPED,
+                line_number=5,
+            ),
+            CommandExecution(
+                command=BulkCommand(line="# Omit optional options", line_number=8),
+                result=CommandResult.SKIPPED,
+                line_number=8,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    line="# Only required arguments/options", line_number=10
+                ),
+                result=CommandResult.SKIPPED,
+                line_number=10,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    line="# Only arguments (with quotes)", line_number=12
+                ),
+                result=CommandResult.SKIPPED,
+                line_number=12,
+            ),
+            CommandExecution(
+                command=BulkCommand(
+                    line="# Only arguments (no quotes)", line_number=14
+                ),
+                result=CommandResult.SKIPPED,
+                line_number=14,
+            ),
+            CommandExecution(
+                command=BulkCommand(line="# Only options", line_number=16),
+                result=CommandResult.SKIPPED,
+                line_number=16,
+            ),
+        ]
+    )
