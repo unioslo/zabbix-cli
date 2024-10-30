@@ -290,7 +290,7 @@ def get_auth_file_paths(config: Optional[Config] = None) -> List[Path]:
         AUTH_FILE_LEGACY,
     ]
     if config and config.app.auth_file not in paths:  # config has custom path
-        paths.append(config.app.auth_file)
+        paths.insert(0, config.app.auth_file)
     return paths
 
 
@@ -301,7 +301,7 @@ def get_auth_token_file_paths(config: Optional[Config] = None) -> List[Path]:
         AUTH_TOKEN_FILE_LEGACY,
     ]
     if config and config.app.auth_token_file not in paths:  # config has custom path
-        paths.append(config.app.auth_token_file)
+        paths.insert(0, config.app.auth_token_file)
     return paths
 
 
