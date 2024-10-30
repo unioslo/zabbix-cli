@@ -96,7 +96,6 @@ def init_config(
     from zabbix_cli.dirs import init_directories
     from zabbix_cli.output.console import info
     from zabbix_cli.output.prompts import str_prompt
-    from zabbix_cli.pyzabbix.client import ZabbixAPI
 
     # Create required directories
     init_directories()
@@ -120,8 +119,7 @@ def init_config(
         config.api.username = username
 
     if login:
-        client = ZabbixAPI.from_config(config)
-        auth.login(client, config)
+        auth.login(config)
 
     config.dump_to_file(config_file)
     info(f"Configuration file created: {config_file}")

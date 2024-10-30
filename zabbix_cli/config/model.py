@@ -86,7 +86,7 @@ class BaseModel(PydanticBaseModel):
 
 class APIConfig(BaseModel):
     url: str = Field(
-        default=...,
+        default="",
         # Changed in V3: zabbix_api_url -> url
         validation_alias=AliasChoices("url", "zabbix_api_url"),
     )
