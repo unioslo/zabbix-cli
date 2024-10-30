@@ -246,7 +246,7 @@ class ZabbixAPI:
         self.id = 0
 
         server, _, _ = server.partition(RPC_ENDPOINT)
-        self.url = f"{server}/api_jsonrpc.php"
+        self.url = self._get_url(server)
         logger.info("JSON-RPC Server Endpoint: %s", self.url)
 
         # Cache
@@ -254,6 +254,15 @@ class ZabbixAPI:
 
         # Attributes for properties
         self._version: Optional[Version] = None
+
+    def _get_url(self, server: str) -> str:
+        """Format a URL for the Zabbix API."""
+        return f"{server}/api_jsonrpc.php"
+
+    def set_url(self, server: str) -> str:
+        """Set a new URL for the client."""
+        self.url = self._get_url(server)
+        return self.url
 
     @classmethod
     def from_config(cls, config: Config) -> ZabbixAPI:

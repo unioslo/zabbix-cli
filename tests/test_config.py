@@ -9,7 +9,6 @@ from typing import Union
 
 import pytest
 from inline_snapshot import snapshot
-from pydantic import ValidationError
 from zabbix_cli.config.model import Config
 from zabbix_cli.config.model import PluginConfig
 from zabbix_cli.config.model import PluginsConfig
@@ -18,11 +17,8 @@ from zabbix_cli.exceptions import PluginConfigTypeError
 
 
 def test_config_default() -> None:
-    """Assert that the config by default only requires a URL."""
-    with pytest.raises(ValidationError) as excinfo:
-        Config()
-    assert "1 validation error" in str(excinfo.value)
-    assert "url" in str(excinfo.value)
+    """Assert that the config can be instantiated with no arguments."""
+    assert Config()
 
 
 def test_sample_config() -> None:

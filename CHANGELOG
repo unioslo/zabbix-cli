@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Custom auth (token) file paths in config now take precedence over the default path if both exist.
+- Application now prompts for Zabbix API URL if missing from config.
 
 ## [3.2.0]
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Final
@@ -21,6 +22,8 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
+
+from rich.console import ScreenContext
 
 from zabbix_cli._v2_compat import AUTH_FILE as AUTH_FILE_LEGACY
 from zabbix_cli._v2_compat import AUTH_TOKEN_FILE as AUTH_TOKEN_FILE_LEGACY
@@ -36,10 +39,10 @@ from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.prompts import str_prompt
+from zabbix_cli.pyzabbix.client import ZabbixAPI
 
 if TYPE_CHECKING:
     from zabbix_cli.config.model import Config
-    from zabbix_cli.pyzabbix.client import ZabbixAPI
 
 
 logger = logging.getLogger(__name__)
@@ -70,15 +73,19 @@ class Authenticator:
     """Encapsulates logic for authenticating with the Zabbix API
     using various methods, as well as storing and loading auth tokens."""
 
-    client: ZabbixAPI
     config: Config
 
-    def __init__(self, client: ZabbixAPI, config: Config) -> None:
-        self.client = client
+    def __init__(self, config: Config) -> None:
         self.config = config
 
-    def login(self) -> str:
+    @cached_property
+    def screen(self) -> ScreenContext:
+        return err_console.screen()
+
+    def login(self) -> Tuple[ZabbixAPI, str]:
         """Log in to the Zabbix API using the configured credentials.
+
+        Returns the Zabbix API client object and the session token.
 
         If multiple methods are available, they are tried in the following order:
 
@@ -90,6 +97,10 @@ class Authenticator:
         6. Username and password in environment variables
         7. Username and password from prompt
         """
+        # Ensure we have a Zabbix API URL
+        self.config.api.url = self.get_zabbix_url()
+        client = ZabbixAPI.from_config(self.config)
+
         for func in [
             self._get_auth_token_config,
             self._get_auth_token_env,
@@ -107,10 +118,10 @@ class Authenticator:
                 logger.debug(
                     "Attempting to log in with credentials from %s", func.__name__
                 )
-                token = self.do_login(credentials)
+                token = self.do_login(client, credentials)
                 logger.info("Logged in with %s", func.__name__)
                 self.update_config(credentials)
-                return token
+                return client, token
             except ZabbixAPIException as e:
                 logger.warning("Failed to log in with %s: %s", func.__name__, e)
                 continue
@@ -124,9 +135,9 @@ class Authenticator:
                 f"No authentication method succeeded for {self.config.api.url}. Check the logs for more information."
             )
 
-    def do_login(self, credentials: Credentials) -> str:
+    def do_login(self, client: ZabbixAPI, credentials: Credentials) -> str:
         """Log in to the Zabbix API using the provided credentials."""
-        return self.client.login(
+        return client.login(
             user=credentials.username,
             password=credentials.password,
             auth_token=credentials.auth_token,
@@ -142,6 +153,13 @@ class Authenticator:
             self.config.api.password = SecretStr(credentials.password)
         if credentials.auth_token:
             self.config.api.auth_token = SecretStr(credentials.auth_token)
+
+    def get_zabbix_url(self) -> str:
+        """Get the URL of the Zabbix server from the config, or prompt for it."""
+        if not self.config.api.url:
+            with self.screen:
+                return str_prompt("Zabbix URL (without /api_jsonrpc.php)")
+        return self.config.api.url
 
     def _get_username_password_env(self) -> Credentials:
         """Get username and password from environment variables."""
@@ -175,7 +193,7 @@ class Authenticator:
         self,
     ) -> Credentials:
         """Get username and password from a prompt in a separate screen."""
-        with err_console.screen():
+        with self.screen:
             username, password = prompt_username_password(
                 username=self.config.api.username
             )
@@ -240,16 +258,23 @@ class Authenticator:
         return file.read_text().strip()
 
 
-def login(client: ZabbixAPI, config: Config) -> None:
-    auth = Authenticator(client, config)
-    token = auth.login()
+def login(config: Config) -> ZabbixAPI:
+    """Log in to the Zabbix API using the configured credentials.
+
+    Returns the Zabbix API client object.
+    """
+    auth = Authenticator(config)
+    client, token = auth.login()
+    # NOTE: should we bake token file and logging config into Authenticator?
     if config.app.use_auth_token_file:
         write_auth_token_file(config.api.username, token, config.app.auth_token_file)
     add_user(config.api.username)
     logger.info("Logged in as %s", config.api.username)
+    return client
 
 
 def logout(client: ZabbixAPI, config: Config) -> None:
+    """Log out of the current Zabbix API session."""
     try:
         client.logout()
         if config.app.use_auth_token_file:
