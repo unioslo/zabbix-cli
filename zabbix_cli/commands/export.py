@@ -624,7 +624,7 @@ def import_configuration(
     # TODO: print properly with just render_result instead of this hack
     if dry_run:
         msg = f"Found {len(files)} files to import"
-        if app.state.config.app.output_format == OutputFormat.TABLE:
+        if app.state.config.app.output.format == OutputFormat.TABLE:
             to_print = [path_link(f) for f in files]
             console.print("\n".join(to_print), highlight=False, no_wrap=True)
             info(msg)

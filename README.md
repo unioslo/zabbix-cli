@@ -111,11 +111,11 @@ zabbix-cli --format json show_hosts
 > --format json show_hosts
 ```
 
-Or by setting the `app.output_format` parameter in the config file:
+Or by setting the `app.output.format` option in the config file:
 
 ```toml
-[app]
-output_format = "json"
+[app.output]
+format = "json"
 ```
 
 ### Table

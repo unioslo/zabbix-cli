@@ -1,4 +1,4 @@
-# Introduction
+# User Guide
 
 Zabbix CLI is an application that provides a command line interface for interacting with the Zabbix API. Once installed, it can be invoked with `zabbix-cli`.
 

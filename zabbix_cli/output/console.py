@@ -147,7 +147,7 @@ def exit_err(
     state = get_state()
 
     # Render JSON-formatted error message if output format is JSON
-    if state.is_config_loaded and state.config.app.output_format == "json":
+    if state.config.app.output.format == "json":
         from zabbix_cli.exceptions import get_cause_args
         from zabbix_cli.models import Result
         from zabbix_cli.models import ReturnCode

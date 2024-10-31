@@ -6,22 +6,24 @@ The application is configured with a TOML file. The default location is platform
 
 ## Create a configuration file
 
-Before using the application, a configuration file must be created. This can be done with the `zabbix-cli-init` command:
+Before using the application, a configuration file must be created. This can be done with the `init` command:
 
 ```
-zabbix-cli-init
+zabbix-cli init
 ```
 
-The application will print the location of the created config file:
-
-```
-! Configuration file created: /Users/pederhan/Library/Application Support/zabbix-cli/zabbix-cli.toml
-```
+The application will print the location of the created configuration file.
 
 To bootstrap the config with a URL and username, use the options `--url` and `--user`:
 
 ```
 zabbix-cli-init --url https://zabbix.example.com --user Admin
+```
+
+To overwrite an existing configuration file, use the `--overwrite` option:
+
+```
+zabbix-cli init --overwrite
 ```
 
 ## Open configuration directory
@@ -73,240 +75,463 @@ zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
            To do this, we need to add Field() for every field in the model, and also ensure they have help= set. Possibly also add examples.
  -->
 
-Required fields are marked with a `*`.
+=== "`api`"
 
-----
+    The `api` section configures the Zabbix API connection.
 
-### `api`
+    ```toml
+    [api]
+    url = "https://zabbix.example.com"
+    username = "Admin"
+    password = ""
+    auth_token = ""
+    verify_ssl = true
+    ```
 
-The `api` section contains the configuration for the Zabbix API.
+    #### `url`
 
-----
+    URL of the Zabbix API host. Should not include the `/api_jsonrpc.php` path.
 
-#### `url` \*
+    Type: `str`
 
-URL of the Zabbix API host. Should not include the `/api_jsonrpc.php` path.
+    ```toml
+    [api]
+    url = "https://zabbix.example.com"
+    ```
 
-Type: `str`
+    ----
 
-----
+    #### `username`
 
-#### `username`
+    Username for the Zabbix API.
 
-Username for the Zabbix API.
+    Type: `str`
 
-Type: `str`
+    Default: `Admin`
 
-Default: `Admin`
+    ```toml
+    [api]
+    username = "Admin"
+    ```
 
-----
+    ----
 
-#### `verify_ssl`
+    #### `password`
 
-Whether to verify SSL certificates.
+    Password to use in combination with a username.
 
-Type: `bool`
+    Type: `str`
 
-Default: `true`
+    ```toml
+    [api]
+    password = "password123"
+    ```
 
-----
 
-### `app`
+    ----
 
-The `app` section contains the configuration for the application, such as default values for certain commands, output and exports.
+    #### `auth_token`
 
-----
+    Session token or API token to use for authentication. If provided, `username` and `password` are ignored.
 
-#### `default_hostgroups`
+    Type: `str`
 
-Default host groups to assign to hosts created with `create_host`. Hosts are always added to these groups unless `--no-default-hostgroup` is provided.
+    ```toml
+    [api]
+    auth_token = "API_TOKEN_123"
+    ```
 
-Type: `List[str]`
+    ----
 
-Default: `["All-hosts"]`
+    #### `verify_ssl`
 
-----
+    Whether to verify SSL certificates.
 
-#### `default_admin_usergroups`
+    Type: `bool`
 
-Default user groups to give read/write permissions to groups created with `create_hostgroup` and `create_templategroup` when `--rw-groups` option is not provided.
+    Default: `true`
 
-Type: `List[str]`
+    ```toml
+    [api]
+    verify_ssl = true
+    ```
 
-Default: `[]`
+=== "`app`"
 
-----
+    The `app` section configures general application settings, such as defaults for Zabbix host and group creation, export configuration, and more.
 
-#### `default_create_user_usergroups`
 
-Default user groups to add users created with `create_user` to when `--usergroups` is not provided.
+    ```toml
+    [app]
+    default_hostgroups = [
+        "All-hosts",
+    ]
+    default_admin_usergroups = [
+        "Zabbix-root",
+    ]
+    default_create_user_usergroups = [
+        "All-users",
+    ]
+    default_notification_users_usergroups = [
+        "All-notification-users",
+    ]
+    export_directory = "/path/to/exports"
+    export_format = "json"
+    export_timestamps = true
+    use_auth_token_file = true
+    auth_token_file = "/path/to/auth_token_file"
+    auth_file = "/path/to/auth_token_file"
+    history = true
+    history_file = "/path/to/history_file.history"
+    bulk_mode = "strict"
+    allow_insecure_auth_file = true
+    legacy_json_format = false
+    ```
 
-Type: `List[str]`
+    ----
 
-Default: `[]`
+    #### `default_hostgroups`
 
-----
+    Default host groups to assign to hosts created with `create_host`. Hosts are always added to these groups unless `--no-default-hostgroup` is provided.
 
-#### `default_notification_users_usergroups`
+    Type: `List[str]`
 
-Default user groups to add notification users created with `create_notification_user` to when `--usergroups` is not provided.
+    Default: `["All-hosts"]`
 
-Type: `List[str]`
 
-Default: `["All-notification-users"]`
+    ```toml
+    [app]
+    default_hostgroups = ["All-hosts"]
+    ```
 
-----
+    ----
 
-#### `export_directory`
+    #### `default_admin_usergroups`
 
-Directory for exports.
+    Default user groups to give read/write permissions to groups created with `create_hostgroup` and `create_templategroup` when `--rw-groups` option is not provided.
 
-Type: `str`
+    Type: `List[str]`
 
-Default: `"<DATA_DIR>/zabbix-cli/exports"`
+    Default: `[]`
 
-----
+    ```toml
+    [app]
+    default_admin_usergroups = []
+    ```
 
-#### `export_format`
+    ----
 
-Format for exports.
+    #### `default_create_user_usergroups`
 
-Type: `str`
+    Default user groups to add users created with `create_user` to when `--usergroups` is not provided.
 
-Default: `"json"`
+    Type: `List[str]`
 
-----
+    Default: `[]`
 
-#### `export_timestamps`
 
-Whether to include timestamps in export filenames.
+    ```toml
+    [app]
+    default_create_user_usergroups = []
+    ```
 
-Type: `bool`
+    ----
 
-Default: `false`
+    #### `default_notification_users_usergroups`
 
-----
+    Default user groups to add notification users created with `create_notification_user` to when `--usergroups` is not provided.
 
-#### `use_colors`
+    Type: `List[str]`
 
-Whether to use colors in the output.
+    Default: `["All-notification-users"]`
 
-Type: `bool`
+    ```toml
+    [app]
+    default_create_user_usergroups = ["All-notification-users"]
+    ```
 
-Default: `true`
+    ----
 
-----
+    #### `export_directory`
 
-#### `use_auth_token_file`
+    Directory for exports.
 
-Whether to use an auth token file.
+    Type: `str`
 
-Type: `bool`
+    Default: `"<DATA_DIR>/zabbix-cli/exports"`
 
-Default: `true`
+    ```toml
+    [app]
+    default_create_user_usergroups = "/path/to/exports"
+    ```
 
-----
 
-#### `use_paging`
+    ----
 
-Whether to use paging in the output.
+    #### `export_format`
 
-Type: `bool`
+    Format for exports.
 
-Default: `false`
+    Type: `str`
 
-----
+    Default: `"json"`
 
-#### `output_format`
+    ```toml
+    [app]
+    export_format = "json"
+    ```
 
-Format for the output.
 
-Type: `str`
+    ----
 
-Default: `"table"`
+    #### `export_timestamps`
 
-Choices: `"table"`, `"json"`
+    Whether to include timestamps in export filenames.
 
-----
+    Type: `bool`
 
-#### `history`
+    Default: `false`
 
-Whether to keep a history of commands.
+    ```toml
+    [app]
+    export_timestamps = false
+    ```
 
-Type: `bool`
+    ----
 
-Default: `true`
+    #### `use_auth_token_file`
 
-----
+    Whether to use an auth token file to save session token once authenticated. Allows for reusing the token in subsequent sessions.
 
-#### `history_file`
+    Type: `bool`
 
-File for storing the history of commands.
+    Default: `true`
 
-Type: `str`
+    ```toml
+    [app]
+    use_auth_token_file = true
+    ```
 
-Default: `"<DATA_DIR>/zabbix-cli/history"`
+    ----
 
-----
+    #### `auth_token_file`
 
-#### `bulk_mode`
+    Paht to the auth token file.
 
-Strictness of error handling in bulk operations. If `strict`, the operation will stop at the first error. If `continue`, the operation will continue after errors and report them afterwards. If `skip`, the operation will skip invalid lines in bulk file, as well as ignore all errors when executing the operation.
+    Type: `str`
 
-Type: `str`
+    Default: `"<DATA_DIR>/zabbix-cli/.zabbix-cli_auth_token"`
 
-Choices: `"strict"`, `"continue"`, `"skip"`
+    ```toml
+    [app]
+    auth_token_file = "/path/to/auth_token_file"
+    ```
 
-----
+    ----
 
-#### `allow_insecure_auth_file`
+    #### `auth_file`
 
-Whether to allow insecure auth files.
+    Paht to a file containing username and password in the format `username:password`. Alternative to specifying `username` and `password` in the configuration file.
 
-Type: `bool`
+    Type: `str`
 
-Default: `true`
+    Default: `"<DATA_DIR>/zabbix-cli/.zabbix-cli_auth"`
 
-----
+    ```toml
+    [app]
+    auth_token = "/path/to/auth_file"
+    ```
 
-#### `legacy_json_format`
+    ----
 
-Whether to use the legacy JSON format (pre-Zabbix CLI 3.0), where the output is a JSON mapping with numeric string keys for each result. See the [migration guide](./migration.md) for more information.
+    #### `history`
 
-Type: `bool`
+    Whether to keep a history of commands.
 
-Default: `false`
+    Type: `bool`
 
-### `logging`
+    Default: `true`
 
-The `logging` section contains the configuration for logging.
+    ```toml
+    [app]
+    history = true
+    ```
 
-----
+    ----
 
-#### `enabled`
+    #### `history_file`
 
-Whether logging is enabled.
+    File for storing the history of commands.
 
-Type: `bool`
+    Type: `str`
 
-Default: `true`
+    Default: `"<DATA_DIR>/zabbix-cli/history"`
 
-----
 
-#### `log_level`
+    ```toml
+    [app]
+    history_file = "/path/to/history_file.history"
+    ```
 
-Level for logging.
+    ----
 
-Type: `str`
+    #### `bulk_mode`
 
-Default: `"ERROR"`
+    Strictness of error handling in bulk operations. If `strict`, the operation will stop at the first error. If `continue`, the operation will continue after errors and report them afterwards. If `skip`, the operation will skip invalid lines in bulk file, as well as ignore all errors when executing the operation.
 
-----
+    Type: `str`
 
-#### `log_file`
+    Choices: `"strict"`, `"continue"`, `"skip"`
 
-File for storing logs.
+    Default: `"strict"`
 
-Type: `str`
+    ```toml
+    [app]
+    bulk_mode = "strict"
+    ```
 
-Default: `"<LOG_DIR>/zabbix-cli.log"`
+    ----
+
+    #### `allow_insecure_auth_file`
+
+    Whether to allow insecure auth files.
+
+    Type: `bool`
+
+    Default: `true`
+
+    ```toml
+    [app]
+    allow_insecure_auth_file = false
+    ```
+
+    ----
+
+    #### `legacy_json_format`
+
+    Whether to use the legacy JSON format (pre-Zabbix CLI 3.0), where the output is a JSON mapping with numeric string keys for each result. See the [migration guide](./migration.md) for more information.
+
+    Type: `bool`
+
+    Default: `false`
+
+    ```toml
+    [app]
+    legacy_json_format = false
+    ```
+
+=== "`app.output`"
+
+    The `app.output` section configures the output format of the application.
+
+    ```toml
+    [app.output]
+    format = "table"
+    color = true
+    paging = false
+    theme = "default"
+    ```
+
+    ----
+
+    #### `format`
+
+    Format of the application output.
+
+    Type: `str`
+
+    Default: `"table"`
+
+    Choices: `"table"`, `"json"`
+
+    ```toml
+    [app.output]
+    format = "table"
+    ```
+
+    ----
+
+    #### `color`
+
+    Whether to use color in the terminal output.
+
+    Type: `bool`
+
+    Default: `true`
+
+    ```toml
+    [app.output]
+    color = false
+    ```
+
+    ----
+
+    #### `paging`
+
+    Whether to use paging in the output.
+
+    Type: `bool`
+
+    Default: `false`
+
+    ```toml
+    [app.output]
+    paging = false
+    ```
+
+=== "`logging`"
+
+    The `logging` section configures logging.
+
+
+    ```toml
+    [logging]
+    enabled = true
+    log_level = "INFO"
+    log_file = "/path/to/zabbix-cli.log"
+    ```
+
+    ----
+
+    #### `enabled`
+
+    Whether logging is enabled.
+
+    Type: `bool`
+
+    Default: `true`
+
+    ```toml
+    [logging]
+    enabled = true
+    ```
+
+    ----
+
+    #### `log_level`
+
+    Level for logging.
+
+    Type: `str`
+
+    Default: `"ERROR"`
+
+    ```toml
+    [logging]
+    log_level = "ERROR"
+    ```
+
+    ----
+
+    #### `log_file`
+
+    File for storing logs. Can be omitted to log to stderr (**warning:** NOISY).
+
+    Type: `Optional[str]`
+
+    Default: `"<LOG_DIR>/zabbix-cli.log"`
+
+    ```toml
+    [logging]
+    log_file = "/path/to/zabbix-cli.log"
+    ```

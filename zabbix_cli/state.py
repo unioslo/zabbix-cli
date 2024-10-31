@@ -126,7 +126,6 @@ class State:
     def config(self, config: Config) -> None:
         """Set the configuration object and update active configuration of
         loggers, consoles, etc."""
-        from zabbix_cli.config.model import Config
         from zabbix_cli.logs import configure_logging
         from zabbix_cli.output.console import configure_console
 
@@ -135,7 +134,7 @@ class State:
         configure_console(config)
         # HACK: don't consider using sample config as "loaded".
         # Signals that main callback should create a new config file.
-        self._config_loaded = config != Config.sample_config()
+        self._config_loaded = config.sample is False
 
     @property
     def is_config_loaded(self) -> bool:
