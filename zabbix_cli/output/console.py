@@ -197,5 +197,5 @@ def enable_color() -> None:
 
 def configure_console(config: Config) -> None:
     """Configure console output based on the application configuration."""
-    if not config.app.use_colors:
+    if not config.app.output.color:
         disable_color()
