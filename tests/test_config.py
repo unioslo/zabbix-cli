@@ -501,7 +501,7 @@ use_auth_token_file = true
 auth_token_file = "{tmp_path}/.zabbix-cli_auth_token"
 auth_file = "{tmp_path}/.zabbix-cli_auth"
 history = true
-history_file = "/Users/pederhan/Library/Application Support/zabbix-cli/history"
+history_file = "{tmp_path}/history"
 bulk_mode = "strict"
 
 # Deprecated options (moved)
