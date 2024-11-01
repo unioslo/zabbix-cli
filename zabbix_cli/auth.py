@@ -22,6 +22,7 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from rich.console import ScreenContext
 from strenum import StrEnum
@@ -87,7 +88,7 @@ class Credentials(NamedTuple):
 
     @property
     def type(self) -> Optional[LoginCredentialType]:
-        if self.auth_token is not None:
+        if self.auth_token:
             return LoginCredentialType.AUTH_TOKEN
         if self.username and self.password:
             return LoginCredentialType.PASSWORD
@@ -160,7 +161,7 @@ class Authenticator:
             try:
                 credentials = func()
                 if not credentials.is_valid():
-                    logger.debug("No credentials found with %s", func.__name__)
+                    logger.debug("No valid credentials found with %s", func.__name__)
                     continue
                 logger.debug(
                     "Attempting to log in with %s from %s",
@@ -246,7 +247,9 @@ class Authenticator:
         self,
     ) -> Credentials:
         """Get username and password from environment variables."""
-        contents = self.load_auth_file()
+        path, contents = self.load_auth_file()
+        if path:
+            logger.debug("Loaded auth file %s", path)
         username, password = _parse_auth_file_contents(contents)
         return Credentials(
             username=username,
@@ -288,39 +291,43 @@ class Authenticator:
             logger.debug("Not configured to use auth token file.")
             return Credentials()
 
-        contents = self.load_auth_token_file()
+        path, contents = self.load_auth_token_file()
         username, auth_token = _parse_auth_file_contents(contents)
 
         # Found token, but does not match configured username
         if auth_token and username and username != self.config.api.username:
             warning(
-                "Ignoring existing auth token. "
-                f"Username {username!r} does not match configured username {self.config.api.username!r}."
+                f"Ignoring existing auth token in auth file {path}: "
+                f"Username {username!r} in file does not match username {self.config.api.username!r} in configuration file."
             )
             auth_token = None
 
-        return Credentials(auth_token=auth_token, source=CredentialsSource.FILE)
+        return Credentials(
+            username=username, auth_token=auth_token, source=CredentialsSource.FILE
+        )
 
-    def load_auth_token_file(self) -> Optional[str]:
+    def load_auth_token_file(self) -> Union[Tuple[Path, str], Tuple[None, None]]:
         paths = get_auth_token_file_paths(self.config)
         for path in paths:
             contents = self._do_load_auth_file(path)
             if contents:
-                return contents
+                return path, contents
         logger.info(
             f"No auth token file found. Searched in {', '.join(str(p) for p in paths)}"
         )
+        return None, None
 
-    def load_auth_file(self) -> Optional[str]:
+    def load_auth_file(self) -> Tuple[Optional[Path], Optional[str]]:
         """Attempts to load an auth file."""
         paths = get_auth_file_paths(self.config)
         for path in paths:
             contents = self._do_load_auth_file(path)
             if contents:
-                return contents
+                return path, contents
         logger.info(
             f"No auth file found. Searched in {', '.join(str(p) for p in paths)}"
         )
+        return None, None
 
     def _do_load_auth_file(self, file: Path) -> Optional[str]:
         """Attempts to read the contents of an auth (token) file.
