@@ -4,7 +4,7 @@ The application is configured with a TOML file. The default location is platform
 
 {% include ".includes/config-locations.md" %}
 
-## Create a configuration file
+## Create a config
 
 Before using the application, a configuration file must be created. This can be done with the `init` command:
 
@@ -26,7 +26,7 @@ To overwrite an existing configuration file, use the `--overwrite` option:
 zabbix-cli init --overwrite
 ```
 
-## Open configuration directory
+## Config directory
 
 The default configuration directory can be opened in the system's file manager with the `open` command:
 
@@ -40,7 +40,7 @@ To print the path instead of opening it, use the `--path` option:
 zabbix-cli open config --path
 ```
 
-## Show configuration file contents
+## Show config
 
 The contents of the current configuration file can be displayed with `show_config`:
 
@@ -48,7 +48,7 @@ The contents of the current configuration file can be displayed with `show_confi
 zabbix-cli show_config
 ```
 
-### Create a sample config
+## Sample config
 
 A sample configuration file can be printed to the terminal with the `sample_config` command. This can be redirected to a file to create a configuration file in an arbitrary location:
 
@@ -62,22 +62,22 @@ A more convoluted way of creating a default config file in the default location 
 zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
 ```
 
-## Sample configuration file
+The created config looks like this:
 
 ```toml
 {% include "data/sample_config.toml" %}
 ```
 
-## Configuration options
+## Options
 
-<!-- TODO: Automatically generate this from pydantic models using field name, aliases and field help.
+<!-- TODO: Automatically generate this from pydantic models using field name, aliases and field descriptions.
 
-           To do this, we need to add Field() for every field in the model, and also ensure they have help= set. Possibly also add examples.
+To do this, we need to add Field() for every field in the model, and also ensure they have description= set. Possibly also add examples.
  -->
 
 === "`api`"
 
-    The `api` section configures the Zabbix API connection.
+    The `api` section configures the application's Zabbix API connection.
 
     ```toml
     [api]
@@ -103,7 +103,7 @@ zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
 
     #### `username`
 
-    Username for the Zabbix API.
+    Username for Zabbix API authentication. Can be used  in combination with `password`, or to provide a default username for the login prompt.
 
     Type: `str`
 
@@ -132,7 +132,7 @@ zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
 
     #### `auth_token`
 
-    Session token or API token to use for authentication. If provided, `username` and `password` are ignored.
+    Session token or API token to use for authentication. Takes precedence over `username` and `password` if set.
 
     Type: `str`
 
@@ -457,7 +457,7 @@ zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
 
     ```toml
     [app.output]
-    color = false
+    color = true
     ```
 
     ----
