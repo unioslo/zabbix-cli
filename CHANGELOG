@@ -9,10 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New configuration file table `[app.output]`:
+  - `format`: Default output format for commands. Defaults to `"table"`.
+  - `color`: Enable or disable color output. Defaults to `true`.
+  - `paging`: Enable or disable paging of output. Defaults to `false`.
+  - `theme`: Color theme for output. Defaults to `"default"`.
+- Application now automatically assigns deprecated config options to their new equivalents internally.
+- New command `update_config` to update an outdated configuration file with new options, as well as any currently applied overrides.
+- `show_config --secrets <hide|mask|plain>` option for controlling the display mode of sensitive information in the configuration file. Defaults to `mask`.
+
 ### Changed
 
 - Custom auth (token) file paths in config now take precedence over the default path if both exist.
 - Application now prompts for Zabbix API URL if missing from config.
+- Default logging configuration is performed before loading the configuration file. Ensures a default logging configuration is always present.
+- Authentication method + source is now logged on successful authentication.
+- No longer attempts to add a user to the logging context when logging in with an auth token.
+
+### Deprecated
+
+- Config options moved to `[app.output]` table:
+  - `app.use_colors`
+  - `app.use_paging`
+  - `app.output_format`
 
 ## [3.2.0]
 

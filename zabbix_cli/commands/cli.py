@@ -11,6 +11,7 @@ import typer
 
 from zabbix_cli.app import app
 from zabbix_cli.commands.common.args import OPTION_LIMIT
+from zabbix_cli.config.constants import SecretMode
 from zabbix_cli.dirs import CONFIG_DIR
 from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
@@ -23,6 +24,7 @@ from zabbix_cli.output.console import info
 from zabbix_cli.output.console import print_path
 from zabbix_cli.output.console import print_toml
 from zabbix_cli.output.console import success
+from zabbix_cli.output.formatting.path import path_link
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.fs import open_directory
@@ -38,10 +40,15 @@ HELP_PANEL = "CLI"
     "show_zabbixcli_config", rich_help_panel=HELP_PANEL, hidden=True, deprecated=True
 )
 @app.command("show_config", rich_help_panel=HELP_PANEL)
-def show_config(ctx: typer.Context) -> None:
+def show_config(
+    ctx: typer.Context,
+    secrets: SecretMode = typer.Option(
+        SecretMode.MASK, "--secrets", help="Display mode for secrets."
+    ),
+) -> None:
     """Show the current application configuration."""
     config = app.state.config
-    print_toml(config.as_toml())
+    print_toml(config.as_toml(secrets=secrets))
     if config.config_path:
         info(f"Config file: {config.config_path.absolute()}")
 
@@ -296,6 +303,37 @@ def migrate_config(
 
     conf.dump_to_file(destination)
     success(f"Config migrated to {destination}")
+
+
+@app.command("update_config", rich_help_panel=HELP_PANEL)
+def update_config(
+    ctx: typer.Context,
+    config_file: Optional[Path] = typer.Option(
+        None, "--config-file", "-c", help="Location of the config file to update."
+    ),
+    secrets: SecretMode = typer.Option(
+        SecretMode.PLAIN, "--secrets", help="Secret dump mode"
+    ),
+    force: bool = typer.Option(False, "--force", help="Skip confirmation prompt."),
+) -> None:
+    from zabbix_cli.output.prompts import bool_prompt
+
+    """Update the TOML config file with the currently active settings.
+
+    Useful if you authenticate with a new user or change the URL,
+    and want to save the changes to the config file. Furthermore,
+    this helps to migrate an outdated config file to the newest version."""
+
+    config_file = config_file or app.state.config.config_path
+    if not config_file:
+        exit_err("No config file specified and no config loaded.")
+    if not force:
+        if not bool_prompt("Update config file?", default=False):
+            exit_err("Update cancelled.")
+
+    config = app.state.config
+    config.dump_to_file(config_file, secrets=secrets)
+    success(f"Config saved to {path_link(config_file)}")
 
 
 @app.command("update", rich_help_panel=HELP_PANEL, hidden=True)

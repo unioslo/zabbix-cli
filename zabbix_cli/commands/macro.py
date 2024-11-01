@@ -152,7 +152,7 @@ def show_usermacro_host_list(
     # command is to list _all_ hosts with the given macro, so we want to render
     # the macro and a list of EVERY host with that macro.
     if (
-        app.state.config.app.output_format == OutputFormat.JSON
+        app.state.config.app.output.format == OutputFormat.JSON
         and app.state.config.app.legacy_json_format
     ):
         render_result(

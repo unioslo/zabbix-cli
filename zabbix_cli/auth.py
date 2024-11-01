@@ -22,8 +22,10 @@ from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from rich.console import ScreenContext
+from strenum import StrEnum
 
 from zabbix_cli._v2_compat import AUTH_FILE as AUTH_FILE_LEGACY
 from zabbix_cli._v2_compat import AUTH_TOKEN_FILE as AUTH_TOKEN_FILE_LEGACY
@@ -55,18 +57,46 @@ SECURE_PERMISSIONS: Final[int] = 0o600
 SECURE_PERMISSIONS_STR = format(SECURE_PERMISSIONS, "o")
 
 
+class LoginCredentialType(StrEnum):
+    """Types of valid login credentials."""
+
+    PASSWORD = "username and password"
+    AUTH_TOKEN = "auth token"
+
+
+class CredentialsSource(StrEnum):
+    """Source of login credentials."""
+
+    ENV = "env"
+    FILE = "file"
+    PROMPT = "prompt"
+    CONFIG = "config"
+
+
+class LoginInfo(NamedTuple):
+    credentials: Credentials
+    token: str
+
+
 class Credentials(NamedTuple):
+    """Credentials for logging in to the Zabbix API."""
+
+    source: Optional[CredentialsSource] = None
     username: Optional[str] = None
     password: Optional[str] = None
     auth_token: Optional[str] = None
 
+    @property
+    def type(self) -> Optional[LoginCredentialType]:
+        if self.auth_token:
+            return LoginCredentialType.AUTH_TOKEN
+        if self.username and self.password:
+            return LoginCredentialType.PASSWORD
+        return None
+
     def is_valid(self) -> bool:
         """Check if credentials are valid (non-empty)."""
-        if self.username and self.password:
-            return True
-        if self.auth_token:
-            return True
-        return False
+        return self.type is not None
 
 
 class Authenticator:
@@ -82,10 +112,10 @@ class Authenticator:
     def screen(self) -> ScreenContext:
         return err_console.screen()
 
-    def login(self) -> Tuple[ZabbixAPI, str]:
+    def login(self) -> ZabbixAPI:
         """Log in to the Zabbix API using the configured credentials.
 
-        Returns the Zabbix API client object and the session token.
+        Returns the Zabbix API client object.
 
         If multiple methods are available, they are tried in the following order:
 
@@ -100,7 +130,25 @@ class Authenticator:
         # Ensure we have a Zabbix API URL
         self.config.api.url = self.get_zabbix_url()
         client = ZabbixAPI.from_config(self.config)
+        info = self._do_login(client)
+        if self.config.app.use_auth_token_file:
+            write_auth_token_file(self.config.api.username, info.token)
 
+        if info.credentials.username:
+            add_user(info.credentials.username)
+
+        if info.credentials.type == LoginCredentialType.AUTH_TOKEN:
+            logger.info("Logged in using auth token from %s", info.credentials.source)
+        else:
+            logger.info(
+                "Logged in as %s using username and password from %s",
+                info.credentials.username,
+                info.credentials.source,
+            )
+        self._update_config(info.credentials)
+        return client
+
+    def _do_login(self, client: ZabbixAPI) -> LoginInfo:
         for func in [
             self._get_auth_token_config,
             self._get_auth_token_env,
@@ -113,15 +161,15 @@ class Authenticator:
             try:
                 credentials = func()
                 if not credentials.is_valid():
-                    logger.debug("No credentials found with %s", func.__name__)
+                    logger.debug("No valid credentials found with %s", func.__name__)
                     continue
                 logger.debug(
-                    "Attempting to log in with credentials from %s", func.__name__
+                    "Attempting to log in with %s from %s",
+                    credentials.type,
+                    credentials.source,
                 )
-                token = self.do_login(client, credentials)
-                logger.info("Logged in with %s", func.__name__)
-                self.update_config(credentials)
-                return client, token
+                token = self.login_with_credentials(client, credentials)
+                return LoginInfo(credentials, token)
             except ZabbixAPIException as e:
                 logger.warning("Failed to log in with %s: %s", func.__name__, e)
                 continue
@@ -135,7 +183,9 @@ class Authenticator:
                 f"No authentication method succeeded for {self.config.api.url}. Check the logs for more information."
             )
 
-    def do_login(self, client: ZabbixAPI, credentials: Credentials) -> str:
+    def login_with_credentials(
+        self, client: ZabbixAPI, credentials: Credentials
+    ) -> str:
         """Log in to the Zabbix API using the provided credentials."""
         return client.login(
             user=credentials.username,
@@ -143,15 +193,32 @@ class Authenticator:
             auth_token=credentials.auth_token,
         )
 
-    def update_config(self, credentials: Credentials) -> None:
-        """Update the config with the provided credentials."""
+    def _update_config(self, credentials: Credentials) -> None:
+        """Update the config with credentials from the successful login."""
         from pydantic import SecretStr
 
         if credentials.username:
             self.config.api.username = credentials.username
-        if credentials.password:
+
+        # Only update secrets if they were already set in config and new ones are different.
+        # we do not want to assign secrets to a config that does not already have them.
+        # I.e. user logs in via file, prompt, env var, etc., which should not
+        # assign those secrets to the config. ONLY prompt should assign secrets.
+        # TODO: Better introspection of login method to determine if secrets should be updated.
+        if (
+            # we have a token in the config file
+            (config_password := self.config.api.password.get_secret_value())
+            and credentials.password
+            and config_password != credentials.password
+        ):
             self.config.api.password = SecretStr(credentials.password)
-        if credentials.auth_token:
+
+        if (
+            # we have a token in the config file
+            (config_token := self.config.api.auth_token.get_secret_value())
+            and credentials.auth_token
+            and config_token != credentials.auth_token
+        ):
             self.config.api.auth_token = SecretStr(credentials.auth_token)
 
     def get_zabbix_url(self) -> str:
@@ -166,19 +233,29 @@ class Authenticator:
         return Credentials(
             username=os.environ.get(ConfigEnvVars.USERNAME),
             password=os.environ.get(ConfigEnvVars.PASSWORD),
+            source=CredentialsSource.ENV,
         )
 
     def _get_auth_token_env(self) -> Credentials:
         """Get auth token from environment variables."""
-        return Credentials(auth_token=os.environ.get(ConfigEnvVars.API_TOKEN))
+        return Credentials(
+            auth_token=os.environ.get(ConfigEnvVars.API_TOKEN),
+            source=CredentialsSource.ENV,
+        )
 
     def _get_username_password_auth_file(
         self,
     ) -> Credentials:
         """Get username and password from environment variables."""
-        contents = self.load_auth_file()
+        path, contents = self.load_auth_file()
+        if path:
+            logger.debug("Loaded auth file %s", path)
         username, password = _parse_auth_file_contents(contents)
-        return Credentials(username=username, password=password)
+        return Credentials(
+            username=username,
+            password=password,
+            source=CredentialsSource.FILE,
+        )
 
     def _get_username_password_config(
         self,
@@ -187,6 +264,7 @@ class Authenticator:
         return Credentials(
             username=self.config.api.username,
             password=self.config.api.password.get_secret_value(),
+            source=CredentialsSource.CONFIG,
         )
 
     def _get_username_password_prompt(
@@ -194,52 +272,62 @@ class Authenticator:
     ) -> Credentials:
         """Get username and password from a prompt in a separate screen."""
         with self.screen:
-            username, password = prompt_username_password(
-                username=self.config.api.username
+            username = str_prompt(
+                "Username", default=self.config.api.username, empty_ok=False
             )
-            return Credentials(username=username, password=password)
+            password = str_prompt("Password", password=True, empty_ok=False)
+            return Credentials(
+                username=username, password=password, source=CredentialsSource.PROMPT
+            )
 
     def _get_auth_token_config(self) -> Credentials:
-        return Credentials(auth_token=self.config.api.auth_token.get_secret_value())
+        return Credentials(
+            auth_token=self.config.api.auth_token.get_secret_value(),
+            source=CredentialsSource.CONFIG,
+        )
 
     def _get_auth_token_file(self) -> Credentials:
         if not self.config.app.use_auth_token_file:
             logger.debug("Not configured to use auth token file.")
             return Credentials()
 
-        contents = self.load_auth_token_file()
+        path, contents = self.load_auth_token_file()
         username, auth_token = _parse_auth_file_contents(contents)
 
         # Found token, but does not match configured username
         if auth_token and username and username != self.config.api.username:
             warning(
-                "Ignoring existing auth token. "
-                f"Username {username!r} does not match configured username {self.config.api.username!r}."
+                f"Ignoring existing auth token in auth file {path}: "
+                f"Username {username!r} in file does not match username {self.config.api.username!r} in configuration file."
             )
             auth_token = None
 
-        return Credentials(auth_token=auth_token)
+        return Credentials(
+            username=username, auth_token=auth_token, source=CredentialsSource.FILE
+        )
 
-    def load_auth_token_file(self) -> Optional[str]:
+    def load_auth_token_file(self) -> Union[Tuple[Path, str], Tuple[None, None]]:
         paths = get_auth_token_file_paths(self.config)
         for path in paths:
             contents = self._do_load_auth_file(path)
             if contents:
-                return contents
+                return path, contents
         logger.info(
             f"No auth token file found. Searched in {', '.join(str(p) for p in paths)}"
         )
+        return None, None
 
-    def load_auth_file(self) -> Optional[str]:
+    def load_auth_file(self) -> Tuple[Optional[Path], Optional[str]]:
         """Attempts to load an auth file."""
         paths = get_auth_file_paths(self.config)
         for path in paths:
             contents = self._do_load_auth_file(path)
             if contents:
-                return contents
+                return path, contents
         logger.info(
             f"No auth file found. Searched in {', '.join(str(p) for p in paths)}"
         )
+        return None, None
 
     def _do_load_auth_file(self, file: Path) -> Optional[str]:
         """Attempts to read the contents of an auth (token) file.
@@ -259,17 +347,12 @@ class Authenticator:
 
 
 def login(config: Config) -> ZabbixAPI:
-    """Log in to the Zabbix API using the configured credentials.
+    """Log in to the Zabbix API using credentials from the config.
 
     Returns the Zabbix API client object.
     """
     auth = Authenticator(config)
-    client, token = auth.login()
-    # NOTE: should we bake token file and logging config into Authenticator?
-    if config.app.use_auth_token_file:
-        write_auth_token_file(config.api.username, token, config.app.auth_token_file)
-    add_user(config.api.username)
-    logger.info("Logged in as %s", config.api.username)
+    client = auth.login()
     return client
 
 
@@ -286,7 +369,7 @@ def logout(client: ZabbixAPI, config: Config) -> None:
 
 
 def prompt_username_password(username: str) -> Tuple[str, str]:
-    """Prompt for username and password."""
+    """Re-useable prompt for username and password."""
     username = str_prompt("Username", default=username, empty_ok=False)
     password = str_prompt("Password", password=True, empty_ok=False)
     return username, password

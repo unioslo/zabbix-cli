@@ -34,6 +34,7 @@ from zabbix_cli.__about__ import __version__
 from zabbix_cli.app import app
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
+from zabbix_cli.logs import configure_logging
 from zabbix_cli.logs import logger
 from zabbix_cli.state import get_state
 
@@ -133,7 +134,7 @@ def main_callback(
 
     # Config overrides are always applied
     if output_format is not None:
-        state.config.app.output_format = output_format
+        state.config.app.output.format = output_format
 
     if state.repl or state.bulk:
         return  # In REPL or bulk mode already; no need to re-configure.
@@ -227,6 +228,7 @@ def main() -> int:
         # - configure logging
         # - configure console output
         # - load local plugins (defined in the config)
+        configure_logging()
         conf = _parse_config_arg()
         config = get_config(conf, init=False)
         state.config = config

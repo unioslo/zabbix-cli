@@ -132,8 +132,12 @@ class ZabbixAPIRequestError(ZabbixAPIException):
         return reason
 
 
-class ZabbixAPITokenExpired(ZabbixAPIRequestError):
+class ZabbixAPITokenExpiredError(ZabbixAPIRequestError):
     """Zabbix API token expired error."""
+
+
+class ZabbixAPINotAuthorizedError(ZabbixAPIRequestError):
+    """Zabbix API not authorized error."""
 
 
 class ZabbixAPIResponseParsingError(ZabbixAPIRequestError):

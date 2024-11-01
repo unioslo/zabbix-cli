@@ -66,8 +66,9 @@ def test_get_extra_dict_reserved_keys() -> None:
 
 
 def test_debug_kv(
-    capsys: pytest.CaptureFixture[str], caplog: pytest.LogCaptureFixture
+    capsys: pytest.CaptureFixture[str], caplog: pytest.LogCaptureFixture, state: State
 ) -> None:
+    state.config.logging.log_level = "DEBUG"
     caplog.set_level(logging.DEBUG)
     debug_kv("some", "error")
     captured = capsys.readouterr()
@@ -79,8 +80,9 @@ def test_debug_kv(
 
 
 def test_debug(
-    capsys: pytest.CaptureFixture[str], caplog: pytest.LogCaptureFixture
+    capsys: pytest.CaptureFixture[str], caplog: pytest.LogCaptureFixture, state: State
 ) -> None:
+    state.config.logging.log_level = "DEBUG"
     caplog.set_level(logging.DEBUG)
     debug("Some error")
     captured = capsys.readouterr()
@@ -136,8 +138,7 @@ def test_error(
 def test_exit_err_table(
     capsys: pytest.CaptureFixture[str], caplog: pytest.LogCaptureFixture, state: State
 ) -> None:
-    assert state.is_config_loaded is True
-    state.config.app.output_format = OutputFormat.TABLE
+    state.config.app.output.format = OutputFormat.TABLE
     caplog.set_level(logging.INFO)
     with pytest.raises(SystemExit):
         exit_err("Some error")
@@ -149,7 +150,7 @@ def test_exit_err_table(
 def test_exit_err_json(
     capsys: pytest.CaptureFixture[str], caplog: pytest.LogCaptureFixture, state: State
 ) -> None:
-    state.config.app.output_format = OutputFormat.JSON
+    state.config.app.output.format = OutputFormat.JSON
     with pytest.raises(SystemExit):
         exit_err("Some error")
     captured = capsys.readouterr()
@@ -173,7 +174,7 @@ def test_exit_err_json_with_errors(
     outer_exc = TypeError("Outer exception")
     outer_exc.__cause__ = ValueError("Inner exception")
 
-    state.config.app.output_format = OutputFormat.JSON
+    state.config.app.output.format = OutputFormat.JSON
     with pytest.raises(SystemExit):
         exit_err("Some error", exception=outer_exc)
     captured = capsys.readouterr()
@@ -210,7 +211,7 @@ def test_exit_err_json_with_zabbix_api_request_error(
         "Inner exception", api_response=api_resp
     )
 
-    state.config.app.output_format = OutputFormat.JSON
+    state.config.app.output.format = OutputFormat.JSON
     with pytest.raises(SystemExit):
         exit_err("Some error", exception=outer_exc)
     captured = capsys.readouterr()

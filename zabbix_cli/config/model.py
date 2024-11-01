@@ -36,6 +36,7 @@ from pydantic import AliasChoices
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import PrivateAttr
 from pydantic import RootModel
 from pydantic import SecretStr
 from pydantic import SerializationInfo
@@ -52,9 +53,13 @@ from zabbix_cli.bulk import BulkRunnerMode
 from zabbix_cli.config.constants import AUTH_FILE
 from zabbix_cli.config.constants import AUTH_TOKEN_FILE
 from zabbix_cli.config.constants import OutputFormat
+from zabbix_cli.config.constants import SecretMode
+from zabbix_cli.config.utils import check_deprecated_fields
 from zabbix_cli.config.utils import find_config
+from zabbix_cli.config.utils import get_deprecated_fields_set
 from zabbix_cli.config.utils import load_config_conf
 from zabbix_cli.config.utils import load_config_toml
+from zabbix_cli.config.utils import update_deprecated_fields
 from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.dirs import LOGS_DIR
@@ -67,9 +72,14 @@ from zabbix_cli.utils.fs import mkdir_if_not_exists
 
 T = TypeVar("T")
 
+logger = logging.getLogger("zabbix_cli.config")
+
 
 class BaseModel(PydanticBaseModel):
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
+
+    _deprecation_checked: bool = PrivateAttr(default=False)
+    """Has performed a deprecaction check for the fields on the model."""
 
     @field_validator("*")
     @classmethod
@@ -82,6 +92,14 @@ class BaseModel(PydanticBaseModel):
         if v.upper() == "OFF":
             return False
         return v
+
+    @model_validator(mode="after")
+    def _check_deprecated_fields(self) -> Self:
+        """Check for deprecated fields and log warnings."""
+        if not self._deprecation_checked:
+            check_deprecated_fields(self)
+            self._deprecation_checked = True
+        return self
 
 
 class APIConfig(BaseModel):
@@ -117,22 +135,37 @@ class APIConfig(BaseModel):
         return timeout if timeout is not None else 0
 
     @field_serializer("password", "auth_token", when_used="json")
-    def dump_secret(self, v: Any, info: SerializationInfo) -> str:
+    def dump_secret(self, v: Any, info: SerializationInfo) -> Any:
         """Dump secrets if enabled in serialization context."""
-        if info.context and isinstance(info.context, dict):
-            if info.context.get("secrets", False) and isinstance(v, SecretStr):  # pyright: ignore[reportUnknownMemberType]
-                return v.get_secret_value()
-        return str(v)
+        if not isinstance(v, SecretStr):
+            logger.debug("%s from field %s is not a SecretStr", v, info)
+            return v
+
+        mode = SecretMode.from_context(info.context)
+        if mode == SecretMode.PLAIN:
+            return v.get_secret_value()
+        elif mode == SecretMode.MASK:
+            return str(v)  # SecretStr masks by default
+        else:  # fall back on hidden otherwise
+            return ""
+
+
+class OutputConfig(BaseModel):
+    format: OutputFormat = OutputFormat.TABLE
+    color: bool = True
+    paging: bool = False
+    theme: str = "default"
+
+    @field_validator("format", mode="before")
+    @classmethod
+    def _ignore_enum_case(cls, v: Any) -> Any:
+        """Ignore case when validating enum value."""
+        if isinstance(v, str):
+            return v.lower()
+        return v
 
 
 class AppConfig(BaseModel):
-    username: str = Field(
-        default="",
-        validation_alias=AliasChoices("username", "system_id"),
-        # DEPRECATED: Use `api.username` instead
-        exclude=True,
-    )
-
     default_hostgroups: List[str] = Field(
         default=["All-hosts"],
         # Changed in V3: default_hostgroup -> default_hostgroups
@@ -181,16 +214,42 @@ class AppConfig(BaseModel):
             "include_timestamp_export_filename", "export_timestamps"
         ),
     )
-    use_colors: bool = True
+
     use_auth_token_file: bool = True
     auth_token_file: Path = AUTH_TOKEN_FILE
     auth_file: Path = AUTH_FILE
-    use_paging: bool = False
-    output_format: OutputFormat = OutputFormat.TABLE
+
     history: bool = True
     history_file: Path = DATA_DIR / "history"
     bulk_mode: BulkRunnerMode = Field(
         default=BulkRunnerMode.STRICT, description="Bulk mode error handling."
+    )
+
+    # Deprecated/moved fields
+    output_format: OutputFormat = Field(
+        default=OutputFormat.TABLE,
+        deprecated=True,
+        json_schema_extra={"replacement": "app.output.format"},
+        exclude=True,
+    )
+    use_colors: bool = Field(
+        default=True,
+        deprecated=True,
+        json_schema_extra={"replacement": "app.output.color"},
+        exclude=True,
+    )
+    use_paging: bool = Field(
+        default=False,
+        deprecated=True,
+        json_schema_extra={"replacement": "app.output.paging"},
+        exclude=True,
+    )
+    system_id: str = Field(
+        default="",
+        validation_alias=AliasChoices("username", "system_id"),
+        deprecated=True,
+        json_schema_extra={"replacement": "api.username"},
+        exclude=True,
     )
 
     # Legacy options
@@ -207,6 +266,9 @@ class AppConfig(BaseModel):
     each entry was stored under the keys "0", "1", "2", etc.
     """
     is_legacy: bool = Field(default=False, exclude=True)
+
+    # Sub-models
+    output: OutputConfig = Field(default_factory=OutputConfig)
 
     @field_validator(
         # Group names that were previously singular that are now plural
@@ -409,13 +471,33 @@ class Config(BaseModel):
         validation_alias=AliasChoices("app", "zabbix_config"),
     )
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
-    config_path: Optional[Path] = Field(default=None, exclude=True)
     plugins: PluginsConfig = Field(default_factory=PluginsConfig)
+
+    config_path: Optional[Path] = Field(default=None, exclude=True)
+    sample: bool = Field(default=False, exclude=True)
+
+    @model_validator(mode="after")
+    def _set_deprecated_fields_in_new_location(self) -> Self:
+        """Set values specified on deprecated fields in their new location.
+
+        Only updates new fields if the old field is set and the new field is not.
+
+        I.e. `app.username` -> `api.username`.
+             `app.output_format` -> `app.output.format`.
+        """
+        # Guard against failure in case we have a config that cannot be updated
+        # After all, this validator is added for _increased_ compatibility, not decreased
+        try:
+            update_deprecated_fields(self)
+        except Exception as e:
+            logger.error("Failed to update deprecated fields: %s", e)
+        self.check_emit_upgrade_instructions()
+        return self
 
     @classmethod
     def sample_config(cls) -> Config:
         """Get a sample configuration."""
-        return cls(api=APIConfig(url="https://zabbix.example.com", username="Admin"))
+        return cls(api=APIConfig(url="https://zabbix.example.com"), sample=True)
 
     @classmethod
     def from_file(cls, filename: Optional[Path] = None, init: bool = False) -> Config:
@@ -486,23 +568,7 @@ class Config(BaseModel):
                 f"Failed to load legacy configuration file {filename}: {e}"
             ) from e
 
-    @model_validator(mode="after")
-    def _assign_legacy_options(self) -> Self:
-        """Ensures that options that have moved from one section to another are copied
-        to the new section. I.e. `app.username` -> `api.username`.
-        """
-        # Only override if `api.username` is not set (and not using legacy config file)
-        if self.app.username:
-            if not self.app.is_legacy:
-                logging.warning(
-                    "Config option `app.username` is deprecated and will be removed. Use `api.username` instead."
-                )
-            self.api.username = self.app.username
-        if not self.api.username:
-            raise ConfigError("No username specified in the configuration file.")
-        return self
-
-    def as_toml(self, secrets: bool = False) -> str:
+    def as_toml(self, secrets: SecretMode = SecretMode.MASK) -> str:
         """Dump the configuration to a TOML string."""
         import tomli_w
 
@@ -517,12 +583,37 @@ class Config(BaseModel):
         except Exception as e:
             raise ConfigError(f"Failed to serialize configuration to TOML: {e}") from e
 
-    def dump_to_file(self, filename: Path) -> None:
+    def dump_to_file(
+        self, filename: Path, secrets: SecretMode = SecretMode.HIDE
+    ) -> None:
         """Dump the configuration to a TOML file."""
         try:
             mkdir_if_not_exists(filename.parent)
-            filename.write_text(self.as_toml(secrets=True))
+            filename.write_text(self.as_toml(secrets=secrets))
         except OSError as e:
             raise ConfigError(
                 f"Failed to write configuration file {filename}: {e}"
             ) from e
+
+    def check_emit_upgrade_instructions(self) -> None:
+        from zabbix_cli.output.console import warning
+
+        # TODO: Detmermine whether or not to prefix command with `zabbix-cli`
+        #       based on whether or not we are in the REPL
+        if self.app.is_legacy:
+            warning(
+                "Your configuration file is from an older version of Zabbix-CLI.\n"
+                "  To update your config file to the new format, run:\n"
+                "  [command]zabbix-cli migrate_config[/]\n"
+                "  For more information, see the documentation."
+            )
+        else:
+            deprecated_fields = get_deprecated_fields_set(self)
+            if not deprecated_fields:
+                return
+            warning(
+                "Your configuration file contains deprecated options.\n"
+                "  To update your config file with the new options, run:\n"
+                "  [command]zabbix-cli update_config[/]\n"
+                "  For more information, see the documentation."
+            )

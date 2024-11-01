@@ -56,7 +56,7 @@ def render_result(
 
     # Short form aliases
     state = get_state()
-    fmt = state.config.app.output_format
+    fmt = state.config.app.output.format
     # paging = state.config.output.paging
     paging = False  # TODO: implement
 

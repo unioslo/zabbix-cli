@@ -95,7 +95,6 @@ nav:
   - Home:
       - index.md
   - User Guide:
-    - Introduction: guide/introduction.md
     - Installation: guide/installation.md
     - Configuration: guide/configuration.md
     - Authentication: guide/authentication.md

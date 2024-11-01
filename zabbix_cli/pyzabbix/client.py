@@ -37,9 +37,10 @@ from zabbix_cli.__about__ import __version__
 from zabbix_cli.cache import ZabbixCache
 from zabbix_cli.exceptions import ZabbixAPICallError
 from zabbix_cli.exceptions import ZabbixAPIException
+from zabbix_cli.exceptions import ZabbixAPINotAuthorizedError
 from zabbix_cli.exceptions import ZabbixAPIRequestError
 from zabbix_cli.exceptions import ZabbixAPIResponseParsingError
-from zabbix_cli.exceptions import ZabbixAPITokenExpired
+from zabbix_cli.exceptions import ZabbixAPITokenExpiredError
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
 from zabbix_cli.pyzabbix.enums import ActiveInterface
@@ -352,8 +353,8 @@ class ZabbixAPI:
         try:
             self.host.get(output=["hostid"], limit=1)
         except Exception as e:
-            self.logout()
-            raise ZabbixAPICallError("Failed to connect to Zabbix API") from e
+            # Leaking the token should be OK - it's invalid
+            raise ZabbixAPICallError(f"Invalid session token: {self.auth}") from e
 
     def logout(self) -> None:
         if not self.auth:
@@ -364,8 +365,10 @@ class ZabbixAPI:
         # not documented in the API docs - only the inverse case `true` is.
         try:
             self.user.logout()
-        except ZabbixAPITokenExpired:
-            pass
+        except ZabbixAPITokenExpiredError:
+            logger.debug(
+                "Attempted to log out of Zabbix API with expired token: %s", self.auth
+            )
         except ZabbixAPIRequestError as e:
             raise ZabbixAPICallError("Failed to log out of Zabbix API: %s", e) from e
         self.auth = ""
@@ -456,12 +459,16 @@ class ZabbixAPI:
             # some errors don't contain 'data': workaround for ZBX-9340
             if not resp.error.data:
                 resp.error.data = "No data"
+
+            # TODO: refactor this exc type narrowing to some sort of predicate/dict lookup
             if "API token expired" in resp.error.data:
-                cls = ZabbixAPITokenExpired
+                cls = ZabbixAPITokenExpiredError
                 logger.debug(
                     "API token '%s' has expired.",
                     f"{self.auth[:8]}...",  # Redact most of the token
                 )
+            elif "Not authorized" in resp.error.data:
+                cls = ZabbixAPINotAuthorizedError
             else:
                 cls = ZabbixAPIRequestError
             raise cls(

@@ -1,6 +1,6 @@
 # Installation
 
-The application is primarily distributed with `pip`, but other installation methods are available.
+The application is primarily distributed with `pip`, but other installation methods are also available.
 
 ## Install
 
