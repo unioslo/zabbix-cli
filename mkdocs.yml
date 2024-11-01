@@ -99,6 +99,7 @@ nav:
     - Configuration: guide/configuration.md
     - Authentication: guide/authentication.md
     - Usage: guide/usage.md
+    - Logging: guide/logging.md
     - Bulk Operations: guide/bulk.md
     - Migration: guide/migration.md
     - Commands:
