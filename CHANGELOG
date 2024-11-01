@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom auth (token) file paths in config now take precedence over the default path if both exist.
 - Application now prompts for Zabbix API URL if missing from config.
 - Default logging configuration is performed before loading the configuration file. Ensures a default logging configuration is always present.
+- Authentication method + source is now logged on successful authentication.
+- No longer attempts to add a user to the logging context when logging in with an auth token.
 
 ### Deprecated
 
