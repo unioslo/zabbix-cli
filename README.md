@@ -78,10 +78,11 @@ Binaries built with PyInstaller can be found on the [releases page](https://gith
 
 ## Quick start
 
+Running `zabbix-cli` for the first time will prompt for a Zabbix URL, username and password. The URL should be the URL of the Zabbix web server without the `/api_jsonrpc.php` path.
+
+Running without arguments will start the REPL:
+
 ```bash
-# Initialize the config file with your Zabbix URL
-zabbix-cli init --zabbix-url https://your-zabbix-url.com/
-# Start the REPL
 zabbix-cli
 ```
 
