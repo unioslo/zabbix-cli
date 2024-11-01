@@ -1,14 +1,23 @@
 # Configuration
 
-The application is configured with a TOML file. The default location is platform-dependent.
+!!! note "Configuration file directory"
+    The application uses the [platformdirs](https://pypi.org/project/platformdirs/) package to determine the configuration directory.
+
+The application is configured with a TOML file. The file is created on startup if it doesn't exist.
+
+The configuration file is searched for in the following locations:
 
 {% include ".includes/config-locations.md" %}
 
+<!-- TODO: Gather the different paths in CI, then combine them to construct the config-locations.md file -->
+
 ## Create a config
 
-Before using the application, a configuration file must be created. This can be done with the `init` command:
+The configuration file is automatically created when the application is started for the first time.
 
-```
+The config file can also manually be created with the `init` command:
+
+```bash
 zabbix-cli init
 ```
 
@@ -16,8 +25,8 @@ The application will print the location of the created configuration file.
 
 To bootstrap the config with a URL and username, use the options `--url` and `--user`:
 
-```
-zabbix-cli-init --url https://zabbix.example.com --user Admin
+```bash
+zabbix-cli init --url https://zabbix.example.com --user Admin
 ```
 
 To overwrite an existing configuration file, use the `--overwrite` option:
@@ -511,6 +520,8 @@ To do this, we need to add Field() for every field in the model, and also ensure
     Type: `str`
 
     Default: `"ERROR"`
+
+    Choices: `"DEBUG"`, `"INFO"`, `"WARNING"`, `"ERROR"`, `"CRITICAL"`
 
     ```toml
     [logging]
