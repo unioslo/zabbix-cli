@@ -166,12 +166,8 @@ zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
     default_hostgroups = [
         "All-hosts",
     ]
-    default_admin_usergroups = [
-        "Zabbix-root",
-    ]
-    default_create_user_usergroups = [
-        "All-users",
-    ]
+    default_admin_usergroups = []
+    default_create_user_usergroups = []
     default_notification_users_usergroups = [
         "All-notification-users",
     ]
@@ -216,7 +212,7 @@ zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
 
     ```toml
     [app]
-    default_admin_usergroups = []
+    default_admin_usergroups = ["All-admins"]
     ```
 
     ----
@@ -232,7 +228,7 @@ zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
 
     ```toml
     [app]
-    default_create_user_usergroups = []
+    default_create_user_usergroups = ["All-users"]
     ```
 
     ----
