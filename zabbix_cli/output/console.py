@@ -108,8 +108,7 @@ def error(
 
 
 def print_help(ctx: typer.Context) -> None:
-    console.print(ctx.command.get_help(ctx))
-    raise SystemExit(1)
+    console.print(ctx.get_help())
 
 
 def exit_ok(message: Optional[str] = None, code: int = 0, **kwargs: Any) -> NoReturn:
