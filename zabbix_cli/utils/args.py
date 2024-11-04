@@ -10,6 +10,8 @@ from typing import Set
 import typer
 
 from zabbix_cli.exceptions import ZabbixCLIError
+from zabbix_cli.output.console import exit_err
+from zabbix_cli.output.console import print_help
 
 if TYPE_CHECKING:
     from zabbix_cli.app import StatefulApp
@@ -25,8 +27,18 @@ def is_set(ctx: typer.Context, option: str) -> bool:
     if not src:
         logging.warning(f"Parameter {option} not found in context.")
         return False
+
+    # HACK: A typer callback that sets an empty list as a default value
+    # for a field with a None default and `Optiona[List[str]]` type
+    # will cause the parameter to be set to a non-default value,
+    # and thus be considered "set" by Click. That is wrong.
+    # This is only relevant because of `zabbix_cli._v2_compat.ARGS_POSITIONAL`.
+    # It might be better to check for that specific case instead of this
+    # general check, which might catch other cases that are not bugs (?)
+    if ctx.params.get(option) == [] and option == "args":
+        return False
+
     return src != ParameterSource.DEFAULT
-    # return option in ctx.params and ctx.params[option]
 
 
 def parse_int_arg(arg: str) -> int:
@@ -162,3 +174,21 @@ def get_hostgroup_hosts(
                 hosts.append(host)
                 seen.add(host.host)
     return hosts
+
+
+def check_at_least_one_option_set(ctx: typer.Context) -> None:
+    """Check that at least one option is set in the context.
+
+    Useful for commands used to update resources, where all options
+    are optional, but at least one is required to make a change."""
+    optional_params: Set[str] = set()
+    for param in ctx.command.params:
+        if param.required:
+            continue
+        if not param.name:
+            logging.warning("Unnamed parameter in command %s", ctx.command.name)
+            continue
+        optional_params.add(param.name)
+    if not any(is_set(ctx, param) for param in optional_params):
+        print_help(ctx)
+        exit_err("At least one option is required.")

@@ -23,6 +23,7 @@ from zabbix_cli.pyzabbix.enums import MonitoringStatus
 from zabbix_cli.pyzabbix.enums import SNMPAuthProtocol
 from zabbix_cli.pyzabbix.enums import SNMPPrivProtocol
 from zabbix_cli.pyzabbix.enums import SNMPSecurityLevel
+from zabbix_cli.utils.args import check_at_least_one_option_set
 from zabbix_cli.utils.args import parse_list_arg
 
 HELP_PANEL = "Host"
@@ -529,6 +530,8 @@ def update_host_interface(
     from zabbix_cli.models import Result
     from zabbix_cli.pyzabbix.types import UpdateHostInterfaceDetails
 
+    check_at_least_one_option_set(ctx)
+
     interface = app.state.client.get_hostinterface(interface_id)
 
     details = UpdateHostInterfaceDetails(
@@ -678,6 +681,7 @@ def show_host(
     )
 
     # HACK: inject proxy map to host for rendering
+    # TODO: cache the proxy map for some time? In case we run show_host multiple times
     proxy_map = get_proxy_map(app.state.client)
     host.set_proxy(proxy_map)
 

@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Default logging configuration is performed before loading the configuration file. Ensures a default logging configuration is always present.
 - Authentication method + source is now logged on successful authentication.
 - No longer attempts to add a user to the logging context when logging in with an auth token.
+- Require at least one option to be set for `update_*` commands. Previously, these command would state that the resource was updated even if no changes were made.
 
 ### Deprecated
 

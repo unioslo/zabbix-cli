@@ -26,6 +26,7 @@ from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import GUIAccess
 from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.pyzabbix.enums import UserRole
+from zabbix_cli.utils.args import check_at_least_one_option_set
 from zabbix_cli.utils.args import parse_bool_arg
 from zabbix_cli.utils.args import parse_list_arg
 
@@ -212,6 +213,8 @@ def update_user(
     Use [command]add_user_to_usergroup[/command] and [command]remove_user_from_usergroup[/command] to manage user groups.
     """
     from zabbix_cli.models import Result
+
+    check_at_least_one_option_set(ctx)
 
     user = app.state.client.get_user(username)
 
