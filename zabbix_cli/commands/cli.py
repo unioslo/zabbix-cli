@@ -342,10 +342,11 @@ def update_application(ctx: typer.Context) -> None:
 
     Primarily intended for use with PyInstaller builds, but can also be
     used for updating other installations (except Homebrew)."""
+    from zabbix_cli.__about__ import __version__
     from zabbix_cli.update import update
 
     info = update()
-    if info:
-        success(f"Application updated to {info.version}")
+    if info and info.version:
+        success(f"Application updated from {__version__} to {info.version}")
     else:
         success("Application updated.")

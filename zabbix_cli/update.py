@@ -1,6 +1,5 @@
 """Experimental self-update module. Powers the `update` command.
 
-
 This code is largely untested and is reliant on too many external factors
 to be reliably testable. It was primarily written to be used for installations
 of Zabbix-CLI that are distributed as PyInstaller binaries. However, it
@@ -17,7 +16,6 @@ import os
 import platform
 import subprocess
 import sys
-import tempfile
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
@@ -31,6 +29,7 @@ from typing import Type
 
 import httpx
 from pydantic import BaseModel
+from pydantic import ValidationError
 from rich.progress import Progress
 from strenum import StrEnum
 from typing_extensions import Self
@@ -38,6 +37,9 @@ from typing_extensions import Self
 from zabbix_cli.__about__ import __version__
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.console import exit_ok
+from zabbix_cli.utils.fs import make_executable
+from zabbix_cli.utils.fs import move_file
+from zabbix_cli.utils.fs import temp_directory
 
 logger = logging.getLogger(__name__)
 
@@ -280,39 +282,45 @@ def download_file(url: str, destination: Path) -> None:
     logger.info("Downloaded %s to %s", url, destination)
 
 
-# NOTE: Move to zabbix_cli.utils.fs?
-def make_executable(path: Path) -> None:
-    """Make a file executable."""
-    if not path.exists():
-        raise FileNotFoundError(
-            f"File {path} does not exist. Unable to make it executable."
-        )
-    mode = path.stat().st_mode
-    new_mode = mode | (mode & 0o444) >> 2  # copy R bits to X
-    if new_mode != mode:
-        path.chmod(new_mode)
-        logger.info("Changed file mode of %s from %o to %o", path, mode, new_mode)
-    else:
-        logger.debug("File %s is already executable", path)
-
-
-def move_file(src: Path, dest: Path) -> None:
-    """Move a file to a new location."""
-    src.rename(dest)
-    logger.info(f"Moved {src} to {dest}")
-
-
 class GitHubRelease(BaseModel):
+    url: str
     tag_name: str
 
 
-class PyInstallerUpdater(Updater):
-    BIN_NAMES: Dict[str, Dict[str, str]] = {
-        "linux": {"x86_64": "zabbix-cli-ubuntu-latest-3.12"},
-        "darwin": {"arm64": "zabbix-cli-macos-latest-3.12"},
-        "win32": {"x86_64": "zabbix-cli-windows-latest-3.12.exe"},
+def get_release_arch(arch: str) -> str:
+    """Get the correct arch name for a GitHub release artifact.
+
+    Attempts to map the platform.machine() name to the name used
+    in the GitHub release artifacts. If no mapping is found, the
+    original name is returned."""
+    ARCH_MAP: Dict[str, str] = {
+        "x86_64": "x86_64",
+        "amd64": "x86_64",
+        "arm64": "arm64",
+        "aarch64": "arm64",
     }
-    URL_FMT = "https://github.com/unioslo/zabbix-cli/releases/latest/download/{bin}"
+    """Mapping of platform.machine() names to artifact arch names"""
+    return ARCH_MAP.get(arch.lower(), arch)
+
+
+def get_release_os(os: str) -> str:
+    """Get the correct os name for a GitHub release artifact.
+
+
+    Attempts to map the sys.platform name to the name used
+    in the GitHub release artifacts. If no mapping is found, the
+    original name is returned."""
+    PLATFORM_MAP: Dict[str, str] = {
+        "linux": "linux",
+        "darwin": "macos",
+        "win32": "win",
+    }
+    """Mapping of sys.platform names to artifact os names"""
+    return PLATFORM_MAP.get(os.lower(), os)
+
+
+class PyInstallerUpdater(Updater):
+    URL_FMT = "https://github.com/unioslo/zabbix-cli/releases/latest/download/zabbix-cli-{version}-{os}-{arch}{ext}"
     """URL format for downloading the latest release."""
 
     URL_API_LATEST = "https://api.github.com/repos/unioslo/zabbix-cli/releases/latest"
@@ -323,18 +331,41 @@ class PyInstallerUpdater(Updater):
             raise UpdateError("Unable to determine PyInstaller binary directory")
         if not self.installation_info.executable:
             raise UpdateError("Unable to determine PyInstaller executable")
-        dest_path = self.resolve_path(self.installation_info.executable)
+
         version = self.get_release_version()
         if version == __version__:
             exit_ok(f"Application is already up-to-date ({version})")
-        self.download(dest_path)
+
+        # The path to the binary being executed
+        binfile = self.resolve_path(self.installation_info.executable)
+
+        with temp_directory() as tmpdir:
+            tmpfile = self.download(version, tmpdir)
+            move_file(tmpfile, binfile)
+            make_executable(binfile)
+
+        return UpdateInfo(self.installation_info.method, version, path=binfile)
+
+    def download(self, version: str, dest_dir: Path) -> Path:
+        """Download the latest release and return the path to the downloaded file."""
+        os = sys.platform
+        arch = platform.machine()
+        url = self.get_url(os, arch, version)
+        dest = dest_dir / "zabbix-cli"
+        download_file(url, dest)
+        return dest
 
     def get_release_version(self) -> str:
         """Get the latest release info."""
         resp = httpx.get(self.URL_API_LATEST)
         if resp.status_code != 200:
             raise UpdateError(f"Failed to get latest release: {resp.text}")
-        release = GitHubRelease.model_validate_json(resp.text)
+        try:
+            release = GitHubRelease.model_validate_json(resp.text)
+        except ValidationError:
+            raise UpdateError(f"Failed to parse GitHub release info: {resp.text}")
+        if not release.tag_name:
+            raise UpdateError(f"Latest GitHub release {release.url!r} has no tag name.")
         return release.tag_name
 
     def resolve_path(self, path: Path) -> Path:
@@ -371,33 +402,46 @@ class PyInstallerUpdater(Updater):
             return Path(path_str).resolve()
         raise UpdateError(f"Unable to resolve alias {alias}")
 
+    # NOTE: this is a class method for ease of testing only
     @classmethod
-    def get_url(cls) -> str:
-        arch = platform.machine()
-        try:
-            b = cls.BIN_NAMES[sys.platform][arch]
-        except KeyError:
-            raise UpdateError(f"Unsupported platform + arch: {sys.platform} ({arch})")
-        # NOTE: Pyright seems a bit confused about the string formatting here
-        # It claims that LiteralString is not a valid str return type (??)
-        return str(cls.URL_FMT.format(bin=b))
+    def get_url(cls, os: str, arch: str, version: str) -> str:
+        """Get the download URL for the latest release artifact for a given platform+arch."""
+        os = cls.get_release_os(os)
+        arch = cls.get_release_arch(arch)
+        ext = ".exe" if os == "win" else ""
+        return cls.URL_FMT.format(version=version, os=os, arch=arch, ext=ext)
 
-    def download(self, executable: Path) -> None:
-        # TODO: Refactor: Moving and making executable should be part
-        #       of the `update()` method. This method should just download
-        #       the file. That will require us to pass the destination path
-        #       to this method.
-        #
-        # TODO: improve resiliency and error handling here
-        with tempfile.TemporaryDirectory() as tmpdir:
-            url = self.get_url()
-            logger.info(f"Downloading {url}")
-            dest = Path(tmpdir) / "zabbix-cli"
-            download_file(url, dest)
-            # Move file to bindir
-            # Assert dest file is readable and non-empty?
-            move_file(dest, executable)
-            make_executable(executable)
+    @staticmethod
+    def get_release_arch(arch: str) -> str:
+        """Get the correct arch name for a GitHub release artifact.
+
+        Attempts to map the platform.machine() name to the name used
+        in the GitHub release artifacts. If no mapping is found, the
+        original name is returned."""
+        ARCH_MAP: Dict[str, str] = {
+            "x86_64": "x86_64",
+            "amd64": "x86_64",
+            "arm64": "arm64",
+            "aarch64": "arm64",
+        }
+        """Mapping of platform.machine() names to artifact arch names"""
+        return ARCH_MAP.get(arch.lower(), arch)
+
+    @staticmethod
+    def get_release_os(os: str) -> str:
+        """Get the correct os name for a GitHub release artifact.
+
+
+        Attempts to map the sys.platform name to the name used
+        in the GitHub release artifacts. If no mapping is found, the
+        original name is returned."""
+        PLATFORM_MAP: Dict[str, str] = {
+            "linux": "linux",
+            "darwin": "macos",
+            "win32": "win",
+        }
+        """Mapping of sys.platform names to artifact os names"""
+        return PLATFORM_MAP.get(os.lower(), os)
 
 
 class InstallationMethod(StrEnum):
@@ -568,6 +612,7 @@ UPDATERS: Dict[InstallationMethod, Type[Updater]] = {
 class UpdateInfo(NamedTuple):
     method: InstallationMethod
     version: str
+    path: Optional[Path] = None
 
 
 def get_updater(method: InstallationMethod) -> Type[Updater]:
