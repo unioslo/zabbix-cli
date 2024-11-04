@@ -38,12 +38,23 @@ jobs:
     name: Build pyinstaller binary
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version:
-          - '3.12'
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-13 # only non-large x86 macOS runner image available
+          - macos-latest
         include:
           - os: ubuntu-latest
+            platform: linux-x86_64
             container: redhat/ubi8:latest
+          - os: windows-latest
+            platform: win-x86_64
+          - os: macos-13
+            platform: macos-x86_64
+          - os: macos-latest
+            platform: macos-arm64
+        python-version:
+          - '3.12'
     runs-on: ${{ matrix.os }}
     container:
       image: ${{ matrix.container }}
@@ -70,14 +81,27 @@ jobs:
       - name: Build binary with PyInstaller
         run: uv run pyinstaller --onefile zabbix_cli/main.py --name zabbix-cli
 
-      - name: Rename binary
+      - name: Set platform binary names
+        shell: bash
         run: |
-          mv dist/zabbix-cli${{ contains(matrix.os, 'windows') && '.exe' || '' }} dist/zabbix-cli-${{ matrix.os }}-${{ matrix.python-version }}${{ contains(matrix.os, 'windows') && '.exe' || '' }}
+          VERSION="${{ github.ref_name }}"
+          BASE_NAME="zabbix-cli-${VERSION}-${{ matrix.platform }}"
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            echo "BINARY_NAME=${BASE_NAME}.exe" >> $GITHUB_ENV
+            echo "SOURCE_NAME=dist/zabbix-cli.exe" >> $GITHUB_ENV
+          else
+            echo "BINARY_NAME=${BASE_NAME}" >> $GITHUB_ENV
+            echo "SOURCE_NAME=dist/zabbix-cli" >> $GITHUB_ENV
+          fi
+
+      - name: Rename binary
+        shell: bash
+        run: mv "${{ env.SOURCE_NAME }}" "dist/${{ env.BINARY_NAME }}"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: zabbix-cli-${{ matrix.os }}-${{ matrix.python-version }}${{ contains(matrix.os, 'windows') && '.exe' || '' }}
-          path: dist/zabbix-cli-${{ matrix.os }}-${{ matrix.python-version }}${{ contains(matrix.os, 'windows') && '.exe' || '' }}
+          name: ${{ env.BINARY_NAME }}
+          path: dist/${{ env.BINARY_NAME }}
           if-no-files-found: error
 
   publish_pypi:
@@ -118,11 +142,61 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Generate SHA256 checksums
+        id: sha
+        run: |
+          cd dist
+          echo "checksums<<EOF" >> $GITHUB_OUTPUT
+          sha256sum * >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          - name: Generate SHA256 checksums
+          id: sha
+          run: |
+            cd dist
+            echo "checksums<<EOF" >> $GITHUB_OUTPUT
+            sha256sum * >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
           body: |
-            Release notes for ${{ github.ref_name }}
+            Release ${{ github.ref_name }}
+
+            ## Binary Downloads
+
+            Platform | Architecture | Download
+            ---------|--------------|----------
+            Linux | x86_64 | [zabbix-cli-${{ github.ref_name }}-linux-x86_64](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/zabbix-cli-${{ github.ref_name }}-linux-x86_64)
+            Windows | x86_64 | [zabbix-cli-${{ github.ref_name }}-win-x86_64.exe](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/zabbix-cli-${{ github.ref_name }}-win-x86_64.exe)
+            macOS | x86_64 | [zabbix-cli-${{ github.ref_name }}-macos-x86_64](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/zabbix-cli-${{ github.ref_name }}-macos-x86_64)
+            macOS | ARM64 | [zabbix-cli-${{ github.ref_name }}-macos-arm64](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/zabbix-cli-${{ github.ref_name }}-macos-arm64)
+
+            ## PyPI Package
+
+            ### uv
+
+            ```bash
+            pip install zabbix-cli==${{ github.ref_name }}
+            ```
+
+            ### pipx
+
+            ```bash
+            pipx install zabbix-cli==${{ github.ref_name }}
+            ```
+
+            ### pip
+
+            ```bash
+            pip install zabbix-cli==${{ github.ref_name }}
+            ```
+
+            ## SHA256 Checksums
+            ```
+            ${{ steps.sha.outputs.checksums }}
+            ```
           draft: false
           prerelease: false
