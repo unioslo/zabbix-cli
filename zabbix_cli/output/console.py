@@ -108,7 +108,7 @@ def error(
 
 
 def print_help(ctx: typer.Context) -> None:
-    console.print(ctx.get_help())
+    err_console.print(ctx.get_help())
 
 
 def exit_ok(message: Optional[str] = None, code: int = 0, **kwargs: Any) -> NoReturn:
