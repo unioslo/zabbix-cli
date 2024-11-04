@@ -159,6 +159,48 @@ def create_host(
     render_result(Result(message=f"Created host {host_name!r} ({host_id})"))
 
 
+@app.command(name="update_host", rich_help_panel=HELP_PANEL)
+def update_host(
+    ctx: typer.Context,
+    hostname_or_ip: str = typer.Argument(
+        help="Hostname or IP",
+        show_default=False,
+    ),
+    name: Optional[str] = typer.Option(
+        None,
+        "--name",
+        help="Visible name of the host.",
+    ),
+    description: Optional[str] = typer.Option(
+        None,
+        "--description",
+        help="Description of the host.",
+    ),
+) -> None:
+    """Update basic information about a host.
+
+    Other notable commands to update a host:
+
+    - [command]update_host_inventory[/]
+    - [command]create_host_interface[/]
+    - [command]update_host_interface[/]
+    - [command]monitor_host[/]
+    - [command]add_host_to_hostgroup[/]
+    - [command]remove_host_from_hostgroup[/]
+    """
+    from zabbix_cli.models import Result
+
+    check_at_least_one_option_set(ctx)
+
+    host = app.state.client.get_host(hostname_or_ip)
+    app.state.client.update_host(
+        host,
+        name=name,
+        description=description,
+    )
+    render_result(Result(message=f"Updated host {host}."))
+
+
 @app.command(
     name="create_host_interface",
     rich_help_panel=HELP_PANEL,

@@ -958,6 +958,25 @@ class ZabbixAPI:
             )
         return str(resp["hostids"][0])
 
+    def update_host(
+        self,
+        host: Host,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> None:
+        """Updates basic information about a host."""
+        params: ParamsType = {
+            "hostid": host.hostid,
+        }
+        if name:
+            params["host"] = name
+        if description:
+            params["description"] = description
+        try:
+            self.host.update(**params)
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError(f"Failed to update host {host.host!r}") from e
+
     def delete_host(self, host_id: str) -> None:
         """Deletes a host."""
         try:
