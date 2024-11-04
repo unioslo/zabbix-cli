@@ -29,6 +29,7 @@ from typing import Type
 
 import httpx
 from pydantic import BaseModel
+from pydantic import ValidationError
 from rich.progress import Progress
 from strenum import StrEnum
 from typing_extensions import Self
@@ -282,25 +283,44 @@ def download_file(url: str, destination: Path) -> None:
 
 
 class GitHubRelease(BaseModel):
+    url: str
     tag_name: str
 
 
-class PyInstallerUpdater(Updater):
-    BIN_NAMES: Dict[str, Dict[str, str]] = {
-        "linux": {
-            "x86_64": "zabbix-cli-{version}-linux-x86_64",
-        },
-        "darwin": {
-            "x86_64": "zabbix-cli-{version}-macos-x86_64",
-            "arm64": "zabbix-cli-{version}-macos-arm64",
-        },
-        "win32": {
-            "x86_64": "zabbix-cli-{version}-win-x86_64.exe",
-        },
-    }
-    """Mapping of OS and arch to release artifact names."""
+def get_release_arch(arch: str) -> str:
+    """Get the correct arch name for a GitHub release artifact.
 
-    URL_FMT = "https://github.com/unioslo/zabbix-cli/releases/latest/download/{bin}"
+    Attempts to map the platform.machine() name to the name used
+    in the GitHub release artifacts. If no mapping is found, the
+    original name is returned."""
+    ARCH_MAP: Dict[str, str] = {
+        "x86_64": "x86_64",
+        "amd64": "x86_64",
+        "arm64": "arm64",
+        "aarch64": "arm64",
+    }
+    """Mapping of platform.machine() names to artifact arch names"""
+    return ARCH_MAP.get(arch.lower(), arch)
+
+
+def get_release_os(os: str) -> str:
+    """Get the correct os name for a GitHub release artifact.
+
+
+    Attempts to map the sys.platform name to the name used
+    in the GitHub release artifacts. If no mapping is found, the
+    original name is returned."""
+    PLATFORM_MAP: Dict[str, str] = {
+        "linux": "linux",
+        "darwin": "macos",
+        "win32": "win",
+    }
+    """Mapping of sys.platform names to artifact os names"""
+    return PLATFORM_MAP.get(os.lower(), os)
+
+
+class PyInstallerUpdater(Updater):
+    URL_FMT = "https://github.com/unioslo/zabbix-cli/releases/latest/download/zabbix-cli-{version}-{os}-{arch}{ext}"
     """URL format for downloading the latest release."""
 
     URL_API_LATEST = "https://api.github.com/repos/unioslo/zabbix-cli/releases/latest"
@@ -340,7 +360,12 @@ class PyInstallerUpdater(Updater):
         resp = httpx.get(self.URL_API_LATEST)
         if resp.status_code != 200:
             raise UpdateError(f"Failed to get latest release: {resp.text}")
-        release = GitHubRelease.model_validate_json(resp.text)
+        try:
+            release = GitHubRelease.model_validate_json(resp.text)
+        except ValidationError:
+            raise UpdateError(f"Failed to parse GitHub release info: {resp.text}")
+        if not release.tag_name:
+            raise UpdateError(f"Latest GitHub release {release.url!r} has no tag name.")
         return release.tag_name
 
     def resolve_path(self, path: Path) -> Path:
@@ -380,13 +405,43 @@ class PyInstallerUpdater(Updater):
     # NOTE: this is a class method for ease of testing only
     @classmethod
     def get_url(cls, os: str, arch: str, version: str) -> str:
-        """Get the download URL for the latest release."""
-        try:
-            b = cls.BIN_NAMES[os][arch]
-            bin_name = b.format(version=version)
-            return cls.URL_FMT.format(bin=bin_name)
-        except KeyError:
-            raise UpdateError(f"Unsupported platform + arch: {sys.platform} ({arch})")
+        """Get the download URL for the latest release artifact for a given platform+arch."""
+        os = cls.get_release_os(os)
+        arch = cls.get_release_arch(arch)
+        ext = ".exe" if os == "win" else ""
+        return cls.URL_FMT.format(version=version, os=os, arch=arch, ext=ext)
+
+    @staticmethod
+    def get_release_arch(arch: str) -> str:
+        """Get the correct arch name for a GitHub release artifact.
+
+        Attempts to map the platform.machine() name to the name used
+        in the GitHub release artifacts. If no mapping is found, the
+        original name is returned."""
+        ARCH_MAP: Dict[str, str] = {
+            "x86_64": "x86_64",
+            "amd64": "x86_64",
+            "arm64": "arm64",
+            "aarch64": "arm64",
+        }
+        """Mapping of platform.machine() names to artifact arch names"""
+        return ARCH_MAP.get(arch.lower(), arch)
+
+    @staticmethod
+    def get_release_os(os: str) -> str:
+        """Get the correct os name for a GitHub release artifact.
+
+
+        Attempts to map the sys.platform name to the name used
+        in the GitHub release artifacts. If no mapping is found, the
+        original name is returned."""
+        PLATFORM_MAP: Dict[str, str] = {
+            "linux": "linux",
+            "darwin": "macos",
+            "win32": "win",
+        }
+        """Mapping of sys.platform names to artifact os names"""
+        return PLATFORM_MAP.get(os.lower(), os)
 
 
 class InstallationMethod(StrEnum):
