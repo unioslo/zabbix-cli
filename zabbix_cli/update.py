@@ -1,6 +1,5 @@
 """Experimental self-update module. Powers the `update` command.
 
-
 This code is largely untested and is reliant on too many external factors
 to be reliably testable. It was primarily written to be used for installations
 of Zabbix-CLI that are distributed as PyInstaller binaries. However, it
@@ -308,10 +307,19 @@ class GitHubRelease(BaseModel):
 
 class PyInstallerUpdater(Updater):
     BIN_NAMES: Dict[str, Dict[str, str]] = {
-        "linux": {"x86_64": "zabbix-cli-ubuntu-latest-3.12"},
-        "darwin": {"arm64": "zabbix-cli-macos-latest-3.12"},
-        "win32": {"x86_64": "zabbix-cli-windows-latest-3.12.exe"},
+        "linux": {
+            "x86_64": "zabbix-cli-{version}-linux-x86_64",
+        },
+        "darwin": {
+            "x86_64": "zabbix-cli-{version}-macos-x86_64",
+            "arm64": "zabbix-cli-{version}-macos-arm64",
+        },
+        "win32": {
+            "x86_64": "zabbix-cli-{version}-win-x86_64.exe",
+        },
     }
+    """Mapping of OS and arch to release artifact names."""
+
     URL_FMT = "https://github.com/unioslo/zabbix-cli/releases/latest/download/{bin}"
     """URL format for downloading the latest release."""
 
@@ -327,7 +335,8 @@ class PyInstallerUpdater(Updater):
         version = self.get_release_version()
         if version == __version__:
             exit_ok(f"Application is already up-to-date ({version})")
-        self.download(dest_path)
+
+        self.download(version, dest_path)
 
     def get_release_version(self) -> str:
         """Get the latest release info."""
@@ -371,26 +380,28 @@ class PyInstallerUpdater(Updater):
             return Path(path_str).resolve()
         raise UpdateError(f"Unable to resolve alias {alias}")
 
+    # NOTE: this is a class method for ease of testing only
     @classmethod
-    def get_url(cls) -> str:
-        arch = platform.machine()
+    def get_url(cls, os: str, arch: str, version: str) -> str:
+        """Get the download URL for the latest release."""
         try:
-            b = cls.BIN_NAMES[sys.platform][arch]
+            b = cls.BIN_NAMES[os][arch]
+            bin_name = b.format(version=version)
+            return cls.URL_FMT.format(bin=bin_name)
         except KeyError:
             raise UpdateError(f"Unsupported platform + arch: {sys.platform} ({arch})")
-        # NOTE: Pyright seems a bit confused about the string formatting here
-        # It claims that LiteralString is not a valid str return type (??)
-        return str(cls.URL_FMT.format(bin=b))
 
-    def download(self, executable: Path) -> None:
+    def download(self, version: str, executable: Path) -> None:
         # TODO: Refactor: Moving and making executable should be part
         #       of the `update()` method. This method should just download
         #       the file. That will require us to pass the destination path
         #       to this method.
         #
         # TODO: improve resiliency and error handling here
+        os = sys.platform
+        arch = platform.machine()
         with tempfile.TemporaryDirectory() as tmpdir:
-            url = self.get_url()
+            url = self.get_url(os, arch, version)
             logger.info(f"Downloading {url}")
             dest = Path(tmpdir) / "zabbix-cli"
             download_file(url, dest)
