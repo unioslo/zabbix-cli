@@ -150,14 +150,6 @@ jobs:
           sha256sum * >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          - name: Generate SHA256 checksums
-          id: sha
-          run: |
-            cd dist
-            echo "checksums<<EOF" >> $GITHUB_OUTPUT
-            sha256sum * >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
