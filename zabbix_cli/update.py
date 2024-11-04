@@ -16,7 +16,6 @@ import os
 import platform
 import subprocess
 import sys
-import tempfile
 from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
@@ -37,6 +36,9 @@ from typing_extensions import Self
 from zabbix_cli.__about__ import __version__
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.console import exit_ok
+from zabbix_cli.utils.fs import make_executable
+from zabbix_cli.utils.fs import move_file
+from zabbix_cli.utils.fs import temp_directory
 
 logger = logging.getLogger(__name__)
 
@@ -279,28 +281,6 @@ def download_file(url: str, destination: Path) -> None:
     logger.info("Downloaded %s to %s", url, destination)
 
 
-# NOTE: Move to zabbix_cli.utils.fs?
-def make_executable(path: Path) -> None:
-    """Make a file executable."""
-    if not path.exists():
-        raise FileNotFoundError(
-            f"File {path} does not exist. Unable to make it executable."
-        )
-    mode = path.stat().st_mode
-    new_mode = mode | (mode & 0o444) >> 2  # copy R bits to X
-    if new_mode != mode:
-        path.chmod(new_mode)
-        logger.info("Changed file mode of %s from %o to %o", path, mode, new_mode)
-    else:
-        logger.debug("File %s is already executable", path)
-
-
-def move_file(src: Path, dest: Path) -> None:
-    """Move a file to a new location."""
-    src.rename(dest)
-    logger.info(f"Moved {src} to {dest}")
-
-
 class GitHubRelease(BaseModel):
     tag_name: str
 
@@ -331,12 +311,29 @@ class PyInstallerUpdater(Updater):
             raise UpdateError("Unable to determine PyInstaller binary directory")
         if not self.installation_info.executable:
             raise UpdateError("Unable to determine PyInstaller executable")
-        dest_path = self.resolve_path(self.installation_info.executable)
+
         version = self.get_release_version()
         if version == __version__:
             exit_ok(f"Application is already up-to-date ({version})")
 
-        self.download(version, dest_path)
+        # The path to the binary being executed
+        binfile = self.resolve_path(self.installation_info.executable)
+
+        with temp_directory() as tmpdir:
+            tmpfile = self.download(version, tmpdir)
+            move_file(tmpfile, binfile)
+            make_executable(binfile)
+
+        return UpdateInfo(self.installation_info.method, version, path=binfile)
+
+    def download(self, version: str, dest_dir: Path) -> Path:
+        """Download the latest release and return the path to the downloaded file."""
+        os = sys.platform
+        arch = platform.machine()
+        url = self.get_url(os, arch, version)
+        dest = dest_dir / "zabbix-cli"
+        download_file(url, dest)
+        return dest
 
     def get_release_version(self) -> str:
         """Get the latest release info."""
@@ -390,25 +387,6 @@ class PyInstallerUpdater(Updater):
             return cls.URL_FMT.format(bin=bin_name)
         except KeyError:
             raise UpdateError(f"Unsupported platform + arch: {sys.platform} ({arch})")
-
-    def download(self, version: str, executable: Path) -> None:
-        # TODO: Refactor: Moving and making executable should be part
-        #       of the `update()` method. This method should just download
-        #       the file. That will require us to pass the destination path
-        #       to this method.
-        #
-        # TODO: improve resiliency and error handling here
-        os = sys.platform
-        arch = platform.machine()
-        with tempfile.TemporaryDirectory() as tmpdir:
-            url = self.get_url(os, arch, version)
-            logger.info(f"Downloading {url}")
-            dest = Path(tmpdir) / "zabbix-cli"
-            download_file(url, dest)
-            # Move file to bindir
-            # Assert dest file is readable and non-empty?
-            move_file(dest, executable)
-            make_executable(executable)
 
 
 class InstallationMethod(StrEnum):
@@ -579,6 +557,7 @@ UPDATERS: Dict[InstallationMethod, Type[Updater]] = {
 class UpdateInfo(NamedTuple):
     method: InstallationMethod
     version: str
+    path: Optional[Path] = None
 
 
 def get_updater(method: InstallationMethod) -> Type[Updater]:
