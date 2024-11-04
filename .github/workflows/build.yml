@@ -179,19 +179,19 @@ jobs:
             ### uv
 
             ```bash
-            pip install zabbix-cli==${{ github.ref_name }}
+            uv tool install zabbix-cli-uio==${{ github.ref_name }}
             ```
 
             ### pipx
 
             ```bash
-            pipx install zabbix-cli==${{ github.ref_name }}
+            pipx install zabbix-cli-uio==${{ github.ref_name }}
             ```
 
             ### pip
 
             ```bash
-            pip install zabbix-cli==${{ github.ref_name }}
+            pip install zabbix-cli-uio==${{ github.ref_name }}
             ```
 
             ## SHA256 Checksums
