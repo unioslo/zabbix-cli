@@ -159,6 +159,195 @@ The JSON output format is always in this format, where `ResultT` is the expected
 
 The type of the `result` field varies based on the command run. For `show_host` it is a single Host object, while for `show_hosts` it is an _array_ of Host objects.
 
+<details>
+  <summary><code>show_host foo.example.com*</code></summary>
+  
+  ```json
+{
+  "message": "",
+  "errors": [],
+  "return_code": "Done",
+  "result": {
+    "hostid": "10648",
+    "host": "foo.example.com",
+    "description": "",
+    "groups": [
+      {
+        "groupid": "22",
+        "name": "All-hosts",
+        "hosts": [],
+        "flags": 0,
+        "internal": null,
+        "templates": []
+      },
+      {
+        "groupid": "46",
+        "name": "Source-foosource",
+        "hosts": [],
+        "flags": 0,
+        "internal": null,
+        "templates": []
+      },
+      {
+        "groupid": "47",
+        "name": "Hostgroup-bob-hosts",
+        "hosts": [],
+        "flags": 0,
+        "internal": null,
+        "templates": []
+      },
+      {
+        "groupid": "48",
+        "name": "Importance-X",
+        "hosts": [],
+        "flags": 0,
+        "internal": null,
+        "templates": []
+      },
+      {
+        "groupid": "49",
+        "name": "Hostgroup-alice-hosts",
+        "hosts": [],
+        "flags": 0,
+        "internal": null,
+        "templates": []
+      }
+    ],
+    "templates": [],
+    "inventory": {},
+    "monitored_by": "proxy",
+    "proxyid": "2",
+    "proxy_groupid": "0",
+    "maintenance_status": "0",
+    "active_available": "0",
+    "status": "0",
+    "macros": [],
+    "interfaces": [
+      {
+        "type": 1,
+        "ip": "",
+        "dns": "foo.example.com",
+        "port": "10050",
+        "useip": 0,
+        "main": 1,
+        "interfaceid": "49",
+        "available": 0,
+        "hostid": "10648",
+        "bulk": null,
+        "connection_mode": "Dns",
+        "type_str": "Agent"
+      }
+    ],
+    "proxy": {
+      "proxyid": "2",
+      "name": "proxy-prod02.example.com",
+      "hosts": [],
+      "status": null,
+      "operating_mode": 0,
+      "address": "127.0.0.1",
+      "proxy_groupid": "1",
+      "compatibility": 0,
+      "version": 0,
+      "local_address": "192.168.0.1",
+      "local_port": "10051",
+      "mode": "Active",
+      "compatibility_str": "Undefined"
+    },
+    "zabbix_agent": "Unknown"
+  }
+}
+  ```
+
+</details>
+
+<details>
+  <summary><code>show_hosts foo.*</code></summary>
+  
+  ```json
+{
+  "message": "",
+  "errors": [],
+  "return_code": "Done",
+  "result": [
+    {
+      "hostid": "10648",
+      "host": "foo.example.com",
+      "description": "",
+      "groups": [
+        {
+          "groupid": "22",
+          "name": "All-hosts",
+          "hosts": [],
+          "flags": 0,
+          "internal": null,
+          "templates": []
+        },
+        {
+          "groupid": "46",
+          "name": "Source-foosource",
+          "hosts": [],
+          "flags": 0,
+          "internal": null,
+          "templates": []
+        },
+        {
+          "groupid": "47",
+          "name": "Hostgroup-bob-hosts",
+          "hosts": [],
+          "flags": 0,
+          "internal": null,
+          "templates": []
+        },
+        {
+          "groupid": "48",
+          "name": "Importance-X",
+          "hosts": [],
+          "flags": 0,
+          "internal": null,
+          "templates": []
+        },
+        {
+          "groupid": "49",
+          "name": "Hostgroup-alice-hosts",
+          "hosts": [],
+          "flags": 0,
+          "internal": null,
+          "templates": []
+        }
+      ],
+      "templates": [],
+      "inventory": {},
+      "monitored_by": "proxy",
+      "proxyid": "2",
+      "proxy_groupid": "0",
+      "maintenance_status": "0",
+      "active_available": "0",
+      "status": "0",
+      "macros": [],
+      "interfaces": [],
+      "proxy": {
+        "proxyid": "2",
+        "name": "proxy-prod02.example.com",
+        "hosts": [],
+        "status": null,
+        "operating_mode": 0,
+        "address": "127.0.0.1",
+        "proxy_groupid": "1",
+        "compatibility": 0,
+        "version": 0,
+        "local_address": "192.168.0.1",
+        "local_port": "10051",
+        "mode": "Active",
+        "compatibility_str": "Undefined"
+      },
+      "zabbix_agent": "Unknown"
+    }
+  ]
+}
+  ```
+
+</details>
+
 ## Development
 
 Zabbix-cli currently uses [Hatch](https://hatch.pypa.io/latest/) for project management and packaging. To start off, clone the repository:
