@@ -22,7 +22,8 @@ zabbix_cli/commands/_dev.py
 dev/
 
 # Auto-generated docs files
-docs/guide/commands/
+docs/guide/commands/*
+!docs/guide/commands/index.md
 docs/data
 site/
 

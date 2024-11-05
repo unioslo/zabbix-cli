@@ -74,7 +74,7 @@ brew install zabbix-cli
 
 ### Binary
 
-Binaries built with PyInstaller can be found on the [releases page](https://github.com/unioslo/zabbix-cli/releases). We build binaries for Linux (x86), macOS (ARM) and Windows (x86) for each release.
+Binaries built with PyInstaller can be found on the [releases page](https://github.com/unioslo/zabbix-cli/releases). We build binaries for Linux (x86), macOS (ARM & x86) and Windows (x86) for each release.
 
 ## Quick start
 
@@ -96,7 +96,7 @@ Zabbix-cli is a command line interface for Zabbix. It can be used in three ways:
 2. **Single command**: Run a single command by running `zabbix-cli COMMAND`. This will run the command and print the output.
 3. **Batch mode**: Run multiple commands from a file by running `zabbix-cli -f FILE`. The file should contain one command per line.
 
-Command reference can be found in the [online user guide](https://unioslo.github.io/zabbix-cli/guide/introduction/) or by running `zabbix-cli --help`.
+Command reference can be found in the [online user guide](https://unioslo.github.io/zabbix-cli/guide/commands/) or by running `zabbix-cli --help`.
 
 ### Authentication
 
@@ -104,34 +104,45 @@ By default, the application will prompt for a username and password. Once authen
 
 For more information about the various authentication methods, see the [authentication guide](https://unioslo.github.io/zabbix-cli/guide/authentication/).
 
-## Formats
+### Configuration
+
+Zabbix-cli needs a config file. It is created when the application is started for the first time. The config file can be created manually with the `init` command:
+
+```bash
+zabbix-cli init --zabbix-url https://zabbix.example.com/
+```
+
+For more detailed information about the configuration file, see the [configuration guide](https://unioslo.github.io/zabbix-cli/guide/configuration/).
+
+### Formats
 
 Zabbix-cli supports two output formats: table and JSON. The default format is table, but it can be changed with the `--format` parameter:
 
 ```bash
 # Show hosts in table format (default)
 zabbix-cli show_hosts
+
 # Show hosts in JSON format
 zabbix-cli --format json show_hosts
 
-# Setting format in REPL
+# Set format in REPL mode
 > --format json show_hosts
 ```
 
-Or by setting the `app.output.format` option in the config file:
+The default format can be configured with the `app.output.format` config option:
 
 ```toml
 [app.output]
 format = "json"
 ```
 
-### Table
+#### Table
 
 <img width="60%" alt="format-table" src="https://github.com/user-attachments/assets/207fa12b-39c6-45b9-9f0e-7f217c723461">
 
 The default rendering mode is a [Rich](https://github.com/Textualize/rich) table that adapts to the width of the terminal.
 
-### JSON
+#### JSON
 
 <img width="60%" alt="format-json" src="https://github.com/user-attachments/assets/680f507b-dc2a-41b2-87c4-c3a443d83979">
 
@@ -147,16 +158,6 @@ The JSON output format is always in this format, where `ResultT` is the expected
 ```
 
 The type of the `result` field varies based on the command run. For `show_host` it is a single Host object, while for `show_hosts` it is an _array_ of Host objects.
-
-## Configuration
-
-Zabbix-cli needs a config file. It is created when the application is started for the first time. The config file can be created manually with the `init` command:
-
-```bash
-zabbix-cli init --zabbix-url https://zabbix.example.com/
-```
-
-For more information about the configuration file, see the [configuration guide](https://unioslo.github.io/zabbix-cli/guide/configuration/).
 
 ## Development
 
