@@ -554,10 +554,12 @@ def add_proxy_to_group(
         show_default=False,
     ),
     local_address: Optional[str] = typer.Argument(
+        None,
         help="Address for active agents.",
         show_default=False,
     ),
     local_port: Optional[str] = typer.Argument(
+        None,
         help="Address for active agents.",
         show_default=False,
     ),
@@ -574,10 +576,10 @@ def add_proxy_to_group(
     # Determine address + port
     local_address = local_address or proxy.local_address
     if not local_address:
-        exit_err("Proxy requires a local address for active agents.")
+        exit_err(f"Proxy {proxy.name} requires a local address for active agents.")
     local_port = local_port or proxy.local_port
     if not local_port:
-        exit_err("Proxy requires a local port for active agents.")
+        exit_err(f"Proxy {proxy.name} requires a local port for active agents.")
 
     group = app.state.client.get_proxy_group(proxy_group)
     app.state.client.add_proxy_to_group(proxy, group, local_address, local_port)
