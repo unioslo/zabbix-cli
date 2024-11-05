@@ -87,11 +87,9 @@ def replace_paths(config_path: Path, tmp_path: Path) -> None:
     [True, False],
 )
 def test_load_config_file(
-    data_dir: Path, tmp_path: Path, bespoke: bool, with_paths: bool
+    config_path: Path, tmp_path: Path, bespoke: bool, with_paths: bool
 ) -> None:
     """Test loading a TOML configuration file."""
-    config_path = data_dir / "zabbix-cli.toml"
-
     # Test with and without custom file paths
     if with_paths:
         replace_paths(config_path, tmp_path)
