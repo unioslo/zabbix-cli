@@ -181,12 +181,12 @@ def update_host(
 
     Other notable commands to update a host:
 
-    - [command]update_host_inventory[/]
-    - [command]create_host_interface[/]
-    - [command]update_host_interface[/]
-    - [command]monitor_host[/]
     - [command]add_host_to_hostgroup[/]
+    - [command]create_host_interface[/]
+    - [command]monitor_host[/]
     - [command]remove_host_from_hostgroup[/]
+    - [command]update_host_interface[/]
+    - [command]update_host_inventory[/]
     """
     from zabbix_cli.models import Result
 
