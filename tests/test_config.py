@@ -44,43 +44,38 @@ def test_sample_config() -> None:
     "bespoke",
     [True, False],
 )
-def test_load_config_file_legacy(data_dir: Path, bespoke: bool) -> None:
-    config_path = data_dir / "zabbix-cli.conf"
+def test_load_config_file_legacy(legacy_config_path: Path, bespoke: bool) -> None:
     if bespoke:
-        conf = Config.from_conf_file(config_path)
+        conf = Config.from_conf_file(legacy_config_path)
     else:
-        conf = Config.from_file(config_path)
+        conf = Config.from_file(legacy_config_path)
     assert conf
     # Should be loaded from the file we specified
-    assert conf.config_path == config_path
+    assert conf.config_path == legacy_config_path
     # Should be marked as legacy
     assert conf.app.is_legacy is True
     # Should use legacy JSON format automatically
     assert conf.app.legacy_json_format is True
 
 
-def remove_path_options(path: Path, tmp_path: Path) -> Path:
+def remove_path_options(config_path: Path, tmp_path: Path) -> None:
     """Remove all path options from a TOML config file.
 
     Some config options require a directory or file to exist, which is not always
     possible or desirable in a test environment."""
-    contents = path.read_text()
+    contents = config_path.read_text()
     new_contents = "\n".join(
         line for line in contents.splitlines() if "/path/to" not in line
     )
-    new_file = tmp_path / path.name
-    new_file.write_text(new_contents)
-    return new_file
+    config_path.write_text(new_contents)
 
 
-def replace_paths(path: Path, tmp_path: Path) -> Path:
-    """Replace all /path/to paths with directory created by tmp_path."""
-    contents = path.read_text()
+def replace_paths(config_path: Path, tmp_path: Path) -> None:
+    """Replace all /path/to paths in a file with temporary directories."""
+    contents = config_path.read_text()
     new_contents = contents.replace("/path/to", str(tmp_path))
     tmp_path.mkdir(exist_ok=True)
-    new_file = tmp_path / path.name
-    new_file.write_text(new_contents)
-    return new_file
+    config_path.write_text(new_contents)
 
 
 @pytest.mark.parametrize(
@@ -92,16 +87,14 @@ def replace_paths(path: Path, tmp_path: Path) -> Path:
     [True, False],
 )
 def test_load_config_file(
-    data_dir: Path, tmp_path: Path, bespoke: bool, with_paths: bool
+    config_path: Path, tmp_path: Path, bespoke: bool, with_paths: bool
 ) -> None:
     """Test loading a TOML configuration file."""
-    config_path = data_dir / "zabbix-cli.toml"
-
     # Test with and without custom file paths
     if with_paths:
-        config_path = replace_paths(config_path, tmp_path)
+        replace_paths(config_path, tmp_path)
     else:
-        config_path = remove_path_options(config_path, tmp_path)
+        remove_path_options(config_path, tmp_path)
 
     # Use bespoke method for loading the given format
     if bespoke:
@@ -564,3 +557,35 @@ paging = false
     assert config.app.output.color is True
     assert config.app.output.paging is False
     assert config.app.output.format == OutputFormat.TABLE
+
+
+def test_load_deprecated_config_legacy(legacy_config_path: Path) -> None:
+    """Test loading a legacy .conf config file with deprecated options."""
+    config_str = legacy_config_path.read_text()
+    assert "system_id=Test" in config_str
+    assert "use_colors=ON" in config_str
+    assert "use_paging=OFF" in config_str
+
+    # Manipulate config to set default boolean values to opposite
+    config_str = config_str.replace("use_colors=ON", "use_colors=OFF")
+    config_str = config_str.replace("use_paging=OFF", "use_paging=ON")
+    legacy_config_path.write_text(config_str)
+
+    config = Config.from_conf_file(legacy_config_path)
+
+    # Check that the deprecated fields are assigned to the new fields
+    assert config.api.username == "Test"
+    assert config.app.output.color is False
+    assert config.app.output.paging is True
+
+    # Check that the assigned fields are counted as set
+    assert "username" in config.api.model_fields_set
+    assert "color" in config.app.output.model_fields_set
+    assert "paging" in config.app.output.model_fields_set
+    assert "format" not in config.app.output.model_fields_set
+
+    # Check that the deprecated fields are also set
+    assert "system_id" in config.app.model_fields_set
+    assert "use_colors" in config.app.model_fields_set
+    assert "use_paging" in config.app.model_fields_set
+    assert "output_format" not in config.app.model_fields_set
