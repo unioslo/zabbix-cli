@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New command `update_config` to update an outdated configuration file with new options, as well as any currently applied overrides.
 - `show_config --secrets <hide|mask|plain>` option for controlling the display mode of sensitive information in the configuration file. Defaults to `mask`.
 - New command `update_host` to update basic information about a host.
+- New command `show_proxy_hosts` to show hosts monitored by a given proxy.
 
 ### Changed
 

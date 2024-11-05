@@ -436,14 +436,14 @@ def show_proxies(
     hosts: bool = typer.Option(
         False,
         "--hosts",
-        help="Show hostnames of each host.",
+        help="Show hostnames of each host for every proxy.",
         is_flag=True,
     ),
 ) -> None:
     """Show all proxies.
 
-    Shows number of hosts for each proxy unless --hosts is passed in,
-    in which case the hostnames of each host is displayed instead.
+    Shows number of hosts for each proxy unless [option]--hosts[/] is passed in,
+    in which case the hostnames of each host are displayed instead.
     """
     from zabbix_cli.commands.results.proxy import ShowProxiesResult
     from zabbix_cli.models import AggregateResult
@@ -460,6 +460,23 @@ def show_proxies(
             result=[ShowProxiesResult.from_result(p, show_hosts=hosts) for p in proxies]
         )
     )
+
+
+@app.command(name="show_proxy_hosts", rich_help_panel=HELP_PANEL)
+def show_proxy_hosts(
+    ctx: typer.Context,
+    proxy: str = typer.Argument(
+        help="Proxy name or ID. Supports wildcards.",
+        show_default=False,
+    ),
+) -> None:
+    """Show all hosts with for a given proxy."""
+    from zabbix_cli.commands.results.proxy import ShowProxyHostsResult
+
+    with app.status("Fetching proxy..."):
+        prox = app.state.client.get_proxy(proxy, select_hosts=True)
+
+    render_result(ShowProxyHostsResult.from_result(prox))
 
 
 @app.command(

@@ -169,12 +169,35 @@ class ShowProxiesResult(TableRenderable):
         return cols, rows
 
 
+class ShowProxyHostsResult(TableRenderable):
+    proxy: Proxy
+    hosts: HostList = []
+
+    @classmethod
+    def from_result(cls, proxy: Proxy) -> Self:
+        # HACK: remove the list of hosts from the proxy and store it separately
+        # so that we can render the proxy without the hosts
+        hosts = proxy.hosts
+        proxy.hosts = []
+        return cls(proxy=proxy, hosts=hosts)
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = ["Proxy", "Hosts"]
+        rows: RowsType = [
+            [
+                self.proxy.name,
+                "\n".join(h.host for h in self.hosts),
+            ]
+        ]
+        return cols, rows
+
+
 class ShowProxyGroupHostsResult(TableRenderable):
     proxy_group: ProxyGroup
     hosts: HostList = []
 
     def __cols_rows__(self) -> ColsRowsType:
-        cols = ["Name", "Hosts"]
+        cols = ["Proxy Group", "Hosts"]
         rows: RowsType = [
             [
                 self.proxy_group.name,
