@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Authentication method + source is now logged on successful authentication.
 - No longer attempts to add a user to the logging context when logging in with an auth token.
 - Require at least one option to be set for `update_*` commands. Previously, these command would state that the resource was updated even if no changes were made.
+- Command `add_proxy_to_group` no longer requires a local address and port argument. If not provided, the application attempts to use the proxy's `local_address` and `local_port` fields. If the proxy does not have these fields, the command fails.
 
 ### Deprecated
 
