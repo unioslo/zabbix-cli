@@ -45,6 +45,22 @@ def data_dir() -> Iterator[Path]:
     yield Path(__file__).parent / "data"
 
 
+@pytest.fixture()
+def config_path(tmp_path: Path, data_dir: Path) -> Iterator[Path]:
+    config_orig = data_dir / "zabbix-cli.toml"
+    config_copy = tmp_path / "zabbix-cli.toml"
+    config_copy.write_text(config_orig.read_text())
+    yield config_copy
+
+
+@pytest.fixture()
+def legacy_config_path(tmp_path: Path, data_dir: Path) -> Iterator[Path]:
+    config_orig = data_dir / "zabbix-cli.conf"
+    config_copy = tmp_path / "zabbix-cli.conf"
+    config_copy.write_text(config_orig.read_text())
+    yield config_copy
+
+
 @pytest.fixture(name="state")
 def state(config: Config, zabbix_client: ZabbixAPI) -> Iterator[State]:
     """Return a fresh State object with a config and client.
