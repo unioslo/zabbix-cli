@@ -35,9 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 
 - Config options moved to `[app.output]` table:
-  - `app.use_colors`
-  - `app.use_paging`
-  - `app.output_format`
+  - `app.use_colors` → `app.output.color`
+  - `app.use_paging` → `app.output.paging`
+  - `app.output_format` → `app.output.format`
 
 ## [3.2.0]
 
