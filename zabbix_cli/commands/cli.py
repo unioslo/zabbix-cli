@@ -135,7 +135,6 @@ def open_config_dir(
         print_path(directory)
     else:
         open_directory(directory, command=open_command, force=force)
-        success(f"Opened {directory}")
 
 
 @app.command("debug", hidden=True, rich_help_panel=HELP_PANEL)
