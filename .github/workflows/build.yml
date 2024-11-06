@@ -125,6 +125,7 @@ jobs:
     needs:
       - build_pypi
       - build_pyinstaller
+      - publish_pypi
     runs-on: ubuntu-latest
 
     steps:
