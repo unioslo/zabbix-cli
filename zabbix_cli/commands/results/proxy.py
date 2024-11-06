@@ -176,7 +176,7 @@ class ShowProxyHostsResult(TableRenderable):
     @classmethod
     def from_result(cls, proxy: Proxy) -> Self:
         # HACK: remove the list of hosts from the proxy and store it separately
-        # so that we can render the proxy without the hosts
+        # so that we can render the proxy separately from the hosts
         hosts = proxy.hosts
         proxy.hosts = []
         return cls(proxy=proxy, hosts=hosts)
