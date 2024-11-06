@@ -183,9 +183,11 @@ class BulkRunner:
         # Or new-form keyword arguments
         create_host test000002.example.net --hostgroup All-manual-hosts --proxy .+ --status 1
         """
-        commands = self.load_command_file()
+        # top-level Click command group for the application
+        # Contains all commands defined via @app.command()
         group = self.ctx.command
 
+        commands = self.load_command_file()
         for command in commands:
             with group.make_context(None, command.args, parent=self.ctx) as ctx:
                 with self._command_context(command):
