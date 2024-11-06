@@ -21,10 +21,6 @@ def _app() -> Iterator[StatefulApp]:
     yield app
 
 
-def app_runner():
-    return runner.invoke(app, ["--help"])
-
-
 @pytest.fixture
 def ctx(app: StatefulApp) -> typer.Context:
     """Create context for the main command."""
