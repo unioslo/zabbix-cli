@@ -13,6 +13,8 @@ from typing import Optional
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixCLIFileError
 from zabbix_cli.exceptions import ZabbixCLIFileNotFoundError
+from zabbix_cli.output.console import print_path
+from zabbix_cli.output.console import success
 
 logger = logging.getLogger(__name__)
 
@@ -59,13 +61,11 @@ def open_directory(
     elif sys.platform == "darwin":
         subprocess.run([command or "open", spath])
     else:  # Linux and Unix
-        if not os.environ.get("DISPLAY"):
-            from zabbix_cli.output.console import print_path
-
+        if not os.environ.get("DISPLAY") and not force:
             print_path(directory)
-            if not force:
-                return
+            return
         subprocess.run([command or "xdg-open", spath])
+    success(f"Opened {directory}")
 
 
 def mkdir_if_not_exists(path: Path) -> None:
