@@ -40,24 +40,32 @@ def ctx(app: StatefulApp) -> typer.Context:
     return obj["ctx"]
 
 
+DATA_DIR = Path(__file__).parent / "data"
+
+# Read sample configs once per test run to avoid too much I/O
+TOML_CONFIG = DATA_DIR / "zabbix-cli.toml"
+TOML_CONFIG_STR = TOML_CONFIG.read_text()
+
+CONF_CONFIG = DATA_DIR / "zabbix-cli.conf"
+CONF_CONFIG_STR = CONF_CONFIG.read_text()
+
+
 @pytest.fixture()
 def data_dir() -> Iterator[Path]:
     yield Path(__file__).parent / "data"
 
 
 @pytest.fixture()
-def config_path(tmp_path: Path, data_dir: Path) -> Iterator[Path]:
-    config_orig = data_dir / "zabbix-cli.toml"
+def config_path(tmp_path: Path) -> Iterator[Path]:
     config_copy = tmp_path / "zabbix-cli.toml"
-    config_copy.write_text(config_orig.read_text())
+    config_copy.write_text(TOML_CONFIG_STR)
     yield config_copy
 
 
 @pytest.fixture()
-def legacy_config_path(tmp_path: Path, data_dir: Path) -> Iterator[Path]:
-    config_orig = data_dir / "zabbix-cli.conf"
+def legacy_config_path(tmp_path: Path) -> Iterator[Path]:
     config_copy = tmp_path / "zabbix-cli.conf"
-    config_copy.write_text(config_orig.read_text())
+    config_copy.write_text(CONF_CONFIG_STR)
     yield config_copy
 
 
