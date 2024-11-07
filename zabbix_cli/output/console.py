@@ -39,51 +39,6 @@ def get_theme(name: str) -> Theme:
     return RICH_THEME  # other themes NYI
 
 
-class OutputManager:
-    out: Console = console
-    err: Console = err_console
-
-    def __init__(self, config: Config) -> None:
-        self.config = config
-        self.configure()
-
-        theme = get_theme(self.config.app.output.theme)
-        self.out = self._make_console(err=False, theme=theme)
-        self.err = self._make_console(err=True, theme=theme)
-
-    def _make_console(
-        self,
-        err: bool = False,
-        highlight: bool = False,
-        soft_wrap: bool = False,
-        theme: Theme = RICH_THEME,
-    ) -> Console:
-        return Console(
-            stderr=err,
-            highlight=highlight,
-            soft_wrap=soft_wrap,
-            theme=theme,
-        )
-
-    def configure(self) -> None:
-        """Configure console output based on the application configuration."""
-        if not self.config.app.output.color:
-            self.disable_color()
-
-    def disable_color(self) -> None:
-        """Disable color output in consoles."""
-        self.out._color_system = None  # pyright: ignore[reportPrivateUsage]
-        self.err._color_system = None  # pyright: ignore[reportPrivateUsage]
-        # HACK: set env var to disable color in Typer console
-        os.environ["NO_COLOR"] = "1"
-
-    def enable_color(self) -> None:
-        """Enable color output in consoles if supported."""
-        self.out._color_system = console._detect_color_system()  # pyright: ignore[reportPrivateUsage]
-        self.err._color_system = console._detect_color_system()  # pyright: ignore[reportPrivateUsage]
-        os.unsetenv("NO_COLOR")  # remove hack
-
-
 RESERVED_EXTRA_KEYS = (
     "name",
     "level",
