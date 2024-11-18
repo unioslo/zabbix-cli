@@ -25,6 +25,7 @@ from typer.main import lenient_issubclass
 from typer.models import ParameterInfo
 
 from zabbix_cli._patches.common import get_patcher
+from zabbix_cli.commands.common.args import CommandArg
 from zabbix_cli.pyzabbix.enums import APIStrEnum
 
 if TYPE_CHECKING:
@@ -259,6 +260,9 @@ def patch_get_click_type() -> None:
                 [item.value for item in annotation],
                 case_sensitive=parameter_info.case_sensitive,
             )
+        elif lenient_issubclass(annotation, click.Command):
+            return CommandArg()
+
         raise RuntimeError(f"Type not yet supported: {annotation}")  # pragma no cover
 
     """Patch typer's get_click_type to support more types."""
