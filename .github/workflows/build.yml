@@ -22,11 +22,11 @@ jobs:
       - name: Set up Python 3.12
         run: uv python install 3.12
 
-      - name: Install build dependencies
-        run: uv sync --all-extras --dev
+      - name: Install project dependencies only
+        run: uv sync --no-dev
 
-      - name: Build source distribution
-        run: uv run python -m build
+      - name: Build source and wheel distributions
+        run: uv build
 
       - uses: actions/upload-artifact@v4
         with:
@@ -76,7 +76,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install build dependencies
-        run: uv sync --all-extras --dev
+        run: uv sync --group build --no-dev
 
       - name: Build binary with PyInstaller
         run: uv run pyinstaller --onefile zabbix_cli/main.py --name zabbix-cli

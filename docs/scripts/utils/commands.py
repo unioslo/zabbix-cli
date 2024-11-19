@@ -47,7 +47,6 @@ class ParamSummary(BaseModel):
     is_argument: bool
     is_eager: bool = False
     is_bool_flag: Optional[bool] = None
-    is_flag: Optional[bool] = None
     is_option: Optional[bool]
     max: Optional[int] = None
     min: Optional[int] = None
@@ -89,7 +88,6 @@ class ParamSummary(BaseModel):
             is_argument=is_argument,
             is_bool_flag=get(param, "is_bool_flag"),
             is_eager=param.is_eager,
-            is_flag=get(param, "is_flag"),
             is_option=get(param, "is_option"),
             max=get(param.type, "max"),
             min=get(param.type, "min"),

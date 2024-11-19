@@ -572,7 +572,6 @@ def create_usergroup(
     disabled: bool = typer.Option(
         False,
         "--disabled",
-        is_flag=True,
         help="Create the user group in a disabled state.",
     ),
     # V2 legacy args

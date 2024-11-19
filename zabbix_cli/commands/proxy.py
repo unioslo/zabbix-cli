@@ -93,7 +93,6 @@ def update_host_proxy(
     dryrun: bool = typer.Option(
         False,
         help="Preview changes",
-        is_flag=True,
     ),
 ) -> None:
     """Assign hosts to a proxy.
@@ -153,7 +152,7 @@ def clear_host_proxy(
         help="Hostnames. Comma-separated Supports wildcards.",
         show_default=False,
     ),
-    dryrun: bool = typer.Option(False, help="Preview changes", is_flag=True),
+    dryrun: bool = typer.Option(False, help="Preview changes"),
 ) -> None:
     """Clear the proxy for one or more hosts.
 
@@ -391,7 +390,7 @@ def update_hostgroup_proxy(
         help="Proxy to assign. Supports wildcards.",
         show_default=False,
     ),
-    dryrun: bool = typer.Option(False, help="Preview changes.", is_flag=True),
+    dryrun: bool = typer.Option(False, help="Preview changes."),
 ) -> None:
     """Assign a proxy to all hosts in one or more host groups."""
     from zabbix_cli.commands.results.proxy import UpdateHostGroupProxyResult
@@ -437,7 +436,6 @@ def show_proxies(
         False,
         "--hosts",
         help="Show hostnames of each host for every proxy.",
-        is_flag=True,
     ),
 ) -> None:
     """Show all proxies.
@@ -618,7 +616,7 @@ def update_hostgroup_proxygroup(
         help="Proxy group to assign. Supports wildcards.",
         show_default=False,
     ),
-    dryrun: bool = typer.Option(False, help="Preview changes.", is_flag=True),
+    dryrun: bool = typer.Option(False, help="Preview changes."),
 ) -> None:
     """Assign a proxy group to all hosts in one or more host groups."""
     from zabbix_cli.commands.results.proxy import UpdateHostGroupProxyGroupResult

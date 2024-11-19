@@ -413,7 +413,7 @@ only_options -O "str" -S "Optional[str]" -I 42 -N 42
             "--reqopt",
             "-R",
         ),
-        flag: bool = typer.Option(False, "--flag", "-F", is_flag=True),
+        flag: bool = typer.Option(False, "--flag", "-F"),
         boolopt: Optional[bool] = typer.Option(
             False,
             # Not specifying anything here should generate the options
