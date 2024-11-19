@@ -8,6 +8,9 @@ on:
 concurrency:
   group: build-zabbix-cli-${{ github.head_ref }}
 
+env:
+  UV_FROZEN: 1
+
 jobs:
   build_pypi:
     name: Build wheels and source distribution
