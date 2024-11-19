@@ -1,4 +1,4 @@
-"""Patches for click_repl package."""
+"""REPL (Read-Eval-Print Loop) for the Zabbix CLI."""
 
 from __future__ import annotations
 

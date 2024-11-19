@@ -30,7 +30,9 @@ def get_limit_option(
 OPTION_LIMIT = get_limit_option(0)
 
 
-class CommandArg(ParamType):
+class CommandParam(ParamType):
+    """Command param type that resolves into a click Command."""
+
     name = "command"
 
     def convert(
@@ -48,9 +50,9 @@ class CommandArg(ParamType):
                 "Root context of %s is not a TyperGroup, unable to show help",
                 root_command,
             )
-            exit_err(f"Unable to show help for {value}")
+            exit_err(f"Unable to show help for '{value}'")
 
         cmd = root_command.get_command(root_ctx, value)
         if not cmd:
-            exit_err(f"Command {value} not found.")
+            exit_err(f"Command '{value}' not found.")
         return cmd

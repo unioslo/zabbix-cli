@@ -32,7 +32,7 @@ starting the REPL, which allows us to pass in more information about the availab
 commands and options to the REPL.
 
 Furthermore, type annotations have been added to the entire vendored codebase,
-and changes have been made in order to make the code pass type checking.
-This includes removing code that adds compatibility with Click < 8.0, which
+and changes have been made in order to make the original code pass type checking.
+Among these changes is removing code that adds compatibility with Click < 8.0, which
 relied a lot on duck typing and was generally not type-safe.
 """
