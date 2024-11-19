@@ -60,15 +60,12 @@ def test_command_param_in_command(
         cmd.invoke(new_ctx)
         captured = capsys.readouterr()
         assert captured.err == snapshot("")
-        assert captured.out == snapshot(
-            """\
 
- Usage: other-command help-command [OPTIONS]
-
- Help for the other command.
-
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                  │
-╰──────────────────────────────────────────────────────────────────────────────╯
-"""
-        )
+        # We cannot test the output with snapshot testing, because
+        # the trim-trailing-whitespace pre-commit hook modifies the
+        # snapshot output. Not ideal, so we have to test the relevant lines instead.
+        assert "Usage: other-command help-command [OPTIONS]" in captured.out
+        assert "Help for the other command." in captured.out
+        assert "Options" in captured.out
+        assert "--help" in captured.out
+        assert "Show this message and exit." in captured.out
