@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 import click
 import pytest
 import typer
@@ -62,11 +60,10 @@ def test_command_param_in_command(
         cmd.invoke(new_ctx)
         captured = capsys.readouterr()
         assert captured.err == snapshot("")
-
-        # HACK: Disable rich styling for the test
-        os.environ["TERM"] = "dumb"
-
         # We cannot test the output with snapshot testing, because
         # the trim-trailing-whitespace pre-commit hook modifies the
         # snapshot output. Not ideal, so we have to test the relevant lines instead.
-        assert "Usage: other-command help-command [OPTIONS]" in captured.out
+        #
+        # Also, terminal styling is broken when testing outside of a terminal.
+        # Thus, this minimal test.
+        assert "other-command help-command [OPTIONS]" in captured.out
