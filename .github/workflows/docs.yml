@@ -15,6 +15,9 @@ on:
 concurrency:
   group: docs-deploy
 
+env:
+  UV_FROZEN: 1
+
 jobs:
   build:
     runs-on: ubuntu-latest
