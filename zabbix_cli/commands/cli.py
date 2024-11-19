@@ -359,4 +359,8 @@ def help(
     """Show help for a commmand"""
     from zabbix_cli.output.console import console
 
+    # HACK: Set the info name to the resolved command name, otherwise
+    # when we call get_help, it will use the name of the help command
+    # instead of the resolved command name. Maybe we can use make_context for this?
+    ctx.info_name = command.name
     console.print(command.get_help(ctx))

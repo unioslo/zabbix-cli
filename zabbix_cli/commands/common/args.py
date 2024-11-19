@@ -9,7 +9,6 @@ from click.types import ParamType
 from typer.core import TyperGroup
 
 from zabbix_cli.logs import logger
-from zabbix_cli.output.console import exit_err
 
 
 def get_limit_option(
@@ -50,9 +49,9 @@ class CommandParam(ParamType):
                 "Root context of %s is not a TyperGroup, unable to show help",
                 root_command,
             )
-            exit_err(f"Unable to show help for '{value}'")
+            self.fail(f"Unable to show help for '{value}'")
 
         cmd = root_command.get_command(root_ctx, value)
         if not cmd:
-            exit_err(f"Command '{value}' not found.")
+            self.fail(f"Command '{value}' not found.")
         return cmd
