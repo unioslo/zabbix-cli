@@ -14,6 +14,8 @@ from prompt_toolkit.completion import Completer
 from prompt_toolkit.completion import Completion
 from prompt_toolkit.document import Document
 
+from zabbix_cli.commands.common.args import CommandParam
+
 __all__ = ["ClickCompleter"]
 
 IS_WINDOWS = os.name == "nt"
@@ -176,6 +178,15 @@ class ClickCompleter(Completer):
             if any(i.startswith(incomplete) for i in v)
         ]
 
+    def _get_completion_from_command_param(
+        self, param: click.Parameter, incomplete: str
+    ) -> List[Completion]:
+        return [
+            Completion(command, -len(incomplete))
+            for command in self.cli.list_commands(self.parsed_ctx)
+            if command.startswith(incomplete)
+        ]
+
     def _get_completion_from_params(
         self,
         autocomplete_ctx: click.Context,
@@ -190,6 +201,8 @@ class ClickCompleter(Completer):
                 choices.extend(self._get_completion_for_Boolean_type(param, incomplete))
         elif isinstance(param.type, (click.Path, click.File)):
             choices.extend(self._get_completion_for_Path_types(param, args, incomplete))
+        elif isinstance(param.type, CommandParam):
+            choices.extend(self._get_completion_from_command_param(param, incomplete))
         elif getattr(param, AUTO_COMPLETION_PARAM, None) is not None:
             choices.extend(
                 self._get_completion_from_autocompletion_functions(

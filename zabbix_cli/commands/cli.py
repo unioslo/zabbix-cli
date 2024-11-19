@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from typing import Optional
 
 import typer
+from click import Command
 
 from zabbix_cli.app import app
 from zabbix_cli.commands.common.args import OPTION_LIMIT
@@ -349,3 +350,17 @@ def update_application(ctx: typer.Context) -> None:
         success(f"Application updated from {__version__} to {info.version}")
     else:
         success("Application updated.")
+
+
+@app.command("help", rich_help_panel=HELP_PANEL)
+def help(
+    ctx: typer.Context, command: Command = typer.Argument(..., help="Command name")
+) -> None:
+    """Show help for a commmand"""
+    from zabbix_cli.output.console import console
+
+    # HACK: Set the info name to the resolved command name, otherwise
+    # when we call get_help, it will use the name of the help command
+    # instead of the resolved command name. Maybe we can use make_context for this?
+    ctx.info_name = command.name
+    console.print(command.get_help(ctx))

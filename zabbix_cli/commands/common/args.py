@@ -3,7 +3,12 @@ from __future__ import annotations
 from typing import Any
 from typing import Optional
 
+import click
 import typer
+from click.types import ParamType
+from typer.core import TyperGroup
+
+from zabbix_cli.logs import logger
 
 
 def get_limit_option(
@@ -22,3 +27,31 @@ def get_limit_option(
 
 
 OPTION_LIMIT = get_limit_option(0)
+
+
+class CommandParam(ParamType):
+    """Command param type that resolves into a click Command."""
+
+    name = "command"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> click.Command:
+        if not value:
+            self.fail("Missing command.", param, ctx)
+        if not ctx:
+            self.fail("No context.", param, ctx)
+        root_ctx = ctx.find_root()
+        root_command = root_ctx.command
+
+        if not isinstance(root_command, TyperGroup):
+            logger.error(
+                "Root context of %s is not a TyperGroup, unable to show help",
+                root_command,
+            )
+            self.fail(f"Unable to show help for '{value}'")
+
+        cmd = root_command.get_command(root_ctx, value)
+        if not cmd:
+            self.fail(f"Command '{value}' not found.")
+        return cmd
