@@ -10,7 +10,7 @@
 {% if param.secondary_opts | length > 0 -%}
 /{% for param in param.secondary_opts -%} **`{{ param }}`**{% if not loop.last %}, {% endif %}{% endfor -%}
 {% endif -%}
-{%- if not param.is_flag %}
+{%- if not param.type | lower == "boolean" %}
     `{{ param.metavar }}`
 {% endif -%}
 {% endif %}<br />

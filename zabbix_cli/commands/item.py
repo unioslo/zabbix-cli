@@ -41,7 +41,7 @@ def show_last_values(
         show_default=False,
     ),
     group: bool = typer.Option(
-        False, "--group", is_flag=True, help="Group items with the same value."
+        False, "--group", help="Group items with the same value."
     ),
     limit: Optional[int] = OPTION_LIMIT,
     args: Optional[List[str]] = ARGS_POSITIONAL,

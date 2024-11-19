@@ -106,13 +106,11 @@ def open_config_dir(
     force: bool = typer.Option(
         False,
         "--force",
-        is_flag=True,
-        help="LINUX: Try to open desite no detected window manager.",
+        help="LINUX: Try to open with [option]--command[/] even if no window manager is detected.",
     ),
     path: bool = typer.Option(
         False,
         "--path",
-        is_flag=True,
         help="Show path instead of opening directory.",
     ),
     open_command: Optional[str] = typer.Option(

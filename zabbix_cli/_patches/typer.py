@@ -61,7 +61,7 @@ def patch_help_text_spacing() -> None:
     from typer.rich_utils import STYLE_HELPTEXT
     from typer.rich_utils import STYLE_HELPTEXT_FIRST_LINE
     from typer.rich_utils import MarkupMode
-    from typer.rich_utils import _make_rich_rext
+    from typer.rich_utils import _make_rich_text
 
     @group()
     def _get_help_text(
@@ -90,7 +90,7 @@ def patch_help_text_spacing() -> None:
         # Remove single linebreaks
         if markup_mode != MARKUP_MODE_MARKDOWN and not first_line.startswith("\b"):
             first_line = first_line.replace("\n", " ")
-        yield _make_rich_rext(
+        yield _make_rich_text(
             text=first_line.strip(),
             style=STYLE_HELPTEXT_FIRST_LINE,
             markup_mode=markup_mode,
@@ -112,12 +112,12 @@ def patch_help_text_spacing() -> None:
             else:
                 # Join with double linebreaks if markdown
                 remaining_lines = "\n\n".join(remaining_paragraphs)
-            yield _make_rich_rext(
+            yield _make_rich_text(
                 text="\n",
                 style=STYLE_HELPTEXT,
                 markup_mode=markup_mode,
             )
-            yield _make_rich_rext(
+            yield _make_rich_text(
                 text=remaining_lines,
                 style=STYLE_HELPTEXT,
                 markup_mode=markup_mode,

@@ -30,9 +30,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v2
 
-      - name: Install hatch
-        run: |
-          uv pip install --system hatch
+      - name: Install dependencies
+        run: uv sync --group docs --no-dev
 
       - name: Build documentation and publish
-        run: hatch run docs:mkdocs gh-deploy --force
+        run: uv run mkdocs gh-deploy --force

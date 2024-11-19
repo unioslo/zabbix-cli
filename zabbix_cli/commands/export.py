@@ -383,19 +383,16 @@ def export_configuration(
     pretty: bool = typer.Option(
         False,
         "--pretty",
-        is_flag=True,
         help="Pretty-print output. Not supported for XML.",
     ),
     open_dir: bool = typer.Option(
         False,
         "--open",
-        is_flag=True,
         help="Open export directory in file explorer after exporting.",
     ),
     ignore_errors: bool = typer.Option(
         False,
         "--ignore-errors",
-        is_flag=True,
         help="Enable best-effort exporting. Print errors but continue exporting.",
     ),
     # TODO: add --ignore-errors option
@@ -561,9 +558,7 @@ def import_configuration(
         None,
         help="Path to file or directory to import configuration from. Accepts glob pattern. Uses default export directory if not specified.",
     ),
-    dry_run: bool = typer.Option(
-        False, "--dryrun", is_flag=True, help="Preview files to import."
-    ),
+    dry_run: bool = typer.Option(False, "--dryrun", help="Preview files to import."),
     create_missing: bool = typer.Option(
         True, "--create-missing/--no-create-missing", help="Create missing objects."
     ),
@@ -576,7 +571,6 @@ def import_configuration(
     ignore_errors: bool = typer.Option(
         False,
         "--ignore-errors",
-        is_flag=True,
         help="Enable best-effort importing. Print errors from failed imports but continue importing.",
     ),
     # Legacy positional args

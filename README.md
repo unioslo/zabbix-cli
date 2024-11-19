@@ -161,7 +161,7 @@ The type of the `result` field varies based on the command run. For `show_host` 
 
 <details>
   <summary><code>show_host foo.example.com*</code></summary>
-  
+
   ```json
 {
   "message": "",
@@ -262,7 +262,7 @@ The type of the `result` field varies based on the command run. For `show_host` 
 
 <details>
   <summary><code>show_hosts foo.*</code></summary>
-  
+
   ```json
 {
   "message": "",
@@ -350,27 +350,19 @@ The type of the `result` field varies based on the command run. For `show_host` 
 
 ## Development
 
-Zabbix-cli currently uses [Hatch](https://hatch.pypa.io/latest/) for project management and packaging. To start off, clone the repository:
+Zabbix-cli currently uses [uv](https://docs.astral.sh/uv/)  and [Hatch](https://hatch.pypa.io/latest/) for project management and packaging. To start off, clone the repository:
 
 ```bash
 git clone https://github.com/unioslo/zabbix-cli.git
 ```
 
-Then make a virtual environment using Hatch:
+Then make a virtual environment using uv:
 
 ```bash
-hatch shell
+uv venv
 ```
 
 This will create a new virtual environment, install the required dependencies and enter the environment.
-
-If you do not wish to use Hatch, you can create a virtual environment manually:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -U -e ".[test]"
-```
 
 ### Testing
 
