@@ -19,6 +19,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
+from typing import Iterable
 from typing import List
 from typing import MutableMapping
 from typing import Optional
@@ -409,11 +410,12 @@ class DictModel(ZabbixAPIBaseModel):
 
     model_config = ConfigDict(extra="allow")
 
+    def items(self) -> Iterable[tuple[str, Any]]:
+        return self.model_dump(mode="python").items()
+
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["Key", "Value"]
-        rows: RowsType = [
-            [key, str(value)] for key, value in self.model_dump().items() if value
-        ]
+        rows: RowsType = [[key, str(value)] for key, value in self.items() if value]
         return cols, rows
 
 
