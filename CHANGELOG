@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `update_usergroup_permissions` command. Use `add_usergroup_permissions` instead.
   - In the future, a `remove_usergroup_permissions` command will be added to complement the `add_usergroup_permissions` command instead of complicating the `update_usergroup_permissions` command.
 
+### Fixed
+
+- V2-style `-C` command invocation shim. Now correctly passes arguments to the new CLI.
+
 ## [3.3.0]
 
 ### Added
