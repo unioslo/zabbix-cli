@@ -2,8 +2,8 @@
 
 Zabbix-cli provides several ways to authenticate. They are tried in the following order:
 
-1. [Token - Config file](#api-token-config-file)
-1. [Token - Environment variables](#api-token-environment-variables)
+1. [Token - Config file](#config-file)
+1. [Token - Environment variables](#environment-variables)
 1. [Token - Auth token file](#auth-token-file)
 1. [Password - Config file](#config-file_1)
 1. [Password - Auth file](#auth-file)

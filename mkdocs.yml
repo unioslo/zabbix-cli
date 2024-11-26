@@ -102,8 +102,8 @@ nav:
     - Logging: guide/logging.md
     - Bulk Operations: guide/bulk.md
     - Migration: guide/migration.md
-    - Commands:
-      - guide/commands/*.md
+  - Commands:
+    - commands/*.md
   - Plugins:
     - Introduction: plugins/index.md
     - plugins/guide.md

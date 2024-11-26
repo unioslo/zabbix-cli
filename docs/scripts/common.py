@@ -14,6 +14,6 @@ if not DATA_DIR.exists():
 TEMPLATES_DIR = DOC_DIR / "templates"
 
 # Directory of generated command doc pages
-COMMANDS_DIR = DOC_DIR / "guide" / "commands"
+COMMANDS_DIR = DOC_DIR / "commands"
 if not COMMANDS_DIR.exists():
     COMMANDS_DIR.mkdir(parents=True)
