@@ -96,7 +96,7 @@ Zabbix-cli is a command line interface for Zabbix. It can be used in three ways:
 2. **Single command**: Run a single command by running `zabbix-cli COMMAND`. This will run the command and print the output.
 3. **Batch mode**: Run multiple commands from a file by running `zabbix-cli -f FILE`. The file should contain one command per line.
 
-Command reference can be found in the [online user guide](https://unioslo.github.io/zabbix-cli/guide/commands/) or by running `zabbix-cli --help`.
+Command reference can be found in the [online user guide](https://unioslo.github.io/zabbix-cli/commands/) or by running `zabbix-cli --help`.
 
 ### Authentication
 
