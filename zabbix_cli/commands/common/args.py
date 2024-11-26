@@ -28,6 +28,19 @@ def get_limit_option(
 
 OPTION_LIMIT = get_limit_option(0)
 
+ARG_TEMPLATE_NAMES_OR_IDS = typer.Argument(
+    help="Template names or IDs. Comma-separated. Supports wildcards.",
+    show_default=False,
+)
+ARG_HOSTNAMES_OR_IDS = typer.Argument(
+    help="Hostnames or IDs. Comma-separated. Supports wildcards.",
+    show_default=False,
+)
+ARG_GROUP_NAMES_OR_IDS = typer.Argument(
+    help="Host/template group names or IDs. Comma-separated. Supports wildcards.",
+    show_default=False,
+)
+
 
 class CommandParam(ParamType):
     """Command param type that resolves into a click Command."""

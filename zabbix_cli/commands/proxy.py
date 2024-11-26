@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import Proxy
 
 HELP_PANEL = "Proxy"
+HELP_PANEL_GROUP = "Proxy Group"
 
 
 class PrevProxyHosts(NamedTuple):
@@ -77,72 +78,6 @@ def group_hosts_by_proxy(
         del proxy_mapping[default_proxy_id]
 
     return proxy_mapping
-
-
-@app.command(name="update_host_proxy", rich_help_panel=HELP_PANEL)
-def update_host_proxy(
-    ctx: typer.Context,
-    hostname: str = typer.Argument(
-        help="Hostnames. Comma-separated Supports wildcards.",
-        show_default=False,
-    ),
-    proxy: str = typer.Argument(
-        help="Proxy name. Supports wildcards.",
-        show_default=False,
-    ),
-    dryrun: bool = typer.Option(
-        False,
-        help="Preview changes",
-    ),
-) -> None:
-    """Assign hosts to a proxy.
-
-    Supports wildcards for both hosts and proxy names.
-    If multiple proxies match the proxy name, the first match is used.
-    """
-    from zabbix_cli.commands.results.proxy import UpdateHostProxyResult
-    from zabbix_cli.models import AggregateResult
-    from zabbix_cli.output.console import info
-
-    hostnames = parse_list_arg(hostname)
-    hosts = app.state.client.get_hosts(*hostnames, search=True)
-    dest_proxy = app.state.client.get_proxy(proxy)
-
-    to_update: List[Host] = []
-    for host in hosts:
-        if host.proxyid != dest_proxy.proxyid:
-            to_update.append(host)
-
-    if not dryrun:
-        with app.status("Updating host proxies..."):
-            hostids = app.state.client.update_hosts_proxy(to_update, dest_proxy)
-    else:
-        hostids = [host.hostid for host in to_update]
-
-    updated = set(hostids)
-    updated_hosts = [host for host in to_update if host.hostid in updated]
-
-    proxy_hosts = group_hosts_by_proxy(app, updated_hosts)
-
-    render_result(
-        AggregateResult(
-            empty_ok=True,
-            result=[
-                UpdateHostProxyResult.from_result(
-                    hosts=prev.hosts,
-                    source_proxy=prev.proxy,
-                    dest_proxy=dest_proxy,
-                )
-                for _, prev in proxy_hosts.items()
-            ],
-        )
-    )
-
-    total_hosts = len(updated)
-    if dryrun:
-        info(f"Would update proxy for {total_hosts} hosts.")
-    else:
-        success(f"Updated proxy for {total_hosts} hosts.")
 
 
 @app.command(name="clear_host_proxy", rich_help_panel=HELP_PANEL)
@@ -198,76 +133,6 @@ def clear_host_proxy(
         info(f"Would clear proxy for {total_hosts} hosts.")
     else:
         success(f"Cleared proxy for {total_hosts} hosts.")
-
-
-@app.command(
-    name="move_proxy_hosts",
-    rich_help_panel=HELP_PANEL,
-    examples=[
-        Example(
-            "Move all hosts from one proxy to another",
-            "move_proxy_hosts proxy1 proxy2",
-        ),
-        Example(
-            "Move all hosts with names matching a regex pattern",
-            "move_proxy_hosts proxy1 proxy2 --filter '$www.*'",
-        ),
-    ],
-)
-def move_proxy_hosts(
-    ctx: typer.Context,
-    proxy_src: str = typer.Argument(
-        help="Proxy to move hosts from.",
-        show_default=False,
-    ),
-    proxy_dst: str = typer.Argument(
-        help="Proxy to move hosts to.",
-        show_default=False,
-    ),
-    # Prefer --filter over positional arg
-    host_filter: Optional[str] = typer.Option(
-        None, "--filter", help="Regex pattern of hosts to move."
-    ),
-    # LEGACY: matches old command signature (deprecated)
-    host_filter_arg: Optional[str] = typer.Argument(
-        None, help="Filter hosts to move.", hidden=True
-    ),
-) -> None:
-    """Move hosts from one proxy to another."""
-    from zabbix_cli.commands.results.proxy import MoveProxyHostsResult
-    from zabbix_cli.models import Result
-
-    hfilter = host_filter_arg or host_filter
-    if hfilter:  # Compile before we fetch to fail fast
-        filter_pattern = compile_pattern(hfilter)
-    else:
-        filter_pattern = None
-
-    source_proxy = app.state.client.get_proxy(proxy_src)
-    destination_proxy = app.state.client.get_proxy(proxy_dst)
-
-    hosts = app.state.client.get_hosts(proxy=source_proxy)
-    if not hosts:
-        exit_err(f"Source proxy {source_proxy.name!r} has no hosts.")
-
-    # Do filtering client-side to get full regex support
-    if filter_pattern:
-        hosts = [host for host in hosts if filter_pattern.match(host.host)]
-        if not hosts:
-            exit_err(f"No hosts matched filter {hfilter!r}.")
-
-    app.state.client.move_hosts_to_proxy(hosts, destination_proxy)
-
-    render_result(
-        Result(
-            message=f"Moved {len(hosts)} hosts from {source_proxy.name!r} to {destination_proxy.name!r}",
-            result=MoveProxyHostsResult(
-                source=source_proxy.proxyid,
-                destination=destination_proxy.proxyid,
-                hosts=[host.host for host in hosts],
-            ),
-        )
-    )
 
 
 @app.command(
@@ -379,49 +244,74 @@ def load_balance_proxy_hosts(
     success(f"Load balanced {len(all_hosts)} hosts between {len(proxies)} proxies.")
 
 
-@app.command(name="update_hostgroup_proxy", rich_help_panel=HELP_PANEL)
-def update_hostgroup_proxy(
+@app.command(
+    name="move_proxy_hosts",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Move all hosts from one proxy to another",
+            "move_proxy_hosts proxy1 proxy2",
+        ),
+        Example(
+            "Move all hosts with names matching a regex pattern",
+            "move_proxy_hosts proxy1 proxy2 --filter '$www.*'",
+        ),
+    ],
+)
+def move_proxy_hosts(
     ctx: typer.Context,
-    hostgroup: str = typer.Argument(
-        help="Host group(s). Comma-separated. Supports wildcards.",
+    proxy_src: str = typer.Argument(
+        help="Proxy to move hosts from.",
         show_default=False,
     ),
-    proxy: str = typer.Argument(
-        help="Proxy to assign. Supports wildcards.",
+    proxy_dst: str = typer.Argument(
+        help="Proxy to move hosts to.",
         show_default=False,
     ),
-    dryrun: bool = typer.Option(False, help="Preview changes."),
+    # Prefer --filter over positional arg
+    host_filter: Optional[str] = typer.Option(
+        None, "--filter", help="Regex pattern of hosts to move."
+    ),
+    # LEGACY: matches old command signature (deprecated)
+    host_filter_arg: Optional[str] = typer.Argument(
+        None, help="Filter hosts to move.", hidden=True
+    ),
 ) -> None:
-    """Assign a proxy to all hosts in one or more host groups."""
-    from zabbix_cli.commands.results.proxy import UpdateHostGroupProxyResult
-    from zabbix_cli.output.console import warning
+    """Move hosts from one proxy to another."""
+    from zabbix_cli.commands.results.proxy import MoveProxyHostsResult
+    from zabbix_cli.models import Result
 
-    prx = app.state.client.get_proxy(proxy)
-
-    hosts = get_hostgroup_hosts(app, hostgroup)
-    to_update: List[Host] = []
-    for host in hosts:
-        if host.proxyid != prx.proxyid:
-            to_update.append(host)
-
-    if not dryrun:
-        if not to_update:
-            exit_err("All hosts already have the specified proxy.")
-        with app.status("Updating host proxies..."):
-            hostids = app.state.client.update_hosts_proxy(to_update, prx)
-        if not hostids:
-            warning("No hosts were updated.")
+    hfilter = host_filter_arg or host_filter
+    if hfilter:  # Compile before we fetch to fail fast
+        filter_pattern = compile_pattern(hfilter)
     else:
-        hostids = [host.hostid for host in to_update]
+        filter_pattern = None
 
-    updated_hosts = [host for host in to_update if host.hostid in hostids]
-    render_result(UpdateHostGroupProxyResult.from_result(prx, updated_hosts))
+    source_proxy = app.state.client.get_proxy(proxy_src)
+    destination_proxy = app.state.client.get_proxy(proxy_dst)
 
-    total_hosts = len(hostids)
-    if dryrun:
-        info(f"Would update proxy for {total_hosts} hosts.")
-    else:
-        success(f"Updated proxy for {total_hosts} hosts.")
+    hosts = app.state.client.get_hosts(proxy=source_proxy)
+    if not hosts:
+        exit_err(f"Source proxy {source_proxy.name!r} has no hosts.")
+
+    # Do filtering client-side to get full regex support
+    if filter_pattern:
+        hosts = [host for host in hosts if filter_pattern.match(host.host)]
+        if not hosts:
+            exit_err(f"No hosts matched filter {hfilter!r}.")
+
+    app.state.client.move_hosts_to_proxy(hosts, destination_proxy)
+
+    render_result(
+        Result(
+            message=f"Moved {len(hosts)} hosts from {source_proxy.name!r} to {destination_proxy.name!r}",
+            result=MoveProxyHostsResult(
+                source=source_proxy.proxyid,
+                destination=destination_proxy.proxyid,
+                hosts=[host.host for host in hosts],
+            ),
+        )
+    )
 
 
 @app.command(name="show_proxies", rich_help_panel=HELP_PANEL)
@@ -477,63 +367,120 @@ def show_proxy_hosts(
     render_result(ShowProxyHostsResult.from_result(prox))
 
 
-@app.command(
-    name="show_proxy_groups",
-    rich_help_panel=HELP_PANEL,
-    examples=[
-        Example(
-            "Show all proxy groups",
-            "show_proxy_groups",
-        ),
-        Example(
-            "Show proxy groups with a specific proxy",
-            "show_proxy_groups --proxy proxy1",
-        ),
-        Example(
-            "Show proxy groups with either proxy1 or proxy2",
-            "show_proxy_groups --proxy proxy1,proxy2",
-        ),
-    ],
-)
-def show_proxy_groups(
+@app.command(name="update_host_proxy", rich_help_panel=HELP_PANEL)
+def update_host_proxy(
     ctx: typer.Context,
-    name_or_id: Optional[str] = typer.Argument(
-        None,
-        help="Filter by proxy name or ID. Comma-separated. Supports wildcards.",
+    hostname: str = typer.Argument(
+        help="Hostnames. Comma-separated Supports wildcards.",
         show_default=False,
     ),
-    proxies: Optional[str] = typer.Option(
-        None,
-        "--proxy",
-        help="Show only groups containing these proxies. Comma-separated.",
+    proxy: str = typer.Argument(
+        help="Proxy name. Supports wildcards.",
+        show_default=False,
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        help="Preview changes",
     ),
 ) -> None:
-    """Show all proxy groups and their proxies.
+    """Assign hosts to a proxy.
 
-    Optionally takes in a list of names or IDs to filter by.
+    Supports wildcards for both hosts and proxy names.
+    If multiple proxies match the proxy name, the first match is used.
     """
+    from zabbix_cli.commands.results.proxy import UpdateHostProxyResult
     from zabbix_cli.models import AggregateResult
+    from zabbix_cli.output.console import info
 
-    ensure_proxy_group_support()
+    hostnames = parse_list_arg(hostname)
+    hosts = app.state.client.get_hosts(*hostnames, search=True)
+    dest_proxy = app.state.client.get_proxy(proxy)
 
-    names_or_ids = parse_list_arg(name_or_id)
-    proxy_names = parse_list_arg(proxies)
+    to_update: List[Host] = []
+    for host in hosts:
+        if host.proxyid != dest_proxy.proxyid:
+            to_update.append(host)
 
-    with app.status("Fetching proxy groups..."):
-        # Fetch proxies if specified
-        proxy_list = [app.state.client.get_proxy(p) for p in proxy_names]
-        groups = app.state.client.get_proxy_groups(
-            *names_or_ids,
-            proxies=proxy_list,
-            select_proxies=True,
+    if not dryrun:
+        with app.status("Updating host proxies..."):
+            hostids = app.state.client.update_hosts_proxy(to_update, dest_proxy)
+    else:
+        hostids = [host.hostid for host in to_update]
+
+    updated = set(hostids)
+    updated_hosts = [host for host in to_update if host.hostid in updated]
+
+    proxy_hosts = group_hosts_by_proxy(app, updated_hosts)
+
+    render_result(
+        AggregateResult(
+            empty_ok=True,
+            result=[
+                UpdateHostProxyResult.from_result(
+                    hosts=prev.hosts,
+                    source_proxy=prev.proxy,
+                    dest_proxy=dest_proxy,
+                )
+                for _, prev in proxy_hosts.items()
+            ],
         )
+    )
 
-    render_result(AggregateResult(result=groups))
+    total_hosts = len(updated)
+    if dryrun:
+        info(f"Would update proxy for {total_hosts} hosts.")
+    else:
+        success(f"Updated proxy for {total_hosts} hosts.")
+
+
+@app.command(name="update_hostgroup_proxy", rich_help_panel=HELP_PANEL)
+def update_hostgroup_proxy(
+    ctx: typer.Context,
+    hostgroup: str = typer.Argument(
+        help="Host group(s). Comma-separated. Supports wildcards.",
+        show_default=False,
+    ),
+    proxy: str = typer.Argument(
+        help="Proxy to assign. Supports wildcards.",
+        show_default=False,
+    ),
+    dryrun: bool = typer.Option(False, help="Preview changes."),
+) -> None:
+    """Assign a proxy to all hosts in one or more host groups."""
+    from zabbix_cli.commands.results.proxy import UpdateHostGroupProxyResult
+    from zabbix_cli.output.console import warning
+
+    prx = app.state.client.get_proxy(proxy)
+
+    hosts = get_hostgroup_hosts(app, hostgroup)
+    to_update: List[Host] = []
+    for host in hosts:
+        if host.proxyid != prx.proxyid:
+            to_update.append(host)
+
+    if not dryrun:
+        if not to_update:
+            exit_err("All hosts already have the specified proxy.")
+        with app.status("Updating host proxies..."):
+            hostids = app.state.client.update_hosts_proxy(to_update, prx)
+        if not hostids:
+            warning("No hosts were updated.")
+    else:
+        hostids = [host.hostid for host in to_update]
+
+    updated_hosts = [host for host in to_update if host.hostid in hostids]
+    render_result(UpdateHostGroupProxyResult.from_result(prx, updated_hosts))
+
+    total_hosts = len(hostids)
+    if dryrun:
+        info(f"Would update proxy for {total_hosts} hosts.")
+    else:
+        success(f"Updated proxy for {total_hosts} hosts.")
 
 
 @app.command(
     name="add_proxy_to_group",
-    rich_help_panel=HELP_PANEL,
+    rich_help_panel=HELP_PANEL_GROUP,
     examples=[
         Example(
             "Add a proxy to a proxy group",
@@ -585,7 +532,7 @@ def add_proxy_to_group(
     success(f"Added proxy {proxy.name!r} to group {group.name!r}.")
 
 
-@app.command(name="remove_proxy_from_group", rich_help_panel=HELP_PANEL)
+@app.command(name="remove_proxy_from_group", rich_help_panel=HELP_PANEL_GROUP)
 def remove_proxy_from_group(
     ctx: typer.Context,
     name_or_id: str = typer.Argument(
@@ -605,7 +552,82 @@ def remove_proxy_from_group(
     success(f"Removed proxy {proxy.name!r} from group with ID {proxy.proxy_groupid}.")
 
 
-@app.command(name="update_hostgroup_proxygroup", rich_help_panel=HELP_PANEL)
+@app.command(
+    name="show_proxy_groups",
+    rich_help_panel=HELP_PANEL_GROUP,
+    examples=[
+        Example(
+            "Show all proxy groups",
+            "show_proxy_groups",
+        ),
+        Example(
+            "Show proxy groups with a specific proxy",
+            "show_proxy_groups --proxy proxy1",
+        ),
+        Example(
+            "Show proxy groups with either proxy1 or proxy2",
+            "show_proxy_groups --proxy proxy1,proxy2",
+        ),
+    ],
+)
+def show_proxy_groups(
+    ctx: typer.Context,
+    name_or_id: Optional[str] = typer.Argument(
+        None,
+        help="Filter by proxy name or ID. Comma-separated. Supports wildcards.",
+        show_default=False,
+    ),
+    proxies: Optional[str] = typer.Option(
+        None,
+        "--proxy",
+        help="Show only groups containing these proxies. Comma-separated.",
+    ),
+) -> None:
+    """Show all proxy groups and their proxies.
+
+    Optionally takes in a list of names or IDs to filter by.
+    """
+    from zabbix_cli.models import AggregateResult
+
+    ensure_proxy_group_support()
+
+    names_or_ids = parse_list_arg(name_or_id)
+    proxy_names = parse_list_arg(proxies)
+
+    with app.status("Fetching proxy groups..."):
+        # Fetch proxies if specified
+        proxy_list = [app.state.client.get_proxy(p) for p in proxy_names]
+        groups = app.state.client.get_proxy_groups(
+            *names_or_ids,
+            proxies=proxy_list,
+            select_proxies=True,
+        )
+
+    render_result(AggregateResult(result=groups))
+
+
+@app.command(name="show_proxy_group_hosts", rich_help_panel=HELP_PANEL_GROUP)
+def show_proxy_group_hosts(
+    ctx: typer.Context,
+    proxygroup: str = typer.Argument(
+        help="Proxy group name or ID. Supports wildcards.",
+        show_default=False,
+    ),
+) -> None:
+    """Show all hosts in a proxy group."""
+    from zabbix_cli.commands.results.proxy import ShowProxyGroupHostsResult
+
+    ensure_proxy_group_support()
+
+    with app.status("Fetching proxy groups...") as status:
+        group = app.state.client.get_proxy_group(proxygroup)
+        status.update("Fetching hosts...")
+        hosts = app.state.client.get_hosts(proxy_group=group)
+
+    render_result(ShowProxyGroupHostsResult(proxy_group=group, hosts=hosts))
+
+
+@app.command(name="update_hostgroup_proxygroup", rich_help_panel=HELP_PANEL_GROUP)
 def update_hostgroup_proxygroup(
     ctx: typer.Context,
     hostgroup: str = typer.Argument(
@@ -652,24 +674,3 @@ def update_hostgroup_proxygroup(
         info(f"Would update proxy group for {total_hosts} hosts.")
     else:
         success(f"Updated proxy group for {total_hosts} hosts.")
-
-
-@app.command(name="show_proxy_group_hosts", rich_help_panel=HELP_PANEL)
-def show_proxy_group_hosts(
-    ctx: typer.Context,
-    proxygroup: str = typer.Argument(
-        help="Proxy group name or ID. Supports wildcards.",
-        show_default=False,
-    ),
-) -> None:
-    """Show all hosts in a proxy group."""
-    from zabbix_cli.commands.results.proxy import ShowProxyGroupHostsResult
-
-    ensure_proxy_group_support()
-
-    with app.status("Fetching proxy groups...") as status:
-        group = app.state.client.get_proxy_group(proxygroup)
-        status.update("Fetching hosts...")
-        hosts = app.state.client.get_hosts(proxy_group=group)
-
-    render_result(ShowProxyGroupHostsResult(proxy_group=group, hosts=hosts))

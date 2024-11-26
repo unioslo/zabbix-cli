@@ -13,12 +13,10 @@ from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.args import parse_list_arg
 
-HELP_PANEL = "Item"
-
 
 @app.command(
     name="show_last_values",
-    rich_help_panel=HELP_PANEL,
+    rich_help_panel="Host Monitoring",  # Moved to host monitoring for now
     examples=[
         Example(
             "Get items starting with 'MongoDB'",

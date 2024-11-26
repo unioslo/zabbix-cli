@@ -12,6 +12,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - New command `help` to show help for a specific command.
+- New command categories:
+  - `Host Group`
+  - `Host Interface`
+  - `Host Monitoring`
+  - `Macro (Global)`
+  - `Macro (User)`
+  - `Media`
+  - `Proxy Group`
+  - `Template Group`
+
+### Changed
+
+- Commands are now sorted alphabetically within each category.
+- Categories are now split up into more granular sections. See the `Added` section for the new categories.
+
+### Deprecated
+
+- `update_usergroup_permissions` command. Use `add_usergroup_permissions` instead.
+  - In the future, a `remove_usergroup_permissions` command will be added to complement the `add_usergroup_permissions` command instead of complicating the `update_usergroup_permissions` command.
 
 ## [3.3.0]
 

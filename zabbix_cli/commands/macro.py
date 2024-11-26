@@ -15,7 +15,8 @@ from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.render import render_result
 
-HELP_PANEL = "Macro"
+HELP_PANEL_USER = "Macro (User)"
+HELP_PANEL_GLOBAL = "Macro (Global)"
 
 
 def fmt_macro_name(macro: str) -> str:
@@ -37,9 +38,56 @@ def fmt_macro_name(macro: str) -> str:
     return macro
 
 
+@app.command("define_global_macro", rich_help_panel=HELP_PANEL_GLOBAL)
+def define_global_macro(
+    ctx: typer.Context,
+    name: str = typer.Argument(help="Name of the macro", show_default=False),
+    value: str = typer.Argument(help="Value of the macro", show_default=False),
+) -> None:
+    """Create a global macro."""
+    from zabbix_cli.commands.results.macro import GlobalMacroResult
+    from zabbix_cli.models import Result
+
+    name = fmt_macro_name(name)
+
+    try:
+        macro = app.state.client.get_global_macro(macro_name=name)
+    except ZabbixNotFoundError:
+        pass
+    else:
+        exit_err(f"Macro {name!r} already exists with value {macro.value!r}")
+
+    macro_id = app.state.client.create_global_macro(macro=name, value=value)
+    render_result(
+        Result(
+            message=f"Created macro {name!r} with ID {macro_id}.",
+            result=GlobalMacroResult(macro=name, globalmacroid=macro_id, value=value),
+        ),
+    )
+
+
+@app.command("show_global_macros", rich_help_panel=HELP_PANEL_GLOBAL)
+def show_global_macros(ctx: typer.Context) -> None:
+    """Show all global macros."""
+    from zabbix_cli.commands.results.macro import GlobalMacroResult
+    from zabbix_cli.models import AggregateResult
+
+    macros = app.state.client.get_global_macros()
+    render_result(
+        AggregateResult(
+            result=[
+                GlobalMacroResult(
+                    macro=m.macro, globalmacroid=m.globalmacroid, value=m.value
+                )
+                for m in macros
+            ]
+        )
+    )
+
+
 @app.command(
     name="define_host_usermacro",
-    rich_help_panel=HELP_PANEL,
+    rich_help_panel=HELP_PANEL_USER,
     examples=[
         Example(
             "Create a macro named {$SNMP_COMMUNITY} for a host",
@@ -95,7 +143,7 @@ def define_host_usermacro(
     )
 
 
-@app.command(name="show_host_usermacros", rich_help_panel=HELP_PANEL, hidden=False)
+@app.command(name="show_host_usermacros", rich_help_panel=HELP_PANEL_USER, hidden=False)
 def show_host_usermacros(
     hostname_or_id: str = typer.Argument(
         help="Hostname or ID to show macros for",
@@ -120,7 +168,9 @@ def show_host_usermacros(
     )
 
 
-@app.command(name="show_usermacro_host_list", rich_help_panel=HELP_PANEL, hidden=False)
+@app.command(
+    name="show_usermacro_host_list", rich_help_panel=HELP_PANEL_USER, hidden=False
+)
 def show_usermacro_host_list(
     usermacro: str = typer.Argument(
         help=(
@@ -166,56 +216,9 @@ def show_usermacro_host_list(
         )
 
 
-@app.command("define_global_macro", rich_help_panel=HELP_PANEL)
-def define_global_macro(
-    ctx: typer.Context,
-    name: str = typer.Argument(help="Name of the macro", show_default=False),
-    value: str = typer.Argument(help="Value of the macro", show_default=False),
-) -> None:
-    """Create a global macro."""
-    from zabbix_cli.commands.results.macro import GlobalMacroResult
-    from zabbix_cli.models import Result
-
-    name = fmt_macro_name(name)
-
-    try:
-        macro = app.state.client.get_global_macro(macro_name=name)
-    except ZabbixNotFoundError:
-        pass
-    else:
-        exit_err(f"Macro {name!r} already exists with value {macro.value!r}")
-
-    macro_id = app.state.client.create_global_macro(macro=name, value=value)
-    render_result(
-        Result(
-            message=f"Created macro {name!r} with ID {macro_id}.",
-            result=GlobalMacroResult(macro=name, globalmacroid=macro_id, value=value),
-        ),
-    )
-
-
-@app.command("show_global_macros", rich_help_panel=HELP_PANEL)
-def show_global_macros(ctx: typer.Context) -> None:
-    """Show all global macros."""
-    from zabbix_cli.commands.results.macro import GlobalMacroResult
-    from zabbix_cli.models import AggregateResult
-
-    macros = app.state.client.get_global_macros()
-    render_result(
-        AggregateResult(
-            result=[
-                GlobalMacroResult(
-                    macro=m.macro, globalmacroid=m.globalmacroid, value=m.value
-                )
-                for m in macros
-            ]
-        )
-    )
-
-
 @app.command(
     "show_usermacro_template_list",
-    rich_help_panel=HELP_PANEL,
+    rich_help_panel=HELP_PANEL_USER,
     examples=[
         Example(
             "Show all templates with a user macro named {$SNMP_COMMUNITY}",
