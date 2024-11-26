@@ -7,17 +7,14 @@ providing fallbacks to deprecated functionality in Zabbix-CLI v2.
 from __future__ import annotations
 
 import os
+import shlex
 from pathlib import Path
-from typing import TYPE_CHECKING
 from typing import List
 from typing import Optional
 
 import typer
-
-if TYPE_CHECKING:
-    from click.core import CommandCollection
-    from click.core import Group
-
+from click.core import CommandCollection
+from click.core import Group
 
 CONFIG_FILENAME = "zabbix-cli.conf"
 CONFIG_FIXED_NAME = "zabbix-cli.fixed.conf"
@@ -58,19 +55,23 @@ def run_command_from_option(ctx: typer.Context, command: str) -> None:
         exit_err(  # TODO: find out if this could ever happen?
             f"Cannot run command {command!r}. Ensure it is a valid command and try again."
         )
-    cmd_obj = ctx.command.get_command(ctx, command)
-    if not cmd_obj:
+
+    parts = shlex.split(command, comments=True)
+    if not parts:
         exit_err(
-            f"Cannot run command {command!r}. Ensure it is a valid command and try again."
+            f"Command {command!r} is empty. Ensure it is a valid command and try again."
         )
+
     try:
-        ctx.invoke(cmd_obj, *ctx.args)
+        with ctx.command.make_context(None, parts, parent=ctx) as new_ctx:
+            ctx.command.invoke(new_ctx)
     except typer.Exit:
         pass
     except Exception as e:
         error(
             f"Command {command!r} failed with error: {e}. Try re-running without --command."
         )
+        raise
 
 
 def args_callback(
