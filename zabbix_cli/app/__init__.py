@@ -16,15 +16,19 @@ app = StatefulApp(
 from zabbix_cli.commands import cli  # type: ignore # noqa: E402, F401, I001
 from zabbix_cli.commands import export  # type: ignore # noqa: E402, F401
 from zabbix_cli.commands import host  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import host_interface  # type: ignore # noqa: E402, F401
 from zabbix_cli.commands import hostgroup  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import host_monitoring  # type: ignore # noqa: E402, F401
 from zabbix_cli.commands import item  # type: ignore # noqa: E402, F401
 from zabbix_cli.commands import macro  # type: ignore # noqa: E402, F401
 from zabbix_cli.commands import maintenance  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import media  # type: ignore # noqa: E402, F401
 from zabbix_cli.commands import problem  # type: ignore # noqa: E402, F401
 from zabbix_cli.commands import proxy  # type: ignore # noqa: E402, F401
 from zabbix_cli.commands import template  # type: ignore # noqa: E402, F401
 from zabbix_cli.commands import templategroup  # type: ignore # noqa: E402, F401
 from zabbix_cli.commands import user  # type: ignore # noqa: E402, F401
+from zabbix_cli.commands import usergroup  # type: ignore # noqa: E402, F401
 
 
 # Import dev commands

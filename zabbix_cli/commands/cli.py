@@ -37,23 +37,6 @@ if TYPE_CHECKING:
 HELP_PANEL = "CLI"
 
 
-@app.command(
-    "show_zabbixcli_config", rich_help_panel=HELP_PANEL, hidden=True, deprecated=True
-)
-@app.command("show_config", rich_help_panel=HELP_PANEL)
-def show_config(
-    ctx: typer.Context,
-    secrets: SecretMode = typer.Option(
-        SecretMode.MASK, "--secrets", help="Display mode for secrets."
-    ),
-) -> None:
-    """Show the current application configuration."""
-    config = app.state.config
-    print_toml(config.as_toml(secrets=secrets))
-    if config.config_path:
-        info(f"Config file: {config.config_path.absolute()}")
-
-
 class DirectoryType(Enum):
     """Directory types."""
 
@@ -86,56 +69,6 @@ def get_directory(directory_type: DirectoryType, config: Optional[Config]) -> Pa
     return directory_type.as_path()
 
 
-@app.command("show_dirs", rich_help_panel=HELP_PANEL)
-def show_directories(ctx: typer.Context) -> None:
-    """Show the default directories used by the application."""
-    from zabbix_cli.commands.results.cli import DirectoriesResult
-
-    result = DirectoriesResult.from_directory_types(list(DirectoryType))
-    render_result(result)
-
-
-@app.command("open", rich_help_panel=HELP_PANEL)
-def open_config_dir(
-    ctx: typer.Context,
-    directory_type: DirectoryType = typer.Argument(
-        help="The type of directory to open.",
-        case_sensitive=False,
-        show_default=False,
-    ),
-    force: bool = typer.Option(
-        False,
-        "--force",
-        help="LINUX: Try to open with [option]--command[/] even if no window manager is detected.",
-    ),
-    path: bool = typer.Option(
-        False,
-        "--path",
-        help="Show path instead of opening directory.",
-    ),
-    open_command: Optional[str] = typer.Option(
-        None,
-        "--command",
-        help="Specify command to use to use for opening.",
-    ),
-) -> None:
-    """Open an app directory in the system's file manager.
-
-    Use --force to attempt to open when no DISPLAY env var is set.
-    """
-    # Try to load the config, but don't fail if it's not available
-    try:
-        config = app.state.config
-    except ZabbixCLIError:
-        config = None
-
-    directory = get_directory(directory_type, config)
-    if path:
-        print_path(directory)
-    else:
-        open_directory(directory, command=open_command, force=force)
-
-
 @app.command("debug", hidden=True, rich_help_panel=HELP_PANEL)
 def debug_cmd(
     ctx: typer.Context,
@@ -147,6 +80,47 @@ def debug_cmd(
     from zabbix_cli.commands.results.cli import DebugInfo
 
     render_result(DebugInfo.from_debug_data(app.state, with_auth=with_auth))
+
+
+@app.command("help", rich_help_panel=HELP_PANEL)
+def help(
+    ctx: typer.Context,
+    command: Optional[Command] = typer.Argument(None, help="Command name"),
+) -> None:
+    """Show help for a commmand"""
+    # TODO: patch get_help() to make it return a string instead of magically
+    # printing to stdout, which we have no control over.
+    if not command:
+        ctx.find_root().get_help()
+        return
+
+    # HACK: Set the info name to the resolved command name, otherwise
+    # when we call get_help, it will use the name of the help command
+    # instead of the resolved command name. Maybe we can use make_context for this?
+    ctx.info_name = command.name
+    command.get_help(ctx)
+
+
+@app.command("init", rich_help_panel=HELP_PANEL)
+def init(
+    ctx: typer.Context,
+    config_file: Optional[Path] = typer.Option(
+        None, "--config-file", "-c", help="Location of the config file."
+    ),
+    overwrite: bool = typer.Option(
+        False, "--overwrite", help="Overwrite existing config"
+    ),
+    url: Optional[str] = typer.Option(
+        None, "--url", "-u", help="Zabbix API URL to use."
+    ),
+) -> None:
+    """Create and initialize config file."""
+    from zabbix_cli.config.utils import init_config
+
+    try:
+        init_config(config_file=config_file, overwrite=overwrite, url=url)
+    except ConfigExistsError as e:
+        raise ZabbixCLIError(f"{e}. Use [option]--overwrite[/] to overwrite it") from e
 
 
 @app.command(name="login", rich_help_panel=HELP_PANEL)
@@ -191,54 +165,6 @@ def login(
     app.state.logout()
     app.state.login()
     success(f"Logged in to {config.api.url} as {config.api.username}.")
-
-
-@app.command("show_history", rich_help_panel=HELP_PANEL)
-def show_history(
-    ctx: typer.Context,
-    limit: int = OPTION_LIMIT,
-    # TODO: Add --session option to limit to current session
-    # In order to add that, we need to store the history len at the start of the session
-) -> None:
-    """Show the command history."""
-    # Load the entire history, then limit afterwards
-    from zabbix_cli.commands.results.cli import HistoryResult
-
-    history = list(app.state.history.get_strings())
-    history = history[-limit:]
-    render_result(HistoryResult(commands=history))
-
-
-@app.command("sample_config", rich_help_panel=HELP_PANEL)
-def sample_config(ctx: typer.Context) -> None:
-    """Print a sample configuration file."""
-    # Load the entire history, then limit afterwards
-    from zabbix_cli.config.model import Config
-
-    conf = Config.sample_config()
-    print_toml(conf.as_toml())
-
-
-@app.command("init", rich_help_panel=HELP_PANEL)
-def init(
-    ctx: typer.Context,
-    config_file: Optional[Path] = typer.Option(
-        None, "--config-file", "-c", help="Location of the config file."
-    ),
-    overwrite: bool = typer.Option(
-        False, "--overwrite", help="Overwrite existing config"
-    ),
-    url: Optional[str] = typer.Option(
-        None, "--url", "-u", help="Zabbix API URL to use."
-    ),
-) -> None:
-    """Create and initialize config file."""
-    from zabbix_cli.config.utils import init_config
-
-    try:
-        init_config(config_file=config_file, overwrite=overwrite, url=url)
-    except ConfigExistsError as e:
-        raise ZabbixCLIError(f"{e}. Use [option]--overwrite[/] to overwrite it") from e
 
 
 @app.command("migrate_config", rich_help_panel=HELP_PANEL)
@@ -303,6 +229,99 @@ def migrate_config(
     success(f"Config migrated to {destination}")
 
 
+@app.command("open", rich_help_panel=HELP_PANEL)
+def open_config_dir(
+    ctx: typer.Context,
+    directory_type: DirectoryType = typer.Argument(
+        help="The type of directory to open.",
+        case_sensitive=False,
+        show_default=False,
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="LINUX: Try to open with [option]--command[/] even if no window manager is detected.",
+    ),
+    path: bool = typer.Option(
+        False,
+        "--path",
+        help="Show path instead of opening directory.",
+    ),
+    open_command: Optional[str] = typer.Option(
+        None,
+        "--command",
+        help="Specify command to use to use for opening.",
+    ),
+) -> None:
+    """Open an app directory in the system's file manager.
+
+    Use --force to attempt to open when no DISPLAY env var is set.
+    """
+    # Try to load the config, but don't fail if it's not available
+    try:
+        config = app.state.config
+    except ZabbixCLIError:
+        config = None
+
+    directory = get_directory(directory_type, config)
+    if path:
+        print_path(directory)
+    else:
+        open_directory(directory, command=open_command, force=force)
+
+
+@app.command("sample_config", rich_help_panel=HELP_PANEL)
+def sample_config(ctx: typer.Context) -> None:
+    """Print a sample configuration file."""
+    # Load the entire history, then limit afterwards
+    from zabbix_cli.config.model import Config
+
+    conf = Config.sample_config()
+    print_toml(conf.as_toml())
+
+
+@app.command(
+    "show_zabbixcli_config", rich_help_panel=HELP_PANEL, hidden=True, deprecated=True
+)
+@app.command("show_config", rich_help_panel=HELP_PANEL)
+def show_config(
+    ctx: typer.Context,
+    secrets: SecretMode = typer.Option(
+        SecretMode.MASK, "--secrets", help="Display mode for secrets."
+    ),
+) -> None:
+    """Show the current application configuration."""
+    config = app.state.config
+    print_toml(config.as_toml(secrets=secrets))
+    if config.config_path:
+        info(f"Config file: {config.config_path.absolute()}")
+
+
+@app.command("show_dirs", rich_help_panel=HELP_PANEL)
+def show_directories(ctx: typer.Context) -> None:
+    """Show the default directories used by the application."""
+    from zabbix_cli.commands.results.cli import DirectoriesResult
+
+    result = DirectoriesResult.from_directory_types(list(DirectoryType))
+    render_result(result)
+
+
+@app.command("show_history", rich_help_panel=HELP_PANEL)
+def show_history(
+    ctx: typer.Context,
+    limit: int = OPTION_LIMIT,
+    # TODO: Add --session option to limit to current session
+    # In order to add that, we need to store the history len at the start of the session
+) -> None:
+    """Show the command history."""
+    # Load the entire history, then limit afterwards
+    from zabbix_cli.commands.results.cli import HistoryResult
+
+    history = list(app.state.history.get_strings())
+    history = history[-limit:]
+    render_result(HistoryResult(commands=history))
+
+
 @app.command("update_config", rich_help_panel=HELP_PANEL)
 def update_config(
     ctx: typer.Context,
@@ -310,17 +329,16 @@ def update_config(
         None, "--config-file", "-c", help="Location of the config file to update."
     ),
     secrets: SecretMode = typer.Option(
-        SecretMode.PLAIN, "--secrets", help="Secret dump mode"
+        SecretMode.PLAIN, "--secrets", help="Visibility mode for secrets."
     ),
     force: bool = typer.Option(False, "--force", help="Skip confirmation prompt."),
 ) -> None:
-    from zabbix_cli.output.prompts import bool_prompt
-
-    """Update the TOML config file with the currently active settings.
+    """Write the current configuration to the config file.
 
     Useful if you authenticate with a new user or change the URL,
     and want to save the changes to the config file. Furthermore,
     this helps to migrate an outdated config file to the newest version."""
+    from zabbix_cli.output.prompts import bool_prompt
 
     config_file = config_file or app.state.config.config_path
     if not config_file:
@@ -348,17 +366,3 @@ def update_application(ctx: typer.Context) -> None:
         success(f"Application updated from {__version__} to {info.version}")
     else:
         success("Application updated.")
-
-
-@app.command("help", rich_help_panel=HELP_PANEL)
-def help(
-    ctx: typer.Context, command: Command = typer.Argument(..., help="Command name")
-) -> None:
-    """Show help for a commmand"""
-    from zabbix_cli.output.console import console
-
-    # HACK: Set the info name to the resolved command name, otherwise
-    # when we call get_help, it will use the name of the help command
-    # instead of the resolved command name. Maybe we can use make_context for this?
-    ctx.info_name = command.name
-    console.print(command.get_help(ctx))

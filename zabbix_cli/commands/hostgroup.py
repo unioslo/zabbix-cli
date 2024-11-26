@@ -8,7 +8,6 @@ import typer
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
 from zabbix_cli.commands.common.args import OPTION_LIMIT
-from zabbix_cli.commands.host import HELP_PANEL
 from zabbix_cli.output.console import error
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import info
@@ -17,8 +16,10 @@ from zabbix_cli.output.formatting.grammar import pluralize as p
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import UsergroupPermission
 from zabbix_cli.utils.args import parse_hostgroups_arg
-from zabbix_cli.utils.args import parse_hostnames_arg
+from zabbix_cli.utils.args import parse_hosts_arg
 from zabbix_cli.utils.args import parse_list_arg
+
+HELP_PANEL = "Host Group"
 
 
 @app.command(
@@ -66,7 +67,7 @@ def add_host_to_hostgroup(
     from zabbix_cli.commands.results.hostgroup import AddHostsToHostGroup
     from zabbix_cli.models import AggregateResult
 
-    hosts = parse_hostnames_arg(app, hostnames_or_ids)
+    hosts = parse_hosts_arg(app, hostnames_or_ids)
     hgs = parse_hostgroups_arg(app, hostgroups, select_hosts=True)
     if not dryrun:
         with app.status("Adding hosts to host groups..."):
@@ -91,71 +92,6 @@ def add_host_to_hostgroup(
         info(f"Would add {base_msg}.")
     else:
         success(f"Added {base_msg}.")
-
-
-@app.command(
-    "remove_host_from_hostgroup",
-    rich_help_panel=HELP_PANEL,
-    examples=[
-        Example(
-            "Remove a host to a host group",
-            "remove_host_from_hostgroup 'My host' 'My host group'",
-        ),
-        Example(
-            "Remove multiple hosts from a host group",
-            "remove_host_from_hostgroup 'host1,host2' 'My host group'",
-        ),
-        Example(
-            "Remove multiple hosts from multiple host groups",
-            "remove_host_from_hostgroup 'host1,host2' 'My host group,Another group'",
-        ),
-    ],
-)
-def remove_host_from_hostgroup(
-    hostnames_or_ids: str = typer.Argument(
-        help="Host names or IDs. Comma-separated. Supports wildcards.",
-        metavar="HOSTS",
-        show_default=False,
-    ),
-    hostgroups: str = typer.Argument(
-        help="Host group names or IDs. Comma-separated. Supports wildcards.",
-        metavar="HOSTGROUPS",
-        show_default=False,
-    ),
-    dryrun: bool = typer.Option(
-        False,
-        "--dryrun",
-        help="Preview changes",
-    ),
-) -> None:
-    """Remove hosts from host groups."""
-    import itertools
-
-    from zabbix_cli.commands.results.hostgroup import RemoveHostsFromHostGroup
-    from zabbix_cli.models import AggregateResult
-
-    hosts = parse_hostnames_arg(app, hostnames_or_ids)
-    hgs = parse_hostgroups_arg(app, hostgroups, select_hosts=True)
-    if not dryrun:
-        with app.status("Removing hosts from host groups..."):
-            app.state.client.remove_hosts_from_hostgroups(hosts, hgs)
-
-    result: List[RemoveHostsFromHostGroup] = []
-    for hg in hgs:
-        r = RemoveHostsFromHostGroup.from_result(hosts, hg)
-        if not r.hosts:
-            continue
-        result.append(r)
-
-    total_hosts = len(set(itertools.chain.from_iterable((r.hosts) for r in result)))
-    total_hgs = len(result)
-
-    render_result(AggregateResult(result=result))
-    base_msg = f"{p('host', total_hosts)} from {p('host group', total_hgs)}"
-    if dryrun:
-        info(f"Would remove {base_msg}.")
-    else:
-        success(f"Removed {base_msg}.")
 
 
 @app.command(
@@ -242,43 +178,6 @@ def create_hostgroup(
         exit_err(f"Failed to create host group {hostgroup!r}.")
 
     render_result(Result(message=f"Created host group {hostgroup} ({hostgroup_id})."))
-
-
-@app.command("remove_hostgroup", rich_help_panel=HELP_PANEL)
-def delete_hostgroup(
-    hostgroup: str = typer.Argument(
-        help="Name of host group(s) to delete. Comma-separated.",
-        show_default=False,
-    ),
-    force: bool = typer.Option(
-        False,
-        "--force",
-        help="Remove host group even if it contains hosts.",
-    ),
-) -> None:
-    """Delete a host group."""
-    from zabbix_cli.commands.results.hostgroup import HostGroupDeleteResult
-    from zabbix_cli.models import Result
-
-    hostgroup_names = parse_list_arg(hostgroup)
-
-    hostgroups = [
-        app.state.client.get_hostgroup(hg, select_hosts=True) for hg in hostgroup_names
-    ]
-
-    for hg in hostgroups:
-        if hg.hosts and not force:
-            exit_err(
-                f"Host group {hg.name!r} contains {p('host', len(hg.hosts))}. Use --force to delete."
-            )
-        app.state.client.delete_hostgroup(hg.groupid)
-
-    render_result(
-        Result(
-            message=f"Host group {hostgroup!r} deleted.",
-            result=HostGroupDeleteResult(groups=hostgroup_names),
-        ),
-    )
 
 
 @app.command("extend_hostgroup", rich_help_panel=HELP_PANEL)
@@ -374,6 +273,108 @@ def move_hosts(
         success(f"Moved {len(src.hosts)} hosts from {src.name!r} to {dest.name!r}.")
 
     render_result(MoveHostsResult.from_result(src, dest))
+
+
+@app.command(
+    "remove_host_from_hostgroup",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Remove a host to a host group",
+            "remove_host_from_hostgroup 'My host' 'My host group'",
+        ),
+        Example(
+            "Remove multiple hosts from a host group",
+            "remove_host_from_hostgroup 'host1,host2' 'My host group'",
+        ),
+        Example(
+            "Remove multiple hosts from multiple host groups",
+            "remove_host_from_hostgroup 'host1,host2' 'My host group,Another group'",
+        ),
+    ],
+)
+def remove_host_from_hostgroup(
+    hostnames_or_ids: str = typer.Argument(
+        help="Host names or IDs. Comma-separated. Supports wildcards.",
+        metavar="HOSTS",
+        show_default=False,
+    ),
+    hostgroups: str = typer.Argument(
+        help="Host group names or IDs. Comma-separated. Supports wildcards.",
+        metavar="HOSTGROUPS",
+        show_default=False,
+    ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Preview changes",
+    ),
+) -> None:
+    """Remove hosts from host groups."""
+    import itertools
+
+    from zabbix_cli.commands.results.hostgroup import RemoveHostsFromHostGroup
+    from zabbix_cli.models import AggregateResult
+
+    hosts = parse_hosts_arg(app, hostnames_or_ids)
+    hgs = parse_hostgroups_arg(app, hostgroups, select_hosts=True)
+    if not dryrun:
+        with app.status("Removing hosts from host groups..."):
+            app.state.client.remove_hosts_from_hostgroups(hosts, hgs)
+
+    result: List[RemoveHostsFromHostGroup] = []
+    for hg in hgs:
+        r = RemoveHostsFromHostGroup.from_result(hosts, hg)
+        if not r.hosts:
+            continue
+        result.append(r)
+
+    total_hosts = len(set(itertools.chain.from_iterable((r.hosts) for r in result)))
+    total_hgs = len(result)
+
+    render_result(AggregateResult(result=result))
+    base_msg = f"{p('host', total_hosts)} from {p('host group', total_hgs)}"
+    if dryrun:
+        info(f"Would remove {base_msg}.")
+    else:
+        success(f"Removed {base_msg}.")
+
+
+@app.command("remove_hostgroup", rich_help_panel=HELP_PANEL)
+def delete_hostgroup(
+    hostgroup: str = typer.Argument(
+        help="Name of host group(s) to delete. Comma-separated.",
+        show_default=False,
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Remove host group even if it contains hosts.",
+    ),
+) -> None:
+    """Delete a host group."""
+    from zabbix_cli.commands.results.hostgroup import HostGroupDeleteResult
+    from zabbix_cli.models import Result
+
+    hostgroup_names = parse_list_arg(hostgroup)
+
+    hostgroups = [
+        app.state.client.get_hostgroup(hg, select_hosts=True) for hg in hostgroup_names
+    ]
+
+    for hg in hostgroups:
+        if hg.hosts and not force:
+            exit_err(
+                f"Host group {hg.name!r} contains {p('host', len(hg.hosts))}. Use --force to delete."
+            )
+        app.state.client.delete_hostgroup(hg.groupid)
+
+    render_result(
+        Result(
+            message=f"Host group {hostgroup!r} deleted.",
+            result=HostGroupDeleteResult(groups=hostgroup_names),
+        ),
+    )
 
 
 @app.command("show_hostgroup", rich_help_panel=HELP_PANEL)

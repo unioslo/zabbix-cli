@@ -1,3 +1,7 @@
+"""Utilities for parsing and validating command-line arguments."""
+
+# NOTE: Should be moved to `commands.common` and merged with the existing `commands.common.args` module.
+
 from __future__ import annotations
 
 import logging
@@ -17,6 +21,8 @@ if TYPE_CHECKING:
     from zabbix_cli.app import StatefulApp
     from zabbix_cli.pyzabbix.types import Host
     from zabbix_cli.pyzabbix.types import HostGroup
+    from zabbix_cli.pyzabbix.types import Template
+    from zabbix_cli.pyzabbix.types import TemplateGroup
 
 
 def is_set(ctx: typer.Context, option: str) -> bool:
@@ -77,6 +83,7 @@ def parse_hostgroups_arg(
     hgroup_names_or_ids: Optional[str],
     strict: bool = False,
     select_hosts: bool = False,
+    select_templates: bool = False,
 ) -> List[HostGroup]:
     from zabbix_cli.output.console import exit_err
     from zabbix_cli.output.prompts import str_prompt
@@ -89,7 +96,10 @@ def parse_hostgroups_arg(
         exit_err("At least one host group name/ID is required.")
 
     hostgroups = app.state.client.get_hostgroups(
-        *hg_args, search=True, select_hosts=select_hosts
+        *hg_args,
+        search=True,
+        select_hosts=select_hosts,
+        select_templates=select_templates,
     )
     if not hostgroups:
         exit_err(f"No host groups found matching {hgroup_names_or_ids}")
@@ -98,7 +108,7 @@ def parse_hostgroups_arg(
     return hostgroups
 
 
-def parse_hostnames_arg(
+def parse_hosts_arg(
     app: StatefulApp,
     hostnames_or_ids: Optional[str],
     strict: bool = False,
@@ -109,7 +119,7 @@ def parse_hostnames_arg(
     if not hostnames_or_ids:
         hostnames_or_ids = str_prompt("Host(s)")
 
-    host_args = [h.strip() for h in hostnames_or_ids.split(",")]
+    host_args = parse_list_arg(hostnames_or_ids)
     if not host_args:
         exit_err("At least one host name/ID is required.")
 
@@ -119,6 +129,51 @@ def parse_hostnames_arg(
     if strict and len(hosts) != len(host_args):
         exit_err(f"Found {len(hosts)} hosts, expected {len(host_args)}")
     return hosts
+
+
+def parse_templates_arg(
+    app: StatefulApp,
+    template_names_or_ids: Optional[str],
+    strict: bool = False,
+    select_hosts: bool = False,
+) -> List[Template]:
+    from zabbix_cli.output.console import exit_err
+
+    template_args = parse_list_arg(template_names_or_ids)
+    if not template_args:
+        exit_err("At least one template name/ID is required.")
+
+    templates = app.state.client.get_templates(
+        *template_args, select_hosts=select_hosts
+    )
+    if not templates:
+        exit_err(f"No templates found matching {template_names_or_ids}")
+    if strict and len(templates) != len(template_args):
+        exit_err(f"Found {len(templates)} templates, expected {len(template_args)}")
+
+    return templates
+
+
+def parse_templategroups_arg(
+    app: StatefulApp,
+    tgroup_names_or_ids: str,
+    strict: bool = False,
+    select_templates: bool = False,
+) -> List[TemplateGroup]:
+    tg_args = parse_list_arg(tgroup_names_or_ids)
+    if not tg_args:
+        exit_err("At least one template group name/ID is required.")
+
+    templategroups = app.state.client.get_templategroups(
+        *tg_args, search=True, select_templates=select_templates
+    )
+    if not templategroups:
+        exit_err(f"No template groups found matching {tgroup_names_or_ids}")
+    if strict and len(templategroups) != len(tg_args):
+        exit_err(
+            f"Found {len(templategroups)} template groups, expected {len(templategroups)}"
+        )
+    return templategroups
 
 
 TRUE_CHOICES = ["true", "yes", "1", "on"]
