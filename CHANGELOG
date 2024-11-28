@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-## [Unreleased]
+<!-- ## [Unreleased] -->
+
+## [3.4.0](https://github.com/unioslo/zabbix-cli/releases/tag/3.4.0) - 2024-11-28
 
 ### Added
 
@@ -35,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - V2-style `-C` command invocation shim. Now correctly passes arguments to the new CLI.
+- Internal Typer import error after `typer==0.13.0`.
 
 ## [3.3.0](https://github.com/unioslo/zabbix-cli/releases/tag/3.3.0) - 2024-11-06
 
