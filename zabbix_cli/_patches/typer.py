@@ -41,8 +41,7 @@ def patch_help_text_style() -> None:
 
     https://github.com/tiangolo/typer/issues/437#issuecomment-1224149402
     """
-    with patcher("typer.rich_utils.STYLE_HELPTEXT"):
-        typer.rich_utils.STYLE_HELPTEXT = ""
+    typer.rich_utils.STYLE_HELPTEXT = ""
 
 
 def patch_help_text_spacing() -> None:
@@ -112,6 +111,7 @@ def patch_help_text_spacing() -> None:
             else:
                 # Join with double linebreaks if markdown
                 remaining_lines = "\n\n".join(remaining_paragraphs)
+            # PATCH: add single newline between first and remaining lines
             yield _make_rich_text(
                 text="\n",
                 style=STYLE_HELPTEXT,
@@ -123,8 +123,7 @@ def patch_help_text_spacing() -> None:
                 markup_mode=markup_mode,
             )
 
-    with patcher("typer.rich_utils._get_help_text"):
-        typer.rich_utils._get_help_text = _get_help_text
+    typer.rich_utils._get_help_text = _get_help_text
 
 
 def patch_generate_enum_convertor() -> None:
@@ -149,8 +148,7 @@ def patch_generate_enum_convertor() -> None:
 
         return convertor
 
-    with patcher("typer.main.generate_enum_convertor"):
-        typer.main.generate_enum_convertor = generate_enum_convertor
+    typer.main.generate_enum_convertor = generate_enum_convertor
 
 
 def patch_get_click_type() -> None:
@@ -265,13 +263,12 @@ def patch_get_click_type() -> None:
 
         raise RuntimeError(f"Type not yet supported: {annotation}")  # pragma no cover
 
-    """Patch typer's get_click_type to support more types."""
-    with patcher("typer.main.get_click_type"):
-        typer.main.get_click_type = get_click_type
+    typer.main.get_click_type = get_click_type
 
 
 def patch__get_rich_console() -> None:
     from rich.console import Console
+    from rich.theme import Theme
     from typer.rich_utils import COLOR_SYSTEM
     from typer.rich_utils import FORCE_TERMINAL
     from typer.rich_utils import MAX_WIDTH
@@ -286,8 +283,8 @@ def patch__get_rich_console() -> None:
 
     from zabbix_cli.output.style import RICH_THEME
 
-    theme: Dict[str, Union[str, Style]] = RICH_THEME.styles.copy()  # type: ignore[assignment]
-    theme.update(
+    styles: Dict[str, Union[str, Style]] = RICH_THEME.styles.copy()
+    styles.update(
         {
             "option": STYLE_OPTION,
             "switch": STYLE_SWITCH,
@@ -298,10 +295,11 @@ def patch__get_rich_console() -> None:
             "usage": STYLE_USAGE,
         },
     )
+    TYPER_THEME = Theme(styles)
 
     def _get_rich_console(stderr: bool = False) -> Console:
         return Console(
-            theme=RICH_THEME,
+            theme=TYPER_THEME,
             highlighter=highlighter,
             color_system=COLOR_SYSTEM,
             force_terminal=FORCE_TERMINAL,
@@ -314,8 +312,13 @@ def patch__get_rich_console() -> None:
 
 def patch() -> None:
     """Apply all patches."""
-    patch_help_text_style()
-    patch_help_text_spacing()
-    patch_generate_enum_convertor()
-    patch_get_click_type()
-    patch__get_rich_console()
+    with patcher("typer.rich_utils.STYLE_HELPTEXT"):
+        patch_help_text_style()
+    with patcher("typer.rich_utils._get_help_text"):
+        patch_help_text_spacing()
+    with patcher("typer.main.generate_enum_convertor"):
+        patch_generate_enum_convertor()
+    with patcher("typer.main.get_click_type"):
+        patch_get_click_type()
+    with patcher("typer.rich_utils._get_rich_console"):
+        patch__get_rich_console()
