@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
+from typing import Generator
 from typing import Iterator
 
 import pytest
@@ -99,3 +101,23 @@ def zabbix_client() -> Iterator[ZabbixAPI]:
     config = Config.sample_config()
     client = ZabbixAPI.from_config(config)
     yield client
+
+
+@pytest.fixture(name="force_color")
+def force_color() -> Generator[Any, Any, Any]:
+    import os
+
+    os.environ["FORCE_COLOR"] = "1"
+    yield
+    os.environ.pop("FORCE_COLOR", None)
+
+
+@pytest.fixture(name="no_color")
+def no_color() -> Generator[Any, Any, Any]:
+    """Disable color in a test. Takes precedence over force_color."""
+    import os
+
+    os.environ.pop("FORCE_COLOR", None)
+    os.environ["NO_COLOR"] = "1"
+    yield
+    os.environ.pop("NO_COLOR", None)
