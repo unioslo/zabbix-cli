@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from typing import Any
 
 import pytest
 import typer
@@ -32,7 +33,9 @@ def test_typer_patches_idempotent() -> None:
     typ.patch_help_text_style()
 
 
-def test_patch__get_rich_console(capsys: pytest.CaptureFixture) -> None:
+def test_patch__get_rich_console(
+    capsys: pytest.CaptureFixture, force_color: Any
+) -> None:
     original = copy.deepcopy(typer.rich_utils._get_rich_console)
     typ.patch__get_rich_console()
     new = typer.rich_utils._get_rich_console
@@ -70,7 +73,9 @@ def test_patch__get_rich_console(capsys: pytest.CaptureFixture) -> None:
     # Flush capture buffer
     capsys.readouterr()
     new_val.print(to_render)
-    assert capsys.readouterr().out == snapshot("foo bar\n")
+    assert capsys.readouterr().out == snapshot(
+        "\x1b[1;36mfoo\x1b[0m \x1b[1;33mbar\x1b[0m\n"
+    )
 
 
 def test_patch_generate_enum_convertor() -> None:
