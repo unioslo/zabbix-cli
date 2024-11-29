@@ -37,6 +37,8 @@ from zabbix_cli.__about__ import __version__
 from zabbix_cli.cache import ZabbixCache
 from zabbix_cli.exceptions import ZabbixAPICallError
 from zabbix_cli.exceptions import ZabbixAPIException
+from zabbix_cli.exceptions import ZabbixAPILoginError
+from zabbix_cli.exceptions import ZabbixAPILogoutError
 from zabbix_cli.exceptions import ZabbixAPINotAuthorizedError
 from zabbix_cli.exceptions import ZabbixAPIRequestError
 from zabbix_cli.exceptions import ZabbixAPIResponseParsingError
@@ -334,12 +336,10 @@ class ZabbixAPI:
             try:
                 auth = self.user.login(**params)
             except ZabbixAPIRequestError as e:
-                raise ZabbixAPIRequestError(
-                    f"Failed to log in to Zabbix API: {e.reason()}"
-                ) from e
+                raise ZabbixAPILoginError("Failed to log in to Zabbix") from e
             except Exception as e:
-                raise ZabbixAPIRequestError(
-                    f"Failed to log in to Zabbix API: {e}"
+                raise ZabbixAPILoginError(
+                    "Unknown error when trying to log in to Zabbix"
                 ) from e
             else:
                 self.auth = str(auth) if auth else ""
@@ -370,7 +370,7 @@ class ZabbixAPI:
                 "Attempted to log out of Zabbix API with expired token: %s", self.auth
             )
         except ZabbixAPIRequestError as e:
-            raise ZabbixAPICallError("Failed to log out of Zabbix API: %s", e) from e
+            raise ZabbixAPILogoutError("Failed to log out of Zabbix") from e
         self.auth = ""
 
     def confimport(self, format: ExportFormat, source: str, rules: ImportRules) -> Any:

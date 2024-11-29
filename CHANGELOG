@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `login` command is now hidden. It is fundamentally flawed and will likely be removed in a future release.
+  - Restart the application to log in with a different method instead.
+
 ### Fixed
 
 - Ordering of User commands in the help output.

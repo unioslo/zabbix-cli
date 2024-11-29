@@ -245,7 +245,13 @@ class State:
             or self.client.use_api_token
         ):
             return
-        self.logout()
+        try:
+            self.logout()
+        except Exception as e:
+            from zabbix_cli.exceptions import handle_exception
+
+            # Outside of main loop, handle the exception
+            handle_exception(e)
 
 
 def get_state() -> State:
