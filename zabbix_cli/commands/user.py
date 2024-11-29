@@ -136,217 +136,6 @@ def create_user(
 
 
 @app.command(
-    "update_user",
-    rich_help_panel=HELP_PANEL,
-    examples=[
-        Example(
-            "Assign new first and last name",
-            "update_user jdoe --firstname John --lastname Doe",
-        ),
-        Example(
-            "Promote user to admin",
-            "update_user jdoe --role Admin",
-        ),
-        Example(
-            "Update user's password, prompt for passwords",
-            "update_user jdoe --passwd - --old-passwd -",
-        ),
-        Example(
-            "Update user's password, generate random new password",
-            "update_user jdoe --passwd ? --old-passwd -",
-        ),
-        Example(
-            "Disable autologin for user",
-            "update_user jdoe --no-autologin",
-        ),
-    ],
-)
-def update_user(
-    ctx: typer.Context,
-    username: str = typer.Argument(
-        help="Username of the user to update",
-        show_default=False,
-    ),
-    first_name: Optional[str] = typer.Option(
-        None, "--firstname", help="New first name."
-    ),
-    last_name: Optional[str] = typer.Option(None, "--lastname", help="New last name."),
-    new_password: Optional[str] = typer.Option(
-        None,
-        "--passwd",
-        "--new-passwd",
-        help="New password for user. Set to '-' to prompt for password, '?' to generate a random password.",
-    ),
-    old_password: Optional[str] = typer.Option(
-        None,
-        "--old-passwd",
-        help="Existing password, required if --passwd is used. Set to '-' to prompt for password.",
-    ),
-    role: Optional[UserRole] = typer.Option(
-        None,
-        "--role",
-        help="User role.",
-        case_sensitive=False,
-    ),
-    autologin: Optional[bool] = typer.Option(
-        None,
-        "--autologin/--no-autologin",
-        help="Enable/disable auto-login",
-        show_default=False,
-    ),
-    autologout: Optional[str] = typer.Option(
-        None,
-        help="User session lifetime in seconds. Set to 0 to never expire. Can be a time unit with suffix (0s, 15m, 1h, 1d, etc.)",
-    ),
-    # Legacy V2 positional args
-    args: Optional[List[str]] = ARGS_POSITIONAL,
-) -> None:
-    """Update a user.
-
-    Use [command]add_user_to_usergroup[/command] and [command]remove_user_from_usergroup[/command] to manage user groups.
-    """
-    from zabbix_cli.models import Result
-
-    check_at_least_one_option_set(ctx)
-
-    user = app.state.client.get_user(username)
-
-    if new_password == "-":
-        new_password = str_prompt("New password", password=True)
-    elif new_password == "?":
-        new_password = get_random_password()
-
-    if new_password:
-        if not old_password:
-            exit_err("Old password is required when changing password.")
-        if old_password == "-":
-            old_password = str_prompt("Old password", password=True)
-
-    app.state.client.update_user(
-        user,
-        current_password=old_password,
-        new_password=new_password,
-        first_name=first_name,
-        last_name=last_name,
-        role=role,
-        autologin=autologin,
-        autologout=autologout,
-    )
-    render_result(
-        Result(
-            message=f"Updated user {user.name!r} ({user.userid}).",
-            result=user,
-        ),
-    )
-
-
-@app.command("remove_user", rich_help_panel=HELP_PANEL)
-def remove_user(
-    ctx: typer.Context,
-    username: str = typer.Argument(
-        help="Username to remove.",
-        show_default=False,
-    ),
-) -> None:
-    """Remove a user."""
-    from zabbix_cli.models import Result
-
-    user = app.state.client.get_user(username)
-    app.state.client.delete_user(user)
-    render_result(
-        Result(
-            message=f"Deleted user {user.name!r} ({user.userid}).",
-            result=user,
-        ),
-    )
-
-
-@app.command("show_user", rich_help_panel=HELP_PANEL)
-def show_user(
-    ctx: typer.Context,
-    username: str = typer.Argument(
-        help="Username of user",
-        show_default=False,
-    ),
-) -> None:
-    """Show a user."""
-    user = app.state.client.get_user(username)
-    render_result(user)
-
-
-class UserSorting(StrEnum):
-    NAME = "name"
-    ID = "id"
-    ROLE = "role"
-
-
-@app.command("show_users", rich_help_panel=HELP_PANEL)
-def show_users(
-    ctx: typer.Context,
-    username_or_id: Optional[str] = typer.Argument(
-        None,
-        help="Filter by username or ID. Supports wildcards.",
-        show_default=False,
-    ),
-    role: Optional[UserRole] = typer.Option(
-        None,
-        "--role",
-        help="Filter by role.",
-        case_sensitive=False,
-    ),
-    limit: Optional[int] = typer.Option(
-        None, "--limit", help="Limit the number of users shown."
-    ),
-    sort: Optional[UserSorting] = typer.Option(
-        UserSorting.NAME,
-        "--sort",
-        help="Sort by field.",
-    ),
-) -> None:
-    """Show all users.
-
-    Users can be filtered by name, ID, or role."""
-    from zabbix_cli.models import AggregateResult
-    from zabbix_cli.pyzabbix.compat import user_name
-
-    us = parse_list_arg(username_or_id)
-
-    # TODO: move this to the client somehow
-    #       This is also clumsy, because we want users to pass in
-    #       "name", "id", or "role" as arguments to the command,
-    #       but the API expects "userid", "name", or "roleid"
-    sorting = None
-    if sort:
-        if sort == UserSorting.ROLE:
-            sorting = "roleid"
-        elif sort == UserSorting.ID:
-            sorting = "userid"
-        else:
-            sorting = user_name(app.state.client.version)
-
-    with app.status("Fetching users..."):
-        users = app.state.client.get_users(
-            *us, role=role, limit=limit, sort_field=sorting, sort_order="ASC"
-        )
-    render_result(AggregateResult(result=users))
-
-
-def get_notification_user_username(
-    username: Optional[str], sendto: str, remarks: str
-) -> str:
-    """Generate a username for a notification user."""
-    username = username.strip().replace(" ", "_") if username else ""
-    remarks = remarks.strip()[:20].replace(" ", "_")
-    sendto = sendto.strip().replace(".", "-")
-    if username:
-        return username
-    username = "notification-user"
-    if remarks:
-        username += f"-{remarks}"
-    return f"{username}-{sendto}"
-
-
-@app.command(
     "create_notification_user",
     rich_help_panel=HELP_PANEL,
     examples=[
@@ -470,5 +259,216 @@ def create_notification_user(
         Result(
             message=f"Created notification user {username!r} ({userid}).",
             result=User(userid=userid, username=username),
+        ),
+    )
+
+
+@app.command("remove_user", rich_help_panel=HELP_PANEL)
+def remove_user(
+    ctx: typer.Context,
+    username: str = typer.Argument(
+        help="Username to remove.",
+        show_default=False,
+    ),
+) -> None:
+    """Remove a user."""
+    from zabbix_cli.models import Result
+
+    user = app.state.client.get_user(username)
+    app.state.client.delete_user(user)
+    render_result(
+        Result(
+            message=f"Deleted user {user.name!r} ({user.userid}).",
+            result=user,
+        ),
+    )
+
+
+@app.command("show_user", rich_help_panel=HELP_PANEL)
+def show_user(
+    ctx: typer.Context,
+    username: str = typer.Argument(
+        help="Username of user",
+        show_default=False,
+    ),
+) -> None:
+    """Show a user."""
+    user = app.state.client.get_user(username)
+    render_result(user)
+
+
+class UserSorting(StrEnum):
+    NAME = "name"
+    ID = "id"
+    ROLE = "role"
+
+
+@app.command("show_users", rich_help_panel=HELP_PANEL)
+def show_users(
+    ctx: typer.Context,
+    username_or_id: Optional[str] = typer.Argument(
+        None,
+        help="Filter by username or ID. Supports wildcards.",
+        show_default=False,
+    ),
+    role: Optional[UserRole] = typer.Option(
+        None,
+        "--role",
+        help="Filter by role.",
+        case_sensitive=False,
+    ),
+    limit: Optional[int] = typer.Option(
+        None, "--limit", help="Limit the number of users shown."
+    ),
+    sort: Optional[UserSorting] = typer.Option(
+        UserSorting.NAME,
+        "--sort",
+        help="Sort by field.",
+    ),
+) -> None:
+    """Show all users.
+
+    Users can be filtered by name, ID, or role."""
+    from zabbix_cli.models import AggregateResult
+    from zabbix_cli.pyzabbix.compat import user_name
+
+    us = parse_list_arg(username_or_id)
+
+    # TODO: move this to the client somehow
+    #       This is also clumsy, because we want users to pass in
+    #       "name", "id", or "role" as arguments to the command,
+    #       but the API expects "userid", "name", or "roleid"
+    sorting = None
+    if sort:
+        if sort == UserSorting.ROLE:
+            sorting = "roleid"
+        elif sort == UserSorting.ID:
+            sorting = "userid"
+        else:
+            sorting = user_name(app.state.client.version)
+
+    with app.status("Fetching users..."):
+        users = app.state.client.get_users(
+            *us, role=role, limit=limit, sort_field=sorting, sort_order="ASC"
+        )
+    render_result(AggregateResult(result=users))
+
+
+def get_notification_user_username(
+    username: Optional[str], sendto: str, remarks: str
+) -> str:
+    """Generate a username for a notification user."""
+    username = username.strip().replace(" ", "_") if username else ""
+    remarks = remarks.strip()[:20].replace(" ", "_")
+    sendto = sendto.strip().replace(".", "-")
+    if username:
+        return username
+    username = "notification-user"
+    if remarks:
+        username += f"-{remarks}"
+    return f"{username}-{sendto}"
+
+
+@app.command(
+    "update_user",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Assign new first and last name",
+            "update_user jdoe --firstname John --lastname Doe",
+        ),
+        Example(
+            "Promote user to admin",
+            "update_user jdoe --role Admin",
+        ),
+        Example(
+            "Update user's password, prompt for passwords",
+            "update_user jdoe --passwd - --old-passwd -",
+        ),
+        Example(
+            "Update user's password, generate random new password",
+            "update_user jdoe --passwd ? --old-passwd -",
+        ),
+        Example(
+            "Disable autologin for user",
+            "update_user jdoe --no-autologin",
+        ),
+    ],
+)
+def update_user(
+    ctx: typer.Context,
+    username: str = typer.Argument(
+        help="Username of the user to update",
+        show_default=False,
+    ),
+    first_name: Optional[str] = typer.Option(
+        None, "--firstname", help="New first name."
+    ),
+    last_name: Optional[str] = typer.Option(None, "--lastname", help="New last name."),
+    new_password: Optional[str] = typer.Option(
+        None,
+        "--passwd",
+        "--new-passwd",
+        help="New password for user. Set to '-' to prompt for password, '?' to generate a random password.",
+    ),
+    old_password: Optional[str] = typer.Option(
+        None,
+        "--old-passwd",
+        help="Existing password, required if --passwd is used. Set to '-' to prompt for password.",
+    ),
+    role: Optional[UserRole] = typer.Option(
+        None,
+        "--role",
+        help="User role.",
+        case_sensitive=False,
+    ),
+    autologin: Optional[bool] = typer.Option(
+        None,
+        "--autologin/--no-autologin",
+        help="Enable/disable auto-login",
+        show_default=False,
+    ),
+    autologout: Optional[str] = typer.Option(
+        None,
+        help="User session lifetime in seconds. Set to 0 to never expire. Can be a time unit with suffix (0s, 15m, 1h, 1d, etc.)",
+    ),
+    # Legacy V2 positional args
+    args: Optional[List[str]] = ARGS_POSITIONAL,
+) -> None:
+    """Update a user.
+
+    Use [command]add_user_to_usergroup[/command] and [command]remove_user_from_usergroup[/command] to manage user groups.
+    """
+    from zabbix_cli.models import Result
+
+    check_at_least_one_option_set(ctx)
+
+    user = app.state.client.get_user(username)
+
+    if new_password == "-":
+        new_password = str_prompt("New password", password=True)
+    elif new_password == "?":
+        new_password = get_random_password()
+
+    if new_password:
+        if not old_password:
+            exit_err("Old password is required when changing password.")
+        if old_password == "-":
+            old_password = str_prompt("Old password", password=True)
+
+    app.state.client.update_user(
+        user,
+        current_password=old_password,
+        new_password=new_password,
+        first_name=first_name,
+        last_name=last_name,
+        role=role,
+        autologin=autologin,
+        autologout=autologout,
+    )
+    render_result(
+        Result(
+            message=f"Updated user {user.name!r} ({user.userid}).",
+            result=user,
         ),
     )
