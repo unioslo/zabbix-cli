@@ -87,12 +87,12 @@ class PluginLoader:
 
         # HACK: Cast Tuple[Any, ...] result to concrete type.
         # In order to pass type checking on all Python versions,
-        # we need to pretend that we are developing on 3.8 and
+        # we need to pretend that we are developing on 3.9 and
         # using the backport. The problem is that the backport
         # does not define a generic tuple type for the result,
         # and instead just subclasses tuple. So we need to cast
         # the result to the correct type.
-        # This is one of the drawbacks of running in 3.8 mode, but
+        # This is one of the drawbacks of running in 3.9 mode, but
         # it's necessary to ensure we don't introduce features that
         # do not exist in our minimum supported version.
         discovered_plugins = cast(Tuple[EntryPoint], discovered_plugins)
