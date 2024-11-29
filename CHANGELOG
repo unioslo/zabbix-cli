@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## [Unreleased] -->
+## [Unreleased]
+
+### Fixed
+
+- Ordering of User commands in the help output.
 
 ## [3.4.0](https://github.com/unioslo/zabbix-cli/releases/tag/3.4.0) - 2024-11-28
 
