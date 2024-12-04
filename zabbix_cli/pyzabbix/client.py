@@ -42,6 +42,7 @@ from zabbix_cli.exceptions import ZabbixAPILogoutError
 from zabbix_cli.exceptions import ZabbixAPINotAuthorizedError
 from zabbix_cli.exceptions import ZabbixAPIRequestError
 from zabbix_cli.exceptions import ZabbixAPIResponseParsingError
+from zabbix_cli.exceptions import ZabbixAPISessionExpired
 from zabbix_cli.exceptions import ZabbixAPITokenExpiredError
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.pyzabbix import compat
@@ -455,28 +456,54 @@ class ZabbixAPI:
                 "Zabbix API returned invalid JSON", response=response
             ) from e
 
-        if resp.error is not None:
-            # some errors don't contain 'data': workaround for ZBX-9340
-            if not resp.error.data:
-                resp.error.data = "No data"
+        self._check_response_errors(resp, response, params)
 
-            # TODO: refactor this exc type narrowing to some sort of predicate/dict lookup
-            if "API token expired" in resp.error.data:
-                cls = ZabbixAPITokenExpiredError
-                logger.debug(
-                    "API token '%s' has expired.",
-                    f"{self.auth[:8]}...",  # Redact most of the token
-                )
-            elif "Not authorized" in resp.error.data:
-                cls = ZabbixAPINotAuthorizedError
-            else:
-                cls = ZabbixAPIRequestError
-            raise cls(
-                f"Error: {resp.error.message}: {resp.error.data}",
-                api_response=resp,
-                response=response,
-            )
         return resp
+
+    def _check_response_errors(
+        self,
+        resp: ZabbixAPIResponse,
+        response: httpx.Response,
+        params: ParamsType,
+    ) -> None:
+        # Nothing to handlde
+        if not resp.error:
+            return
+
+        # some errors don't contain 'data': workaround for ZBX-9340
+        if not resp.error.data:
+            resp.error.data = "No data"
+
+        msg = f"Error: {resp.error.message} {resp.error.data}"
+
+        to_replace = [
+            (self.auth, "<token>"),
+            (params.get("token", ""), "<token>"),
+            (params.get("password", ""), "<password>"),
+        ]
+        for replace in to_replace:
+            if replace[0]:
+                msg = msg.replace(str(replace), replace[1])
+
+        # TODO: refactor this exc type narrowing to some sort of predicate/dict lookup
+        msgc = msg.casefold()
+        if "api token expired" in msgc:
+            cls = ZabbixAPITokenExpiredError
+            logger.debug(
+                "API token '%s' has expired.",
+                f"{self.auth[:8]}...",  # Redact most of the token
+            )
+        elif "re-login" in msgc:
+            cls = ZabbixAPISessionExpired
+        elif "not authorized" in msgc:
+            cls = ZabbixAPINotAuthorizedError
+        else:
+            cls = ZabbixAPIRequestError
+        raise cls(
+            msg,
+            api_response=resp,
+            response=response,
+        )
 
     def populate_cache(self) -> None:
         """Populates the various caches with data from the Zabbix API."""
