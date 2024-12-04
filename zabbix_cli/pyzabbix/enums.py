@@ -112,7 +112,7 @@ class Choice(Enum):
     def from_prompt(
         cls: Type[MixinType],
         prompt: Optional[str] = None,
-        default: MixinType = ...,
+        default: Any = ...,
     ) -> MixinType:
         """Prompt the user to select a choice from the enum.
 
@@ -398,6 +398,16 @@ class MaintenanceWeekType(APIStrEnum):
     THIRD_WEEK = APIStr("third week", 3)
     FOURTH_WEEK = APIStr("fourth week", 4)
     LAST_WEEK = APIStr("last week", 5)
+
+
+class MediaTypeType(APIStrEnum):
+    """Type of media type."""
+
+    EMAIL = APIStr("email", 0)
+    SCRIPT = APIStr("script", 1)
+    SMS = APIStr("SMS", 2)
+    WEBHOOK = APIStr("webhook", 4)
+    # no 3 value in API
 
 
 class MonitoredBy(APIStrEnum):  # >=7.0 only

@@ -16,7 +16,6 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from datetime import timedelta
-from typing import TYPE_CHECKING
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -46,6 +45,8 @@ from typing_extensions import Literal
 from typing_extensions import TypeAliasType
 from typing_extensions import TypedDict
 
+from zabbix_cli.models import ColsRowsType
+from zabbix_cli.models import RowsType
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.output.style import Color
 from zabbix_cli.pyzabbix.enums import AckStatus
@@ -61,6 +62,7 @@ from zabbix_cli.pyzabbix.enums import MacroType
 from zabbix_cli.pyzabbix.enums import MaintenancePeriodType
 from zabbix_cli.pyzabbix.enums import MaintenanceStatus
 from zabbix_cli.pyzabbix.enums import MaintenanceWeekType
+from zabbix_cli.pyzabbix.enums import MediaTypeType
 from zabbix_cli.pyzabbix.enums import MonitoredBy
 from zabbix_cli.pyzabbix.enums import MonitoringStatus
 from zabbix_cli.pyzabbix.enums import ProxyCompatibility
@@ -76,11 +78,6 @@ from zabbix_cli.utils.utils import get_maintenance_active_days
 from zabbix_cli.utils.utils import get_maintenance_active_months
 from zabbix_cli.utils.utils import get_maintenance_status
 from zabbix_cli.utils.utils import get_monitoring_status
-
-if TYPE_CHECKING:
-    from zabbix_cli.models import ColsRowsType
-    from zabbix_cli.models import RowsType
-
 
 logger = logging.getLogger(__name__)
 
@@ -842,6 +839,23 @@ class MediaType(ZabbixAPIBaseModel):
     name: str
     type: int
     description: Optional[str] = None
+
+    @computed_field
+    @property
+    def type_str(self) -> str:
+        return MediaTypeType.string_from_value(self.type)
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = ["ID", "Name", "Type", "Description"]
+        rows: RowsType = [
+            [
+                self.mediatypeid,
+                self.name,
+                self.type_str,
+                self.description or "",
+            ]
+        ]
+        return cols, rows
 
 
 class UserMedia(ZabbixAPIBaseModel):
