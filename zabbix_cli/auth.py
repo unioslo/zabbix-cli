@@ -131,7 +131,9 @@ class Authenticator:
         client = ZabbixAPI.from_config(self.config)
         info = self._do_login(client)
         if info.credentials.username and self.config.app.use_auth_token_file:
-            write_auth_token_file(info.credentials.username, info.token)
+            write_auth_token_file(
+                info.credentials.username, info.token, self.config.app.auth_token_file
+            )
 
         if info.credentials.username:
             add_user(info.credentials.username)
@@ -436,8 +438,11 @@ def write_auth_token_file(
                 f"Unable to set secure permissions ({SECURE_PERMISSIONS_STR}) on {file} when saving auth token. "
                 "Change permissions manually or delete the file."
             ) from e
-    file.write_text(contents)
-    logger.info(f"Wrote auth token file {file}")
+    try:
+        file.write_text(contents)
+        logger.info(f"Wrote auth token file {file}")
+    except OSError as e:
+        raise AuthTokenFileError(f"Unable to write auth token file {file}: {e}") from e
     return file
 
 
