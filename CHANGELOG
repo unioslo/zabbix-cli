@@ -9,10 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+### Deprecated
 
-- `login` command is now hidden. It is fundamentally flawed and will likely be removed in a future release.
-  - Restart the application to log in with a different method instead.
+- `login` command. It is fundamentally flawed and is slated to be removed in a future version unless a valid use case is presented.
+  - Restart the application with a different configuration or launch options to change login methods instead.
 
 ### Fixed
 
