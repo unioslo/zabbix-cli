@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `create_notification_user`: Now adds users to the default user group in addition to the notification user group to match behavior in V2.
+
 ### Deprecated
 
 - `login` command. It is fundamentally flawed and is slated to be removed in a future version unless a valid use case is presented.
