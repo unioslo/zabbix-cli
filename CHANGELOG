@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `create_notification_user`: Now adds users to the default user group in addition to the notification user group to match behavior in V2.
+- `show_media_types`: Now shows the formatted string representation of the media type `type` field instead of an integer.
 
 ### Deprecated
 
