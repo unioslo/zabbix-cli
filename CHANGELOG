@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deprecated
+
+- `login` command. It is fundamentally flawed and is slated to be removed in a future version unless a valid use case is presented.
+  - Restart the application with a different configuration or launch options to change login methods instead.
+
 ### Fixed
 
 - Ordering of User commands in the help output.

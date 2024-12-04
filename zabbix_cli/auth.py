@@ -38,7 +38,6 @@ from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.logs import add_user
 from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import error
-from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.pyzabbix.client import ZabbixAPI
@@ -358,14 +357,9 @@ def login(config: Config) -> ZabbixAPI:
 
 def logout(client: ZabbixAPI, config: Config) -> None:
     """Log out of the current Zabbix API session."""
-    try:
-        client.logout()
-        if config.app.use_auth_token_file:
-            clear_auth_token_file(config)
-    except ZabbixAPIException as e:
-        exit_err(f"Failed to log out of Zabbix API session: {e}")
-    except AuthTokenFileError as e:
-        exit_err(str(e))
+    client.logout()
+    if config.app.use_auth_token_file:
+        clear_auth_token_file(config)
 
 
 def prompt_username_password(username: str) -> Tuple[str, str]:
@@ -443,7 +437,6 @@ def clear_auth_token_file(config: Optional[Config] = None) -> None:
     """Clear the contents of the auth token file.
 
     Attempts to clear both the new and the old auth token file locations.
-    Optionally also clears the loaded auth token from the config object.
     """
     for file in get_auth_token_file_paths(config):
         if not file.exists():

@@ -132,7 +132,7 @@ class ZabbixAPIRequestError(ZabbixAPIException):
         return reason
 
 
-class ZabbixAPITokenExpiredError(ZabbixAPIRequestError):
+class ZabbixAPITokenExpiredError(ZabbixAPIRequestError, AuthError):
     """Zabbix API token expired error."""
 
 
@@ -152,6 +152,14 @@ class ZabbixAPICallError(ZabbixAPIException):
         if self.__cause__ and isinstance(self.__cause__, ZabbixAPIRequestError):
             msg = f"{msg}: {self.__cause__.reason()}"
         return msg
+
+
+class ZabbixAPILoginError(ZabbixAPICallError, AuthError):
+    """Zabbix API login error."""
+
+
+class ZabbixAPILogoutError(ZabbixAPICallError, AuthError):
+    """Zabbix API logout error."""
 
 
 class ZabbixNotFoundError(ZabbixAPICallError):
