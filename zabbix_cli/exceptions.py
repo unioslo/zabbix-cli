@@ -144,6 +144,10 @@ class ZabbixAPIResponseParsingError(ZabbixAPIRequestError):
     """Zabbix API request error."""
 
 
+class ZabbixAPISessionExpired(ZabbixAPIRequestError):
+    """Zabbix API session expired."""
+
+
 class ZabbixAPICallError(ZabbixAPIException):
     """Zabbix API request error."""
 
