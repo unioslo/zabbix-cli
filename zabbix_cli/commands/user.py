@@ -189,8 +189,8 @@ def create_notification_user(
 
     Run [command]show_media_types[/command] to get a list of available media types.
 
-    Uses the default notification user group defined in the configuration file
-    if no user groups are specified with [option]--usergroups[/option].
+    Adds the user to the default user group and default notification user group
+    unless [option]--usergroups[/option] is specified.
     """
     from zabbix_cli.models import Result
     from zabbix_cli.pyzabbix.types import User
@@ -227,12 +227,15 @@ def create_notification_user(
             f"Media type {mediatype!r} does not exist. Run [command]show_media_types[/command] command to get a list of available media types."
         )
 
-    with app.status("Fetching usergroup(s)..."):
-        if usergroups:
-            ug_list = parse_list_arg(usergroups)
-        else:
-            ug_list = app.state.config.app.default_notification_users_usergroups
-        ugroups = [app.state.client.get_usergroup(ug) for ug in ug_list]
+    # Parse user groups args or use defaults
+    if usergroups:
+        ug_list = parse_list_arg(usergroups)
+    else:
+        ug_list: List[str] = []
+        ug_list.extend(app.state.config.app.default_notification_users_usergroups)
+        ug_list.extend(app.state.config.app.default_create_user_usergroups)
+    with app.status("Fetching user group(s)..."):
+        ugroups = [app.state.client.get_usergroup(ug) for ug in set(ug_list)]
 
     user_media = [
         UserMedia(
