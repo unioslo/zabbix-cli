@@ -23,8 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Ordering of User commands in the help output.
-- Application writing to the auth token file when logging in with a token.
-- Application not respecting custom auth token file path when writing auth token file.
+- Auth token file being written when logging in with a token.
+- Custom auth token file path not being used when writing auth token file.
 
 ## [3.4.0](https://github.com/unioslo/zabbix-cli/releases/tag/3.4.0) - 2024-11-28
 
