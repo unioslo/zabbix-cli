@@ -89,7 +89,7 @@ def prompt_msg(*msgs: str) -> str:
 @no_headless
 def str_prompt(
     prompt: str,
-    default: str = ...,
+    default: str = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
     password: bool = False,
     show_default: bool = True,
     choices: Optional[List[str]] = None,
@@ -123,7 +123,7 @@ def str_prompt(
         by default None
     """
     # Don't permit secrets to be shown ever + no empty defaults shown
-    if password or default is ... or not default:
+    if password or default is ... or not default:  # pyright: ignore[reportUnnecessaryComparison]
         show_default = False
 
     # Notify user that a default secret will be used,
@@ -340,7 +340,7 @@ def _number_prompt(
 @no_headless
 def bool_prompt(
     prompt: str,
-    default: Any = ...,
+    default: bool = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
     show_default: bool = True,
     warning: bool = False,
     **kwargs: Any,
@@ -357,7 +357,7 @@ def bool_prompt(
 @no_headless
 def path_prompt(
     prompt: str,
-    default: str | Path = ...,
+    default: str | Path = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
     show_default: bool = True,
     exist_ok: bool = True,
     must_exist: bool = False,
