@@ -112,7 +112,7 @@ class Choice(Enum):
     def from_prompt(
         cls: Type[MixinType],
         prompt: Optional[str] = None,
-        default: MixinType = ...,  # pyright: ignore[reportArgumentType] # rich Prompt.ask default uses ...
+        default: MixinType = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
     ) -> MixinType:
         """Prompt the user to select a choice from the enum.
 
