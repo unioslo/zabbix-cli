@@ -67,6 +67,7 @@ from zabbix_cli.pyzabbix.types import Image
 from zabbix_cli.pyzabbix.types import ImportRules
 from zabbix_cli.pyzabbix.types import InterfaceType
 from zabbix_cli.pyzabbix.types import Item
+from zabbix_cli.pyzabbix.types import Json
 from zabbix_cli.pyzabbix.types import Macro
 from zabbix_cli.pyzabbix.types import Maintenance
 from zabbix_cli.pyzabbix.types import Map
@@ -123,9 +124,9 @@ def strip_none(data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def append_param(
-    data: MutableMapping[str, Any], key: str, value: Any
+    data: MutableMapping[str, Any], key: str, value: Json
 ) -> MutableMapping[str, Any]:
-    """Append a value to a list in a dictionary.
+    """Append a JSON-serializable value to a list in a dictionary.
 
     If the key does not exist in the dictionary, it is created with a list
     containing the value. If the key already exists and the value is not a list,
@@ -142,9 +143,9 @@ def append_param(
 
 
 def add_param(
-    data: MutableMapping[str, Any], key: str, subkey: str, value: Any
+    data: MutableMapping[str, Any], key: str, subkey: str, value: Json
 ) -> MutableMapping[str, Any]:
-    """Add a value to a nested dict in dict."""
+    """Add a JSON-serializable value to a nested dict in dict."""
     if key in data:
         if not isinstance(data[key], dict):
             logger.debug("Converting param %s to dict", key, stacklevel=2)
