@@ -215,13 +215,12 @@ class State:
 
         Uses the authentication info from the config to log into the Zabbix API.
 
-        Also sets the Zabbix API version on the ZabbixAPIBaseModel class,
-        so that each model is aware of which version its data is from."""
+        Also sets the JSON rendering mode specified in the config on the
+        TableRenderable base class."""
         from zabbix_cli import auth
         from zabbix_cli.models import TableRenderable
 
         self.client = auth.login(self.config)
-        TableRenderable.zabbix_version = self.client.version
         TableRenderable.legacy_json_format = self.config.app.legacy_json_format
 
     def logout(self) -> None:
