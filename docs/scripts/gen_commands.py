@@ -5,8 +5,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
 
 import jinja2
 import yaml  # type: ignore
@@ -34,7 +32,7 @@ def gen_category_command_map(commands: list[CommandSummary]) -> None:
     """Generates a YAML file with all categories and detailed information
     about their respective commands.
     """
-    categories: Dict[str, List[Dict[str, Any]]] = {}
+    categories: dict[str, list[dict[str, Any]]] = {}
     for command in commands:
         category = command.category or ""
         if category not in categories:
@@ -51,7 +49,7 @@ def gen_category_pages(commands: list[CommandSummary]) -> None:
     """Renders markdown pages for each category with detailed information
     about each command.
     """
-    categories: Dict[str, List[CommandSummary]] = {}
+    categories: dict[str, list[CommandSummary]] = {}
     for command in commands:
         if command.hidden:
             continue

@@ -8,18 +8,14 @@ from __future__ import annotations
 
 import inspect
 import logging
+from collections.abc import Iterable
 from types import ModuleType
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import Iterable
-from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Protocol
-from typing import Tuple
-from typing import Type
 from typing import Union
 
 import typer
@@ -63,7 +59,7 @@ class Example(NamedTuple):
 #       the current typer/click API
 class CommandInfo(TyperCommandInfo):
     def __init__(
-        self, *args: Any, examples: Optional[List[Example]] = None, **kwargs: Any
+        self, *args: Any, examples: Optional[list[Example]] = None, **kwargs: Any
     ) -> None:
         super().__init__(*args, **kwargs)
         self.examples = examples or []
@@ -107,7 +103,7 @@ class StatefulApp(typer.Typer):
     """A Typer app that provides access to the global state."""
 
     parent: Optional[StatefulApp]
-    plugins: Dict[str, ModuleType]
+    plugins: dict[str, ModuleType]
 
     # NOTE: might be a good idea to add a typing.Unpack definition for the kwargs?
     def __init__(self, **kwargs: Any) -> None:
@@ -160,8 +156,8 @@ class StatefulApp(typer.Typer):
         self,
         name: Optional[str] = None,
         *,
-        cls: Optional[Type[TyperCommand]] = None,
-        context_settings: Optional[Dict[Any, Any]] = None,
+        cls: Optional[type[TyperCommand]] = None,
+        context_settings: Optional[dict[Any, Any]] = None,
         help: Optional[str] = None,
         epilog: Optional[str] = None,
         short_help: Optional[str] = None,
@@ -173,7 +169,7 @@ class StatefulApp(typer.Typer):
         # Rich settings
         rich_help_panel: Union[str, None] = Default(None),
         # Zabbix-cli kwargs
-        examples: Optional[List[Example]] = None,
+        examples: Optional[list[Example]] = None,
     ) -> Callable[[CommandFunctionType], CommandFunctionType]:
         if cls is None:
             cls = TyperCommand
@@ -208,7 +204,7 @@ class StatefulApp(typer.Typer):
         return get_state()
 
     @property
-    def api_version(self) -> Tuple[int, ...]:
+    def api_version(self) -> tuple[int, ...]:
         """Get the current API version. Will fail if not connected to the API."""
         return self.state.client.version.release
 

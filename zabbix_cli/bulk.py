@@ -8,12 +8,11 @@ from __future__ import annotations
 
 import logging
 import shlex
+from collections import Counter
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Counter
-from typing import List
 from typing import Optional
 
 import typer
@@ -51,7 +50,7 @@ class CommentLine(SkippableLine):
 class BulkCommand(BaseModel):
     """A command to be run in bulk."""
 
-    args: List[str] = Field(default_factory=list)
+    args: list[str] = Field(default_factory=list)
     line: str = ""  # original line from file
     line_number: int = 0
 
@@ -116,9 +115,9 @@ class BulkRunner:
         self.ctx = ctx
         self.file = file
         self.mode = mode
-        self.executions: List[CommandExecution] = []
+        self.executions: list[CommandExecution] = []
         """Commands that were executed."""
-        self.skipped: List[CommandExecution] = []
+        self.skipped: list[CommandExecution] = []
         """Lines that were skipped during parsing."""
 
     @contextmanager
@@ -222,14 +221,14 @@ class BulkRunner:
 
         return results
 
-    def load_command_file(self) -> List[BulkCommand]:
+    def load_command_file(self) -> list[BulkCommand]:
         """Parse the contents of a command file."""
         try:
             contents = read_file(self.file)
         except Exception as e:
             raise CommandFileError(f"Could not read command file: {e}") from e
 
-        commands: List[BulkCommand] = []
+        commands: list[BulkCommand] = []
 
         def add_skipped(
             line: str, line_number: int, error: Optional[BaseException] = None

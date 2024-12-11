@@ -20,12 +20,8 @@ from abc import ABC
 from abc import abstractmethod
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import NamedTuple
 from typing import Optional
-from typing import Set
-from typing import Type
 
 import httpx
 from pydantic import BaseModel
@@ -81,18 +77,18 @@ class PypiUpdater(Updater):
 
     @property
     @abstractmethod
-    def uninstall_command(self) -> List[str]:
+    def uninstall_command(self) -> list[str]:
         """The command used to uninstall the package."""
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def upgrade_command(self) -> List[str]:
+    def upgrade_command(self) -> list[str]:
         """The command used to upgrade the package."""
         raise NotImplementedError
 
     @abstractmethod
-    def get_packages(self) -> Set[str]:
+    def get_packages(self) -> set[str]:
         """Get a list of installed packages."""
         raise NotImplementedError
 
@@ -140,13 +136,13 @@ class PypiUpdater(Updater):
 
 class PipxListOutput(BaseModel):
     # pipx_spec_version: str # ignore this for now
-    venvs: Dict[str, Any]  # we just care about the keys
+    venvs: dict[str, Any]  # we just care about the keys
 
     @classmethod
     def from_json(cls, j: str) -> Self:
         return cls.model_validate_json(j)
 
-    def package_names(self) -> Set[str]:
+    def package_names(self) -> set[str]:
         """Get installed package names."""
         return set(self.venvs.keys())
 
@@ -158,17 +154,17 @@ class PipxUpdater(PypiUpdater):
         return "pipx"
 
     @property
-    def uninstall_command(self) -> List[str]:
+    def uninstall_command(self) -> list[str]:
         """The command used to uninstall the package."""
         return ["pipx", "uninstall"]
 
     @property
     @abstractmethod
-    def upgrade_command(self) -> List[str]:
+    def upgrade_command(self) -> list[str]:
         """The command used to upgrade the package."""
         return ["pipx", "upgrade"]
 
-    def get_packages(self) -> Set[str]:
+    def get_packages(self) -> set[str]:
         out = subprocess.check_output(["pipx", "list", "--json"], text=True)
 
         try:
@@ -186,18 +182,18 @@ class PipUpdater(PypiUpdater):
         return "pip"
 
     @property
-    def uninstall_command(self) -> List[str]:
+    def uninstall_command(self) -> list[str]:
         """The command used to uninstall the package."""
         return ["pip", "uninstall"]
 
     @property
     @abstractmethod
-    def upgrade_command(self) -> List[str]:
+    def upgrade_command(self) -> list[str]:
         """The command used to upgrade the package."""
         return ["pip", "install", "--upgrade"]
 
-    def get_packages(self) -> Set[str]:
-        pkgs: Set[str] = set()
+    def get_packages(self) -> set[str]:
+        pkgs: set[str] = set()
 
         out = subprocess.check_output(["pip", "freeze"], text=True)
         lines = out.splitlines()
@@ -235,18 +231,18 @@ class UvUpdater(PypiUpdater):
         return "uv"
 
     @property
-    def uninstall_command(self) -> List[str]:
+    def uninstall_command(self) -> list[str]:
         """The command used to uninstall the package."""
         return ["uv", "tool" "uninstall"]
 
     @property
     @abstractmethod
-    def upgrade_command(self) -> List[str]:
+    def upgrade_command(self) -> list[str]:
         """The command used to upgrade the package."""
         return ["uv", "tool", "upgrade"]
 
-    def get_packages(self) -> Set[str]:
-        pkgs: Set[str] = set()
+    def get_packages(self) -> set[str]:
+        pkgs: set[str] = set()
 
         out = subprocess.check_output(["uv", "tool", "list"], text=True)
 
@@ -293,7 +289,7 @@ def get_release_arch(arch: str) -> str:
     Attempts to map the platform.machine() name to the name used
     in the GitHub release artifacts. If no mapping is found, the
     original name is returned."""
-    ARCH_MAP: Dict[str, str] = {
+    ARCH_MAP: dict[str, str] = {
         "x86_64": "x86_64",
         "amd64": "x86_64",
         "arm64": "arm64",
@@ -310,7 +306,7 @@ def get_release_os(os: str) -> str:
     Attempts to map the sys.platform name to the name used
     in the GitHub release artifacts. If no mapping is found, the
     original name is returned."""
-    PLATFORM_MAP: Dict[str, str] = {
+    PLATFORM_MAP: dict[str, str] = {
         "linux": "linux",
         "darwin": "macos",
         "win32": "win",
@@ -418,7 +414,7 @@ class PyInstallerUpdater(Updater):
         Attempts to map the platform.machine() name to the name used
         in the GitHub release artifacts. If no mapping is found, the
         original name is returned."""
-        ARCH_MAP: Dict[str, str] = {
+        ARCH_MAP: dict[str, str] = {
             "x86_64": "x86_64",
             "amd64": "x86_64",
             "arm64": "arm64",
@@ -435,7 +431,7 @@ class PyInstallerUpdater(Updater):
         Attempts to map the sys.platform name to the name used
         in the GitHub release artifacts. If no mapping is found, the
         original name is returned."""
-        PLATFORM_MAP: Dict[str, str] = {
+        PLATFORM_MAP: dict[str, str] = {
             "linux": "linux",
             "darwin": "macos",
             "win32": "win",
@@ -600,7 +596,7 @@ class InstallationMethodDetector:
         return InstallationInfo(method=InstallationMethod.UV, bindir=bindir)
 
 
-UPDATERS: Dict[InstallationMethod, Type[Updater]] = {
+UPDATERS: dict[InstallationMethod, type[Updater]] = {
     InstallationMethod.PYINSTALLER: PyInstallerUpdater,
     # InstallationMethod.GIT: GitUpdater,
     # InstallationMethod.PIP: PipUpdater,
@@ -615,7 +611,7 @@ class UpdateInfo(NamedTuple):
     path: Optional[Path] = None
 
 
-def get_updater(method: InstallationMethod) -> Type[Updater]:
+def get_updater(method: InstallationMethod) -> type[Updater]:
     updater = UPDATERS.get(method)
     if updater is None:
         raise UpdateError(f"No updater available for installation method {method}")

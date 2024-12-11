@@ -4,10 +4,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Tuple
 
 from packaging.version import Version
 from pydantic import ConfigDict
@@ -31,7 +28,7 @@ if TYPE_CHECKING:
 
 class ImplementationInfo(TypedDict):
     name: str
-    version: Tuple[Any, ...]
+    version: tuple[Any, ...]
     hexversion: int
     cache_tag: str
 
@@ -124,16 +121,16 @@ class HistoryResult(TableRenderable):
     __show_lines__ = False
     __box__ = SIMPLE_HEAD
 
-    commands: List[str] = []
+    commands: list[str] = []
 
 
 class DirectoriesResult(TableRenderable):
     """Result type for `show_dirs` command."""
 
-    directories: List[Dict[str, Path]] = []
+    directories: list[dict[str, Path]] = []
 
     @classmethod
-    def from_directory_types(cls, dirs: List[DirectoryType]) -> Self:
+    def from_directory_types(cls, dirs: list[DirectoryType]) -> Self:
         return cls(directories=[{str(d.value): d.as_path()} for d in dirs])
 
     def __cols_rows__(self) -> ColsRowsType:

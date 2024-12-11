@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import Optional
 from typing import Union
 
@@ -59,7 +58,7 @@ class SecretMode(StrEnum):
 
     @classmethod
     def from_context(
-        cls, context: Optional[Union[Dict[str, Any], Callable[..., Dict[str, Any]]]]
+        cls, context: Optional[Union[dict[str, Any], Callable[..., dict[str, Any]]]]
     ) -> SecretMode:
         """Get the secret mode from a serialization context."""
         if isinstance(context, dict) and (ctx := context.get("secrets")) is not None:

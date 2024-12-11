@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Type
-
 import pytest
 from zabbix_cli.pyzabbix.enums import AckStatus
 from zabbix_cli.pyzabbix.enums import ActiveInterface
@@ -68,7 +66,7 @@ APISTR_ENUMS = [
 
 
 @pytest.mark.parametrize("enum", APISTR_ENUMS)
-def test_apistrenum(enum: Type[APIStrEnum]) -> None:
+def test_apistrenum(enum: type[APIStrEnum]) -> None:
     assert enum.__members__
     members = list(enum)
     assert members

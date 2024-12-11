@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing import Dict
-from typing import List
 from typing import Optional
 
 from pydantic import Field
@@ -80,7 +78,7 @@ class ItemResult(Item):
         return cols, rows
 
 
-def group_items(items: List[Item]) -> List[ItemResult]:
+def group_items(items: list[Item]) -> list[ItemResult]:
     """Group items by key+lastvalue.
 
     Keeps first item for each key+lastvalue pair, and adds hosts from
@@ -106,7 +104,7 @@ def group_items(items: List[Item]) -> List[ItemResult]:
     """
     from zabbix_cli.commands.results.item import ItemResult
 
-    item_map: Dict[str, ItemResult] = {}
+    item_map: dict[str, ItemResult] = {}
 
     for item in items:
         if not item.name or not item.lastvalue or not item.key or not item.hosts:

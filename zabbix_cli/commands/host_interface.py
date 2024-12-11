@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import List
 from typing import Optional
 
 import typer
@@ -160,7 +159,7 @@ def create_host_interface(
         show_default=False,
     ),
     # V2-style positional args (deprecated)
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Create a host interface.
 

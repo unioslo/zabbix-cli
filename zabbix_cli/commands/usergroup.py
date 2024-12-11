@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from contextlib import suppress
 from typing import TYPE_CHECKING
-from typing import List
 from typing import Optional
 from typing import TypeVar
 
@@ -44,8 +43,8 @@ class UsergroupSorting(StrEnum):
 
 
 def sort_ugroups(
-    ugroups: List[UsergroupLikeT], sort: UsergroupSorting
-) -> List[UsergroupLikeT]:
+    ugroups: list[UsergroupLikeT], sort: UsergroupSorting
+) -> list[UsergroupLikeT]:
     """Sort result types based on user group objects.
 
     I.e. we have some custom types that all share the samse attributes
@@ -139,7 +138,7 @@ def add_usergroup_permissions(
         case_sensitive=False,
     ),
     # Legacy V2 args
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Give a user group permissions to host/template groups.
 
@@ -210,7 +209,7 @@ def create_usergroup(
         help="Create the user group in a disabled state.",
     ),
     # V2 legacy args
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Create a user group."""
     # We already have name and GUI access, so we expect 1 more arg at most
@@ -348,7 +347,7 @@ def _do_show_usergroups(
         usergroups = app.state.client.get_usergroups(
             *ugs, select_users=True, search=True, limit=limit
         )
-    res: List[ShowUsergroupResult] = []
+    res: list[ShowUsergroupResult] = []
     for ugroup in usergroups:
         res.append(ShowUsergroupResult.from_usergroup(ugroup))
     # NOTE: why client-side sorting?
@@ -406,7 +405,7 @@ def show_usergroup_permissions(
             templategroups = app.state.client.get_templategroups()
     else:
         templategroups = []
-    res: List[ShowUsergroupPermissionsResult] = []
+    res: list[ShowUsergroupPermissionsResult] = []
     for ugroup in usergroups:
         res.append(
             ShowUsergroupPermissionsResult.from_usergroup(

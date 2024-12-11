@@ -2,11 +2,8 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
-from typing import Dict
-from typing import List
 from typing import NamedTuple
 from typing import Optional
-from typing import Set
 
 import typer
 
@@ -34,7 +31,7 @@ HELP_PANEL_GROUP = "Proxy Group"
 
 
 class PrevProxyHosts(NamedTuple):
-    hosts: List[Host]
+    hosts: list[Host]
     proxy: Optional[Proxy] = None
 
 
@@ -44,16 +41,16 @@ def ensure_proxy_group_support() -> None:
 
 
 def group_hosts_by_proxy(
-    app: StatefulApp, hosts: List[Host], default_proxy_id: str = ""
-) -> Dict[str, PrevProxyHosts]:
+    app: StatefulApp, hosts: list[Host], default_proxy_id: str = ""
+) -> dict[str, PrevProxyHosts]:
     """Group hosts by the proxy they had prior to the update."""
-    proxy_ids: Set[str] = set()
+    proxy_ids: set[str] = set()
     for host in hosts:
         if host.proxyid:
             proxy_ids.add(host.proxyid)
 
     # Fetch proxies for all observed proxy IDs
-    proxy_mapping: Dict[str, PrevProxyHosts] = {}
+    proxy_mapping: dict[str, PrevProxyHosts] = {}
     for proxy_id in proxy_ids:
         try:
             p = app.state.client.get_proxy(proxy_id)
@@ -396,7 +393,7 @@ def update_host_proxy(
     hosts = app.state.client.get_hosts(*hostnames, search=True)
     dest_proxy = app.state.client.get_proxy(proxy)
 
-    to_update: List[Host] = []
+    to_update: list[Host] = []
     for host in hosts:
         if host.proxyid != dest_proxy.proxyid:
             to_update.append(host)
@@ -453,7 +450,7 @@ def update_hostgroup_proxy(
     prx = app.state.client.get_proxy(proxy)
 
     hosts = get_hostgroup_hosts(app, hostgroup)
-    to_update: List[Host] = []
+    to_update: list[Host] = []
     for host in hosts:
         if host.proxyid != prx.proxyid:
             to_update.append(host)
@@ -649,13 +646,13 @@ def update_hostgroup_proxygroup(
     grp = app.state.client.get_proxy_group(proxygroup)
 
     hosts = get_hostgroup_hosts(app, hostgroup)
-    to_update: List[Host] = []
+    to_update: list[Host] = []
     for host in hosts:
         if host.proxy_groupid != grp.proxy_groupid:
             to_update.append(host)
 
     # Sort hosts by host group
-    updated: List[str] = []  # list of host IDs
+    updated: list[str] = []  # list of host IDs
     if not dryrun:
         if not to_update:
             exit_err("All hosts already have the specified proxy group.")

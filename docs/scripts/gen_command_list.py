@@ -12,8 +12,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
 
 import yaml  # type: ignore
 from zabbix_cli.app import app
@@ -27,7 +25,7 @@ def main() -> None:
     commands = get_app_commands(app)
     command_names = [c.name for c in commands]
 
-    categories: Dict[str, List[Dict[str, Any]]] = {}
+    categories: dict[str, list[dict[str, Any]]] = {}
     for command in commands:
         category = command.category or ""
         if category not in categories:

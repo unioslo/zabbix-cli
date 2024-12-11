@@ -3,7 +3,6 @@ from __future__ import annotations
 import itertools
 from dataclasses import dataclass
 from functools import cmp_to_key
-from typing import List
 
 from rich.text import Text
 from zabbix_cli.output.style import CodeBlockStyle
@@ -44,7 +43,7 @@ class MarkdownSymbol:
 
     @property
     def symbol(self) -> str:
-        symbol: List[str] = []
+        symbol: list[str] = []
         if self.codeblock:
             # Only insert language when opening codeblock
             lang = self.language if not self.end else ""
@@ -102,7 +101,7 @@ def markup_to_markdown(s: str) -> str:
     good enough for our purposes.
     """
     t = Text.from_markup(normalize_spaces(s))
-    spans: List[MarkdownSpan] = []
+    spans: list[MarkdownSpan] = []
     # Markdown has more limited styles than Rich markup, so we just
     # identify the ones we care about and ignore the rest.
     for span in t.spans:
@@ -141,7 +140,7 @@ def markup_to_markdown(s: str) -> str:
 def normalize_spaces(s: str) -> str:
     """Normalizes spaces in a string while keeping newlines intact."""
     split = filter(None, s.split(" "))
-    parts: List[str] = []
+    parts: list[str] = []
     for part in split:
         if part.endswith("\n"):
             parts.append(part)

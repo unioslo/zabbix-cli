@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import os
 import shlex
+from collections.abc import Generator
 from glob import iglob
 from typing import Any
-from typing import Generator
-from typing import List
 from typing import Optional
 
 import click
@@ -24,7 +23,7 @@ IS_WINDOWS = os.name == "nt"
 AUTO_COMPLETION_PARAM = "shell_complete"
 
 
-def split_arg_string(string: str, posix: bool = True) -> List[str]:
+def split_arg_string(string: str, posix: bool = True) -> list[str]:
     """Split an argument string as with :func:`shlex.split`, but don't
     fail if the string is incomplete. Ignores a missing closing quote or
     incomplete escape sequence and uses the partial token as-is.
@@ -39,7 +38,7 @@ def split_arg_string(string: str, posix: bool = True) -> List[str]:
     lex = shlex.shlex(string, posix=posix)
     lex.whitespace_split = True
     lex.commenters = ""
-    out: List[str] = []
+    out: list[str] = []
 
     try:
         for token in lex:
@@ -53,7 +52,7 @@ def split_arg_string(string: str, posix: bool = True) -> List[str]:
     return out
 
 
-def _resolve_context(args: List[Any], ctx: click.Context) -> click.Context:
+def _resolve_context(args: list[Any], ctx: click.Context) -> click.Context:
     """Produce the context hierarchy starting with the command and
     traversing the complete arguments. This only follows the commands,
     it doesn't trigger input prompts or callbacks.
@@ -121,22 +120,22 @@ class ClickCompleter(Completer):
         self,
         param: click.Parameter,
         autocomplete_ctx: click.Context,
-        args: List[str],
+        args: list[str],
         incomplete: str,
     ):
-        param_choices: List[Completion] = []
+        param_choices: list[Completion] = []
         autocompletions = param.shell_complete(autocomplete_ctx, incomplete)
         for autocomplete in autocompletions:
             param_choices.append(Completion(str(autocomplete.value), -len(incomplete)))
         return param_choices
 
     def _get_completion_for_Path_types(
-        self, param: click.Parameter, args: List[str], incomplete: str
-    ) -> List[Completion]:
+        self, param: click.Parameter, args: list[str], incomplete: str
+    ) -> list[Completion]:
         if "*" in incomplete:
             return []
 
-        choices: List[Completion] = []
+        choices: list[Completion] = []
         _incomplete = os.path.expandvars(incomplete)
         search_pattern = _incomplete.strip("'\"\t\n\r\v ").replace("\\\\", "\\") + "*"
         quote = ""
@@ -180,7 +179,7 @@ class ClickCompleter(Completer):
 
     def _get_completion_from_command_param(
         self, param: click.Parameter, incomplete: str
-    ) -> List[Completion]:
+    ) -> list[Completion]:
         return [
             Completion(command, -len(incomplete))
             for command in self.cli.list_commands(self.parsed_ctx)
@@ -190,11 +189,11 @@ class ClickCompleter(Completer):
     def _get_completion_from_params(
         self,
         autocomplete_ctx: click.Context,
-        args: List[str],
+        args: list[str],
         param: click.Parameter,
         incomplete: str,
-    ) -> List[Completion]:
-        choices: List[Completion] = []
+    ) -> list[Completion]:
+        choices: list[Completion] = []
         if isinstance(param.type, click.types.BoolParamType):
             # Only suggest completion if parameter is not a flag
             if isinstance(param, click.Option) and not param.is_flag:
@@ -220,9 +219,9 @@ class ClickCompleter(Completer):
         ctx_command: click.Command,
         incomplete: str,
         autocomplete_ctx: click.Context,
-        args: List[str],
-    ) -> List[Completion]:
-        choices: List[Completion] = []
+        args: list[str],
+    ) -> list[Completion]:
+        choices: list[Completion] = []
         param_called = False
 
         for param in ctx_command.params:
@@ -289,7 +288,7 @@ class ClickCompleter(Completer):
 
         args = split_arg_string(document.text_before_cursor, posix=False)
 
-        choices: List[Completion] = []
+        choices: list[Completion] = []
         cursor_within_command = (
             document.text_before_cursor.rstrip() == document.text_before_cursor
         )

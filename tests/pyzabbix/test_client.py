@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Any
-from typing import Dict
 
 import pytest
 from inline_snapshot import snapshot
@@ -53,7 +52,7 @@ from zabbix_cli.pyzabbix.client import append_param
         ),
     ],
 )
-def test_append_param(inp: Any, key: str, value: Any, expect: Dict[str, Any]) -> None:
+def test_append_param(inp: Any, key: str, value: Any, expect: dict[str, Any]) -> None:
     result = append_param(inp, key, value)
     assert result == expect
     # Check in-place modification
@@ -71,7 +70,7 @@ def test_append_param(inp: Any, key: str, value: Any, expect: Dict[str, Any]) ->
         ),
     ],
 )
-def test_add_param(inp: Any, subkey: str, value: Any, expect: Dict[str, Any]) -> None:
+def test_add_param(inp: Any, subkey: str, value: Any, expect: dict[str, Any]) -> None:
     result = add_param(inp, "search", subkey, value)
     assert result == expect
     # Check in-place modification

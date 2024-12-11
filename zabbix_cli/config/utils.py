@@ -4,11 +4,8 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import NamedTuple
 from typing import Optional
-from typing import Tuple
 
 from pydantic import BaseModel
 
@@ -22,7 +19,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def load_config_toml(filename: Path) -> Dict[str, Any]:
+def load_config_toml(filename: Path) -> dict[str, Any]:
     """Load a TOML configuration file."""
     import tomli
 
@@ -34,7 +31,7 @@ def load_config_toml(filename: Path) -> Dict[str, Any]:
         raise ConfigError(f"Error reading TOML file {filename}: {e}") from e
 
 
-def load_config_conf(filename: Path) -> Dict[str, Any]:
+def load_config_conf(filename: Path) -> dict[str, Any]:
     """Load a conf configuration file with ConfigParser."""
     import configparser
 
@@ -50,7 +47,7 @@ def load_config_conf(filename: Path) -> Dict[str, Any]:
 
 def find_config(
     filename: Optional[Path] = None,
-    priority: Tuple[Path, ...] = CONFIG_PRIORITY,
+    priority: tuple[Path, ...] = CONFIG_PRIORITY,
 ) -> Optional[Path]:
     """Find all available configuration files.
 
@@ -107,9 +104,9 @@ def check_deprecated_fields(model: BaseModel) -> None:
 
 def get_deprecated_fields_set(
     model: BaseModel, parent: Optional[str] = None
-) -> List[DeprecatedField]:
+) -> list[DeprecatedField]:
     """Get a list of deprecated fields set on a model and all its submodels."""
-    fields: List[DeprecatedField] = []
+    fields: list[DeprecatedField] = []
     # Sort for reproducibility + readability
     for field_name in sorted(model.model_fields_set):
         field = model.model_fields.get(field_name)

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from typing import Dict
 
 import pytest
 from inline_snapshot import snapshot
@@ -39,14 +38,14 @@ from zabbix_cli.state import State
         ),
     ],
 )
-def test_get_extra_dict(inp: Dict[str, Any], expect: Dict[str, Any]) -> None:
+def test_get_extra_dict(inp: dict[str, Any], expect: dict[str, Any]) -> None:
     extra = get_extra_dict(**inp)
     assert extra == expect
 
 
 def test_get_extra_dict_reserved_keys() -> None:
     """Test that all reserved keys are renamed."""
-    d: Dict[str, Any] = {}
+    d: dict[str, Any] = {}
     for key in RESERVED_EXTRA_KEYS:
         d[key] = key
     extra = get_extra_dict(**d)

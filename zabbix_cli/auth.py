@@ -14,15 +14,13 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from collections.abc import Generator
 from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Final
-from typing import Generator
-from typing import List
 from typing import NamedTuple
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 from rich.console import ScreenContext
@@ -116,7 +114,7 @@ class Authenticator:
     def screen(self) -> ScreenContext:
         return err_console.screen()
 
-    def login_with_any(self) -> Tuple[ZabbixAPI, LoginInfo]:
+    def login_with_any(self) -> tuple[ZabbixAPI, LoginInfo]:
         """Log in to the Zabbix API using any valid method.
 
         Returns the Zabbix API client object.
@@ -163,7 +161,7 @@ class Authenticator:
             yield self._get_username_password_prompt()
 
     @classmethod
-    def login_with_prompt(cls, config: Config) -> Tuple[ZabbixAPI, LoginInfo]:
+    def login_with_prompt(cls, config: Config) -> tuple[ZabbixAPI, LoginInfo]:
         """Log in to the Zabbix API using username and password from a prompt."""
         auth = cls(config)
         creds = auth._get_username_password_prompt()
@@ -176,7 +174,7 @@ class Authenticator:
     @classmethod
     def login_with_username_password(
         cls, config: Config, username: str, password: str
-    ) -> Tuple[ZabbixAPI, LoginInfo]:
+    ) -> tuple[ZabbixAPI, LoginInfo]:
         """Log in to the Zabbix API using username and password from a prompt."""
         auth = cls(config)
         creds = Credentials(
@@ -192,7 +190,7 @@ class Authenticator:
     @classmethod
     def login_with_token(
         cls, config: Config, token: str
-    ) -> Tuple[ZabbixAPI, LoginInfo]:
+    ) -> tuple[ZabbixAPI, LoginInfo]:
         """Log in to the Zabbix API using username and password from a prompt."""
         auth = cls(config)
         creds = Credentials(
@@ -393,7 +391,7 @@ class Authenticator:
             username=username, auth_token=auth_token, source=CredentialsSource.FILE
         )
 
-    def load_auth_token_file(self) -> Union[Tuple[Path, str], Tuple[None, None]]:
+    def load_auth_token_file(self) -> Union[tuple[Path, str], tuple[None, None]]:
         paths = get_auth_token_file_paths(self.config)
         for path in paths:
             contents = self._do_load_auth_file(path)
@@ -404,7 +402,7 @@ class Authenticator:
         )
         return None, None
 
-    def load_auth_file(self) -> Tuple[Optional[Path], Optional[str]]:
+    def load_auth_file(self) -> tuple[Optional[Path], Optional[str]]:
         """Attempts to load an auth file."""
         paths = get_auth_file_paths(self.config)
         for path in paths:
@@ -450,7 +448,7 @@ def logout(client: ZabbixAPI, config: Config) -> None:
         clear_auth_token_file(config)
 
 
-def prompt_username_password(username: str) -> Tuple[str, str]:
+def prompt_username_password(username: str) -> tuple[str, str]:
     """Re-useable prompt for username and password."""
     username = str_prompt("Username", default=username, empty_ok=False)
     password = str_prompt("Password", password=True, empty_ok=False)
@@ -459,7 +457,7 @@ def prompt_username_password(username: str) -> Tuple[str, str]:
 
 def _parse_auth_file_contents(
     contents: Optional[str],
-) -> Tuple[Optional[str], Optional[str]]:
+) -> tuple[Optional[str], Optional[str]]:
     """Parse the contents of an auth file.
 
     We store auth files in the format `username::secret`.
@@ -473,7 +471,7 @@ def _parse_auth_file_contents(
     return None, None
 
 
-def get_auth_file_paths(config: Optional[Config] = None) -> List[Path]:
+def get_auth_file_paths(config: Optional[Config] = None) -> list[Path]:
     """Get all possible auth token file paths."""
     paths = [
         AUTH_FILE,
@@ -484,7 +482,7 @@ def get_auth_file_paths(config: Optional[Config] = None) -> List[Path]:
     return paths
 
 
-def get_auth_token_file_paths(config: Optional[Config] = None) -> List[Path]:
+def get_auth_token_file_paths(config: Optional[Config] = None) -> list[Path]:
     """Get all possible auth token file paths."""
     paths = [
         AUTH_TOKEN_FILE,

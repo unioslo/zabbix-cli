@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
-from typing import Dict
 from typing import Optional
 
 from zabbix_cli.exceptions import ZabbixCLIError
@@ -19,16 +18,16 @@ class ZabbixCache:
 
     def __init__(self, client: ZabbixAPI) -> None:
         self.client = client
-        self._hostgroup_name_cache: Dict[str, str] = {}
+        self._hostgroup_name_cache: dict[str, str] = {}
         """Mapping of hostgroup names to hostgroup IDs"""
 
-        self._hostgroup_id_cache: Dict[str, str] = {}
+        self._hostgroup_id_cache: dict[str, str] = {}
         """Mapping of hostgroup IDs to hostgroup names"""
 
-        self._templategroup_name_cache: Dict[str, str] = {}
+        self._templategroup_name_cache: dict[str, str] = {}
         """Mapping of templategroup names to templategroup IDs"""
 
-        self._templategroup_id_cache: Dict[str, str] = {}  # NOTE: unused
+        self._templategroup_id_cache: dict[str, str] = {}  # NOTE: unused
         """Mapping of templategroup IDs to templategroup names"""
 
     def populate(self) -> None:

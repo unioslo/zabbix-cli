@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing import List
 from typing import Optional
-from typing import Set
 
 from pydantic import computed_field
 from typing_extensions import TypedDict
@@ -24,15 +22,15 @@ class AddHostsToHostGroup(TableRenderable):
     """Result type for `add_host_to_hostgroup` and `remove_host_from_hostgroup` commands."""
 
     hostgroup: str
-    hosts: List[str]
+    hosts: list[str]
 
     @classmethod
     def from_result(
         cls,
-        hosts: List[Host],
+        hosts: list[Host],
         hostgroup: HostGroup,
     ) -> AddHostsToHostGroup:
-        to_add: Set[str] = set()  # names of templates to link
+        to_add: set[str] = set()  # names of templates to link
         for host in hosts:
             for hg_host in hostgroup.hosts:
                 if host.host == hg_host.host:
@@ -49,15 +47,15 @@ class RemoveHostsFromHostGroup(TableRenderable):
     """Result type for `remove_host_from_hostgroup`."""
 
     hostgroup: str
-    hosts: List[str]
+    hosts: list[str]
 
     @classmethod
     def from_result(
         cls,
-        hosts: List[Host],
+        hosts: list[Host],
         hostgroup: HostGroup,
     ) -> RemoveHostsFromHostGroup:
-        to_remove: Set[str] = set()  # names of templates to link
+        to_remove: set[str] = set()  # names of templates to link
         for host in hosts:
             for hg_host in hostgroup.hosts:
                 if host.host == hg_host.host:
@@ -73,12 +71,12 @@ class ExtendHostgroupResult(TableRenderable):
     """Result type for `extend_hostgroup` command."""
 
     source: str
-    destination: List[str]
-    hosts: List[str]
+    destination: list[str]
+    hosts: list[str]
 
     @classmethod
     def from_result(
-        cls, source: HostGroup, destination: List[HostGroup]
+        cls, source: HostGroup, destination: list[HostGroup]
     ) -> ExtendHostgroupResult:
         return cls(
             source=source.name,
@@ -92,7 +90,7 @@ class MoveHostsResult(TableRenderable):
 
     source: str
     destination: str
-    hosts: List[str]
+    hosts: list[str]
 
     @classmethod
     def from_result(cls, source: HostGroup, destination: HostGroup) -> MoveHostsResult:
@@ -104,7 +102,7 @@ class MoveHostsResult(TableRenderable):
 
 
 class HostGroupDeleteResult(TableRenderable):
-    groups: List[str]
+    groups: list[str]
 
 
 class HostGroupHost(TypedDict):
@@ -169,7 +167,7 @@ class HostGroupPermissions(TableRenderable):
 
     groupid: str
     name: str
-    permissions: List[str]
+    permissions: list[str]
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["GroupID", "Name", "Permissions"]

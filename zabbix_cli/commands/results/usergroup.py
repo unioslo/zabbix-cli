@@ -1,10 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Mapping
 from typing import Union
 
 import rich
@@ -31,8 +29,8 @@ if TYPE_CHECKING:
 
 
 class UgroupUpdateUsersResult(TableRenderable):
-    usergroups: List[str]
-    users: List[str]
+    usergroups: list[str]
+    users: list[str]
 
     def __cols_rows__(self) -> ColsRowsType:
         return (
@@ -51,8 +49,8 @@ class UsergroupRemoveUsers(UgroupUpdateUsersResult):
 
 class AddUsergroupPermissionsResult(TableRenderable):
     usergroup: str
-    hostgroups: List[str]
-    templategroups: List[str]
+    hostgroups: list[str]
+    templategroups: list[str]
     permission: UsergroupPermission
 
     @computed_field
@@ -85,7 +83,7 @@ class ShowUsergroupResult(TableRenderable):
     name: str
     gui_access: str = Field(..., json_schema_extra={MetaKey.HEADER: "GUI Access"})
     status: str
-    users: List[str] = Field(
+    users: list[str] = Field(
         default_factory=list, json_schema_extra={MetaKey.JOIN_CHAR: ", "}
     )
 
@@ -119,11 +117,11 @@ class GroupRights(TableRenderable):
 
     __box__ = rich.box.MINIMAL
 
-    groups: Union[Dict[str, HostGroup], Dict[str, TemplateGroup]] = Field(
+    groups: Union[dict[str, HostGroup], dict[str, TemplateGroup]] = Field(
         default_factory=dict,
     )
 
-    rights: List[ZabbixRight] = Field(
+    rights: list[ZabbixRight] = Field(
         default_factory=list,
         description="Group rights for the user group.",
     )
@@ -144,25 +142,25 @@ class GroupRights(TableRenderable):
 class ShowUsergroupPermissionsResult(TableRenderable):
     usrgrpid: str
     name: str
-    hostgroups: Dict[str, HostGroup] = Field(
+    hostgroups: dict[str, HostGroup] = Field(
         default_factory=dict,
         exclude=True,
         description="Host groups the user group has access to. Used to render host group rights.",
     )
-    templategroups: Dict[str, TemplateGroup] = Field(
+    templategroups: dict[str, TemplateGroup] = Field(
         default_factory=dict,
         exclude=True,
         description="Mapping of all template groups. Used to render template group rights.",
     )
-    hostgroup_rights: List[ZabbixRight] = []
-    templategroup_rights: List[ZabbixRight] = []
+    hostgroup_rights: list[ZabbixRight] = []
+    templategroup_rights: list[ZabbixRight] = []
 
     @model_serializer
-    def model_ser(self) -> Dict[str, Any]:
+    def model_ser(self) -> dict[str, Any]:
         """LEGACY: Include the permission strings in the serialized output if
         we have legacy JSON output enabled.
         """
-        d: Dict[str, Any] = {
+        d: dict[str, Any] = {
             "usrgrpid": self.usrgrpid,
             "name": self.name,
             "hostgroup_rights": self.hostgroup_rights,
@@ -174,9 +172,9 @@ class ShowUsergroupPermissionsResult(TableRenderable):
         return d
 
     @property
-    def permissions(self) -> List[str]:
+    def permissions(self) -> list[str]:
         """LEGACY: The field `hostgroup_rights` was called `permissions` in V2."""
-        r: List[str] = []
+        r: list[str] = []
 
         def permission_str(
             right: ZabbixRight, groups: Mapping[str, Union[HostGroup, TemplateGroup]]
@@ -201,8 +199,8 @@ class ShowUsergroupPermissionsResult(TableRenderable):
     def from_usergroup(
         cls,
         usergroup: Usergroup,
-        hostgroups: List[HostGroup],
-        templategroups: List[TemplateGroup],
+        hostgroups: list[HostGroup],
+        templategroups: list[TemplateGroup],
     ) -> ShowUsergroupPermissionsResult:
         cls.model_rebuild()  # TODO: can we avoid this?
         res = cls(

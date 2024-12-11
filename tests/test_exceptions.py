@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Type
-
 import pytest
 from inline_snapshot import snapshot
 from zabbix_cli.exceptions import ZabbixAPIException
@@ -15,7 +13,7 @@ from zabbix_cli.pyzabbix.types import ZabbixAPIResponse
 @pytest.mark.parametrize(
     "outer_t", [TypeError, ValueError, ZabbixCLIError, ZabbixAPIException]
 )
-def test_get_cause_args(outer_t: Type[Exception]) -> None:
+def test_get_cause_args(outer_t: type[Exception]) -> None:
     try:
         try:
             try:

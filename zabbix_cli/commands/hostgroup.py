@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import List
 from typing import Optional
 
 import typer
@@ -73,7 +72,7 @@ def add_host_to_hostgroup(
         with app.status("Adding hosts to host groups..."):
             app.state.client.add_hosts_to_hostgroups(hosts, hgs)
 
-    result: List[AddHostsToHostGroup] = []
+    result: list[AddHostsToHostGroup] = []
     for hg in hgs:
         r = AddHostsToHostGroup.from_result(hosts, hg)
         if not r.hosts:
@@ -151,8 +150,8 @@ def create_hostgroup(
 
     app_config = app.state.config.app
 
-    rw_grps: List[str] = []
-    ro_grps: List[str] = []
+    rw_grps: list[str] = []
+    ro_grps: list[str] = []
     if not no_usergroup_permissions:
         rw_grps = parse_list_arg(rw_groups) or app_config.default_admin_usergroups
         ro_grps = parse_list_arg(ro_groups) or app_config.default_create_user_usergroups
@@ -322,7 +321,7 @@ def remove_host_from_hostgroup(
         with app.status("Removing hosts from host groups..."):
             app.state.client.remove_hosts_from_hostgroups(hosts, hgs)
 
-    result: List[RemoveHostsFromHostGroup] = []
+    result: list[RemoveHostsFromHostGroup] = []
     for hg in hgs:
         r = RemoveHostsFromHostGroup.from_result(hosts, hg)
         if not r.hosts:
@@ -471,9 +470,9 @@ def show_hostgroup_permissions(
             search=True,
         )
 
-    result: List[HostGroupPermissions] = []
+    result: list[HostGroupPermissions] = []
     for hg in hgs:
-        permissions: List[str] = []
+        permissions: list[str] = []
         for usergroup in usergroups:
             if app.api_version >= (6, 2, 0):
                 rights = usergroup.hostgroup_rights

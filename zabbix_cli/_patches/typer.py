@@ -7,14 +7,13 @@ Will probably break for some version of Typer at some point.
 from __future__ import annotations
 
 import inspect
+from collections.abc import Iterable
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
-from typing import Iterable
-from typing import Type
 from typing import Union
 from typing import cast
 from uuid import UUID
@@ -29,8 +28,6 @@ from zabbix_cli.commands.common.args import CommandParam
 from zabbix_cli.pyzabbix.enums import APIStrEnum
 
 if TYPE_CHECKING:
-    from typing import Dict
-
     from rich.style import Style
 
 patcher = get_patcher(f"Typer version: {typer.__version__}")
@@ -131,7 +128,7 @@ def patch_generate_enum_convertor() -> None:
     instantiating the enum with the value directly.
     """
 
-    def generate_enum_convertor(enum: Type[Enum]) -> Callable[[Any], Any]:
+    def generate_enum_convertor(enum: type[Enum]) -> Callable[[Any], Any]:
         lower_val_map = {str(val.value).lower(): val for val in enum}
 
         def convertor(value: Any) -> Any:
@@ -248,7 +245,7 @@ def patch_get_click_type() -> None:
             )
         # our patch for APIStrEnum
         elif lenient_issubclass(annotation, APIStrEnum):
-            annotation = cast(Type[APIStrEnum], annotation)
+            annotation = cast(type[APIStrEnum], annotation)
             return click.Choice(
                 annotation.all_choices(),
                 case_sensitive=parameter_info.case_sensitive,
@@ -283,7 +280,7 @@ def patch__get_rich_console() -> None:
 
     from zabbix_cli.output.style import RICH_THEME
 
-    styles: Dict[str, Union[str, Style]] = RICH_THEME.styles.copy()
+    styles: dict[str, Union[str, Style]] = RICH_THEME.styles.copy()
     styles.update(
         {
             "option": STYLE_OPTION,

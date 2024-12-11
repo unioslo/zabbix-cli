@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import List
 
 import pytest
 from inline_snapshot import snapshot
@@ -45,10 +44,10 @@ def test_table_renderable_metakey_header(header: str, expect: str) -> None:
     ],
 )
 def test_table_renderable_metakey_join_char(
-    content: List[str], join_char: str, expect: str
+    content: list[str], join_char: str, expect: str
 ) -> None:
     class TestTableRenderable(TableRenderable):
-        foo: List[str] = Field(..., json_schema_extra={MetaKey.JOIN_CHAR: join_char})
+        foo: list[str] = Field(..., json_schema_extra={MetaKey.JOIN_CHAR: join_char})
 
     t = TestTableRenderable(foo=content)
     assert t.__rows__() == [expect]
@@ -56,7 +55,7 @@ def test_table_renderable_metakey_join_char(
 
 def test_all_metakeys() -> None:
     class TestTableRenderable(TableRenderable):
-        foo: List[str] = Field(
+        foo: list[str] = Field(
             ...,
             json_schema_extra={MetaKey.JOIN_CHAR: "|", MetaKey.HEADER: "Foo Header"},
         )
@@ -75,7 +74,7 @@ def test_rows_with_unknown_base_model(caplog: LogCaptureFixture) -> None:
         foo: str
         bar: int
         baz: float
-        qux: List[str]
+        qux: list[str]
 
     class TestTableRenderable(TableRenderable):
         foo: FooModel

@@ -1,12 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from enum import Enum
 from typing import Any
 from typing import Generic
-from typing import List
-from typing import Mapping
 from typing import Optional
-from typing import Type
 from typing import TypeVar
 
 from strenum import StrEnum
@@ -110,7 +108,7 @@ class Choice(Enum):
     # NOTE: should we use a custom prompt class instead of repurposing the str prompt?
     @classmethod
     def from_prompt(
-        cls: Type[MixinType],
+        cls: type[MixinType],
         prompt: Optional[str] = None,
         default: MixinType = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
     ) -> MixinType:
@@ -140,23 +138,23 @@ class Choice(Enum):
         return cls(choice)
 
     @classmethod
-    def public_members(cls) -> List[Self]:
+    def public_members(cls) -> list[Self]:
         """Return list of visible enum members."""
         return [e for e in cls if not e.value.hidden]
 
     @classmethod
-    def choices(cls) -> List[str]:
+    def choices(cls) -> list[str]:
         """Return list of string values of the enum members."""
         return [str(e) for e in cls.public_members()]
 
     @classmethod
-    def api_choices(cls) -> List[int]:
+    def api_choices(cls) -> list[int]:
         """Return list of API values of the enum members."""
         # NOTE: should this be a list of strings instead?
         return [e.as_api_value() for e in cls.public_members()]
 
     @classmethod
-    def all_choices(cls) -> List[str]:
+    def all_choices(cls) -> list[str]:
         """All public choices as well as their API values."""
         return cls.choices() + [str(c) for c in cls.api_choices()]
 
@@ -196,7 +194,7 @@ class APIStrEnum(Choice):
 
     @classmethod
     def string_from_value(
-        cls: Type[Self], value: Any, default: str = "Unknown", with_code: bool = False
+        cls: type[Self], value: Any, default: str = "Unknown", with_code: bool = False
     ) -> str:
         """Get a formatted status string given a value."""
         try:
@@ -264,7 +262,7 @@ class ExportFormat(StrEnum):
         raise ValueError(f"Invalid format: {value!r}.")
 
     @classmethod
-    def get_importables(cls) -> List[ExportFormat]:
+    def get_importables(cls) -> list[ExportFormat]:
         """Return list of formats that can be imported."""
         return [cls.JSON, cls.YAML, cls.XML]
 
