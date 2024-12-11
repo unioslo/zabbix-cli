@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Optional
 
 import pytest
+from inline_snapshot import snapshot
 from packaging.version import Version
 from pydantic import SecretStr
 from zabbix_cli import auth
@@ -18,8 +20,10 @@ from zabbix_cli.auth import get_auth_token_file_paths
 from zabbix_cli.config.constants import AUTH_FILE
 from zabbix_cli.config.constants import AUTH_TOKEN_FILE
 from zabbix_cli.config.model import Config
-from zabbix_cli.models import TableRenderable
 from zabbix_cli.pyzabbix.client import ZabbixAPI
+
+if TYPE_CHECKING:
+    from zabbix_cli.models import TableRenderable
 
 
 def test_get_auth_file_paths_defafult(config: Config) -> None:
@@ -62,6 +66,25 @@ def test_get_auth_token_file_paths_override(tmp_path: Path, config: Config) -> N
         AUTH_TOKEN_FILE,
         AUTH_TOKEN_FILE_LEGACY,
     ]
+
+
+@pytest.fixture
+def table_renderable_mock(monkeypatch) -> type[TableRenderable]:
+    """Replace TableRenderable class in zabbix_cli.models with mock class
+    so that tests can mutate it without affecting other tests."""
+    from zabbix_cli.models import TableRenderable
+
+    class MockTableRenderable(TableRenderable):
+        pass
+
+    # Set a default version that is different from the real class
+    # so that we can tell if the mock class was used
+    MockTableRenderable.zabbix_version = Version("0.0.1")
+
+    # Use monkeypatch to temporarily replace the real class with the mock class
+    monkeypatch.setattr("zabbix_cli.models.TableRenderable", MockTableRenderable)
+
+    return MockTableRenderable
 
 
 @pytest.fixture(name="auth_token_file")
@@ -158,6 +181,7 @@ def _auth_file(tmp_path: Path) -> Path:
 )
 def test_authenticator_login_with_any(
     monkeypatch: pytest.MonkeyPatch,
+    table_renderable_mock: type[TableRenderable],
     auth_token_file: Path,
     auth_file: Path,
     config: Config,
@@ -174,6 +198,7 @@ def test_authenticator_login_with_any(
     MOCK_TOKEN = "abc1234567890"
 
     # Mock certain methods that are difficult to test
+    # States reasons for mocking each method
 
     # REASON: Makes HTTP calls to the Zabbix API
     def mock_login(self: ZabbixAPI, *args, **kwargs):
@@ -185,7 +210,7 @@ def test_authenticator_login_with_any(
     # REASON: Makes HTTP calls to the Zabbix API
     monkeypatch.setattr(auth.ZabbixAPI, "version", Version("1.2.3"))
 
-    # REASON: Prompts for input (could be tested with a fake input stream)
+    # REASON: Prompts for input (could also be tested with a fake input stream)
     def mock_get_username_password_prompt() -> Credentials:
         return Credentials(
             username=MOCK_USER,
@@ -199,7 +224,7 @@ def test_authenticator_login_with_any(
         mock_get_username_password_prompt,
     )
 
-    # REASON: Falls back on default auth token file path (which might exist)
+    # REASON: Falls back on default auth token file path (which might exist on test user's system)
     def mock_get_auth_token_file_paths(config: Optional[Config] = None) -> list[Path]:
         return [auth_token_file]
 
@@ -207,7 +232,7 @@ def test_authenticator_login_with_any(
         auth, "get_auth_token_file_paths", mock_get_auth_token_file_paths
     )
 
-    # REASON: Falls back on default auth file path (which might exist)
+    # REASON: Falls back on default auth file path (which might exist on test user's system)
     def mock_get_auth_file_paths(config: Optional[Config] = None) -> list[Path]:
         return [auth_file]
 
@@ -243,4 +268,27 @@ def test_authenticator_login_with_any(
     assert info.token == MOCK_TOKEN
 
     # Ensure the login method modified the base renderable's zabbix version attribute
+    # with the one we got from the mocked API response
+
+    # Check the mocked version we replace the real class with
+    assert table_renderable_mock.zabbix_version == Version("1.2.3")
+
+    # Try to import the real class and check that our mock changes were applied
+    from zabbix_cli.models import TableRenderable
+
     assert TableRenderable.zabbix_version == Version("1.2.3")
+
+
+def test_table_renderable_mock_reverted() -> None:
+    """Attempt to ensure that the TableRenderable has been unchanged after
+     running tests that mutate it.
+
+    If those tests have used the mock class correctly, this test should pass.
+
+    TODO: Ensure this test is run _after_ the tests that mutate the class.
+    """
+    from zabbix_cli.models import TableRenderable
+
+    # Ensure the mock changes were reverted
+    assert TableRenderable.zabbix_version != Version("1.2.3")
+    assert TableRenderable.zabbix_version.release == snapshot((7, 0, 0))
