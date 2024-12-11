@@ -18,6 +18,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Final
+from typing import Generator
 from typing import List
 from typing import NamedTuple
 from typing import Optional
@@ -56,7 +57,7 @@ SECURE_PERMISSIONS: Final[int] = 0o600
 SECURE_PERMISSIONS_STR = format(SECURE_PERMISSIONS, "o")
 
 
-class LoginCredentialType(StrEnum):
+class CredentialsType(StrEnum):
     """Types of valid login credentials."""
 
     PASSWORD = "username and password"
@@ -70,11 +71,7 @@ class CredentialsSource(StrEnum):
     FILE = "file"
     PROMPT = "prompt"
     CONFIG = "config"
-
-
-class LoginInfo(NamedTuple):
-    credentials: Credentials
-    token: str
+    LOGIN_COMMAND = "login command"
 
 
 class Credentials(NamedTuple):
@@ -86,16 +83,21 @@ class Credentials(NamedTuple):
     auth_token: Optional[str] = None
 
     @property
-    def type(self) -> Optional[LoginCredentialType]:
+    def type(self) -> Optional[CredentialsType]:
         if self.auth_token:
-            return LoginCredentialType.AUTH_TOKEN
+            return CredentialsType.AUTH_TOKEN
         if self.username and self.password:
-            return LoginCredentialType.PASSWORD
+            return CredentialsType.PASSWORD
         return None
 
     def is_valid(self) -> bool:
         """Check if credentials are valid (non-empty)."""
         return self.type is not None
+
+
+class LoginInfo(NamedTuple):
+    credentials: Credentials
+    token: str
 
 
 class Authenticator:
@@ -106,13 +108,16 @@ class Authenticator:
 
     def __init__(self, config: Config) -> None:
         self.config = config
+        # Ensure we have a Zabbix API URL before instantiating client
+        self.config.api.url = self.get_zabbix_url()
+        self.client = ZabbixAPI.from_config(self.config)
 
     @cached_property
     def screen(self) -> ScreenContext:
         return err_console.screen()
 
-    def login(self) -> ZabbixAPI:
-        """Log in to the Zabbix API using the configured credentials.
+    def login_with_any(self) -> Tuple[ZabbixAPI, LoginInfo]:
+        """Log in to the Zabbix API using any valid method.
 
         Returns the Zabbix API client object.
 
@@ -126,30 +131,25 @@ class Authenticator:
         6. Username and password in environment variables
         7. Username and password from prompt
         """
-        # Ensure we have a Zabbix API URL
-        self.config.api.url = self.get_zabbix_url()
-        client = ZabbixAPI.from_config(self.config)
-        info = self._do_login(client)
-        if info.credentials.username and self.config.app.use_auth_token_file:
-            write_auth_token_file(
-                info.credentials.username, info.token, self.config.app.auth_token_file
-            )
 
-        if info.credentials.username:
-            add_user(info.credentials.username)
+        for credentials in self._iter_all_credentials():
+            if not credentials.is_valid():
+                logger.debug("No valid credentials found with %s", credentials)
+                continue
+            info = self.login_with_credentials(credentials)
+            if info:
+                return self.client, info
+        raise AuthError(
+            f"No authentication method succeeded for {self.config.api.url}. Check the logs for more information."
+        )
 
-        if info.credentials.type == LoginCredentialType.AUTH_TOKEN:
-            logger.info("Logged in using auth token from %s", info.credentials.source)
-        else:
-            logger.info(
-                "Logged in as %s using username and password from %s",
-                info.credentials.username,
-                info.credentials.source,
-            )
-        self._update_config(info.credentials)
-        return client
+    def _iter_all_credentials(
+        self, prompt_password: bool = True
+    ) -> Generator[Credentials, None, None]:
+        """Generator that yields credentials from all possible sources.
 
-    def _do_login(self, client: ZabbixAPI) -> LoginInfo:
+        Finally yields a prompt for username and password if `prompt_password` is True.
+        """
         for func in [
             self._get_auth_token_config,
             self._get_auth_token_env,
@@ -157,42 +157,128 @@ class Authenticator:
             self._get_username_password_config,
             self._get_username_password_auth_file,
             self._get_username_password_env,
-            self._get_username_password_prompt,
         ]:
-            try:
-                credentials = func()
-                if not credentials.is_valid():
-                    logger.debug("No valid credentials found with %s", func.__name__)
-                    continue
-                logger.debug(
-                    "Attempting to log in with %s from %s",
-                    credentials.type,
-                    credentials.source,
-                )
-                token = self.login_with_credentials(client, credentials)
-                return LoginInfo(credentials, token)
-            except ZabbixAPIException as e:
-                logger.warning("Failed to log in with %s: %s", func.__name__, e)
-                continue
-            except Exception as e:
-                logger.error(
-                    "Unexpected error logging in with %s: %s", func.__name__, e
-                )
-                continue
-        else:
-            raise AuthError(
-                f"No authentication method succeeded for {self.config.api.url}. Check the logs for more information."
-            )
+            yield func()
+        if prompt_password:
+            yield self._get_username_password_prompt()
 
-    def login_with_credentials(
-        self, client: ZabbixAPI, credentials: Credentials
-    ) -> str:
-        """Log in to the Zabbix API using the provided credentials."""
-        return client.login(
+    @classmethod
+    def login_with_prompt(cls, config: Config) -> Tuple[ZabbixAPI, LoginInfo]:
+        """Log in to the Zabbix API using username and password from a prompt."""
+        auth = cls(config)
+        creds = auth._get_username_password_prompt()
+        info = auth.login_with_credentials(creds)
+        creds._replace(source=CredentialsSource.LOGIN_COMMAND)
+        if not info:
+            raise AuthError("Failed to log in with username and password.")
+        return auth.client, info
+
+    @classmethod
+    def login_with_username_password(
+        cls, config: Config, username: str, password: str
+    ) -> Tuple[ZabbixAPI, LoginInfo]:
+        """Log in to the Zabbix API using username and password from a prompt."""
+        auth = cls(config)
+        creds = Credentials(
+            username=username,
+            password=password,
+            source=CredentialsSource.LOGIN_COMMAND,
+        )
+        info = auth.login_with_credentials(creds)
+        if not info:
+            raise AuthError("Failed to log in with username and password.")
+        return auth.client, info
+
+    @classmethod
+    def login_with_token(
+        cls, config: Config, token: str
+    ) -> Tuple[ZabbixAPI, LoginInfo]:
+        """Log in to the Zabbix API using username and password from a prompt."""
+        auth = cls(config)
+        creds = Credentials(
+            auth_token=token,
+            source=CredentialsSource.LOGIN_COMMAND,
+        )
+        info = auth.login_with_credentials(creds)
+        if not info:
+            raise AuthError("Failed to log in with auth token.")
+        return auth.client, info
+
+    def login_with_credentials(self, credentials: Credentials) -> LoginInfo | None:
+        """Log in to the Zabbix API using the provided credentials.
+
+        Cannot fail; logs errors and returns None if unsuccessful.
+
+        Args:
+            credentials (Credentials): Credentials to use for logging in.
+
+        Returns:
+            LoginInfo | None: Login information if successful, None if not.
+        """
+        try:
+            logger.debug(
+                "Attempting to log in with %s from %s",
+                credentials.type,
+                credentials.source,
+            )
+            return self._do_login_with_credentials(credentials)
+        except ZabbixAPIException as e:
+            logger.warning("Failed to log in with %s: %s", credentials, e)
+            return
+        except Exception as e:
+            logger.error("Unexpected error logging in with %s: %s", credentials, e)
+            return
+
+    def _do_login_with_credentials(self, credentials: Credentials) -> LoginInfo:
+        """Login to Zabbix API, and update application state if successful."""
+        token = self.client.login(
             user=credentials.username,
             password=credentials.password,
             auth_token=credentials.auth_token,
         )
+        info = LoginInfo(credentials, token)
+
+        if info.credentials.type == CredentialsType.AUTH_TOKEN:
+            logger.info("Logged in using auth token from %s", info.credentials.source)
+        else:
+            logger.info(
+                "Logged in as %s using username and password from %s",
+                info.credentials.username,
+                info.credentials.source,
+            )
+
+        self._update_application_with_login_info(info)
+        return info
+
+    def _update_application_with_login_info(self, info: LoginInfo) -> None:
+        """Update the application state with the login information.
+
+        Includes the following:
+        - Write auth token file if configured
+        - Add username to logs
+        - Update config with credentials
+        - Set Zabbix API version on the TableRenderable base class
+        """
+        from zabbix_cli.models import TableRenderable
+
+        # Write auth token file
+        if info.credentials.username and self.config.app.use_auth_token_file:
+            write_auth_token_file(
+                info.credentials.username, info.token, self.config.app.auth_token_file
+            )
+
+        # Log context
+        if info.credentials.username:
+            add_user(info.credentials.username)
+        else:
+            logger.debug("No username detected, adding <TOKEN> to logs")
+            add_user("<TOKEN>")
+
+        # Update config with the new credentials
+        self._update_config(info.credentials)
+
+        # Set the Zabbix API version on the TableRenderable base class
+        TableRenderable.zabbix_version = self.client.version
 
     def _update_config(self, credentials: Credentials) -> None:
         """Update the config with credentials from the successful login."""
@@ -353,7 +439,7 @@ def login(config: Config) -> ZabbixAPI:
     Returns the Zabbix API client object.
     """
     auth = Authenticator(config)
-    client = auth.login()
+    client, _ = auth.login_with_any()
     return client
 
 
