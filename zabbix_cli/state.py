@@ -215,8 +215,8 @@ class State:
 
         Uses the authentication info from the config to log into the Zabbix API.
 
-        Also sets the JSON rendering mode specified in the config on the
-        TableRenderable base class."""
+        Also sets the JSON rendering mode on the TableRenderable base class
+        used to render application output."""
         from zabbix_cli import auth
         from zabbix_cli.models import TableRenderable
 
