@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing import List
 from typing import Optional
 from typing import TypeVar
 
@@ -78,7 +77,7 @@ def create_user(
         None, help="Comma-separated list of group IDs to add the user to."
     ),
     # Legacy V2 positional args
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Create a user."""
     from zabbix_cli.models import Result
@@ -171,7 +170,7 @@ def create_notification_user(
         help="Comma-separated list of usergroups to add the user to. Overrides user groups in config file.",
     ),
     # Legacy V2 args
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     # TODO: Improve phrasing of this help text. "Defining media for usergroup"???
     """Create a notification user.
@@ -231,7 +230,7 @@ def create_notification_user(
     if usergroups:
         ug_list = parse_list_arg(usergroups)
     else:
-        ug_list: List[str] = []
+        ug_list: list[str] = []
         ug_list.extend(app.state.config.app.default_notification_users_usergroups)
         ug_list.extend(app.state.config.app.default_create_user_usergroups)
     with app.status("Fetching user group(s)..."):
@@ -436,7 +435,7 @@ def update_user(
         help="User session lifetime in seconds. Set to 0 to never expire. Can be a time unit with suffix (0s, 15m, 1h, 1d, etc.)",
     ),
     # Legacy V2 positional args
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Update a user.
 

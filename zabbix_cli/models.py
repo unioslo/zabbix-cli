@@ -1,15 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import MutableSequence
 from enum import Enum
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
-from typing import Dict
 from typing import Generic
-from typing import List
-from typing import MutableSequence
 from typing import Optional
-from typing import Tuple
 from typing import Union
 from typing import cast
 
@@ -38,7 +35,7 @@ class ReturnCode(StrEnum):
     ERROR = "Error"
 
 
-ColsType = List[str]
+ColsType = list[str]
 """A list of column headers."""
 
 RowContent = MutableSequence["RenderableType"]
@@ -47,7 +44,7 @@ RowContent = MutableSequence["RenderableType"]
 RowsType = MutableSequence[RowContent]
 """A list of rows, where each row is a list of strings."""
 
-ColsRowsType = Tuple[ColsType, RowsType]
+ColsRowsType = tuple[ColsType, RowsType]
 """A tuple containing a list of columns and a list of rows, where each row is a list of strings."""
 
 
@@ -119,11 +116,11 @@ class TableRenderable(BaseModel):
         # But that will only happen once we actually encounter such a bug.
         return cast(T, f.json_schema_extra.get(key, default))
 
-    def __all_fields__(self) -> Dict[str, Union[FieldInfo, ComputedFieldInfo]]:
+    def __all_fields__(self) -> dict[str, Union[FieldInfo, ComputedFieldInfo]]:
         """Returns all fields for the model, including computed fields,
         but excluding excluded fields.
         """
-        all_fields: Dict[str, Union[FieldInfo, ComputedFieldInfo]] = {
+        all_fields: dict[str, Union[FieldInfo, ComputedFieldInfo]] = {
             **self.model_fields,
             **self.model_computed_fields,
         }
@@ -146,7 +143,7 @@ class TableRenderable(BaseModel):
         >>> User().__cols__()
         ["User ID", "Username"]
         """
-        cols: List[str] = []
+        cols: list[str] = []
 
         for field_name, field in self.__all_fields__().items():
             if (
@@ -181,7 +178,7 @@ class TableRenderable(BaseModel):
         >>> User(userid="1", username="admin", groups=["foo", "bar", "baz"]).__rows__()
         [["1", "admin", "foo\nbar\nbaz"]]
         """  # noqa: D416
-        fields: Dict[str, Any | str] = {
+        fields: dict[str, Any | str] = {
             field_name: getattr(self, field_name, "")
             for field_name in self.__all_fields__()
         }
@@ -197,7 +194,7 @@ class TableRenderable(BaseModel):
                 )
                 fields[field_name] = value.model_dump_json(indent=2)
             elif isinstance(value, list):
-                value = cast(List[Any], value)
+                value = cast(list[Any], value)
                 # A list either contains TableRenderable objects or stringable objects
                 if value and all(isinstance(v, TableRenderable) for v in value):
                     # TableRenderables are wrapped in an AggregateResult to render them
@@ -205,7 +202,7 @@ class TableRenderable(BaseModel):
                     # NOTE: we assume list contains items of the same type
                     # Rendering an aggregate result with mixed types is not supported
                     # and will probably break.
-                    value = cast(List[TableRenderable], value)
+                    value = cast(list[TableRenderable], value)
                     fields[field_name] = AggregateResult(result=value).as_table()
                 else:
                     # Other lists are rendered as newline delimited strings.
@@ -254,7 +251,7 @@ DataT = TypeVar("DataT", default=TableRenderable)
 class BaseResult(TableRenderable):
     message: str = Field(default="")
     """Field that signals that the result should be printed as a message, not a table."""
-    errors: List[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
     return_code: ReturnCode = ReturnCode.DONE
     table: bool = Field(default=True, exclude=True)
 
@@ -266,10 +263,10 @@ class BaseResult(TableRenderable):
 class Result(BaseResult, Generic[DataT]):
     """A result wrapping a single data object."""
 
-    result: Optional[Union[DataT, List[DataT]]] = None
+    result: Optional[Union[DataT, list[DataT]]] = None
 
     # https://docs.pydantic.dev/latest/concepts/serialization/#serialize_as_any-runtime-setting
-    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         return super().model_dump(serialize_as_any=True, **kwargs)
 
     def model_dump_json(self, **kwargs: Any) -> str:
@@ -287,7 +284,7 @@ class AggregateResult(BaseResult, Generic[TableRenderableT]):
     results.
     """
 
-    result: List[TableRenderableT] = Field(default_factory=list)
+    result: list[TableRenderableT] = Field(default_factory=list)
 
     def __cols_rows__(self) -> ColsRowsType:
         cols: ColsType = []

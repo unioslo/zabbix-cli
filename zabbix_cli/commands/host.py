@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ipaddress
-from typing import List
 from typing import Optional
 
 import typer
@@ -63,7 +62,7 @@ def create_host(
         help="Description of the host.",
     ),
     # LEGACY: V2-style positional args
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Create a host.
 
@@ -116,7 +115,7 @@ def create_host(
     ]
 
     # Determine host group IDs
-    hg_args: List[str] = []
+    hg_args: list[str] = []
 
     # Default host groups from config
     def_hgs = app.state.config.app.default_hostgroups

@@ -6,13 +6,11 @@ import os
 import shlex
 import sys
 from collections import defaultdict
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import DefaultDict
-from typing import Dict
-from typing import Iterable
-from typing import List
 from typing import NamedTuple
 from typing import NoReturn
 from typing import Optional
@@ -51,7 +49,7 @@ class InternalCommand(NamedTuple):
     description: str
 
 
-_internal_commands: Dict[str, InternalCommand] = dict()
+_internal_commands: dict[str, InternalCommand] = dict()
 
 
 def _register_internal_command(
@@ -85,7 +83,7 @@ def _help_internal() -> str:
         formatter.write_text('prefix external commands with "!"')
     with formatter.section("Internal Commands"):
         formatter.write_text('prefix internal commands with ":"')
-        info_table: DefaultDict[str, List[str]] = defaultdict(list)
+        info_table: DefaultDict[str, list[str]] = defaultdict(list)
         for mnemonic, target_info in _internal_commands.items():
             info_table[target_info[1]].append(mnemonic)
         formatter.write_dl(
@@ -107,12 +105,12 @@ _register_internal_command(
 
 
 def bootstrap_prompt(
-    prompt_kwargs: Optional[Dict[str, Any]],
+    prompt_kwargs: Optional[dict[str, Any]],
     group: click.Group,
     ctx: click.Context,
     show_only_unused: bool = False,
     shortest_only: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Bootstrap prompt_toolkit kwargs or use user defined values.
 
@@ -174,7 +172,7 @@ def handle_internal_commands(command: str) -> Any:
 def repl(  # noqa: C901
     old_ctx: Context,
     app: StatefulApp,
-    prompt_kwargs: Optional[Dict[str, Any]] = None,
+    prompt_kwargs: Optional[dict[str, Any]] = None,
     allow_system_commands: bool = True,
     allow_internal_commands: bool = True,
 ) -> None:

@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
-from typing import Iterator
-from typing import List
 from typing import NamedTuple
 from typing import Optional
 from typing import Protocol
@@ -53,13 +51,13 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import TemplateGroup
 
     class ExportKwargs(TypedDict, total=False):
-        hosts: List[Host]
-        host_groups: List[HostGroup]
-        images: List[Image]
-        maps: List[Map]
-        media_types: List[MediaType]
-        templates: List[Template]
-        template_groups: List[TemplateGroup]
+        hosts: list[Host]
+        host_groups: list[HostGroup]
+        images: list[Image]
+        maps: list[Map]
+        media_types: list[MediaType]
+        templates: list[Template]
+        template_groups: list[TemplateGroup]
 
 
 HELP_PANEL = "Import/Export"
@@ -102,8 +100,8 @@ class ZabbixExporter:
         self,
         client: ZabbixAPI,
         config: Config,
-        types: List[ExportType],
-        names: List[str],
+        types: list[ExportType],
+        names: list[str],
         directory: Path,
         format: ExportFormat,
         legacy_filenames: bool,
@@ -125,7 +123,7 @@ class ZabbixExporter:
         # Will need to be rewritten to use threads to achieve this.
 
         # TODO: test that mapping contains all export types
-        self.exporter_map: Dict[ExportType, ExporterFunc] = {
+        self.exporter_map: dict[ExportType, ExporterFunc] = {
             ExportType.HOST_GROUPS: self.export_host_groups,
             ExportType.TEMPLATE_GROUPS: self.export_template_groups,
             ExportType.HOSTS: self.export_hosts,
@@ -137,9 +135,9 @@ class ZabbixExporter:
 
         self.check_export_types()
 
-    def run(self) -> List[Path]:
+    def run(self) -> list[Path]:
         """Run exporters."""
-        files: List[Path] = []
+        files: list[Path] = []
         with err_console.status("") as status:
             for exporter in self.get_exporters():
                 status.update(f"Exporting {exporter.type.human_readable()}...")
@@ -162,9 +160,9 @@ class ZabbixExporter:
                     "Template group exports are not supported in Zabbix versions < 6.2."
                 )
 
-    def get_exporters(self) -> List[Exporter]:
+    def get_exporters(self) -> list[Exporter]:
         """Get a list of exporters to run."""
-        exporters: List[Exporter] = []
+        exporters: list[Exporter] = []
         for export_type in self.export_types:
             exporter = self.exporter_map.get(export_type, None)
             if not exporter:  # should never happen - tests should catch this
@@ -293,14 +291,14 @@ class ZabbixExporter:
         return filename
 
 
-def parse_export_types(value: List[str]) -> List[ExportType]:
+def parse_export_types(value: list[str]) -> list[ExportType]:
     # If we have no specific exports, export all object types
     if not value:
         value = list(ExportType)
     elif "#all#" in value:
         warning("#all# is a deprecated value and will be removed in a future version.")
         value = list(ExportType)
-    objs: List[ExportType] = []
+    objs: list[ExportType] = []
     for obj in value:
         try:
             export_type = ExportType(obj)
@@ -316,8 +314,8 @@ def parse_export_types(value: List[str]) -> List[ExportType]:
 
 
 def parse_export_types_callback(
-    ctx: typer.Context, param: typer.CallbackParam, value: List[str]
-) -> List[ExportType]:
+    ctx: typer.Context, param: typer.CallbackParam, value: list[str]
+) -> list[ExportType]:
     """Parses list of object export type names.
 
     In V2, this was called "objects", which isn't very descriptive...
@@ -360,7 +358,7 @@ def export_configuration(
     ),
     # NOTE: We can't accept comma-separated values AND multiple values when using enums!
     # Typer performs its parsing before callbacks are run, sadly.
-    types: List[ExportType] = typer.Option(
+    types: list[ExportType] = typer.Option(
         [],
         "--type",
         help="Type(s) of objects to export. Can be specified multiple times. Defaults to all object types.",
@@ -397,7 +395,7 @@ def export_configuration(
     ),
     # TODO: add --ignore-errors option
     # Legacy positional args
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     r"""Export Zabbix configuration for one or more components.
 
@@ -478,7 +476,7 @@ class ZabbixImporter:
         self,
         client: ZabbixAPI,
         config: Config,
-        files: List[Path],
+        files: list[Path],
         create_missing: bool,
         update_existing: bool,
         delete_missing: bool,
@@ -492,8 +490,8 @@ class ZabbixImporter:
         self.update_existing = update_existing
         self.delete_missing = delete_missing
 
-        self.imported: List[Path] = []
-        self.failed: List[Path] = []
+        self.imported: list[Path] = []
+        self.failed: list[Path] = []
 
     def run(self) -> None:
         """Runs the importer."""
@@ -536,10 +534,10 @@ class ZabbixImporter:
             logger.info(f"Imported file {file}")
 
 
-def filter_valid_imports(files: List[Path]) -> List[Path]:
+def filter_valid_imports(files: list[Path]) -> list[Path]:
     """Filter list of files to include only valid imports."""
     importables = [i.casefold() for i in ExportFormat.get_importables()]
-    valid: List[Path] = []
+    valid: list[Path] = []
     for f in files:
         if not f.exists():
             continue
@@ -574,7 +572,7 @@ def import_configuration(
         help="Enable best-effort importing. Print errors from failed imports but continue importing.",
     ),
     # Legacy positional args
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Import Zabbix configuration from file, directory or glob pattern.
 

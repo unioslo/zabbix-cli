@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from datetime import timedelta
-from typing import Tuple
 
 import pytest
 from freezegun import freeze_time
@@ -95,7 +94,7 @@ def test_convert_duration(input: str, expect: timedelta) -> None:
     ],
 )
 def test_convert_timestamp_interval(
-    input: str, expect: Tuple[datetime, datetime]
+    input: str, expect: tuple[datetime, datetime]
 ) -> None:
     assert convert_timestamp_interval(input) == expect
     # TODO: test with mix of formats. e.g. "2016-11-21T22:00 to 2016-11-21 23:00:00"

@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Type
 from typing import Union
 
 import pytest
@@ -194,15 +190,13 @@ def test_config_get_with_annotations() -> None:
 
     # List type
     assert config.get("extra4", type=list) == [1, 2, 3]
-    assert config.get("extra4", type=List[int]) == [1, 2, 3]
-    if sys.version_info >= (3, 9):
-        assert config.get("extra4", type=list[int]) == [1, 2, 3]
+    assert config.get("extra4", type=list[int]) == [1, 2, 3]
+    assert config.get("extra4", type=list[int]) == [1, 2, 3]
 
     # Dict type
     assert config.get("extra5", type=dict) == {"foo": [1, 2, 3]}
-    assert config.get("extra5", type=Dict[str, List[int]]) == {"foo": [1, 2, 3]}
-    if sys.version_info >= (3, 9):
-        assert config.get("extra5", type=dict[str, list[int]]) == {"foo": [1, 2, 3]}
+    assert config.get("extra5", type=dict[str, list[int]]) == {"foo": [1, 2, 3]}
+    assert config.get("extra5", type=dict[str, list[int]]) == {"foo": [1, 2, 3]}
 
 
 def test_plugin_config_set() -> None:
@@ -443,9 +437,9 @@ def test_deprecated_fields_updated() -> None:
     assert conf.api.username == "System-User"
 
 
-def get_deprecated_fields(model: Union[Type[BaseModel], BaseModel]) -> List[str]:
+def get_deprecated_fields(model: Union[type[BaseModel], BaseModel]) -> list[str]:
     """Get a set of names of deprecated fields in a model and its submodels."""
-    fields: List[str] = []
+    fields: list[str] = []
     for field_name, field in model.model_fields.items():
         if field.deprecated:
             fields.append(field_name)

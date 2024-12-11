@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import List
 from typing import Optional
 
 import typer
@@ -39,7 +38,7 @@ def acknowledge_event(
         help="Close the event after acknowledging it",
     ),
     # Legacy positional args
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Acknowledge events by ID."""
     from zabbix_cli.commands.results.problem import AcknowledgeEventResult
@@ -105,7 +104,7 @@ def acknowledge_trigger_last_event(
         help="Close event",
     ),
     # Legacy positional args
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Acknowledge the the last event for the given triggers."""
     from zabbix_cli.commands.results.problem import AcknowledgeTriggerLastEventResult
@@ -167,7 +166,7 @@ def show_alarms(
         "--unack/--ack",
         help="Show only alarms whose last event is unacknowledged.",
     ),
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Show the latest events for the given triggers, hosts, and/or host groups.
 
@@ -246,7 +245,7 @@ def show_trigger_events(
         "-l",
         help="Maximum number of events to show.",
     ),
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Show the latest events for the given triggers, hosts, and/or host groups.
 

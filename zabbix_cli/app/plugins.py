@@ -5,9 +5,7 @@ import sys
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING
-from typing import Dict
 from typing import Protocol
-from typing import Tuple
 from typing import cast
 from typing import runtime_checkable
 
@@ -36,7 +34,7 @@ class PluginModule(Protocol):
 
 class PluginLoader:
     def __init__(self) -> None:
-        self.plugins: Dict[str, ModuleType] = {}
+        self.plugins: dict[str, ModuleType] = {}
 
     def load(self, config: Config) -> None:
         self._load_plugins(config)
@@ -95,7 +93,7 @@ class PluginLoader:
         # This is one of the drawbacks of running in 3.9 mode, but
         # it's necessary to ensure we don't introduce features that
         # do not exist in our minimum supported version.
-        discovered_plugins = cast(Tuple[EntryPoint], discovered_plugins)
+        discovered_plugins = cast(tuple[EntryPoint], discovered_plugins)
         for plugin in discovered_plugins:
             conf = config.plugins.get(plugin.name)
             try:

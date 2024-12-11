@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from types import TracebackType
     from typing import Optional
-    from typing import Type
 
 
 class BasePatcher(ABC):
@@ -27,7 +26,7 @@ class BasePatcher(ABC):
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
+        exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> bool:
@@ -70,7 +69,7 @@ class BasePatcher(ABC):
         raise SystemExit(1)
 
 
-def get_patcher(info: str) -> Type[BasePatcher]:
+def get_patcher(info: str) -> type[BasePatcher]:
     """Returns a patcher for a given package."""
 
     class Patcher(BasePatcher):

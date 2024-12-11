@@ -24,10 +24,7 @@ import functools
 import logging
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Type
 from typing import TypeVar
 from typing import Union
 from typing import overload
@@ -166,26 +163,26 @@ class OutputConfig(BaseModel):
 
 
 class AppConfig(BaseModel):
-    default_hostgroups: List[str] = Field(
+    default_hostgroups: list[str] = Field(
         default=["All-hosts"],
         # Changed in V3: default_hostgroup -> default_hostgroups
         validation_alias=AliasChoices("default_hostgroups", "default_hostgroup"),
     )
-    default_admin_usergroups: List[str] = Field(
+    default_admin_usergroups: list[str] = Field(
         default=[],
         # Changed in V3: default_admin_usergroup -> default_admin_usergroups
         validation_alias=AliasChoices(
             "default_admin_usergroups", "default_admin_usergroup"
         ),
     )
-    default_create_user_usergroups: List[str] = Field(
+    default_create_user_usergroups: list[str] = Field(
         default=[],
         # Changed in V3: default_create_user_usergroup -> default_create_user_usergroups
         validation_alias=AliasChoices(
             "default_create_user_usergroups", "default_create_user_usergroup"
         ),
     )
-    default_notification_users_usergroups: List[str] = Field(
+    default_notification_users_usergroups: list[str] = Field(
         default=["All-notification-users"],
         # Changed in V3: default_notification_users_usergroup -> default_notification_users_usergroups
         validation_alias=AliasChoices(
@@ -355,8 +352,8 @@ class LoggingConfig(BaseModel):
 
 
 # Can consider moving this elsewhere
-@functools.lru_cache(maxsize=None)
-def _get_type_adapter(type: Type[T]) -> TypeAdapter[T]:
+@functools.cache
+def _get_type_adapter(type: type[T]) -> TypeAdapter[T]:
     """Get a type adapter for a given type."""
     return TypeAdapter(type)
 
@@ -384,7 +381,7 @@ class PluginConfig(BaseModel):
 
     # Type with no default
     @overload
-    def get(self, key: str, *, type: Type[T]) -> T: ...
+    def get(self, key: str, *, type: type[T]) -> T: ...
 
     # No type with default
     @overload
@@ -396,7 +393,7 @@ class PluginConfig(BaseModel):
         self,
         key: str,
         default: T,
-        type: Type[T],
+        type: type[T],
     ) -> T: ...
 
     # Union type with no default
@@ -405,7 +402,7 @@ class PluginConfig(BaseModel):
         self,
         key: str,
         *,
-        type: Optional[Type[T]],
+        type: Optional[type[T]],
     ) -> Optional[T]: ...
 
     # Union type with default
@@ -414,14 +411,14 @@ class PluginConfig(BaseModel):
         self,
         key: str,
         default: Optional[T],
-        type: Optional[Type[T]],
+        type: Optional[type[T]],
     ) -> Optional[T]: ...
 
     def get(
         self,
         key: str,
         default: Union[T, Any] = NotSet,
-        type: Optional[Type[T]] = object,
+        type: Optional[type[T]] = object,
     ) -> Union[T, Optional[T], Any]:
         """Get a plugin configuration value by key.
 
@@ -448,8 +445,8 @@ class PluginConfig(BaseModel):
         setattr(self, key, value)
 
 
-class PluginsConfig(RootModel[Dict[str, PluginConfig]]):
-    root: Dict[str, PluginConfig] = Field(default_factory=dict)
+class PluginsConfig(RootModel[dict[str, PluginConfig]]):
+    root: dict[str, PluginConfig] = Field(default_factory=dict)
 
     def get(self, key: str, strict: bool = False) -> Optional[PluginConfig]:
         """Get a plugin configuration by name."""

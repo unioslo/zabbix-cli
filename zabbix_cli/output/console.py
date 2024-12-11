@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
 from typing import NoReturn
 from typing import Optional
 
@@ -52,7 +51,7 @@ RESERVED_EXTRA_KEYS = (
 )
 
 
-def get_extra_dict(**kwargs: Any) -> Dict[str, Any]:
+def get_extra_dict(**kwargs: Any) -> dict[str, Any]:
     """Format the extra dict for logging. Renames some keys to avoid
     collisions with the default keys.
 

@@ -5,9 +5,9 @@ import os
 import re
 import subprocess
 import sys
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator
 from typing import Optional
 
 from zabbix_cli.exceptions import ZabbixCLIError

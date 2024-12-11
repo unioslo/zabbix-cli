@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
 
 from pydantic import Field
@@ -75,7 +73,7 @@ class MacroHostListV2(TableRenderable):
         return ["Macro", "Value", "HostID", "Host"], rows
 
     @model_serializer()
-    def model_ser(self) -> Dict[str, Any]:
+    def model_ser(self) -> dict[str, Any]:
         if not self.macro.hosts:
             return {}  # match V2 output
         return {
@@ -111,5 +109,5 @@ class ShowUsermacroTemplateListResult(TableRenderable):
     templateid: str
     template: str
 
-    def __cols__(self) -> List[str]:
+    def __cols__(self) -> list[str]:
         return ["Macro", "Value", "Template ID", "Template"]

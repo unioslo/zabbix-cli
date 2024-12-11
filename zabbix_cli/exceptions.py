@@ -3,12 +3,9 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import NoReturn
 from typing import Optional
 from typing import Protocol
-from typing import Type
 from typing import runtime_checkable
 
 if TYPE_CHECKING:
@@ -200,20 +197,20 @@ class HandleFunc(Protocol):
     def __call__(self, e: Any) -> NoReturn: ...
 
 
-def get_cause_args(e: Optional[BaseException]) -> List[str]:
+def get_cause_args(e: Optional[BaseException]) -> list[str]:
     """Retrieves all args as strings from all exceptions in the cause chain.
     Flattens the args into a single list.
     """
-    args: List[str] = []
+    args: list[str] = []
     while e:
         args.extend(get_exc_args(e))
         e = e.__cause__
     return args
 
 
-def get_exc_args(e: BaseException) -> List[str]:
+def get_exc_args(e: BaseException) -> list[str]:
     """Returns the error message as a string."""
-    args: List[str] = [str(arg) for arg in e.args]
+    args: list[str] = [str(arg) for arg in e.args]
     if isinstance(e, ZabbixAPIRequestError):
         args.append(e.reason())
     return args
@@ -278,13 +275,13 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
         handle_notraceback(e)
 
 
-def get_exception_handler(type_: Type[Exception]) -> Optional[HandleFunc]:
+def get_exception_handler(type_: type[Exception]) -> Optional[HandleFunc]:
     """Returns the exception handler for the given exception type."""
     from httpx import ConnectError
     from pydantic import ValidationError
 
     # Defined inline for performance reasons (httpx and pydantic imports)
-    EXC_HANDLERS: Dict[type[Exception], HandleFunc] = {
+    EXC_HANDLERS: dict[type[Exception], HandleFunc] = {
         # ZabbixAPICallError: handle_zabbix_api_call_error,  # NOTE: use different strategy for this?
         ZabbixAPIException: handle_zabbix_api_exception,  # NOTE: use different strategy for this?
         ZabbixCLIError: handle_notraceback,

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import List
 from typing import Optional
 
 from zabbix_cli.models import TableRenderable
@@ -9,7 +8,7 @@ from zabbix_cli.models import TableRenderable
 class AcknowledgeEventResult(TableRenderable):
     """Result type for `acknowledge_event` command."""
 
-    event_ids: List[str] = []
+    event_ids: list[str] = []
     close: bool = False
     message: Optional[str] = None
 
@@ -17,4 +16,4 @@ class AcknowledgeEventResult(TableRenderable):
 class AcknowledgeTriggerLastEventResult(AcknowledgeEventResult):
     """Result type for `acknowledge_trigger_last_event` command."""
 
-    trigger_ids: List[str] = []
+    trigger_ids: list[str] = []

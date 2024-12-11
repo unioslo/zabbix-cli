@@ -4,7 +4,6 @@ import json
 from contextlib import nullcontext
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
 
 import typer
 
@@ -142,7 +141,7 @@ def render_json_legacy(
     else:
         from zabbix_cli.models import AggregateResult
 
-        jdict: Dict[str, Any] = {}  # always a dict in legacy mode
+        jdict: dict[str, Any] = {}  # always a dict in legacy mode
         res = result.model_dump(mode="json", by_alias=True)
         if isinstance(result, AggregateResult):
             py_result = res.get("result", [])

@@ -7,9 +7,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import List
 from typing import Optional
-from typing import Set
 
 import typer
 
@@ -55,7 +53,7 @@ def parse_int_arg(arg: str) -> int:
         raise ZabbixCLIError(f"Invalid integer value: {arg}") from e
 
 
-def parse_list_arg(arg: Optional[str], keep_empty: bool = False) -> List[str]:
+def parse_list_arg(arg: Optional[str], keep_empty: bool = False) -> list[str]:
     """Convert comma-separated string to list."""
     try:
         args = arg.strip().split(",") if arg else []
@@ -66,7 +64,7 @@ def parse_list_arg(arg: Optional[str], keep_empty: bool = False) -> List[str]:
         raise ZabbixCLIError(f"Invalid comma-separated string value: {arg}") from e
 
 
-def parse_int_list_arg(arg: str) -> List[int]:
+def parse_int_list_arg(arg: str) -> list[int]:
     """Convert comma-separated string of ints to list of ints."""
     args = parse_list_arg(
         arg,
@@ -84,7 +82,7 @@ def parse_hostgroups_arg(
     strict: bool = False,
     select_hosts: bool = False,
     select_templates: bool = False,
-) -> List[HostGroup]:
+) -> list[HostGroup]:
     from zabbix_cli.output.console import exit_err
     from zabbix_cli.output.prompts import str_prompt
 
@@ -112,7 +110,7 @@ def parse_hosts_arg(
     app: StatefulApp,
     hostnames_or_ids: Optional[str],
     strict: bool = False,
-) -> List[Host]:
+) -> list[Host]:
     from zabbix_cli.output.console import exit_err
     from zabbix_cli.output.prompts import str_prompt
 
@@ -136,7 +134,7 @@ def parse_templates_arg(
     template_names_or_ids: Optional[str],
     strict: bool = False,
     select_hosts: bool = False,
-) -> List[Template]:
+) -> list[Template]:
     from zabbix_cli.output.console import exit_err
 
     template_args = parse_list_arg(template_names_or_ids)
@@ -159,7 +157,7 @@ def parse_templategroups_arg(
     tgroup_names_or_ids: str,
     strict: bool = False,
     select_templates: bool = False,
-) -> List[TemplateGroup]:
+) -> list[TemplateGroup]:
     tg_args = parse_list_arg(tgroup_names_or_ids)
     if not tg_args:
         exit_err("At least one template group name/ID is required.")
@@ -207,8 +205,8 @@ def parse_path_arg(arg: str, must_exist: bool = False) -> Path:
 
 
 def get_hostgroup_hosts(
-    app: StatefulApp, hostgroups: List[HostGroup] | str
-) -> List[Host]:
+    app: StatefulApp, hostgroups: list[HostGroup] | str
+) -> list[Host]:
     """Get all hosts from a list of host groups.
 
     Args:
@@ -221,8 +219,8 @@ def get_hostgroup_hosts(
         )
     # Get all hosts from all host groups
     # Some hosts can be in multiple host groups - ensure no dupes
-    hosts: List[Host] = []
-    seen: Set[str] = set()
+    hosts: list[Host] = []
+    seen: set[str] = set()
     for hg in hostgroups:
         for host in hg.hosts:
             if host.host not in seen:
@@ -236,7 +234,7 @@ def check_at_least_one_option_set(ctx: typer.Context) -> None:
 
     Useful for commands used to update resources, where all options
     are optional, but at least one is required to make a change."""
-    optional_params: Set[str] = set()
+    optional_params: set[str] = set()
     for param in ctx.command.params:
         if param.required:
             continue

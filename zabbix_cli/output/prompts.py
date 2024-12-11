@@ -8,9 +8,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Any
 from typing import Callable
-from typing import List
 from typing import Optional
-from typing import Type
 from typing import overload
 
 from rich.prompt import Confirm
@@ -92,7 +90,7 @@ def str_prompt(
     default: str = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
     password: bool = False,
     show_default: bool = True,
-    choices: Optional[List[str]] = None,
+    choices: Optional[list[str]] = None,
     empty_ok: bool = False,
     strip: bool = True,
     **kwargs: Any,
@@ -163,7 +161,7 @@ def str_prompt_optional(
     default: str = "",
     password: bool = False,
     show_default: bool = False,
-    choices: Optional[List[str]] = None,
+    choices: Optional[list[str]] = None,
     strip: bool = True,
     **kwargs: Any,
 ) -> str:
@@ -193,7 +191,7 @@ def list_prompt(
     # https://github.com/python/mypy/issues/3737#issuecomment-1446769973
     # Using this weird TypeConstructor type seems very hacky
     type: TypeConstructor[T] = str,
-) -> List[T]:
+) -> list[T]:
     """Prompt user for a comma-separated list of values."""
     from zabbix_cli.utils.args import parse_list_arg
 
@@ -256,7 +254,7 @@ def float_prompt(
 
 @overload
 def _number_prompt(
-    prompt_type: Type[IntPrompt],
+    prompt_type: type[IntPrompt],
     prompt: str,
     default: int | float | None = ...,
     show_default: bool = ...,
@@ -269,7 +267,7 @@ def _number_prompt(
 
 @overload
 def _number_prompt(
-    prompt_type: Type[FloatPrompt],
+    prompt_type: type[FloatPrompt],
     prompt: str,
     default: int | float | None = ...,
     show_default: bool = ...,
@@ -281,7 +279,7 @@ def _number_prompt(
 
 
 def _number_prompt(
-    prompt_type: Type[IntPrompt] | Type[FloatPrompt],
+    prompt_type: type[IntPrompt] | type[FloatPrompt],
     prompt: str,
     default: int | float | None = None,
     show_default: bool = True,

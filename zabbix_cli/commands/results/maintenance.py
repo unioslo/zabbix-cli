@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any
-from typing import List
 from typing import Optional
 
 from pydantic import Field
@@ -25,9 +24,9 @@ class CreateMaintenanceDefinitionResult(TableRenderable):
 class ShowMaintenancePeriodsResult(TableRenderable):
     maintenanceid: str = Field(title="Maintenance ID")
     name: str
-    timeperiods: List[TimePeriod]
-    hosts: List[str]
-    groups: List[str]
+    timeperiods: list[TimePeriod]
+    hosts: list[str]
+    groups: list[str]
 
 
 class ShowMaintenanceDefinitionsResult(TableRenderable):
@@ -38,8 +37,8 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
     type: Optional[int]
     active_till: datetime
     description: Optional[str]
-    hosts: List[str]
-    groups: List[str]
+    hosts: list[str]
+    groups: list[str]
 
     @computed_field
     @property

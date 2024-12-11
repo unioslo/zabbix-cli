@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import List
 from typing import Optional
 
 from pydantic import field_serializer
@@ -20,10 +19,10 @@ if TYPE_CHECKING:
 class ExportResult(TableRenderable):
     """Result type for `export_configuration` command."""
 
-    exported: List[Path] = []
+    exported: list[Path] = []
     """List of paths to exported files."""
-    types: List[ExportType] = []
-    names: List[str] = []
+    types: list[ExportType] = []
+    names: list[str] = []
     format: ExportFormat
 
 
@@ -32,18 +31,18 @@ class ImportResult(TableRenderable):
 
     success: bool = True
     dryrun: bool = False
-    imported: List[Path] = []
-    failed: List[Path] = []
+    imported: list[Path] = []
+    failed: list[Path] = []
     duration: Optional[float] = None
     """Duration it took to import files in seconds. Is None if import failed."""
 
     @field_serializer("imported", "failed", when_used="json")
-    def _serialize_files(self, files: List[Path]) -> List[str]:
+    def _serialize_files(self, files: list[Path]) -> list[str]:
         """Serializes files as list of normalized, absolute paths with symlinks resolved."""
         return [str(f.resolve()) for f in files]
 
     def __cols_rows__(self) -> ColsRowsType:
-        cols: List[str] = ["Imported", "Failed"]
+        cols: list[str] = ["Imported", "Failed"]
         rows: RowsType = [
             [
                 "\n".join(path_link(f) for f in self.imported),

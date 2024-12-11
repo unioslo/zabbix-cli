@@ -14,15 +14,14 @@ Zabbix versions.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
+from collections.abc import MutableMapping
+from collections.abc import Sequence
 from datetime import datetime
 from datetime import timedelta
+from typing import Annotated
 from typing import Any
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import MutableMapping
 from typing import Optional
-from typing import Sequence
 from typing import Union
 
 from pydantic import AliasChoices
@@ -40,7 +39,6 @@ from pydantic import computed_field
 from pydantic import field_serializer
 from pydantic import field_validator
 from pydantic_core import PydanticCustomError
-from typing_extensions import Annotated
 from typing_extensions import Literal
 from typing_extensions import TypeAliasType
 from typing_extensions import TypedDict
@@ -127,8 +125,8 @@ assigned as values in a ParamsType.
 
 
 def serialize_host_list_json(
-    hosts: List[Host], info: SerializationInfo
-) -> List[Dict[str, str]]:
+    hosts: list[Host], info: SerializationInfo
+) -> list[dict[str, str]]:
     """Custom JSON serializer for a list of hosts.
 
     Most of the time we don't want to serialize _all_ fields of a host.
@@ -141,7 +139,7 @@ def serialize_host_list_json(
 
 
 HostList = Annotated[
-    List["Host"], PlainSerializer(serialize_host_list_json, when_used="json")
+    list["Host"], PlainSerializer(serialize_host_list_json, when_used="json")
 ]
 """List of hosts that serialize as the minimal representation of a list of hosts."""
 
@@ -171,7 +169,7 @@ class ModifyHostItem(TypedDict):
     hostid: Union[str, int]
 
 
-ModifyHostParams = List[ModifyHostItem]
+ModifyHostParams = list[ModifyHostItem]
 
 """A list of host IDs in an API request.
 
@@ -185,7 +183,7 @@ class ModifyGroupItem(TypedDict):
     groupid: Union[str, int]
 
 
-ModifyGroupParams = List[ModifyGroupItem]
+ModifyGroupParams = list[ModifyGroupItem]
 """A list of host/template group IDs in an API request.
 
 E.g. `[{"groupid": "123"}, {"groupid": "456"}]`
@@ -198,7 +196,7 @@ class ModifyTemplateItem(TypedDict):
     templateid: Union[str, int]
 
 
-ModifyTemplateParams = List[ModifyTemplateItem]
+ModifyTemplateParams = list[ModifyTemplateItem]
 """A list of template IDs in an API request.
 
 E.g. `[{"templateid": "123"}, {"templateid": "456"}]`
@@ -233,7 +231,7 @@ class ZabbixAPIBaseModel(TableRenderable):
 
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
-    def model_dump_api(self) -> Dict[str, Any]:
+    def model_dump_api(self) -> dict[str, Any]:
         """Dump the model as a JSON-serializable dict used in API calls.
 
         Excludes computed fields by default."""
@@ -255,7 +253,7 @@ class ZabbixRight(ZabbixAPIBaseModel):
         """Returns the permission as a formatted string."""
         return UsergroupPermission.string_from_value(self.permission)
 
-    def model_dump_api(self) -> Dict[str, Any]:
+    def model_dump_api(self) -> dict[str, Any]:
         return self.model_dump(
             mode="json", include={"permission", "id"}, exclude_none=True
         )
@@ -302,10 +300,10 @@ class Usergroup(ZabbixAPIBaseModel):
     usrgrpid: str
     gui_access: int
     users_status: int
-    rights: List[ZabbixRight] = []
-    hostgroup_rights: List[ZabbixRight] = []
-    templategroup_rights: List[ZabbixRight] = []
-    users: List[User] = []
+    rights: list[ZabbixRight] = []
+    hostgroup_rights: list[ZabbixRight] = []
+    templategroup_rights: list[ZabbixRight] = []
+    users: list[User] = []
 
     @computed_field
     @property
@@ -345,10 +343,10 @@ class Template(ZabbixAPIBaseModel):
     templateid: str
     host: str
     hosts: HostList = []
-    templates: List[Template] = []
+    templates: list[Template] = []
     """Child templates (templates inherited from this template)."""
 
-    parent_templates: List[Template] = Field(
+    parent_templates: list[Template] = Field(
         default_factory=list,
         validation_alias=AliasChoices("parentTemplates", "parent_templates"),
         serialization_alias="parentTemplates",  # match JSON output to API format
@@ -376,7 +374,7 @@ class TemplateGroup(ZabbixAPIBaseModel):
     groupid: str
     name: str
     uuid: str
-    templates: List[Template] = []
+    templates: list[Template] = []
 
 
 class HostGroup(ZabbixAPIBaseModel):
@@ -385,7 +383,7 @@ class HostGroup(ZabbixAPIBaseModel):
     hosts: HostList = []
     flags: int = 0
     internal: Optional[int] = None  # <6.2
-    templates: List[Template] = []  # <6.2
+    templates: list[Template] = []  # <6.2
 
     def __cols_rows__(self) -> ColsRowsType:
         # FIXME: is this ever used? Can we remove?
@@ -422,12 +420,12 @@ class Host(ZabbixAPIBaseModel):
     hostid: str
     host: str = ""
     description: Optional[str] = None
-    groups: List[HostGroup] = Field(
+    groups: list[HostGroup] = Field(
         default_factory=list,
         # Compat for >= 6.2.0
         validation_alias=AliasChoices("groups", "hostgroups"),
     )
-    templates: List[Template] = Field(
+    templates: list[Template] = Field(
         default_factory=list,
         validation_alias=AliasChoices("templates", "parentTemplates"),
     )
@@ -451,8 +449,8 @@ class Host(ZabbixAPIBaseModel):
         ),
     )
     status: Optional[str] = None
-    macros: List[Macro] = Field(default_factory=list)
-    interfaces: List[HostInterface] = Field(default_factory=list)
+    macros: list[Macro] = Field(default_factory=list)
+    interfaces: list[HostInterface] = Field(default_factory=list)
 
     # HACK: Add a field for the host's proxy that we can inject later
     proxy: Optional[Proxy] = None
@@ -460,14 +458,14 @@ class Host(ZabbixAPIBaseModel):
     def __str__(self) -> str:
         return f"{self.host!r} ({self.hostid})"
 
-    def model_simple_dump(self) -> Dict[str, str]:
+    def model_simple_dump(self) -> dict[str, str]:
         """Dump the model with minimal fields for simple output."""
         return {
             "host": self.host,
             "hostid": self.hostid,
         }
 
-    def set_proxy(self, proxy_map: Dict[str, Proxy]) -> None:
+    def set_proxy(self, proxy_map: dict[str, Proxy]) -> None:
         """Set proxy info for the host given a mapping of proxy IDs to proxies."""
         if not (proxy := proxy_map.get(str(self.proxyid))):
             return
@@ -697,7 +695,7 @@ class ProxyGroup(ZabbixAPIBaseModel):
     failover_delay: str
     min_online: int  # This is a str in the spec, but it's a number 1-1000!
     state: ProxyGroupState
-    proxies: List[Proxy] = Field(default_factory=list)
+    proxies: list[Proxy] = Field(default_factory=list)
 
     @field_validator("min_online", mode="before")
     def _handle_non_numeric_min_online(cls, v: Any) -> Any:
@@ -757,7 +755,7 @@ class Macro(MacroBase):
     hostmacroid: str
     automatic: Optional[int] = None  # >= 7.0 only. 0 = user, 1 = discovery rule
     hosts: HostList = Field(default_factory=list)
-    templates: List[Template] = Field(default_factory=list)
+    templates: list[Template] = Field(default_factory=list)
 
 
 class GlobalMacro(MacroBase):
@@ -904,12 +902,12 @@ class TimePeriod(ZabbixAPIBaseModel):
 
     @computed_field
     @property
-    def month_str(self) -> List[str]:
+    def month_str(self) -> list[str]:
         return get_maintenance_active_months(self.month)
 
     @computed_field
     @property
-    def dayofweek_str(self) -> List[str]:
+    def dayofweek_str(self) -> list[str]:
         return get_maintenance_active_days(self.dayofweek)
 
     @computed_field
@@ -983,16 +981,16 @@ class Maintenance(ZabbixAPIBaseModel):
     description: Optional[str] = None
     maintenance_type: Optional[int] = None
     tags_evaltype: Optional[int] = None
-    timeperiods: List[TimePeriod] = []
-    tags: List[ProblemTag] = []
+    timeperiods: list[TimePeriod] = []
+    tags: list[ProblemTag] = []
     hosts: HostList = []
-    hostgroups: List[HostGroup] = Field(
+    hostgroups: list[HostGroup] = Field(
         default_factory=list, validation_alias=AliasChoices("groups", "hostgroups")
     )
 
     @field_validator("timeperiods", mode="after")
     @classmethod
-    def _sort_time_periods(cls, v: List[TimePeriod]) -> List[TimePeriod]:
+    def _sort_time_periods(cls, v: list[TimePeriod]) -> list[TimePeriod]:
         """Cheeky hack to consistently render mixed time period types.
 
         This validator ensures time periods are sorted by complexity, so that the
@@ -1129,7 +1127,7 @@ class Trigger(ZabbixAPIBaseModel):
     correlation_tag: Optional[str] = None
     manual_close: Optional[int] = None
     uuid: Optional[str] = None
-    hosts: List[Host] = []
+    hosts: list[Host] = []
     # NYI:
     # groups: List[HostGroup] = Field(
     #     default_factory=list, validation_alias=AliasChoices("groups", "hostgroups")

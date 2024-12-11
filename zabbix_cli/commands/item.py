@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import List
 from typing import Optional
 
 import typer
@@ -42,7 +41,7 @@ def show_last_values(
         False, "--group", help="Group items with the same value."
     ),
     limit: Optional[int] = OPTION_LIMIT,
-    args: Optional[List[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Show the last values of given items of monitored hosts."""
     from zabbix_cli.commands.results.item import ItemResult

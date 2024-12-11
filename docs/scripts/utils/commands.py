@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from functools import lru_cache
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Union
 from typing import cast
@@ -35,7 +33,7 @@ class ParamSummary(BaseModel):
 
     allow_from_autoenv: Optional[bool] = None
     confirmation_prompt: Optional[bool] = None
-    choices: Optional[List[str]] = None
+    choices: Optional[list[str]] = None
     count: Optional[bool] = None
     default: Optional[Any] = None
     envvar: Optional[str]
@@ -54,11 +52,11 @@ class ParamSummary(BaseModel):
     multiple: bool
     name: Optional[str]
     nargs: int
-    opts: List[str]
+    opts: list[str]
     prompt: Optional[str] = None
     prompt_required: Optional[bool] = None
     required: bool
-    secondary_opts: List[str] = []
+    secondary_opts: list[str] = []
     show_choices: Optional[bool] = None
     show_default: Optional[bool] = None
     show_envvar: Optional[bool] = None
@@ -152,7 +150,7 @@ class CommandSummary(BaseModel):
     hidden: bool
     name: str
     options_metavar: str
-    params: List[ParamSummary] = Field([], exclude=True)
+    params: list[ParamSummary] = Field([], exclude=True)
     score: int = 0  # match score (not part of TyperCommand)
     short_help: Optional[str]
 
@@ -162,7 +160,7 @@ class CommandSummary(BaseModel):
         """Replace DefaultPlaceholder values with empty strings."""
         if not isinstance(values, dict):
             return values
-        values = cast(Dict[str, Any], values)
+        values = cast(dict[str, Any], values)
         for key, value in values.items():
             if isinstance(value, DefaultPlaceholder):
                 # Use its value, otherwise empty string
@@ -233,12 +231,12 @@ class CommandSummary(BaseModel):
 
     @computed_field
     @property
-    def options(self) -> List[ParamSummary]:
+    def options(self) -> list[ParamSummary]:
         return [p for p in self.params if _include_opt(p)]
 
     @computed_field
     @property
-    def arguments(self) -> List[ParamSummary]:
+    def arguments(self) -> list[ParamSummary]:
         return [p for p in self.params if _include_arg(p)]
 
 
@@ -322,7 +320,7 @@ def _get_app_commands(
 
 def get_app_callback_options(app: typer.Typer) -> list[typer.models.OptionInfo]:
     """Get the options of the main callback of a Typer app."""
-    options: List[typer.models.OptionInfo] = []
+    options: list[typer.models.OptionInfo] = []
 
     if not app.registered_callback:
         return options

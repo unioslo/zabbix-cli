@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from typing import List
 from typing import Literal
-from typing import Set
 from typing import Union
 
 from zabbix_cli.models import TableRenderable
@@ -14,17 +12,17 @@ from zabbix_cli.pyzabbix.types import TemplateGroup
 
 class LinkTemplateToHostResult(TableRenderable):
     host: str
-    templates: List[str]
+    templates: list[str]
     action: str
 
     @classmethod
     def from_result(
         cls,
-        templates: List[Template],
+        templates: list[Template],
         host: Host,
         action: str,
     ) -> LinkTemplateToHostResult:
-        to_link: Set[str] = set()  # names of templates to link
+        to_link: set[str] = set()  # names of templates to link
         for t in templates:
             for h in t.hosts:
                 if h.host == host.host:
@@ -40,18 +38,18 @@ class LinkTemplateToHostResult(TableRenderable):
 
 class UnlinkTemplateFromHostResult(TableRenderable):
     host: str
-    templates: List[str]
+    templates: list[str]
     action: str
 
     @classmethod
     def from_result(
         cls,
-        templates: List[Template],
+        templates: list[Template],
         host: Host,
         action: str,
     ) -> UnlinkTemplateFromHostResult:
         """Only show templates that are actually unlinked."""
-        to_remove: Set[str] = set()
+        to_remove: set[str] = set()
         for t in templates:
             for h in t.hosts:
                 if h.host == host.host:
@@ -67,15 +65,15 @@ class UnlinkTemplateFromHostResult(TableRenderable):
 class LinkTemplateResult(TableRenderable):
     """Result type for (un)linking templates to templates."""
 
-    source: List[str]
-    destination: List[str]
+    source: list[str]
+    destination: list[str]
     action: str
 
     @classmethod
     def from_result(
         cls,
-        source: List[Template],
-        destination: List[Template],
+        source: list[Template],
+        destination: list[Template],
         action: Literal["Link", "Unlink", "Unlink and clear"],
     ) -> LinkTemplateResult:
         return cls(
@@ -86,14 +84,14 @@ class LinkTemplateResult(TableRenderable):
 
 
 class TemplateGroupResult(TableRenderable):
-    templates: List[str]
-    groups: List[str]
+    templates: list[str]
+    groups: list[str]
 
     @classmethod
     def from_result(
         cls,
-        templates: List[Template],
-        groups: Union[List[TemplateGroup], List[HostGroup]],
+        templates: list[Template],
+        groups: Union[list[TemplateGroup], list[HostGroup]],
     ) -> TemplateGroupResult:
         return cls(
             templates=[t.host for t in templates],
@@ -103,15 +101,15 @@ class TemplateGroupResult(TableRenderable):
 
 class RemoveTemplateFromGroupResult(TableRenderable):
     group: str
-    templates: List[str]
+    templates: list[str]
 
     @classmethod
     def from_result(
         cls,
-        templates: List[Template],
+        templates: list[Template],
         group: Union[TemplateGroup, HostGroup],
     ) -> RemoveTemplateFromGroupResult:
-        to_remove: Set[str] = set()
+        to_remove: set[str] = set()
         for template in group.templates:
             for t in templates:
                 if t.host == template.host:

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from itertools import chain
 from typing import TYPE_CHECKING
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -59,7 +58,7 @@ def add_template_to_group(
     """
     from zabbix_cli.commands.results.template import TemplateGroupResult
 
-    groups: Union[List[HostGroup], List[TemplateGroup]]
+    groups: Union[list[HostGroup], list[TemplateGroup]]
     if app.state.client.version.release >= (6, 2, 0):
         groups = parse_templategroups_arg(app, group_names_or_ids, strict)
     else:
@@ -138,8 +137,8 @@ def create_templategroup(
 
     app_config = app.state.config.app
 
-    rw_grps: List[str] = []
-    ro_grps: List[str] = []
+    rw_grps: list[str] = []
+    ro_grps: list[str] = []
     if not no_usergroup_permissions:
         rw_grps = parse_list_arg(rw_groups) or app_config.default_admin_usergroups
         ro_grps = parse_list_arg(ro_groups) or app_config.default_create_user_usergroups
@@ -204,7 +203,7 @@ def extend_templategroup(
     dest_arg = parse_list_arg(dest_group)
 
     src: Union[HostGroup, TemplateGroup]
-    dest: Union[List[HostGroup], List[TemplateGroup]]
+    dest: Union[list[HostGroup], list[TemplateGroup]]
     if app.state.client.version.release > (6, 2, 0):
         src = app.state.client.get_templategroup(src_group, select_templates=True)
         dest = app.state.client.get_templategroups(
@@ -380,7 +379,7 @@ def remove_template_from_group(
     from zabbix_cli.commands.results.template import RemoveTemplateFromGroupResult
     from zabbix_cli.models import AggregateResult
 
-    groups: Union[List[HostGroup], List[TemplateGroup]]
+    groups: Union[list[HostGroup], list[TemplateGroup]]
     if app.state.client.version.release >= (6, 2, 0):
         groups = parse_templategroups_arg(
             app, group_names_or_ids, strict=strict, select_templates=True
@@ -402,7 +401,7 @@ def remove_template_from_group(
                 templates,
                 groups,
             )
-    result: List[RemoveTemplateFromGroupResult] = []
+    result: list[RemoveTemplateFromGroupResult] = []
     for group in groups:
         r = RemoveTemplateFromGroupResult.from_result(templates, group)
         if not r.templates:
@@ -488,7 +487,7 @@ def show_templategroups(
 
     names = parse_list_arg(name)
 
-    groups: Union[List[HostGroup], List[TemplateGroup]]
+    groups: Union[list[HostGroup], list[TemplateGroup]]
     with app.status("Fetching template groups..."):
         if app.state.client.version.release < (6, 2, 0):
             groups = app.state.client.get_hostgroups(

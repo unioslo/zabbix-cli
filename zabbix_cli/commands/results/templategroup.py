@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Union
 
 from pydantic import Field
@@ -25,7 +23,7 @@ class ShowTemplateGroupResult(TableRenderable):
 
     groupid: str = Field(..., json_schema_extra={"header": "Group ID"})
     name: str
-    templates: List[Template] = []
+    templates: list[Template] = []
     show_templates: bool = Field(True, exclude=True)
 
     @classmethod
@@ -45,7 +43,7 @@ class ShowTemplateGroupResult(TableRenderable):
         return len(self.templates)
 
     @field_serializer("templates")
-    def templates_serializer(self, value: List[Template]) -> List[Dict[str, Any]]:
+    def templates_serializer(self, value: list[Template]) -> list[dict[str, Any]]:
         if self.show_templates:
             return [t.model_dump(mode="json") for t in value]
         return []
@@ -64,15 +62,15 @@ class ShowTemplateGroupResult(TableRenderable):
 
 class ExtendTemplateGroupResult(TableRenderable):
     source: str
-    destination: List[str]
-    templates: List[str]
+    destination: list[str]
+    templates: list[str]
 
     @classmethod
     def from_result(
         cls,
         src_group: Union[HostGroup, TemplateGroup],
-        dest_group: Union[List[HostGroup], List[TemplateGroup]],
-        templates: List[Template],
+        dest_group: Union[list[HostGroup], list[TemplateGroup]],
+        templates: list[Template],
     ) -> ExtendTemplateGroupResult:
         return cls(
             source=src_group.name,
@@ -86,7 +84,7 @@ class MoveTemplatesResult(TableRenderable):
 
     source: str
     destination: str
-    templates: List[str]
+    templates: list[str]
 
     @classmethod
     def from_result(

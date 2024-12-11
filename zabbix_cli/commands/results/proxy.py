@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing import List
 from typing import Optional
 
 from pydantic import BaseModel
@@ -25,7 +24,7 @@ if TYPE_CHECKING:
 class BaseHostProxyResult(TableRenderable):
     source: str = Field(..., json_schema_extra={MetaKey.HEADER: "Source Proxy"})
     """Name of the old proxy."""
-    hosts: List[str] = []
+    hosts: list[str] = []
     """Name of the hosts that were updated."""
 
 
@@ -40,7 +39,7 @@ class UpdateHostProxyResult(BaseHostProxyResult):
     @classmethod
     def from_result(
         cls,
-        hosts: List[Host],
+        hosts: list[Host],
         source_proxy: Optional[Proxy],
         dest_proxy: Optional[Proxy],
     ) -> Self:
@@ -57,7 +56,7 @@ class ClearHostProxyResult(BaseHostProxyResult):
     @classmethod
     def from_result(
         cls,
-        hosts: List[Host],
+        hosts: list[Host],
         source_proxy: Optional[Proxy],
     ) -> Self:
         return cls(
@@ -73,14 +72,14 @@ class MoveProxyHostsResult(TableRenderable):
     """ID of the source (old) proxy."""
     destination: Optional[str] = None
     """ID of the destination (new) proxy."""
-    hosts: List[str] = []
+    hosts: list[str] = []
 
 
 class LBProxy(BaseModel):
     """A load balanced proxy."""
 
     proxy: Proxy
-    hosts: List[Host] = []
+    hosts: list[Host] = []
     weight: int
     count: int = 0
 
@@ -98,7 +97,7 @@ class LBProxy(BaseModel):
 class LBProxyResult(TableRenderable):
     """Result type for `load_balance_proxy_hosts` command."""
 
-    proxies: List[LBProxy]
+    proxies: list[LBProxy]
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["Proxy", "Weight", "Hosts"]
@@ -112,10 +111,10 @@ class UpdateHostGroupProxyResult(TableRenderable):
     """Result type for `update_hostgroup_proxy` command."""
 
     proxy: str
-    hosts: List[str] = []
+    hosts: list[str] = []
 
     @classmethod
-    def from_result(cls, proxy: Proxy, hosts: List[Host]) -> Self:
+    def from_result(cls, proxy: Proxy, hosts: list[Host]) -> Self:
         return cls(proxy=proxy.name, hosts=[host.host for host in hosts])
 
 
@@ -123,10 +122,10 @@ class UpdateHostGroupProxyGroupResult(TableRenderable):
     """Result type for `update_hostgroup_proxygroup` command."""
 
     proxy_group: str
-    hosts: List[str] = []
+    hosts: list[str] = []
 
     @classmethod
-    def from_result(cls, proxy_group: ProxyGroup, hosts: List[Host]) -> Self:
+    def from_result(cls, proxy_group: ProxyGroup, hosts: list[Host]) -> Self:
         return cls(proxy_group=proxy_group.name, hosts=[host.host for host in hosts])
 
 

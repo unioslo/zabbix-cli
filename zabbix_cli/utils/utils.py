@@ -6,16 +6,13 @@ values and flags from the Zabbix API."""
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from datetime import datetime
 from datetime import timedelta
 from typing import Any
-from typing import Dict
 from typing import Final
-from typing import Iterable
-from typing import List
 from typing import NamedTuple
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 from zabbix_cli.exceptions import ZabbixCLIError
@@ -50,7 +47,7 @@ def get_monitoring_status(code: Optional[str], with_code: bool = False) -> str:
     return _format_code(code, monitoring_status, with_code=with_code)
 
 
-def get_maintenance_active_days(schedule: int | None) -> List[str]:
+def get_maintenance_active_days(schedule: int | None) -> list[str]:
     """Get maintenance day of week from code."""
     if schedule is None:
         return []
@@ -65,14 +62,14 @@ def get_maintenance_active_days(schedule: int | None) -> List[str]:
     }
     # Bitwise AND schedule with each DoW's bit mask
     # If the result is non-zero, the DoW is active
-    active_days: List[str] = []
+    active_days: list[str] = []
     for n, dow in days.items():
         if schedule & n:
             active_days.append(dow)
     return active_days
 
 
-def get_maintenance_active_months(schedule: int | None) -> List[str]:
+def get_maintenance_active_months(schedule: int | None) -> list[str]:
     if schedule is None:
         return []
     months = {
@@ -91,7 +88,7 @@ def get_maintenance_active_months(schedule: int | None) -> List[str]:
     }
     # Bitwise AND schedule with each month's bit mask
     # If the result is non-zero, the month is active
-    active_months: List[str] = []
+    active_months: list[str] = []
     for n, month in months.items():
         if schedule & n:
             active_months.append(month)
@@ -100,7 +97,7 @@ def get_maintenance_active_months(schedule: int | None) -> List[str]:
 
 # NOTE: we could turn these into str Enums or Literals,
 # so that it's easier to type check the values
-ACKNOWLEDGE_ACTION_BITMASK: Final[Dict[str, int]] = {
+ACKNOWLEDGE_ACTION_BITMASK: Final[dict[str, int]] = {
     "close": 0b000000001,
     "acknowledge": 0b000000010,
     "message": 0b000000100,
@@ -146,14 +143,14 @@ def get_acknowledge_action_value(
     return value
 
 
-def get_acknowledge_actions(code: int) -> List[str]:
+def get_acknowledge_actions(code: int) -> list[str]:
     """Get acknowledge actions from code.
 
     See: https://www.zabbix.com/documentation/current/en/manual/api/reference/event/acknowledge (action parameter)
     """
     # Create reverse lookup for action bitmask
     acknowledge_actions = {v: k for k, v in ACKNOWLEDGE_ACTION_BITMASK.items()}
-    active_action: List[str] = []
+    active_action: list[str] = []
     for n, action in acknowledge_actions.items():
         if code & n:
             active_action.append(action)
@@ -191,7 +188,7 @@ TIME_VALUES = [
 ]
 
 
-def convert_time_to_interval(time: str) -> Tuple[datetime, datetime]:
+def convert_time_to_interval(time: str) -> tuple[datetime, datetime]:
     """Convert time to an interval of datetimes.
 
     `time` is a string that specifies a duration of time in
@@ -240,7 +237,7 @@ def convert_timestamp(ts: str) -> datetime:
     raise ZabbixCLIError(f"Invalid timestamp: {ts}")
 
 
-def convert_timestamp_interval(time: str) -> Tuple[datetime, datetime]:
+def convert_timestamp_interval(time: str) -> tuple[datetime, datetime]:
     """Convert timestamp interval to seconds.
 
     `time` is a string that specifies a timestamp interval in

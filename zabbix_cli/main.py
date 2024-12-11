@@ -25,7 +25,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Dict
 from typing import Optional
 
 import typer
@@ -73,7 +72,7 @@ def run_repl(ctx: typer.Context) -> None:
             state.repl = True
         state.revert_config_overrides()
 
-    prompt_kwargs: Dict[str, Any] = {"pre_run": pre_run, "history": state.history}
+    prompt_kwargs: dict[str, Any] = {"pre_run": pre_run, "history": state.history}
     start_repl(ctx, app, prompt_kwargs=prompt_kwargs)
 
 

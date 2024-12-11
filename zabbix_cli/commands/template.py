@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import List
 from typing import Optional
 
 import typer
@@ -74,7 +73,7 @@ def link_template_to_host(
         with app.state.console.status("Linking templates..."):
             app.state.client.link_templates_to_hosts(templates, hosts)
 
-    result: List[LinkTemplateToHostResult] = []
+    result: list[LinkTemplateToHostResult] = []
     for host in hosts:
         r = LinkTemplateToHostResult.from_result(templates, host, "Link")
         if not r.templates:
@@ -291,7 +290,7 @@ def unlink_template_from_host(
             app.state.client.unlink_templates_from_hosts(templates, hosts)
 
     # Only show hosts with matching templates to unlink
-    result: List[UnlinkTemplateFromHostResult] = []
+    result: list[UnlinkTemplateFromHostResult] = []
     for host in hosts:
         r = UnlinkTemplateFromHostResult.from_result(templates, host, action)
         if not r.templates:

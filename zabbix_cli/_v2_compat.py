@@ -9,7 +9,6 @@ from __future__ import annotations
 import os
 import shlex
 from pathlib import Path
-from typing import List
 from typing import Optional
 
 import typer
@@ -75,8 +74,8 @@ def run_command_from_option(ctx: typer.Context, command: str) -> None:
 
 
 def args_callback(
-    ctx: typer.Context, value: Optional[List[str]]
-) -> Optional[List[str]]:
+    ctx: typer.Context, value: Optional[list[str]]
+) -> Optional[list[str]]:
     if ctx.resilient_parsing:
         return  # for auto-completion
     if value:
