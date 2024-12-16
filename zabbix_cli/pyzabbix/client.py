@@ -17,6 +17,7 @@ from __future__ import annotations
 import logging
 from collections.abc import MutableMapping
 from datetime import datetime
+from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -234,7 +235,7 @@ class ZabbixAPI:
         server: str = "http://localhost/zabbix",
         timeout: Optional[int] = None,
         verify_ssl: bool = True,
-    ):
+    ) -> None:
         """Parameters:
         server: Base URI for zabbix web interface (omitting /api_jsonrpc.php)
         session: optional pre-configured requests.Session instance
@@ -253,9 +254,6 @@ class ZabbixAPI:
 
         # Cache
         self.cache = ZabbixCache(self)
-
-        # Attributes for properties
-        self._version: Optional[Version] = None
 
     def _get_url(self, server: str) -> str:
         """Format a URL for the Zabbix API."""
@@ -344,6 +342,9 @@ class ZabbixAPI:
                 self.auth = str(auth) if auth else ""
                 self.use_api_token = False
 
+        # Check if the auth token we obtained or specified is valid
+        # XXX: should revert auth token to what it was before this method
+        # was called if token is invalid.
         self.ensure_authenticated()
         return self.auth
 
@@ -385,24 +386,19 @@ class ZabbixAPI:
             },
         ).result
 
-    # TODO (pederhan): Use functools.cachedproperty when we drop 3.7 support
-    @property
+    @cached_property
     def version(self) -> Version:
-        """Alternate version of api_version() that caches version info
-        as a Version object.
-        """
-        if self._version is None:
-            self._version = self.api_version()
-        return self._version
+        """`api_version()` exposed as a cached property."""
+        return self.api_version()
 
     def api_version(self) -> Version:
         """Get the version of the Zabbix API as a Version object."""
         try:
             return Version(self.apiinfo.version())
         except ZabbixAPIException as e:
-            raise ZabbixAPIException(f"Failed to get Zabbix API version: {e}") from e
+            raise ZabbixAPIException("Failed to get Zabbix version from API") from e
         except InvalidVersion as e:
-            raise ZabbixAPIException(f"Invalid Zabbix API version: {e}") from e
+            raise ZabbixAPIException("Got invalid Zabbix version from API") from e
 
     def do_request(
         self, method: str, params: Optional[ParamsType] = None
@@ -415,16 +411,22 @@ class ZabbixAPI:
             "params": params,
             "id": self.id,
         }
+        request_headers: dict[str, str] = {}
 
         # We don't have to pass the auth token if asking for the apiinfo.version
-        if self.auth and method != "apiinfo.version":
-            request_json["auth"] = self.auth
         # TODO: ensure we have auth token if method requires it
+        if self.auth and method != "apiinfo.version":
+            if self.version.release >= (6, 4, 0):
+                request_headers["Authorization"] = f"Bearer {self.auth}"
+            else:
+                request_json["auth"] = self.auth
 
         logger.debug("Sending %s to %s", method, self.url)
 
         try:
-            response = self.session.post(self.url, json=request_json)
+            response = self.session.post(
+                self.url, json=request_json, headers=request_headers
+            )
         except Exception as e:
             raise ZabbixAPIRequestError(
                 f"Failed to send request to {self.url} ({method}) with params {params}",
@@ -507,29 +509,6 @@ class ZabbixAPI:
         """Populates the various caches with data from the Zabbix API."""
         # NOTE: Must be manually invoked. Can we do this in a thread?
         self.cache.populate()
-
-    # TODO: delete when we don't need to test v2 code anymore
-    def get_hostgroup_name(self, hostgroup_id: str) -> str:
-        """Returns the name of a host group given its ID."""
-        hostgroup_name = self.cache.get_hostgroup_name(hostgroup_id)
-        if hostgroup_name:
-            return hostgroup_name
-        resp = self.hostgroup.get(filter={"groupid": hostgroup_id}, output=["name"])
-        if not resp:
-            raise ZabbixNotFoundError(f"HostGroup with ID {hostgroup_id} not found")
-        # TODO add result to cache
-        return resp[0]["name"]
-
-    def get_hostgroup_id(self, hostgroup_name: str) -> str:
-        """Returns the ID of a host group given its name."""
-        hostgroup_id = self.cache.get_hostgroup_id(hostgroup_name)
-        if hostgroup_id:
-            return hostgroup_id
-        resp = self.hostgroup.get(filter={"name": hostgroup_name}, output=["name"])
-        if not resp:
-            raise ZabbixNotFoundError(f"Host group {hostgroup_name!r} not found")
-        # TODO add result to cache
-        return resp[0]["groupid"]
 
     def get_hostgroup(
         self,

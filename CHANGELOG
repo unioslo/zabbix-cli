@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `login` command re-enabled. It should now behave consistently regardless of configuration and environment.
 - `login` command description updated to reflect its intended usage.
+- Now uses new header-based authentication for Zabbix >=6.4 instead of passing it as a part of the request body.
+
+### Fixed
+
+- Authentication for Zabbix 7.2 and later. The application now correctly determines how to pass in authentication data based on the Zabbix version.
 
 ## [3.4.1](https://github.com/unioslo/zabbix-cli/releases/tag/3.4.1) - 2024-12-04
 

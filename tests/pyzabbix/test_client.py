@@ -4,7 +4,6 @@ from typing import Any
 
 import pytest
 from inline_snapshot import snapshot
-from packaging.version import Version
 from zabbix_cli.exceptions import ZabbixAPILoginError
 from zabbix_cli.exceptions import ZabbixAPILogoutError
 from zabbix_cli.pyzabbix.client import ZabbixAPI
@@ -76,14 +75,11 @@ def test_add_param(inp: Any, subkey: str, value: Any, expect: dict[str, Any]) ->
     # Check in-place modification
 
 
-def test_login_fails(zabbix_client: ZabbixAPI, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_login_fails(zabbix_client: ZabbixAPI) -> None:
     zabbix_client.set_url("http://some-url-that-will-fail.gg")
     assert zabbix_client.url == snapshot(
         "http://some-url-that-will-fail.gg/api_jsonrpc.php"
     )
-
-    # Patch the version check
-    monkeypatch.setattr(zabbix_client, "api_version", lambda: Version("7.0.0"))
 
     with pytest.raises(ZabbixAPILoginError) as exc_info:
         zabbix_client.login(user="username", password="password")
