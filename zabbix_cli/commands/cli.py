@@ -122,7 +122,7 @@ def init(
         raise ZabbixCLIError(f"{e}. Use [option]--overwrite[/] to overwrite it") from e
 
 
-@app.command(name="login", hidden=True, deprecated=True, rich_help_panel=HELP_PANEL)
+@app.command(name="login", rich_help_panel=HELP_PANEL)
 def login(
     ctx: typer.Context,
     username: Optional[str] = typer.Option(
@@ -147,43 +147,30 @@ def login(
         show_default=False,
     ),
 ) -> None:
-    """Reauthenticate with the Zabbix API in the REPL.
+    """Trigger a new login prompt in the REPL.
 
-    [warning]Should only be used to switch users or change authentication
-    methods in a REPL session.[/]
+    Ends the current session before triggering a new login prompt.
+
+    Triggers a login prompt if [option]--username[/] & [option]--password[/] or [option]--token[/]
+    is not provided.
+
 
     Creates a new auth token file if enabled in the config.
     """
     from pydantic import SecretStr
 
+    from zabbix_cli.auth import Authenticator
+
     if not app.state.repl:
         raise ZabbixCLIError("This command is only available in the REPL.")
 
-    config = app.state.config
+    # Copy config to avoid invalid/incomplete state if login fails
+    config = app.state.config.model_copy(deep=True)
 
-    # NOTE: This is potentially BUGGY. We rely on implementation details of
-    # auth.Authenticator to control which auth method is used.
-    # Furthermore, because Authenticator.login() will always fall back on
-    # username and password prompt, passing in an invalid token will still
-    # result in a prompt for username and password, which can be confusing.
-    if username:
-        config.api.username = username
-        config.api.password = SecretStr(password or "")
-        config.api.auth_token = SecretStr("")  # Clear token if it exists
-    elif token:
-        config.api.username = ""
-        config.api.auth_token = SecretStr(token)
-        config.api.password = SecretStr("")
-    else:
-        # Clear all existing auth info
-        config.api.username = ""
-        config.api.password = SecretStr("")
-        config.api.auth_token = SecretStr("")
-
-    # XXX: Auth (token) files + env vars are not cleared here
-    # which is the fundamental problem with this command.
-    # Instead of adding a bunch of brittle logic to clear them,
-    # we opt to deprecate the command instead.
+    # Set auth info in the config to use as defaults in prompts
+    config.api.username = username or ""
+    config.api.auth_token = SecretStr(token or "")
+    config.api.password = SecretStr(password or "")
 
     # Try to end current session
     # We might not have an active session, which means any attempt to
@@ -193,11 +180,20 @@ def login(
     except ZabbixCLIError as e:
         app.logger.warning(f"Failed to terminate session in login command: {e}")
 
-    app.state.login()
-    if config.api.username and config.api.password.get_secret_value():
-        success(f"Logged in to {config.api.url} as {config.api.username}.")
-    elif config.api.auth_token.get_secret_value():
+    if username and password:
+        client, info = Authenticator.login_with_username_password(
+            config, username, password
+        )
+        success(f"Logged in to {config.api.url} as {info.credentials.username}.")
+    elif token:
+        client, info = Authenticator.login_with_token(config, token=token)
         success(f"Logged in to {config.api.url} with token.")
+    else:
+        client, info = Authenticator.login_with_prompt(config)
+        success(f"Logged in to {config.api.url} as {info.credentials.username}.")
+
+    app.state.client = client
+    app.state.config = config
 
 
 @app.command("migrate_config", rich_help_panel=HELP_PANEL)

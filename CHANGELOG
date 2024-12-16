@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## [Unreleased] -->
+## [Unreleased]
+
+### Changed
+
+- `login` command re-enabled. It should now behave consistently regardless of configuration and environment.
+- `login` command description updated to reflect its intended usage.
 
 ## [3.4.1](https://github.com/unioslo/zabbix-cli/releases/tag/3.4.1) - 2024-12-04
 
