@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 import typer
+from packaging.version import Version
 from typer.testing import CliRunner
 from zabbix_cli.app import StatefulApp
 from zabbix_cli.config.model import Config
@@ -97,9 +98,13 @@ def config(tmp_path: Path) -> Iterator[Config]:
 
 
 @pytest.fixture(name="zabbix_client")
-def zabbix_client() -> Iterator[ZabbixAPI]:
+def zabbix_client(monkeypatch: pytest.MonkeyPatch) -> Iterator[ZabbixAPI]:
     config = Config.sample_config()
     client = ZabbixAPI.from_config(config)
+
+    # Patch the version check
+    monkeypatch.setattr(client, "api_version", lambda: Version("7.0.0"))
+
     yield client
 
 
