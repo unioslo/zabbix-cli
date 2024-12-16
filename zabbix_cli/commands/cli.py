@@ -152,7 +152,7 @@ def login(
     Ends the current session before triggering a new login prompt.
 
     Triggers a login prompt if [option]--username[/] & [option]--password[/] or [option]--token[/]
-    are not provided.
+    is not provided.
 
 
     Creates a new auth token file if enabled in the config.
