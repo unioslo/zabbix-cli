@@ -162,7 +162,7 @@ The type of the `result` field varies based on the command run. For `show_host` 
 <details>
   <summary><code>show_host foo.example.com*</code></summary>
 
-  ```json
+```json
 {
   "message": "",
   "errors": [],
@@ -256,14 +256,14 @@ The type of the `result` field varies based on the command run. For `show_host` 
     "zabbix_agent": "Unknown"
   }
 }
-  ```
+```
 
 </details>
 
 <details>
   <summary><code>show_hosts foo.*</code></summary>
 
-  ```json
+```json
 {
   "message": "",
   "errors": [],
@@ -344,7 +344,7 @@ The type of the `result` field varies based on the command run. For `show_host` 
     }
   ]
 }
-  ```
+```
 
 </details>
 
