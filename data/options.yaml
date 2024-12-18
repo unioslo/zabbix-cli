@@ -1,0 +1,25 @@
+- params: '`--config`, `-c`'
+  help: Alternate configuration file to use.
+  envvar: []
+  config_value: null
+  fragment: null
+- params: '`--file`, `--input-file`, `-f`'
+  help: File with Zabbix-CLI commands to be executed in bulk mode.
+  envvar: []
+  config_value: null
+  fragment: null
+- params: '`--format`, `--output-format`, `-o`'
+  help: Define the output format when running in command-line mode.
+  envvar: []
+  config_value: null
+  fragment: null
+- params: '`--version`'
+  help: Show the version of Zabbix-CLI and exit.
+  envvar: []
+  config_value: null
+  fragment: null
+- params: '`--command`, `-C`'
+  help: Zabbix-CLI command to execute when running in command-line mode.
+  envvar: []
+  config_value: null
+  fragment: null
