@@ -26,13 +26,13 @@ from typing import Optional
 from typing import Union
 from typing import cast
 
+import httpx
 from packaging.version import InvalidVersion
 from packaging.version import Version
 from pydantic import ValidationError
 
 from zabbix_cli.__about__ import APP_NAME
 from zabbix_cli.__about__ import __version__
-from zabbix_cli.cache import ZabbixCache
 from zabbix_cli.exceptions import ZabbixAPICallError
 from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixAPILoginError
@@ -86,7 +86,6 @@ from zabbix_cli.pyzabbix.types import ZabbixRight
 from zabbix_cli.utils.utils import get_acknowledge_action_value
 
 if TYPE_CHECKING:
-    import httpx
     from httpx._types import TimeoutTypes
     from typing_extensions import TypedDict
 
@@ -248,16 +247,13 @@ class ZabbixAPI:
         self.use_api_token = False
         self.id = 0
 
-        server, _, _ = server.partition(RPC_ENDPOINT)
         self.url = self._get_url(server)
         logger.info("JSON-RPC Server Endpoint: %s", self.url)
 
-        # Cache
-        self.cache = ZabbixCache(self)
-
     def _get_url(self, server: str) -> str:
         """Format a URL for the Zabbix API."""
-        return f"{server}/api_jsonrpc.php"
+        server, _, _ = server.partition(RPC_ENDPOINT)
+        return f"{server.rstrip('/')}{RPC_ENDPOINT}"
 
     def set_url(self, server: str) -> str:
         """Set a new URL for the client."""
@@ -277,8 +273,6 @@ class ZabbixAPI:
     def _get_client(
         self, verify_ssl: bool, timeout: Union[float, int, None] = None
     ) -> httpx.Client:
-        import httpx
-
         kwargs: HTTPXClientKwargs = {}
         if timeout is not None:
             kwargs["timeout"] = timeout
@@ -310,24 +304,23 @@ class ZabbixAPI:
         """Convenience method for logging into the API and storing the resulting
         auth token as an instance variable.
         """
-        # Before we do anything, we try to fetch the API version
-        # Without an API connection, we cannot determine
-        # the user parameter name to use when logging in.
+        # By checking the version, we also check if the API is reachable
         try:
-            self.version  # property
+            version = self.version  # property
         except ZabbixAPIRequestError as e:
             raise ZabbixAPIException(
                 f"Failed to connect to Zabbix API at {self.url}"
             ) from e
 
-        logger.debug("Logging in to Zabbix API at %s", self.url)
-        self.auth = ""
+        logger.debug("Logging in to Zabbix %s API at %s", version, self.url)
+
         if auth_token:
+            # TODO: revert this if token is invalid
             self.use_api_token = True
-            self.auth = auth_token
+            auth = auth_token
         else:
             params: ParamsType = {
-                compat.login_user_name(self.version): user,
+                compat.login_user_name(version): user,
                 "password": password,
             }
             try:
@@ -339,8 +332,10 @@ class ZabbixAPI:
                     "Unknown error when trying to log in to Zabbix"
                 ) from e
             else:
-                self.auth = str(auth) if auth else ""
+                auth = str(auth) if auth else ""
                 self.use_api_token = False
+
+        self.auth = auth
 
         # Check if the auth token we obtained or specified is valid
         # XXX: should revert auth token to what it was before this method
@@ -371,7 +366,8 @@ class ZabbixAPI:
             )
         except ZabbixAPIRequestError as e:
             raise ZabbixAPILogoutError("Failed to log out of Zabbix") from e
-        self.auth = ""
+        else:
+            self.auth = ""
 
     def confimport(self, format: ExportFormat, source: str, rules: ImportRules) -> Any:
         """Alias for configuration.import because it clashes with
@@ -415,7 +411,7 @@ class ZabbixAPI:
 
         # We don't have to pass the auth token if asking for the apiinfo.version
         # TODO: ensure we have auth token if method requires it
-        if self.auth and method != "apiinfo.version":
+        if self.auth and method not in ["apiinfo.version", "user.login"]:
             if self.version.release >= (6, 4, 0):
                 request_headers["Authorization"] = f"Bearer {self.auth}"
             else:
@@ -504,11 +500,6 @@ class ZabbixAPI:
             api_response=resp,
             response=response,
         )
-
-    def populate_cache(self) -> None:
-        """Populates the various caches with data from the Zabbix API."""
-        # NOTE: Must be manually invoked. Can we do this in a thread?
-        self.cache.populate()
 
     def get_hostgroup(
         self,

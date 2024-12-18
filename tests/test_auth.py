@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Any
 from typing import Optional
 
 import pytest
@@ -102,21 +103,8 @@ def _auth_file(tmp_path: Path) -> Path:
     [
         pytest.param(
             [
+                (CredentialsType.AUTH_TOKEN, CredentialsSource.ENV),
                 (CredentialsType.AUTH_TOKEN, CredentialsSource.CONFIG),
-                (CredentialsType.AUTH_TOKEN, CredentialsSource.ENV),
-                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
-                (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
-                (CredentialsType.PASSWORD, CredentialsSource.FILE),
-                (CredentialsType.PASSWORD, CredentialsSource.ENV),
-                (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
-            ],
-            CredentialsType.AUTH_TOKEN,
-            CredentialsSource.CONFIG,
-            id="expect_auth_token_config",
-        ),
-        pytest.param(
-            [
-                (CredentialsType.AUTH_TOKEN, CredentialsSource.ENV),
                 (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
@@ -126,6 +114,19 @@ def _auth_file(tmp_path: Path) -> Path:
             CredentialsType.AUTH_TOKEN,
             CredentialsSource.ENV,
             id="expect_auth_token_env",
+        ),
+        pytest.param(
+            [
+                (CredentialsType.AUTH_TOKEN, CredentialsSource.CONFIG),
+                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
+                (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
+                (CredentialsType.PASSWORD, CredentialsSource.FILE),
+                (CredentialsType.PASSWORD, CredentialsSource.ENV),
+                (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
+            ],
+            CredentialsType.AUTH_TOKEN,
+            CredentialsSource.CONFIG,
+            id="expect_auth_token_config",
         ),
         pytest.param(
             [
@@ -141,9 +142,19 @@ def _auth_file(tmp_path: Path) -> Path:
         ),
         pytest.param(
             [
+                (CredentialsType.PASSWORD, CredentialsSource.ENV),
                 (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
-                (CredentialsType.PASSWORD, CredentialsSource.ENV),
+                (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
+            ],
+            CredentialsType.PASSWORD,
+            CredentialsSource.ENV,
+            id="expect_password_env",
+        ),
+        pytest.param(
+            [
+                (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
+                (CredentialsType.PASSWORD, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
             ],
             CredentialsType.PASSWORD,
@@ -153,21 +164,11 @@ def _auth_file(tmp_path: Path) -> Path:
         pytest.param(
             [
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
-                (CredentialsType.PASSWORD, CredentialsSource.ENV),
                 (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
             ],
             CredentialsType.PASSWORD,
             CredentialsSource.FILE,
             id="expect_password_file",
-        ),
-        pytest.param(
-            [
-                (CredentialsType.PASSWORD, CredentialsSource.ENV),
-                (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
-            ],
-            CredentialsType.PASSWORD,
-            CredentialsSource.ENV,
-            id="expect_password_env",
         ),
         pytest.param(
             [
@@ -201,7 +202,7 @@ def test_authenticator_login_with_any(
     # States reasons for mocking each method
 
     # REASON: Makes HTTP calls to the Zabbix API
-    def mock_login(self: ZabbixAPI, *args, **kwargs):
+    def mock_login(self: ZabbixAPI, *args: Any, **kwargs: Any) -> str:
         self.auth = MOCK_TOKEN
         return self.auth
 
@@ -262,7 +263,7 @@ def test_authenticator_login_with_any(
                 auth_file.write_text(f"{MOCK_USER}::{MOCK_PASSWORD}")
                 config.app.auth_file = auth_file
 
-    client, info = authenticator.login_with_any()
+    _, info = authenticator.login_with_any()
     assert info.credentials.source == expect_source
     assert info.credentials.type == expect_type
     assert info.token == MOCK_TOKEN

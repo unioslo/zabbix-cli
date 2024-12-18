@@ -2,12 +2,12 @@
 
 Zabbix-cli provides several ways to authenticate. They are tried in the following order:
 
-1. [Token - Config file](#config-file)
 1. [Token - Environment variables](#environment-variables)
+1. [Token - Config file](#config-file)
 1. [Token - Auth token file](#auth-token-file)
+1. [Password - Environment variables](#environment-variables_1)
 1. [Password - Config file](#config-file_1)
 1. [Password - Auth file](#auth-file)
-1. [Password - Environment variables](#environment-variables_1)
 1. [Password - Prompt](#prompt)
 
 ## Token
@@ -17,6 +17,14 @@ The application supports authenticating with an API or session token. API tokens
 !!! info "Session vs API token"
     Semantically, a session token and API token are the same thing from an API authentication perspective. They are both sent as the `auth` parameter in the Zabbix API requests.
 
+### Environment variables
+
+The API token can be set as an environment variable:
+
+```bash
+export ZABBIX_API_TOKEN="API TOKEN"
+```
+
 ### Config file
 
 The token can be set directly in the config file:
@@ -24,14 +32,6 @@ The token can be set directly in the config file:
 ```toml
 [api]
 auth_token = "API_TOKEN"
-```
-
-### Environment variables
-
-The API token can be set as an environment variable:
-
-```bash
-export ZABBIX_API_TOKEN="API TOKEN"
 ```
 
 ### Auth token file
@@ -62,6 +62,15 @@ When `allow_insecure_auth_file` is set to `false`, the application will attempt 
 
 The application supports authenticating with a username and password. The password can be set in the config file, an auth file, as environment variables, or prompted for when starting the application.
 
+### Environment variables
+
+The username and password can be set as environment variables:
+
+```bash
+export ZABBIX_USERNAME="Admin"
+export ZABBIX_PASSWORD="zabbix"
+```
+
 ### Config file
 
 The password can be set directly in the config file:
@@ -87,15 +96,6 @@ The location of the auth file file can be changed in the config file:
 auth_file = "~/.zabbix-cli_auth"
 ```
 
-### Environment variables
-
-The username and password can be set as environment variables:
-
-```bash
-export ZABBIX_USERNAME="Admin"
-export ZABBIX_PASSWORD="zabbix"
-```
-
 ### Prompt
 
 When all other authentication methods fail, the application will prompt for a username and password. The default username in the prompt can be configured:
@@ -104,3 +104,37 @@ When all other authentication methods fail, the application will prompt for a us
 [api]
 username = "Admin"
 ```
+
+## URL
+
+The URL of the Zabbix API can be set in the config file, as an environment variable, or prompted for when starting the application.
+
+They are processed in the following order:
+
+1. [Environment variables](#environment-variables_2)
+1. [Config file](#config-file_2)
+1. [Prompt](#prompt_1)
+
+The URL should not include `/api_jsonrpc.php`.
+
+### Config file
+
+The URL of the Zabbix API can be set in the config file:
+
+```toml
+
+[api]
+url = "http://zabbix.example.com"
+```
+
+### Environment variables
+
+The URL can also be set as an environment variable:
+
+```bash
+export ZABBIX_URL="http://zabbix.example.com"
+```
+
+### Prompt
+
+When all other methods fail, the application will prompt for the URL of the Zabbix API.

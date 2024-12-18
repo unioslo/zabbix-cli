@@ -92,7 +92,6 @@ def sanitize_filename(filename: str) -> str:
     return re.sub(r"[^\w\-.]", "_", filename)
 
 
-# NOTE: Move to zabbix_cli.utils.fs?
 def make_executable(path: Path) -> None:
     """Make a file executable."""
     if sys.platform == "win32":
