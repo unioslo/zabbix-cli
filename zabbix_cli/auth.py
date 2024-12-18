@@ -48,9 +48,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# Auth file location
-
-
 SECURE_PERMISSIONS: Final[int] = 0o600
 SECURE_PERMISSIONS_STR = format(SECURE_PERMISSIONS, "o")
 
@@ -80,6 +77,13 @@ class Credentials(NamedTuple):
     password: Optional[str] = None
     auth_token: Optional[str] = None
 
+    def __str__(self) -> str:
+        if self.type == CredentialsType.PASSWORD:
+            return f"{self.type} from {self.source}"
+        if self.type == CredentialsType.AUTH_TOKEN:
+            return f"{self.type} from {self.source}"
+        return "no credentials"
+
     @property
     def type(self) -> Optional[CredentialsType]:
         if self.auth_token:
@@ -100,7 +104,14 @@ class LoginInfo(NamedTuple):
 
 class Authenticator:
     """Encapsulates logic for authenticating with the Zabbix API
-    using various methods, as well as storing and loading auth tokens."""
+    using various methods, as well as storing and loading auth tokens.
+
+
+    Exposes methods for logging in with specific credentials, as well as
+    a method for logging in with any valid credentials.
+
+    Bootstraps application state with login and API info on successful login.
+    """
 
     config: Config
 
@@ -121,12 +132,12 @@ class Authenticator:
 
         If multiple methods are available, they are tried in the following order:
 
-        1. API token in config file
-        2. API token in environment variables
+        1. API token in environment variables
+        2. API token in config file
         3. API token in file (if `use_auth_token_file=true`)
-        4. Username and password in config file
-        5. Username and password in auth file
-        6. Username and password in environment variables
+        4. Username and password in environment variables
+        5. Username and password in config file
+        6. Username and password in auth file
         7. Username and password from prompt
         """
 
@@ -146,15 +157,17 @@ class Authenticator:
     ) -> Generator[Credentials, None, None]:
         """Generator that yields credentials from all possible sources.
 
+        Does not check if credentials are valid.
+
         Finally yields a prompt for username and password if `prompt_password` is True.
         """
         for func in [
-            self._get_auth_token_config,
             self._get_auth_token_env,
+            self._get_auth_token_config,
             self._get_auth_token_file,
+            self._get_username_password_env,
             self._get_username_password_config,
             self._get_username_password_auth_file,
-            self._get_username_password_env,
         ]:
             yield func()
         if prompt_password:
@@ -262,7 +275,10 @@ class Authenticator:
         # Write auth token file
         if info.credentials.username and self.config.app.use_auth_token_file:
             write_auth_token_file(
-                info.credentials.username, info.token, self.config.app.auth_token_file
+                info.credentials.username,
+                info.token,
+                self.config.app.auth_token_file,
+                self.config.app.allow_insecure_auth_file,
             )
 
         # Log context
@@ -306,12 +322,28 @@ class Authenticator:
         ):
             self.config.api.auth_token = SecretStr(credentials.auth_token)
 
-    def get_zabbix_url(self) -> str:
-        """Get the URL of the Zabbix server from the config, or prompt for it."""
-        if not self.config.api.url:
+    def get_zabbix_url(self, prompt: bool = True) -> str:
+        """Get the URL of the Zabbix server from env, config, then finally prompt for it.."""
+        for source in [self._get_zabbix_url_env, self._get_zabbix_url_config]:
+            url = source()
+            if url:
+                return url
+        if prompt:
             with self.screen:
-                return str_prompt("Zabbix URL (without /api_jsonrpc.php)")
+                return self._get_zabbix_url_prompt()
+        raise AuthError("No Zabbix URL found in environment or config.")
+
+    def _get_zabbix_url_env(self) -> str:
+        """Get the URL of the Zabbix server from the environment."""
+        return os.environ.get(ConfigEnvVars.URL, "")
+
+    def _get_zabbix_url_config(self) -> str:
+        """Get the URL of the Zabbix server from the config file."""
         return self.config.api.url
+
+    def _get_zabbix_url_prompt(self) -> str:
+        """Prompt for the URL of the Zabbix server."""
+        return str_prompt("Zabbix URL (without /api_jsonrpc.php)", empty_ok=False)
 
     def _get_username_password_env(self) -> Credentials:
         """Get username and password from environment variables."""
@@ -366,12 +398,14 @@ class Authenticator:
             )
 
     def _get_auth_token_config(self) -> Credentials:
+        """Get auth token from the config file."""
         return Credentials(
             auth_token=self.config.api.auth_token.get_secret_value(),
             source=CredentialsSource.CONFIG,
         )
 
     def _get_auth_token_file(self) -> Credentials:
+        """Get auth token from a file."""
         if not self.config.app.use_auth_token_file:
             logger.debug("Not configured to use auth token file.")
             return Credentials()
@@ -392,6 +426,7 @@ class Authenticator:
         )
 
     def load_auth_token_file(self) -> Union[tuple[Path, str], tuple[None, None]]:
+        """Attempts to load an auth token file."""
         paths = get_auth_token_file_paths(self.config)
         for path in paths:
             contents = self._do_load_auth_file(path)
@@ -448,13 +483,6 @@ def logout(client: ZabbixAPI, config: Config) -> None:
         clear_auth_token_file(config)
 
 
-def prompt_username_password(username: str) -> tuple[str, str]:
-    """Re-useable prompt for username and password."""
-    username = str_prompt("Username", default=username, empty_ok=False)
-    password = str_prompt("Password", password=True, empty_ok=False)
-    return username, password
-
-
 def _parse_auth_file_contents(
     contents: Optional[str],
 ) -> tuple[Optional[str], Optional[str]]:
@@ -494,7 +522,10 @@ def get_auth_token_file_paths(config: Optional[Config] = None) -> list[Path]:
 
 
 def write_auth_token_file(
-    username: str, auth_token: str, file: Path = AUTH_TOKEN_FILE
+    username: str,
+    auth_token: str,
+    file: Path = AUTH_TOKEN_FILE,
+    allow_insecure: bool = False,
 ) -> Path:
     """Write a username/auth token pair to the auth token file."""
     if not username or not auth_token:
@@ -505,16 +536,14 @@ def write_auth_token_file(
         )
         return file
 
-    contents = f"{username}::{auth_token}"
-    if not file.exists():
-        try:
-            file.touch(mode=SECURE_PERMISSIONS)
-        except OSError as e:
-            raise AuthTokenFileError(
-                f"Unable to create auth token file {file}. "
-                "Change the location or disable auth token file in config."
-            ) from e
-    elif not file_has_secure_permissions(file):
+    try:
+        file.write_text(f"{username}::{auth_token}")
+        logger.info(f"Wrote auth token file {file}")
+    except OSError as e:
+        raise AuthTokenFileError(f"Unable to write auth token file {file}: {e}") from e
+
+    # Ensure file has secure permissions if configured
+    if not allow_insecure and not file_has_secure_permissions(file):
         try:
             file.chmod(SECURE_PERMISSIONS)
         except OSError as e:
@@ -522,11 +551,7 @@ def write_auth_token_file(
                 f"Unable to set secure permissions ({SECURE_PERMISSIONS_STR}) on {file} when saving auth token. "
                 "Change permissions manually or delete the file."
             ) from e
-    try:
-        file.write_text(contents)
-        logger.info(f"Wrote auth token file {file}")
-    except OSError as e:
-        raise AuthTokenFileError(f"Unable to write auth token file {file}: {e}") from e
+
     return file
 
 

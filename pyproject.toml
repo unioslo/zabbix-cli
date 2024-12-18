@@ -61,6 +61,7 @@ test = [
   "pytest-cov>=5.0.0",
   "inline-snapshot>=0.13.0",
   "freezegun>=1.5.1",
+  "pytest-httpserver>=1.1.0",
 ]
 docs = [
   "mkdocs>=1.5.3",

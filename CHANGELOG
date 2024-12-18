@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## [Unreleased] -->
+## [Unreleased]
+
+### Added
+
+- Environment variable `ZABBIX_URL` to specify the URL for the Zabbix API.
+
+### Changed
+
+- Authentication info from environment variables now take priority over the configuration file.
 
 ## [3.4.2](https://github.com/unioslo/zabbix-cli/releases/tag/3.4.2) - 2024-12-16
 
