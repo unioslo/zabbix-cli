@@ -49,6 +49,7 @@ from zabbix_cli._v2_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
 from zabbix_cli.bulk import BulkRunnerMode
 from zabbix_cli.config.constants import AUTH_FILE
 from zabbix_cli.config.constants import AUTH_TOKEN_FILE
+from zabbix_cli.config.constants import SESSION_ID_FILE
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.constants import SecretMode
 from zabbix_cli.config.utils import check_deprecated_fields
@@ -212,7 +213,12 @@ class AppConfig(BaseModel):
         ),
     )
 
-    use_auth_token_file: bool = True
+    use_session_id_file: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("use_session_id_file", "use_auth_token_file"),
+    )
+
+    session_id_file: Path = SESSION_ID_FILE
     auth_token_file: Path = AUTH_TOKEN_FILE
     auth_file: Path = AUTH_FILE
 

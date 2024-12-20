@@ -68,6 +68,21 @@ def get_directory(directory_type: DirectoryType, config: Optional[Config]) -> Pa
     return directory_type.as_path()
 
 
+@app.command("clear_auth_token_file", rich_help_panel=HELP_PANEL)
+def clear_auth_token_file(
+    ctx: typer.Context,
+    force: bool = typer.Option(False, "--force", help="Skip confirmation prompt."),
+) -> None:
+    """Clear the auth token file."""
+    from zabbix_cli.auth import clear_auth_token_file
+
+    if not force:
+        if not typer.confirm("Clear auth token file?"):
+            exit_err("Clear cancelled.")
+    clear_auth_token_file(app.state.config)
+    success("Auth token file cleared.")
+
+
 @app.command("debug", hidden=True, rich_help_panel=HELP_PANEL)
 def debug_cmd(
     ctx: typer.Context,
@@ -95,7 +110,8 @@ def help(
 
     # HACK: Set the info name to the resolved command name, otherwise
     # when we call get_help, it will use the name of the help command
-    # instead of the resolved command name. Maybe we can use make_context for this?
+    # instead of the resolved command name.
+    # Maybe we can use make_context for this?
     ctx.info_name = command.name
     command.get_help(ctx)
 

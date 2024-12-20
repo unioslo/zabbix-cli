@@ -16,6 +16,7 @@ from zabbix_cli.auth import Authenticator
 from zabbix_cli.auth import Credentials
 from zabbix_cli.auth import CredentialsSource
 from zabbix_cli.auth import CredentialsType
+from zabbix_cli.auth import SessionIDFile
 from zabbix_cli.auth import get_auth_file_paths
 from zabbix_cli.auth import get_auth_token_file_paths
 from zabbix_cli.config.constants import AUTH_FILE
@@ -88,6 +89,11 @@ def table_renderable_mock(monkeypatch) -> type[TableRenderable]:
     return MockTableRenderable
 
 
+@pytest.fixture(name="session_id_file")
+def _session_id_file(tmp_path: Path) -> Path:
+    return tmp_path / ".zabbix-cli_session_id.json"
+
+
 @pytest.fixture(name="auth_token_file")
 def _auth_token_file(tmp_path: Path) -> Path:
     return tmp_path / ".zabbix-cli_auth_token"
@@ -105,10 +111,11 @@ def _auth_file(tmp_path: Path) -> Path:
             [
                 (CredentialsType.AUTH_TOKEN, CredentialsSource.ENV),
                 (CredentialsType.AUTH_TOKEN, CredentialsSource.CONFIG),
-                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
+                (CredentialsType.SESSION_ID, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.ENV),
+                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
             ],
             CredentialsType.AUTH_TOKEN,
@@ -118,10 +125,11 @@ def _auth_file(tmp_path: Path) -> Path:
         pytest.param(
             [
                 (CredentialsType.AUTH_TOKEN, CredentialsSource.CONFIG),
-                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
+                (CredentialsType.SESSION_ID, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.ENV),
+                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
             ],
             CredentialsType.AUTH_TOKEN,
@@ -130,21 +138,23 @@ def _auth_file(tmp_path: Path) -> Path:
         ),
         pytest.param(
             [
-                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
+                (CredentialsType.SESSION_ID, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.ENV),
+                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
             ],
-            CredentialsType.AUTH_TOKEN,
+            CredentialsType.SESSION_ID,
             CredentialsSource.FILE,
-            id="expect_auth_token_file",
+            id="expect_session_id_file",
         ),
         pytest.param(
             [
                 (CredentialsType.PASSWORD, CredentialsSource.ENV),
                 (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
+                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
             ],
             CredentialsType.PASSWORD,
@@ -155,6 +165,7 @@ def _auth_file(tmp_path: Path) -> Path:
             [
                 (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
+                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
             ],
             CredentialsType.PASSWORD,
@@ -164,11 +175,21 @@ def _auth_file(tmp_path: Path) -> Path:
         pytest.param(
             [
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
+                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
             ],
             CredentialsType.PASSWORD,
             CredentialsSource.FILE,
             id="expect_password_file",
+        ),
+        pytest.param(
+            [
+                (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
+                (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
+            ],
+            CredentialsType.SESSION_ID,
+            CredentialsSource.FILE,
+            id="expect_legacy_auth_token_file",
         ),
         pytest.param(
             [
@@ -185,6 +206,7 @@ def test_authenticator_login_with_any(
     table_renderable_mock: type[TableRenderable],
     auth_token_file: Path,
     auth_file: Path,
+    session_id_file: Path,
     config: Config,
     sources: list[tuple[CredentialsType, CredentialsSource]],
     expect_source: CredentialsSource,
@@ -197,6 +219,11 @@ def test_authenticator_login_with_any(
     MOCK_USER = "Admin"
     MOCK_PASSWORD = "zabbix"
     MOCK_TOKEN = "abc1234567890"
+    MOCK_URL = "http://localhost"
+
+    config.api.url = MOCK_URL
+    config.app.auth_token_file = auth_token_file
+    config.app.session_id_file = session_id_file
 
     # Mock certain methods that are difficult to test
     # States reasons for mocking each method
@@ -254,18 +281,29 @@ def test_authenticator_login_with_any(
                 monkeypatch.setenv("ZABBIX_USERNAME", MOCK_USER)
                 monkeypatch.setenv("ZABBIX_PASSWORD", MOCK_PASSWORD)
         elif csource == CredentialsSource.FILE:
-            if ctype == CredentialsType.AUTH_TOKEN:
+            if ctype == CredentialsType.SESSION_ID:
+                sidfile = SessionIDFile()
+                sidfile.set_user_session(MOCK_URL, MOCK_USER, MOCK_TOKEN)
+                sidfile.save(session_id_file)
+            elif ctype == CredentialsType.AUTH_TOKEN:
                 auth_token_file.write_text(f"{MOCK_USER}::{MOCK_TOKEN}")
-                config.app.auth_token_file = auth_token_file
-                config.app.use_auth_token_file = True
+                config.app.use_session_id_file = True
                 config.app.allow_insecure_auth_file = True
             elif ctype == CredentialsType.PASSWORD:
                 auth_file.write_text(f"{MOCK_USER}::{MOCK_PASSWORD}")
                 config.app.auth_file = auth_file
 
     _, info = authenticator.login_with_any()
-    assert info.credentials.source == expect_source
-    assert info.credentials.type == expect_type
+
+    # Provide more verbose assertion messages in case of failures
+    # We want to know both source AND type when it fails.
+    assert (
+        info.credentials.type == expect_type
+    ), f"Got {info.credentials.type} from {info.credentials.source}"
+    assert (
+        info.credentials.source == expect_source
+    ), f"Got {info.credentials.type} from {info.credentials.source}"
+
     assert info.token == MOCK_TOKEN
 
     # Ensure the login method modified the base renderable's zabbix version attribute

@@ -300,6 +300,7 @@ class ZabbixAPI:
         user: Optional[str] = None,
         password: Optional[str] = None,
         auth_token: Optional[str] = None,
+        session_id: Optional[str] = None,
     ) -> str:
         """Convenience method for logging into the API and storing the resulting
         auth token as an instance variable.
@@ -316,9 +317,15 @@ class ZabbixAPI:
 
         if auth_token:
             # TODO: revert this if token is invalid
+            logger.debug("Using API token for authentication")
             self.use_api_token = True
             auth = auth_token
+        elif session_id:
+            logger.debug("Using session ID for authentication")
+            auth = session_id
         else:
+            logger.debug("Using username and password for authentication")
+
             params: ParamsType = {
                 compat.login_user_name(version): user,
                 "password": password,
@@ -411,7 +418,11 @@ class ZabbixAPI:
 
         # We don't have to pass the auth token if asking for the apiinfo.version
         # TODO: ensure we have auth token if method requires it
-        if self.auth and method not in ["apiinfo.version", "user.login"]:
+        if self.auth and method.lower() not in [
+            "apiinfo.version",
+            "user.login",
+            "user.checkauthentication",
+        ]:
             if self.version.release >= (6, 4, 0):
                 request_headers["Authorization"] = f"Bearer {self.auth}"
             else:

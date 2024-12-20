@@ -239,7 +239,7 @@ class State:
             # State did not finish configuration before termination
             not self.ready
             # OR We want to keep the session alive
-            or self.config.app.use_auth_token_file
+            or self.config.app.use_session_id_file
             # OR we are using an API token
             or self.client.use_api_token
         ):

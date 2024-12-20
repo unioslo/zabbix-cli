@@ -23,6 +23,9 @@ from typing import NamedTuple
 from typing import Optional
 from typing import Union
 
+from pydantic import BaseModel
+from pydantic import PrivateAttr
+from pydantic import RootModel
 from rich.console import ScreenContext
 from strenum import StrEnum
 
@@ -33,7 +36,11 @@ from zabbix_cli.config.constants import AUTH_TOKEN_FILE
 from zabbix_cli.config.constants import ConfigEnvVars
 from zabbix_cli.exceptions import AuthError
 from zabbix_cli.exceptions import AuthTokenFileError
+from zabbix_cli.exceptions import SessionIDFileError
+from zabbix_cli.exceptions import SessionIDFileNotFoundError
+from zabbix_cli.exceptions import SessionIDFilePermissionsError
 from zabbix_cli.exceptions import ZabbixAPIException
+from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.logs import add_user
 from zabbix_cli.output.console import err_console
 from zabbix_cli.output.console import error
@@ -52,11 +59,103 @@ SECURE_PERMISSIONS: Final[int] = 0o600
 SECURE_PERMISSIONS_STR = format(SECURE_PERMISSIONS, "o")
 
 
+class SessionIDInfo(BaseModel):
+    """Information about a session ID for a specific user."""
+
+    username: str
+    session_id: str
+
+
+class SessionIDList(RootModel[list[SessionIDInfo]]):
+    """List of session IDs for a specific Zabbix API URL."""
+
+    root: list[SessionIDInfo] = []
+
+    def set_session(self, username: str, session_id: str) -> None:
+        """Add or modify a session for a given user."""
+        for session in self.root:
+            if session.username == username:
+                session.session_id = session_id
+                return
+        # Did not find existing session, add new one
+        self.root.append(SessionIDInfo(username=username, session_id=session_id))
+
+    def get_session(self, username: str) -> Optional[SessionIDInfo]:
+        for session in self.root:
+            if session.username == username:
+                return session
+        return None
+
+
+class SessionIDFile(RootModel[dict[str, SessionIDList]]):
+    """Contents of a session ID file."""
+
+    root: dict[str, SessionIDList] = {}
+    _path: Optional[Path] = PrivateAttr(default=None)
+
+    def get_sessions(self, url: str) -> SessionIDList:
+        """Get all sessions for a specific Zabbix API URL."""
+        return self.root.get(url, None) or SessionIDList()  # lazily create default
+
+    def get_user_session(self, url: str, username: str) -> Optional[SessionIDInfo]:
+        """Get a session given a URL and username."""
+        return self.get_sessions(url).get_session(username)
+
+    def get_or_set_url_session(self, url: str) -> SessionIDList:
+        """Add a URL to the file (if it doesn't exist).
+
+        Return the URL's session list."""
+        if url not in self.root:
+            self.root[url] = SessionIDList()
+        return self.root[url]
+
+    def set_user_session(self, url: str, username: str, session_id: str) -> None:
+        """Add a session to the file from"""
+        session = self.get_or_set_url_session(url)
+        session.set_session(username, session_id)
+
+    @classmethod
+    def load(cls, file: Path, allow_insecure: bool = False) -> SessionIDFile:
+        """Load the contents of a session ID file."""
+        if not file.exists():
+            raise SessionIDFileNotFoundError("Session ID file does not exist: %s", file)
+
+        if not file_has_secure_permissions(file) and not allow_insecure:
+            raise SessionIDFilePermissionsError(
+                f"Session ID file {file} must have {SECURE_PERMISSIONS_STR} permissions. Refusing to load."
+            )
+        try:
+            contents = file.read_text()
+            cl = cls.model_validate_json(contents)
+            cl._path = file
+            return cl
+        except Exception as e:
+            raise SessionIDFileError(
+                f"Unable to load session ID file {file}: {e}"
+            ) from e
+
+    def save(self, path: Optional[Path] = None, allow_insecure: bool = False) -> None:
+        """Save the contents of the session ID file."""
+        path = path or self._path
+        if not path:
+            raise SessionIDFileError("Cannot save session ID file without a path.")
+
+        try:
+            path.write_text(self.model_dump_json(indent=2))
+            if not allow_insecure and not file_has_secure_permissions(path):
+                set_file_secure_permissions(path)
+        except Exception as e:
+            raise SessionIDFileError(
+                f"Unable to save session ID file {self._path}: {e}"
+            ) from e
+
+
 class CredentialsType(StrEnum):
     """Types of valid login credentials."""
 
     PASSWORD = "username and password"
     AUTH_TOKEN = "auth token"
+    SESSION_ID = "session ID"
 
 
 class CredentialsSource(StrEnum):
@@ -76,11 +175,10 @@ class Credentials(NamedTuple):
     username: Optional[str] = None
     password: Optional[str] = None
     auth_token: Optional[str] = None
+    session_id: Optional[str] = None
 
     def __str__(self) -> str:
-        if self.type == CredentialsType.PASSWORD:
-            return f"{self.type} from {self.source}"
-        if self.type == CredentialsType.AUTH_TOKEN:
+        if self.type and self.source:
             return f"{self.type} from {self.source}"
         return "no credentials"
 
@@ -90,6 +188,8 @@ class Credentials(NamedTuple):
             return CredentialsType.AUTH_TOKEN
         if self.username and self.password:
             return CredentialsType.PASSWORD
+        if self.session_id:
+            return CredentialsType.SESSION_ID
         return None
 
     def is_valid(self) -> bool:
@@ -100,6 +200,7 @@ class Credentials(NamedTuple):
 class LoginInfo(NamedTuple):
     credentials: Credentials
     token: str
+    """Token or Session ID returned from the Zabbix API."""
 
 
 class Authenticator:
@@ -134,11 +235,12 @@ class Authenticator:
 
         1. API token in environment variables
         2. API token in config file
-        3. API token in file (if `use_auth_token_file=true`)
+        3. Session ID in file (if `use_session_id_file=true`)
         4. Username and password in environment variables
         5. Username and password in config file
         6. Username and password in auth file
-        7. Username and password from prompt
+        7. Session ID in legacy file (if `use_session_id_file=true`)
+        8. Username and password from prompt
         """
 
         for credentials in self._iter_all_credentials():
@@ -157,19 +259,27 @@ class Authenticator:
     ) -> Generator[Credentials, None, None]:
         """Generator that yields credentials from all possible sources.
 
-        Does not check if credentials are valid.
+        Only yields non-empty credentials, but does not check if they are valid.
 
         Finally yields a prompt for username and password if `prompt_password` is True.
         """
         for func in [
             self._get_auth_token_env,
             self._get_auth_token_config,
-            self._get_auth_token_file,
+            self._get_session_id_file,
             self._get_username_password_env,
             self._get_username_password_config,
             self._get_username_password_auth_file,
+            self._get_auth_token_file_legacy,
         ]:
-            yield func()
+            try:
+                creds = func()
+                if creds:
+                    yield creds
+            except Exception as e:
+                logger.error("Error getting credentials from %s: %s", func, e)
+                continue
+
         if prompt_password:
             yield self._get_username_password_prompt()
 
@@ -246,11 +356,14 @@ class Authenticator:
             user=credentials.username,
             password=credentials.password,
             auth_token=credentials.auth_token,
+            session_id=credentials.session_id,
         )
         info = LoginInfo(credentials, token)
 
         if info.credentials.type == CredentialsType.AUTH_TOKEN:
             logger.info("Logged in using auth token from %s", info.credentials.source)
+        elif info.credentials.type == CredentialsType.SESSION_ID:
+            logger.info("Logged in using session ID from %s", info.credentials.source)
         else:
             logger.info(
                 "Logged in as %s using username and password from %s",
@@ -273,13 +386,31 @@ class Authenticator:
         from zabbix_cli.models import TableRenderable
 
         # Write auth token file
-        if info.credentials.username and self.config.app.use_auth_token_file:
-            write_auth_token_file(
-                info.credentials.username,
-                info.token,
-                self.config.app.auth_token_file,
-                self.config.app.allow_insecure_auth_file,
+        if info.credentials.username and self.config.app.use_session_id_file:
+            try:
+                sessionfile = SessionIDFile.load(
+                    self.config.app.session_id_file,
+                    # Allow loading an insecure file, but not saving one.
+                    # So if the file is insecure, we can still load it,
+                    # then try to save it with secure permissions.
+                    allow_insecure=True,
+                )
+            except SessionIDFileNotFoundError:
+                logger.debug("Session ID file does not exist, creating new one.")
+                sessionfile = SessionIDFile()
+
+            sessionfile.set_user_session(
+                url=self.config.api.url,
+                username=info.credentials.username,
+                session_id=info.token,
             )
+            try:
+                sessionfile.save(
+                    self.config.app.session_id_file,
+                    allow_insecure=self.config.app.allow_insecure_auth_file,
+                )
+            except SessionIDFileError as e:
+                logger.error("Unable to save session ID file: %s", e)
 
         # Log context
         if info.credentials.username:
@@ -404,11 +535,34 @@ class Authenticator:
             source=CredentialsSource.CONFIG,
         )
 
-    def _get_auth_token_file(self) -> Credentials:
-        """Get auth token from a file."""
-        if not self.config.app.use_auth_token_file:
+    def _get_session_id_file(self) -> Optional[Credentials]:
+        """Get session ID from a file."""
+        if not self.config.app.use_session_id_file:
             logger.debug("Not configured to use auth token file.")
-            return Credentials()
+            return
+
+        sessionfile = self.load_session_id_file()
+        if not sessionfile:
+            return
+        logger.info("Found session ID file %s", sessionfile._path)  # pyright: ignore[reportPrivateUsage]
+
+        session = sessionfile.get_user_session(
+            self.config.api.url, self.config.api.username
+        )
+        if session:
+            return Credentials(
+                username=session.username,
+                session_id=session.session_id,
+                source=CredentialsSource.FILE,
+            )
+
+    def _get_auth_token_file_legacy(self) -> Optional[Credentials]:
+        """Get auth token (session ID) from a legacy auth token file.
+
+        From Zabbix-CLI 3.5.0 onwards, we use a new session ID file."""
+        if not self.config.app.use_session_id_file:
+            logger.debug("Not configured to use auth token file.")
+            return
 
         path, contents = self.load_auth_token_file()
         username, auth_token = _parse_auth_file_contents(contents)
@@ -419,11 +573,24 @@ class Authenticator:
                 f"Ignoring existing auth token in auth file {path}: "
                 f"Username {username!r} in file does not match username {self.config.api.username!r} in configuration file."
             )
-            auth_token = None
+            return
 
+        # NOTE: Originally, this was named auth token file, but it does in fact
+        # contain a Session ID, not an API token.
+        # So we return it under the `session_id` key.
         return Credentials(
-            username=username, auth_token=auth_token, source=CredentialsSource.FILE
+            username=username, session_id=auth_token, source=CredentialsSource.FILE
         )
+
+    def load_session_id_file(self) -> Optional[SessionIDFile]:
+        try:
+            return SessionIDFile.load(self.config.app.session_id_file)
+        except SessionIDFileError as e:
+            logger.error("Unable to load session ID file: %s", e)
+            return None
+        except Exception as e:
+            logger.error("Unexpected error loading session ID file: %s", e)
+            return None
 
     def load_auth_token_file(self) -> Union[tuple[Path, str], tuple[None, None]]:
         """Attempts to load an auth token file."""
@@ -479,7 +646,7 @@ def login(config: Config) -> ZabbixAPI:
 def logout(client: ZabbixAPI, config: Config) -> None:
     """Log out of the current Zabbix API session."""
     client.logout()
-    if config.app.use_auth_token_file:
+    if config.app.use_session_id_file:
         clear_auth_token_file(config)
 
 
@@ -580,6 +747,16 @@ def file_has_secure_permissions(file: Path) -> bool:
     if sys.platform == "win32":
         return True
     return get_file_permissions(file) == SECURE_PERMISSIONS
+
+
+def set_file_secure_permissions(file: Path) -> None:
+    """Set the permissions of a file to secure permissions."""
+    try:
+        file.chmod(SECURE_PERMISSIONS)
+    except OSError as e:
+        raise ZabbixCLIError(
+            f"Unable to set secure permissions ({SECURE_PERMISSIONS_STR}) on {file}. Change permissions manually or delete the file."
+        ) from e
 
 
 def get_file_permissions(file: Path) -> int:
