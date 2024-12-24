@@ -13,7 +13,8 @@ from zabbix_cli.pyzabbix.client import ZabbixAPI
 from zabbix_cli.pyzabbix.client import add_param
 from zabbix_cli.pyzabbix.client import append_param
 
-from tests.conftest import add_httpserver_version_endpoint
+from tests.utils import add_zabbix_endpoint
+from tests.utils import add_zabbix_version_endpoint
 
 
 @pytest.mark.parametrize(
@@ -184,6 +185,7 @@ def test_client_auth_method(
     version: Version,
     expect_method: AuthMethod,
 ) -> None:
+    """Test that the correct auth method (body/header) is used based on the Zabbix server version."""
     # Add endpoint for version check
     zabbix_client.set_url(httpserver.url_for("/api_jsonrpc.php"))
 
@@ -191,26 +193,58 @@ def test_client_auth_method(
     zabbix_client.auth = "token123"
 
     # Add endpoint that returns the parametrized version
-    add_httpserver_version_endpoint(httpserver, version, id=0)
+    add_zabbix_version_endpoint(httpserver, str(version), id=0)
 
     assert zabbix_client.version == version
 
-    data = {"jsonrpc": "2.0", "method": "fake.method", "params": {}, "id": 1}
-    headers = {}
-
+    headers: dict[str, str] = {}
+    auth = None
     # We expect auth token to be in header on >= 6.4.0
     if expect_method == "header":
         headers["Authorization"] = f"Bearer {zabbix_client.auth}"
     else:
-        data["auth"] = zabbix_client.auth
+        auth = zabbix_client.auth
 
-    httpserver.expect_oneshot_request(
-        "/api_jsonrpc.php",
-        json=data,
+    add_zabbix_endpoint(
+        httpserver,
+        method="test.method.do_stuff",
+        params={},
+        response="authtoken123456789",
         headers=headers,
-        method="POST",
-    ).respond_with_json({"jsonrpc": "2.0", "result": "authtoken123456789", "id": 1})
+        auth=auth,
+    )
 
     # Will fail if the auth method is not set correctly
-    resp = zabbix_client.do_request("fake.method")
+    resp = zabbix_client.do_request("test.method.do_stuff")
     assert resp.result == "authtoken123456789"
+
+    httpserver.check_assertions()
+    httpserver.check_handler_errors()
+
+
+AuthType = Literal["token", "sessionid"]
+
+
+@pytest.mark.parametrize(
+    "auth_type,auth",
+    [
+        pytest.param("token", "authtoken123456789", id="token"),
+        pytest.param("token", "", id="token (empty string)"),
+        pytest.param("sessionid", "sessionid123456789", id="sessionid"),
+        pytest.param("sessionid", "", id="sessionid (empty string)"),
+    ],
+)
+def test_client_logout(httpserver: HTTPServer, auth_type: AuthType, auth: str) -> None:
+    add_zabbix_version_endpoint(httpserver, "7.0.0")
+
+    # We only expect a logout request if we are using a sessionid and have an auth token
+    if auth_type == "sessionid" and auth:
+        add_zabbix_endpoint(httpserver, "user.logout", {}, True)
+    zabbix_client = ZabbixAPI(server=httpserver.url_for("/api_jsonrpc.php"))
+    zabbix_client.auth = auth
+    if auth_type == "token":
+        zabbix_client.use_api_token = True
+    zabbix_client.logout()
+
+    httpserver.check_assertions()
+    httpserver.check_handler_errors()

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Any
 from typing import Optional
 
 import pytest
 from inline_snapshot import snapshot
 from packaging.version import Version
 from pydantic import SecretStr
+from pytest_httpserver import HTTPServer
 from zabbix_cli import auth
 from zabbix_cli._v2_compat import AUTH_FILE as AUTH_FILE_LEGACY
 from zabbix_cli._v2_compat import AUTH_TOKEN_FILE as AUTH_TOKEN_FILE_LEGACY
@@ -23,6 +23,9 @@ from zabbix_cli.config.constants import AUTH_FILE
 from zabbix_cli.config.constants import AUTH_TOKEN_FILE
 from zabbix_cli.config.model import Config
 from zabbix_cli.pyzabbix.client import ZabbixAPI
+
+from tests.utils import add_zabbix_endpoint
+from tests.utils import add_zabbix_version_endpoint
 
 if TYPE_CHECKING:
     from zabbix_cli.models import TableRenderable
@@ -89,19 +92,27 @@ def table_renderable_mock(monkeypatch) -> type[TableRenderable]:
     return MockTableRenderable
 
 
+def yield_then_delete_file(file: Path) -> None:
+    try:
+        yield file
+    finally:
+        if file.exists():
+            file.unlink()
+
+
 @pytest.fixture(name="session_id_file")
 def _session_id_file(tmp_path: Path) -> Path:
-    return tmp_path / ".zabbix-cli_session_id.json"
+    yield from yield_then_delete_file(tmp_path / ".zabbix-cli_session_id.json")
 
 
 @pytest.fixture(name="auth_token_file")
 def _auth_token_file(tmp_path: Path) -> Path:
-    return tmp_path / ".zabbix-cli_auth_token"
+    yield from yield_then_delete_file(tmp_path / ".zabbix-cli_auth_token")
 
 
 @pytest.fixture(name="auth_file")
 def _auth_file(tmp_path: Path) -> Path:
-    return tmp_path / ".zabbix-cli_auth"
+    yield from yield_then_delete_file(tmp_path / ".zabbix-cli_auth")
 
 
 @pytest.mark.parametrize(
@@ -203,6 +214,7 @@ def _auth_file(tmp_path: Path) -> Path:
 )
 def test_authenticator_login_with_any(
     monkeypatch: pytest.MonkeyPatch,
+    httpserver: HTTPServer,
     table_renderable_mock: type[TableRenderable],
     auth_token_file: Path,
     auth_file: Path,
@@ -212,31 +224,55 @@ def test_authenticator_login_with_any(
     expect_source: CredentialsSource,
     expect_type: CredentialsType,
 ) -> None:
-    """Test the authenticator login with a variety of credential sources."""
-    # TODO: test with other variations of sources and types
-    authenticator = Authenticator(config)
+    """Test that automatic selection of authentication source works given
+    multiple valid authentication sources.
 
+
+    Mocks ZabbixAPI methods to avoid reliace on a Zabbix server.
+    """
+    # TODO: test with a mix of valid and invalid sources, as well as
+    #  with no valid sources.
     MOCK_USER = "Admin"
     MOCK_PASSWORD = "zabbix"
     MOCK_TOKEN = "abc1234567890"
-    MOCK_URL = "http://localhost"
+    # Mock token used in legacy auth token file (to differentiate from new location)
+    MOCK_URL = httpserver.url_for("/")
 
     config.api.url = MOCK_URL
     config.app.auth_token_file = auth_token_file
     config.app.session_id_file = session_id_file
 
-    # Mock certain methods that are difficult to test
+    authenticator = Authenticator(config)
+
+    # Mock endpoints for API calls:
+
+    # Endpoint for ZabbixAPI.version
+    # Add a version different from the default so we can tell if the mock was used
+    # But also is recent enough that we use auth headers (>= 6.4.0)
+    add_zabbix_version_endpoint(httpserver, "6.4.0", id=0)
+
+    # Endpoint for ZabbixAPI.login()
+    add_zabbix_endpoint(
+        httpserver,
+        method="user.login",
+        params={},  # matching NYI
+        response=MOCK_TOKEN,
+        id=1,
+    )
+
+    # Replace certain difficult to test methods with mocks
     # States reasons for mocking each method
 
-    # REASON: Makes HTTP calls to the Zabbix API
-    def mock_login(self: ZabbixAPI, *args: Any, **kwargs: Any) -> str:
-        self.auth = MOCK_TOKEN
-        return self.auth
+    # REASON: Implementation detail, not relevant to this test.
+    # This method is called by the login method as of 3.4.2, but
+    # it is an implementation detail and not relevant to this test
+    # (it calls host.get with a limit of 1)
+    def mock_ensure_authenticated(self: ZabbixAPI) -> None:
+        return
 
-    monkeypatch.setattr(auth.ZabbixAPI, "login", mock_login)
-
-    # REASON: Makes HTTP calls to the Zabbix API
-    monkeypatch.setattr(auth.ZabbixAPI, "version", Version("1.2.3"))
+    monkeypatch.setattr(
+        auth.ZabbixAPI, "ensure_authenticated", mock_ensure_authenticated
+    )
 
     # REASON: Prompts for input (could also be tested with a fake input stream)
     def mock_get_username_password_prompt() -> Credentials:
@@ -253,6 +289,7 @@ def test_authenticator_login_with_any(
     )
 
     # REASON: Falls back on default auth token file path (which might exist on test user's system)
+    # We want to ensure that the function only finds the test file we created
     def mock_get_auth_token_file_paths(config: Optional[Config] = None) -> list[Path]:
         return [auth_token_file]
 
@@ -260,7 +297,7 @@ def test_authenticator_login_with_any(
         auth, "get_auth_token_file_paths", mock_get_auth_token_file_paths
     )
 
-    # REASON: Falls back on default auth file path (which might exist on test user's system)
+    # REASON: Same as above
     def mock_get_auth_file_paths(config: Optional[Config] = None) -> list[Path]:
         return [auth_file]
 
@@ -285,6 +322,8 @@ def test_authenticator_login_with_any(
                 sidfile = SessionIDFile()
                 sidfile.set_user_session(MOCK_URL, MOCK_USER, MOCK_TOKEN)
                 sidfile.save(session_id_file)
+                config.app.use_session_id_file = True
+                config.app.allow_insecure_auth_file = True
             elif ctype == CredentialsType.AUTH_TOKEN:
                 auth_token_file.write_text(f"{MOCK_USER}::{MOCK_TOKEN}")
                 config.app.use_session_id_file = True
@@ -297,12 +336,20 @@ def test_authenticator_login_with_any(
 
     # Provide more verbose assertion messages in case of failures
     # We want to know both source AND type when it fails.
-    assert (
-        info.credentials.type == expect_type
-    ), f"Got {info.credentials.type} from {info.credentials.source}"
-    assert (
-        info.credentials.source == expect_source
-    ), f"Got {info.credentials.type} from {info.credentials.source}"
+    def fmt_assert_msg(
+        expect_type: CredentialsType, expect_source: CredentialsSource
+    ) -> str:
+        return (
+            f"Expected {expect_type} from {expect_source}, got {info.credentials.type} "
+            f"from {info.credentials.source}"
+        )
+
+    assert info.credentials.type == expect_type, fmt_assert_msg(
+        expect_type, expect_source
+    )
+    assert info.credentials.source == expect_source, fmt_assert_msg(
+        expect_type, expect_source
+    )
 
     assert info.token == MOCK_TOKEN
 
@@ -310,12 +357,16 @@ def test_authenticator_login_with_any(
     # with the one we got from the mocked API response
 
     # Check the mocked version we replace the real class with
-    assert table_renderable_mock.zabbix_version == Version("1.2.3")
+    assert table_renderable_mock.zabbix_version == Version("6.4.0")
 
     # Try to import the real class and check that our mock changes were applied
     from zabbix_cli.models import TableRenderable
 
-    assert TableRenderable.zabbix_version == Version("1.2.3")
+    assert TableRenderable.zabbix_version == Version("6.4.0")
+
+    # Check HTTP server errors
+    httpserver.check_assertions()
+    httpserver.check_handler_errors()
 
 
 def test_table_renderable_mock_reverted() -> None:
