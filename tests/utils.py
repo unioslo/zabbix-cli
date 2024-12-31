@@ -22,15 +22,21 @@ def add_zabbix_endpoint(
 ) -> None:
     """Add an endpoint mocking a Zabbix API endpoint."""
 
+    # Use a custom handler to check request contents
     def handler(request: Request) -> Response:
-        # Check the JSON request body
-        # Request has content type application/json-rpc
-        # so .json() method does not work
+        # Get the JSON body of the request
+        # Request has content type 'application/json-rpc'
+        # so request.json() method does not work
         request_json = json.loads(request.data.decode())
+
+        # Zabbix API method
+        assert request_json["method"] == method
+
+        # Only check the params we passed are correct
+        # Missing/extra params are not checked
         for k, v in params.items():
             assert k in request_json["params"]
             assert request_json["params"][k] == v
-        assert request_json["method"] == method
 
         # Test auth token in body (< 6.4.0)
         if auth:
