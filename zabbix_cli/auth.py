@@ -71,6 +71,9 @@ class SessionIDList(RootModel[list[SessionIDInfo]]):
 
     root: list[SessionIDInfo] = []
 
+    def __len__(self) -> int:
+        return len(self.root)
+
     def set_session(self, username: str, session_id: str) -> None:
         """Add or modify a session for a given user."""
         for session in self.root:

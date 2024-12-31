@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Optional
+from unittest.mock import patch
 
 import pytest
 from inline_snapshot import snapshot
@@ -17,11 +18,16 @@ from zabbix_cli.auth import Credentials
 from zabbix_cli.auth import CredentialsSource
 from zabbix_cli.auth import CredentialsType
 from zabbix_cli.auth import SessionIDFile
+from zabbix_cli.auth import SessionIDInfo
+from zabbix_cli.auth import SessionIDList
 from zabbix_cli.auth import get_auth_file_paths
 from zabbix_cli.auth import get_auth_token_file_paths
 from zabbix_cli.config.constants import AUTH_FILE
 from zabbix_cli.config.constants import AUTH_TOKEN_FILE
 from zabbix_cli.config.model import Config
+from zabbix_cli.exceptions import SessionIDFileError
+from zabbix_cli.exceptions import SessionIDFileNotFoundError
+from zabbix_cli.exceptions import SessionIDFilePermissionsError
 from zabbix_cli.pyzabbix.client import ZabbixAPI
 
 from tests.utils import add_zabbix_endpoint
@@ -244,8 +250,6 @@ def test_authenticator_login_with_any(
 
     authenticator = Authenticator(config)
 
-    # Mock endpoints for API calls:
-
     # Endpoint for ZabbixAPI.version
     # Add a version different from the default so we can tell if the mock was used
     # But also is recent enough that we use auth headers (>= 6.4.0)
@@ -382,3 +386,193 @@ def test_table_renderable_mock_reverted() -> None:
     # Ensure the mock changes were reverted
     assert TableRenderable.zabbix_version != Version("1.2.3")
     assert TableRenderable.zabbix_version.release == snapshot((7, 0, 0))
+
+
+@pytest.fixture
+def sample_session_file(tmp_path: Path) -> Path:
+    """Create a sample session file for testing."""
+    file_path = tmp_path / "sessions.json"
+    file_path.write_text(
+        '{"https://zabbix.example.com": [{"username": "admin", "session_id": "abc123"}]}'
+    )
+    return file_path
+
+
+def test_sessionid_list_set_session() -> None:
+    """Test setting sessions in SessionIDList."""
+    session_list = SessionIDList()
+
+    def check_session(username: str, session_id: str, expected_count: int):
+        session = session_list.get_session(username)
+        assert session is not None
+        assert session.username == username
+        assert session.session_id == session_id
+        assert len(session_list) == expected_count
+
+    assert len(session_list) == 0
+
+    # Add new session
+    session_list.set_session("user1", "abcd1234")
+    check_session("user1", "abcd1234", 1)
+
+    # Update the session
+    session_list.set_session("user1", "xyz7890")
+    check_session("user1", "xyz7890", 1)
+
+    # Add another new session
+    session_list.set_session("user2", "1234abcd")
+    check_session("user2", "1234abcd", 2)
+
+
+@pytest.mark.parametrize(
+    "initial_sessions,username,expected",
+    [
+        ([], "user1", None),  # Empty list
+        ([{"username": "user1", "session_id": "abc"}], "user1", "abc"),  # Existing user
+        (
+            [{"username": "user1", "session_id": "abc"}],
+            "user2",
+            None,
+        ),  # Non-existent user
+    ],
+)
+def test_sessionid_list_get_session(
+    initial_sessions: list[dict[str, str]], username: str, expected: Optional[str]
+):
+    """Test retrieving sessions from SessionIDList."""
+    session_list = SessionIDList(root=[SessionIDInfo(**s) for s in initial_sessions])
+    result = session_list.get_session(username)
+
+    if expected is None:
+        assert result is None
+    else:
+        assert result is not None
+        assert result.session_id == expected
+
+
+@pytest.mark.parametrize(
+    "url,username,expected_session",
+    [
+        ("https://zabbix1.com", "user1", None),  # Non-existent URL
+        ("https://zabbix2.com", "user2", "xyz789"),  # Existing URL and user
+    ],
+)
+def test_sessionid_file_get_user_session(
+    url: str, username: str, expected_session: Optional[str]
+):
+    """Test retrieving user sessions from SessionIDFile."""
+    session_file = SessionIDFile(
+        root={
+            "https://zabbix2.com": SessionIDList(
+                root=[SessionIDInfo(username="user2", session_id="xyz789")]
+            )
+        }
+    )
+
+    result = session_file.get_user_session(url, username)
+    if expected_session is None:
+        assert result is None
+    else:
+        assert result is not None
+        assert result.session_id == expected_session
+
+
+@pytest.mark.parametrize(
+    "url,username,session_id,expected_urls",
+    [
+        ("https://new.com", "user1", "session1", ["https://new.com"]),  # New URL
+        (
+            "https://existing.com",
+            "user2",
+            "session2",
+            ["https://existing.com"],
+        ),  # Existing URL
+    ],
+)
+def test_sessionid_file_set_user_session(
+    url: str, username: str, session_id: str, expected_urls: list[str]
+):
+    """Test setting user sessions in SessionIDFile."""
+    session_file = SessionIDFile()
+    session_file.set_user_session(url, username, session_id)
+
+    assert set(session_file.root.keys()) == set(expected_urls)
+    session = session_file.get_user_session(url, username)
+    assert session is not None
+    assert session.session_id == session_id
+
+
+@pytest.mark.parametrize(
+    "file_exists,secure_permissions,allow_insecure,should_raise",
+    [
+        (True, True, False, False),  # Normal case
+        (False, True, False, True),  # File doesn't exist
+        (True, False, False, True),  # Insecure permissions
+        (True, False, True, False),  # Insecure permissions but allowed
+    ],
+)
+def test_sessionid_file_load(
+    tmp_path: Path,
+    file_exists: bool,
+    secure_permissions: bool,
+    allow_insecure: bool,
+    should_raise: bool,
+):
+    """Test loading SessionIDFile with various conditions."""
+    file_path = tmp_path / "test_sessions.json"
+    if file_exists:
+        file_path.write_text('{"https://zabbix.example.com": []}')
+
+    with patch("zabbix_cli.auth.file_has_secure_permissions") as mock_secure:
+        mock_secure.return_value = secure_permissions
+
+        if should_raise:
+            with pytest.raises(
+                (SessionIDFileNotFoundError, SessionIDFilePermissionsError)
+            ):
+                SessionIDFile.load(file_path, allow_insecure=allow_insecure)
+        else:
+            result = SessionIDFile.load(file_path, allow_insecure=allow_insecure)
+            assert isinstance(result, SessionIDFile)
+            assert result._path == file_path
+
+
+@pytest.mark.parametrize(
+    "has_path,allow_insecure,secure_permissions,should_raise",
+    [
+        (True, False, True, False),  # Normal case
+        (False, False, True, True),  # No path specified
+        (True, False, False, False),  # Insecure permissions, will be fixed
+        (True, True, False, False),  # Insecure permissions allowed
+    ],
+)
+def test_sessionid_file_save(
+    tmp_path: Path,
+    has_path: bool,
+    allow_insecure: bool,
+    secure_permissions: bool,
+    should_raise: bool,
+):
+    """Test saving SessionIDFile with various conditions."""
+    file_path = tmp_path / "test_sessions.json" if has_path else None
+    session_file = SessionIDFile()
+    if has_path:
+        session_file._path = file_path
+
+    with (
+        patch("zabbix_cli.auth.file_has_secure_permissions") as mock_secure,
+        patch("zabbix_cli.auth.set_file_secure_permissions") as mock_set_secure,
+    ):
+        mock_secure.return_value = secure_permissions
+
+        if should_raise:
+            with pytest.raises(SessionIDFileError) as exc_info:
+                session_file.save(path=file_path, allow_insecure=allow_insecure)
+            assert str(exc_info.value) == snapshot(
+                "Cannot save session ID file without a path."
+            )
+        else:
+            session_file.save(path=file_path, allow_insecure=allow_insecure)
+            assert file_path and file_path.exists()
+            if not secure_permissions and not allow_insecure:
+                mock_set_secure.assert_called_once_with(file_path)
