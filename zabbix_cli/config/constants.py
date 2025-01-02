@@ -33,7 +33,7 @@ AUTH_TOKEN_FILE = DATA_DIR / ".zabbix-cli_auth_token"
 AUTH_FILE = DATA_DIR / ".zabbix-cli_auth"
 """Path to file containing user credentials."""
 
-SESSION_FILE = DATA_DIR / ".zabbix-cli_session_id.json"
+SESSION_FILE = DATA_DIR / ".zabbix-cli_session.json"
 """Path to JSON file containing API session IDs."""
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Generator
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Optional
@@ -98,27 +99,19 @@ def table_renderable_mock(monkeypatch) -> type[TableRenderable]:
     return MockTableRenderable
 
 
-def yield_then_delete_file(file: Path) -> None:
-    try:
-        yield file
-    finally:
-        if file.exists():
-            file.unlink()
-
-
 @pytest.fixture(name="session_file")
-def _session_file(tmp_path: Path) -> Path:
-    yield from yield_then_delete_file(tmp_path / ".zabbix-cli_session_id.json")
+def _session_file(tmp_path: Path) -> Generator[Path, None, None]:
+    yield tmp_path / ".zabbix-cli_session.json"
 
 
 @pytest.fixture(name="auth_token_file")
-def _auth_token_file(tmp_path: Path) -> Path:
-    yield from yield_then_delete_file(tmp_path / ".zabbix-cli_auth_token")
+def _auth_token_file(tmp_path: Path) -> Generator[Path, None, None]:
+    yield tmp_path / ".zabbix-cli_auth_token"
 
 
 @pytest.fixture(name="auth_file")
-def _auth_file(tmp_path: Path) -> Path:
-    yield from yield_then_delete_file(tmp_path / ".zabbix-cli_auth")
+def _auth_file(tmp_path: Path) -> Generator[Path, None, None]:
+    yield tmp_path / ".zabbix-cli_auth"
 
 
 @pytest.mark.parametrize(
