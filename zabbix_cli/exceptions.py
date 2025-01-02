@@ -59,11 +59,11 @@ class SessionFileError(AuthError):
     """Session file error."""
 
 
-class SessionFileNotFoundError(AuthError, FileNotFoundError):
+class SessionFileNotFoundError(SessionFileError, FileNotFoundError):
     """Session file does not exist."""
 
 
-class SessionFilePermissionsError(AuthError):
+class SessionFilePermissionsError(SessionFileError):
     """Session file has incorrect permissions."""
 
 
