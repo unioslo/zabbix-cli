@@ -12,10 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Environment variable `ZABBIX_URL` to specify the URL for the Zabbix API.
+- Session file for storing Zabbix API sessions for multiple URLs and users.
+  - This allows for multiple Zabbix instances to be used without re-authenticating.
+  - The session file is stored in the application's data directory by default with the name `.zabbix-cli_session.json`.
+- `app.use_session_file` configuration option to enable or disable session file usage.
 
 ### Changed
 
 - Authentication info from environment variables now take priority over the configuration file.
+
+### Deprecated
+
+- Auth token file. Use the new session file instead. Session files are now created by default if `app.use_auth_token_file` is set to `true` in the configuration file.
+- `app.use_auth_token_file` configuration option. Use `app.use_session_file` instead.
 
 ## [3.4.2](https://github.com/unioslo/zabbix-cli/releases/tag/3.4.2) - 2024-12-16
 

@@ -8,7 +8,6 @@ from typing import Any
 import pytest
 import typer
 from packaging.version import Version
-from pytest_httpserver import HTTPServer
 from typer.testing import CliRunner
 from zabbix_cli.app import StatefulApp
 from zabbix_cli.config.model import Config
@@ -111,18 +110,6 @@ def zabbix_client_mock_version(
 ) -> Iterator[ZabbixAPI]:
     monkeypatch.setattr(zabbix_client, "api_version", lambda: Version("7.0.0"))
     yield zabbix_client
-
-
-def add_httpserver_version_endpoint(
-    httpserver: HTTPServer, version: Version, id: int = 0
-) -> None:
-    """Add an endpoint emulating the Zabbix apiiinfo.version method."""
-    httpserver.expect_oneshot_request(
-        "/api_jsonrpc.php",
-        json={"jsonrpc": "2.0", "method": "apiinfo.version", "params": {}, "id": id},
-        method="POST",
-        headers={"Content-Type": "application/json-rpc"},
-    ).respond_with_json({"jsonrpc": "2.0", "result": str(version), "id": id})
 
 
 @pytest.fixture(name="force_color")

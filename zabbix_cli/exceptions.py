@@ -55,6 +55,18 @@ class AuthError(ZabbixCLIError):
     # We should probably handle that in the client and raise the appropriate exception
 
 
+class SessionFileError(AuthError):
+    """Session file error."""
+
+
+class SessionFileNotFoundError(SessionFileError, FileNotFoundError):
+    """Session file does not exist."""
+
+
+class SessionFilePermissionsError(SessionFileError):
+    """Session file has incorrect permissions."""
+
+
 class AuthTokenFileError(AuthError):
     """Auth token file error."""
 
@@ -255,7 +267,7 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
     # If we have a stale auth token, we need to clear it.
     if (
         state.is_config_loaded
-        and state.config.app.use_auth_token_file
+        and state.config.app.use_session_file
         and any("re-login" in arg for arg in get_cause_args(e))
     ):
         from zabbix_cli.auth import clear_auth_token_file

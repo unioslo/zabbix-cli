@@ -2,27 +2,24 @@
 
 Zabbix-cli provides several ways to authenticate. They are tried in the following order:
 
-1. [Token - Environment variables](#environment-variables)
-1. [Token - Config file](#config-file)
-1. [Token - Auth token file](#auth-token-file)
+1. [API Token - Environment variables](#environment-variables)
+1. [API Token - Config file](#config-file)
+1. [Session file](#session-file)
 1. [Password - Environment variables](#environment-variables_1)
 1. [Password - Config file](#config-file_1)
 1. [Password - Auth file](#auth-file)
 1. [Password - Prompt](#prompt)
 
-## Token
+## API Token
 
-The application supports authenticating with an API or session token. API tokens are created in the Zabbix frontend or via `zabbix-cli create_token`. A session token is obtained by logging in to the Zabbix API with a username and password.
-
-!!! info "Session vs API token"
-    Semantically, a session token and API token are the same thing from an API authentication perspective. They are both sent as the `auth` parameter in the Zabbix API requests.
+The application supports authenticating with an API token. API tokens are created in the Zabbix frontend or via `zabbix-cli create_token`.
 
 ### Environment variables
 
 The API token can be set as an environment variable:
 
 ```bash
-export ZABBIX_API_TOKEN="API TOKEN"
+export ZABBIX_API_TOKEN="API_TOKEN"
 ```
 
 ### Config file
@@ -34,19 +31,21 @@ The token can be set directly in the config file:
 auth_token = "API_TOKEN"
 ```
 
-### Auth token file
+## Session file
 
-The application can store and reuse session tokens between runs. This feature is enabled by default and configurable via the following options:
+The application can store and reuse session tokens between runs. Multiple sessions can be stored at the same time, which allows for switching between different users and/or Zabbix servers seamlessly without having to re-authenticate.
+
+This feature is enabled by default and configurable via the following options:
 
 ```toml
 [app]
-# Enable token file storage (default: true)
-use_auth_token_file = true
+# Enable persistent sessions (default: true)
+use_session_file = true
 
 # Customize token file location (optional)
-auth_token_file = "/path/to/auth/token/file"
+session_file = "/path/to/auth/token/file"
 
-# Enforce secure file permissions (default: true, no effect on Windows)
+# Enforce secure file permissions (600) (default: true, no effect on Windows)
 allow_insecure_auth_file = false
 ```
 
@@ -117,6 +116,14 @@ They are processed in the following order:
 
 The URL should not include `/api_jsonrpc.php`.
 
+### Environment variables
+
+The URL can also be set as an environment variable:
+
+```bash
+export ZABBIX_URL="http://zabbix.example.com"
+```
+
 ### Config file
 
 The URL of the Zabbix API can be set in the config file:
@@ -125,14 +132,6 @@ The URL of the Zabbix API can be set in the config file:
 
 [api]
 url = "http://zabbix.example.com"
-```
-
-### Environment variables
-
-The URL can also be set as an environment variable:
-
-```bash
-export ZABBIX_URL="http://zabbix.example.com"
 ```
 
 ### Prompt

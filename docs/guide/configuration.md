@@ -183,8 +183,8 @@ To do this, we need to add Field() for every field in the model, and also ensure
     export_directory = "/path/to/exports"
     export_format = "json"
     export_timestamps = true
-    use_auth_token_file = true
-    auth_token_file = "/path/to/auth_token_file"
+    use_session_file = true
+    session_file = "/path/to/session_file.json"
     auth_file = "/path/to/auth_token_file"
     history = true
     history_file = "/path/to/history_file.history"
@@ -304,9 +304,9 @@ To do this, we need to add Field() for every field in the model, and also ensure
 
     ----
 
-    #### `use_auth_token_file`
+    #### `use_session_file`
 
-    Whether to use an auth token file to save session token once authenticated. Allows for reusing the token in subsequent sessions.
+    Whether to save session tokens to a file for persistent user sessions.
 
     Type: `bool`
 
@@ -314,29 +314,29 @@ To do this, we need to add Field() for every field in the model, and also ensure
 
     ```toml
     [app]
-    use_auth_token_file = true
+    use_session_file = true
     ```
 
     ----
 
-    #### `auth_token_file`
+    #### `session_file`
 
-    Paht to the auth token file.
+    Path to the session file.
 
     Type: `str`
 
-    Default: `"<DATA_DIR>/zabbix-cli/.zabbix-cli_auth_token"`
+    Default: `"<DATA_DIR>/zabbix-cli/.zabbix-cli_session.json"`
 
     ```toml
     [app]
-    auth_token_file = "/path/to/auth_token_file"
+    session_file = "/path/to/session_file.json"
     ```
 
     ----
 
     #### `auth_file`
 
-    Paht to a file containing username and password in the format `username:password`. Alternative to specifying `username` and `password` in the configuration file.
+    Path to a file containing username and password in the format `username:password`. Alternative to specifying `username` and `password` in the configuration file.
 
     Type: `str`
 

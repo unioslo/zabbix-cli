@@ -300,9 +300,19 @@ class ZabbixAPI:
         user: Optional[str] = None,
         password: Optional[str] = None,
         auth_token: Optional[str] = None,
+        session_id: Optional[str] = None,
     ) -> str:
-        """Convenience method for logging into the API and storing the resulting
-        auth token as an instance variable.
+        """Log in to the Zabbix API using a username/password, API token or session ID.
+
+        At least one authentication method must be provided.
+
+        Args:
+            user (str, optional): Username. Defaults to None.
+            password (str, optional): Password. Defaults to None.
+            auth_token (str, optional): API token. Defaults to None.
+            session_id (str, optional): Session ID. Defaults to None.
+
+
         """
         # By checking the version, we also check if the API is reachable
         try:
@@ -314,11 +324,21 @@ class ZabbixAPI:
 
         logger.debug("Logging in to Zabbix %s API at %s", version, self.url)
 
+        # Inform applicaiton of whether we're using an API token or not,
+        # so we can handle user.logout, user.checkauthentication, etc. correctly.
+        use_auth_token = False
+
         if auth_token:
             # TODO: revert this if token is invalid
-            self.use_api_token = True
+            logger.debug("Using API token for authentication")
             auth = auth_token
-        else:
+            use_auth_token = True
+        elif session_id:
+            logger.debug("Using session ID for authentication")
+            auth = session_id
+        elif user and password:
+            logger.debug("Using username and password for authentication")
+
             params: ParamsType = {
                 compat.login_user_name(version): user,
                 "password": password,
@@ -333,9 +353,13 @@ class ZabbixAPI:
                 ) from e
             else:
                 auth = str(auth) if auth else ""
-                self.use_api_token = False
+        else:
+            raise ZabbixAPILoginError(
+                "No authentication method provided. Must provide user/password, API token or session ID"
+            )
 
         self.auth = auth
+        self.use_api_token = use_auth_token
 
         # Check if the auth token we obtained or specified is valid
         # XXX: should revert auth token to what it was before this method
@@ -353,7 +377,12 @@ class ZabbixAPI:
 
     def logout(self) -> None:
         if not self.auth:
-            return  # nothing to do
+            logger.debug("No auth token to log out with")
+            return
+        elif self.use_api_token:
+            logger.debug("Logging out with API token")
+            self.auth = ""
+            return
 
         # Technically this API endpoint might return `false`, which
         # would signify that that the logout somehow failed, but it's
@@ -411,7 +440,11 @@ class ZabbixAPI:
 
         # We don't have to pass the auth token if asking for the apiinfo.version
         # TODO: ensure we have auth token if method requires it
-        if self.auth and method not in ["apiinfo.version", "user.login"]:
+        if self.auth and method.lower() not in [
+            "apiinfo.version",
+            "user.login",
+            "user.checkauthentication",
+        ]:
             if self.version.release >= (6, 4, 0):
                 request_headers["Authorization"] = f"Bearer {self.auth}"
             else:
