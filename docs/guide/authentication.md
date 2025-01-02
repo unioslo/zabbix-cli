@@ -41,7 +41,7 @@ The application can store and reuse session tokens between runs. This feature is
 ```toml
 [app]
 # Enable token file storage (default: true)
-use_session_id_file = true
+use_session_file = true
 
 # Customize token file location (optional)
 auth_token_file = "/path/to/auth/token/file"

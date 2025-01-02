@@ -17,17 +17,17 @@ from zabbix_cli.auth import Authenticator
 from zabbix_cli.auth import Credentials
 from zabbix_cli.auth import CredentialsSource
 from zabbix_cli.auth import CredentialsType
-from zabbix_cli.auth import SessionIDFile
-from zabbix_cli.auth import SessionIDInfo
-from zabbix_cli.auth import SessionIDList
+from zabbix_cli.auth import SessionFile
+from zabbix_cli.auth import SessionInfo
+from zabbix_cli.auth import SessionList
 from zabbix_cli.auth import get_auth_file_paths
 from zabbix_cli.auth import get_auth_token_file_paths
 from zabbix_cli.config.constants import AUTH_FILE
 from zabbix_cli.config.constants import AUTH_TOKEN_FILE
 from zabbix_cli.config.model import Config
-from zabbix_cli.exceptions import SessionIDFileError
-from zabbix_cli.exceptions import SessionIDFileNotFoundError
-from zabbix_cli.exceptions import SessionIDFilePermissionsError
+from zabbix_cli.exceptions import SessionFileError
+from zabbix_cli.exceptions import SessionFileNotFoundError
+from zabbix_cli.exceptions import SessionFilePermissionsError
 from zabbix_cli.pyzabbix.client import ZabbixAPI
 
 from tests.utils import add_zabbix_endpoint
@@ -106,8 +106,8 @@ def yield_then_delete_file(file: Path) -> None:
             file.unlink()
 
 
-@pytest.fixture(name="session_id_file")
-def _session_id_file(tmp_path: Path) -> Path:
+@pytest.fixture(name="session_file")
+def _session_file(tmp_path: Path) -> Path:
     yield from yield_then_delete_file(tmp_path / ".zabbix-cli_session_id.json")
 
 
@@ -128,7 +128,7 @@ def _auth_file(tmp_path: Path) -> Path:
             [
                 (CredentialsType.AUTH_TOKEN, CredentialsSource.ENV),
                 (CredentialsType.AUTH_TOKEN, CredentialsSource.CONFIG),
-                (CredentialsType.SESSION_ID, CredentialsSource.FILE),
+                (CredentialsType.SESSION, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.ENV),
@@ -142,7 +142,7 @@ def _auth_file(tmp_path: Path) -> Path:
         pytest.param(
             [
                 (CredentialsType.AUTH_TOKEN, CredentialsSource.CONFIG),
-                (CredentialsType.SESSION_ID, CredentialsSource.FILE),
+                (CredentialsType.SESSION, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.ENV),
@@ -155,16 +155,16 @@ def _auth_file(tmp_path: Path) -> Path:
         ),
         pytest.param(
             [
-                (CredentialsType.SESSION_ID, CredentialsSource.FILE),
+                (CredentialsType.SESSION, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.CONFIG),
                 (CredentialsType.PASSWORD, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.ENV),
                 (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
             ],
-            CredentialsType.SESSION_ID,
+            CredentialsType.SESSION,
             CredentialsSource.FILE,
-            id="expect_session_id_file",
+            id="expect_session_file",
         ),
         pytest.param(
             [
@@ -204,7 +204,7 @@ def _auth_file(tmp_path: Path) -> Path:
                 (CredentialsType.AUTH_TOKEN, CredentialsSource.FILE),
                 (CredentialsType.PASSWORD, CredentialsSource.PROMPT),
             ],
-            CredentialsType.SESSION_ID,
+            CredentialsType.SESSION,
             CredentialsSource.FILE,
             id="expect_legacy_auth_token_file",
         ),
@@ -224,7 +224,7 @@ def test_authenticator_login_with_any(
     table_renderable_mock: type[TableRenderable],
     auth_token_file: Path,
     auth_file: Path,
-    session_id_file: Path,
+    session_file: Path,
     config: Config,
     sources: list[tuple[CredentialsType, CredentialsSource]],
     expect_source: CredentialsSource,
@@ -246,7 +246,7 @@ def test_authenticator_login_with_any(
 
     config.api.url = MOCK_URL
     config.app.auth_token_file = auth_token_file
-    config.app.session_id_file = session_id_file
+    config.app.session_file = session_file
 
     authenticator = Authenticator(config)
 
@@ -322,15 +322,15 @@ def test_authenticator_login_with_any(
                 monkeypatch.setenv("ZABBIX_USERNAME", MOCK_USER)
                 monkeypatch.setenv("ZABBIX_PASSWORD", MOCK_PASSWORD)
         elif csource == CredentialsSource.FILE:
-            if ctype == CredentialsType.SESSION_ID:
-                sidfile = SessionIDFile()
+            if ctype == CredentialsType.SESSION:
+                sidfile = SessionFile()
                 sidfile.set_user_session(MOCK_URL, MOCK_USER, MOCK_TOKEN)
-                sidfile.save(session_id_file)
-                config.app.use_session_id_file = True
+                sidfile.save(session_file)
+                config.app.use_session_file = True
                 config.app.allow_insecure_auth_file = True
             elif ctype == CredentialsType.AUTH_TOKEN:
                 auth_token_file.write_text(f"{MOCK_USER}::{MOCK_TOKEN}")
-                config.app.use_session_id_file = True
+                config.app.use_session_file = True
                 config.app.allow_insecure_auth_file = True
             elif ctype == CredentialsType.PASSWORD:
                 auth_file.write_text(f"{MOCK_USER}::{MOCK_PASSWORD}")
@@ -399,8 +399,8 @@ def sample_session_file(tmp_path: Path) -> Path:
 
 
 def test_sessionid_list_set_session() -> None:
-    """Test setting sessions in SessionIDList."""
-    session_list = SessionIDList()
+    """Test setting sessions in SessionList."""
+    session_list = SessionList()
 
     def check_session(username: str, session_id: str, expected_count: int):
         session = session_list.get_session(username)
@@ -439,8 +439,8 @@ def test_sessionid_list_set_session() -> None:
 def test_sessionid_list_get_session(
     initial_sessions: list[dict[str, str]], username: str, expected: Optional[str]
 ):
-    """Test retrieving sessions from SessionIDList."""
-    session_list = SessionIDList(root=[SessionIDInfo(**s) for s in initial_sessions])
+    """Test retrieving sessions from SessionList."""
+    session_list = SessionList(root=[SessionInfo(**s) for s in initial_sessions])
     result = session_list.get_session(username)
 
     if expected is None:
@@ -460,11 +460,11 @@ def test_sessionid_list_get_session(
 def test_sessionid_file_get_user_session(
     url: str, username: str, expected_session: Optional[str]
 ):
-    """Test retrieving user sessions from SessionIDFile."""
-    session_file = SessionIDFile(
+    """Test retrieving user sessions from SessionFile."""
+    session_file = SessionFile(
         root={
-            "https://zabbix2.com": SessionIDList(
-                root=[SessionIDInfo(username="user2", session_id="xyz789")]
+            "https://zabbix2.com": SessionList(
+                root=[SessionInfo(username="user2", session_id="xyz789")]
             )
         }
     )
@@ -492,8 +492,8 @@ def test_sessionid_file_get_user_session(
 def test_sessionid_file_set_user_session(
     url: str, username: str, session_id: str, expected_urls: list[str]
 ):
-    """Test setting user sessions in SessionIDFile."""
-    session_file = SessionIDFile()
+    """Test setting user sessions in SessionFile."""
+    session_file = SessionFile()
     session_file.set_user_session(url, username, session_id)
 
     assert set(session_file.root.keys()) == set(expected_urls)
@@ -518,7 +518,7 @@ def test_sessionid_file_load(
     allow_insecure: bool,
     should_raise: bool,
 ):
-    """Test loading SessionIDFile with various conditions."""
+    """Test loading SessionFile with various conditions."""
     file_path = tmp_path / "test_sessions.json"
     if file_exists:
         file_path.write_text('{"https://zabbix.example.com": []}')
@@ -527,13 +527,11 @@ def test_sessionid_file_load(
         mock_secure.return_value = secure_permissions
 
         if should_raise:
-            with pytest.raises(
-                (SessionIDFileNotFoundError, SessionIDFilePermissionsError)
-            ):
-                SessionIDFile.load(file_path, allow_insecure=allow_insecure)
+            with pytest.raises((SessionFileNotFoundError, SessionFilePermissionsError)):
+                SessionFile.load(file_path, allow_insecure=allow_insecure)
         else:
-            result = SessionIDFile.load(file_path, allow_insecure=allow_insecure)
-            assert isinstance(result, SessionIDFile)
+            result = SessionFile.load(file_path, allow_insecure=allow_insecure)
+            assert isinstance(result, SessionFile)
             assert result._path == file_path
 
 
@@ -553,9 +551,9 @@ def test_sessionid_file_save(
     secure_permissions: bool,
     should_raise: bool,
 ):
-    """Test saving SessionIDFile with various conditions."""
+    """Test saving SessionFile with various conditions."""
     file_path = tmp_path / "test_sessions.json" if has_path else None
-    session_file = SessionIDFile()
+    session_file = SessionFile()
     if has_path:
         session_file._path = file_path
 
@@ -566,10 +564,10 @@ def test_sessionid_file_save(
         mock_secure.return_value = secure_permissions
 
         if should_raise:
-            with pytest.raises(SessionIDFileError) as exc_info:
+            with pytest.raises(SessionFileError) as exc_info:
                 session_file.save(path=file_path, allow_insecure=allow_insecure)
             assert str(exc_info.value) == snapshot(
-                "Cannot save session ID file without a path."
+                "Cannot save session file without a path."
             )
         else:
             session_file.save(path=file_path, allow_insecure=allow_insecure)

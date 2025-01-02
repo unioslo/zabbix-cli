@@ -183,7 +183,7 @@ To do this, we need to add Field() for every field in the model, and also ensure
     export_directory = "/path/to/exports"
     export_format = "json"
     export_timestamps = true
-    use_session_id_file = true
+    use_session_file = true
     auth_token_file = "/path/to/auth_token_file"
     auth_file = "/path/to/auth_token_file"
     history = true
@@ -304,7 +304,7 @@ To do this, we need to add Field() for every field in the model, and also ensure
 
     ----
 
-    #### `use_session_id_file`
+    #### `use_session_file`
 
     Whether to use an auth token file to save session token once authenticated. Allows for reusing the token in subsequent sessions.
 
@@ -314,7 +314,7 @@ To do this, we need to add Field() for every field in the model, and also ensure
 
     ```toml
     [app]
-    use_session_id_file = true
+    use_session_file = true
     ```
 
     ----
