@@ -151,6 +151,7 @@ class SessionFile(RootModel[dict[str, SessionList]]):
             path.write_text(self.model_dump_json(indent=2))
             if not allow_insecure and not file_has_secure_permissions(path):
                 set_file_secure_permissions(path)
+            logger.info("Saved session file %s", path)
         except Exception as e:
             raise SessionFileError(
                 f"Unable to save session file {self._path}: {e}"
@@ -583,6 +584,7 @@ class Authenticator:
         )
 
     def load_session_file(self) -> Optional[SessionFile]:
+        """Load a session file from configured path."""
         try:
             return SessionFile.load(self.config.app.session_file)
         except SessionFileError as e:
