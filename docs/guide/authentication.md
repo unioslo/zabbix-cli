@@ -33,7 +33,9 @@ auth_token = "API_TOKEN"
 
 ## Session file
 
-The application can store and reuse session tokens between runs. This feature is enabled by default and configurable via the following options:
+The application can store and reuse session tokens between runs. Multiple sessions can be stored at the same time, which allows for switching between different users and/or Zabbix servers seamlessly without having to re-authenticate.
+
+This feature is enabled by default and configurable via the following options:
 
 ```toml
 [app]
