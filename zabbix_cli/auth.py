@@ -96,32 +96,31 @@ class SessionFile(RootModel[dict[str, SessionList]]):
     root: dict[str, SessionList] = {}
     _path: Optional[Path] = PrivateAttr(default=None)
 
-    def _get_sessions(self, url: str) -> SessionList:
-        """Get all sessions for a specific Zabbix API URL.
+    def get_sessions(self, url: str) -> SessionList:
+        """Get session list for a URL.
 
         Note:
-            Returns a new empty SessionList if URL doesn't exist, but does
-            NOT store it. Use `get_or_set_url_session()` if you need to
-            mutate the list.
+            Returns a new empty `SessionList` if URL has no sessions.
+
+            The returned `SessionList` should never be mutated directly.
+            Always use `set_user_session` to modify a user's session for
+            a given URL.
         """
         return self.root.get(url, None) or SessionList()  # lazily create default
 
+    def set_sessions(self, url: str, sessions: SessionList) -> None:
+        """Set session list for a URL."""
+        self.root[url] = sessions
+
     def get_user_session(self, url: str, username: str) -> Optional[SessionInfo]:
         """Get a session given a URL and username."""
-        return self._get_sessions(url).get_session(username)
-
-    def get_or_set_url_session(self, url: str) -> SessionList:
-        """Add a URL to the file (if it doesn't exist).
-
-        Return the URL's session list."""
-        if url not in self.root:
-            self.root[url] = SessionList()
-        return self.root[url]
+        return self.get_sessions(url).get_session(username)
 
     def set_user_session(self, url: str, username: str, session_id: str) -> None:
-        """Add a session to the file from"""
-        session = self.get_or_set_url_session(url)
+        """Add or update a user's session for a given URL."""
+        session = self.get_sessions(url)
         session.set_session(username, session_id)
+        self.set_sessions(url, session)
 
     @classmethod
     def load(cls, file: Path, allow_insecure: bool = False) -> SessionFile:
