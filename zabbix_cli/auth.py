@@ -93,7 +93,8 @@ class SessionList(RootModel[list[SessionInfo]]):
 class SessionFile(RootModel[dict[str, SessionList]]):
     """Contents of a session file.
 
-    Root model that wraps a dict of URLs to `SessionList` objects."""
+    Root model that wraps a dict of URLs to `SessionList` objects.
+    """
 
     root: dict[str, SessionList] = {}
     _path: Optional[Path] = PrivateAttr(default=None)
