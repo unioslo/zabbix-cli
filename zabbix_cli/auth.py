@@ -91,7 +91,9 @@ class SessionList(RootModel[list[SessionInfo]]):
 
 
 class SessionFile(RootModel[dict[str, SessionList]]):
-    """Contents of a session file."""
+    """Contents of a session file.
+
+    Root model that wraps a dict of URLs to `SessionList` objects."""
 
     root: dict[str, SessionList] = {}
     _path: Optional[Path] = PrivateAttr(default=None)
@@ -158,7 +160,7 @@ class SessionFile(RootModel[dict[str, SessionList]]):
 
 
 class CredentialsType(StrEnum):
-    """Types of valid login credentials."""
+    """Login credentials type."""
 
     PASSWORD = "username and password"
     AUTH_TOKEN = "auth token"
@@ -385,14 +387,14 @@ class Authenticator:
         """Update the application state with the login information.
 
         Includes the following:
-        - Write auth token file if configured
-        - Add username to logs
+        - Write session file if configured
+        - Add username to log records context
         - Update config with credentials
         - Set Zabbix API version on the TableRenderable base class
         """
         from zabbix_cli.models import TableRenderable
 
-        # Write auth token file
+        # Write session file
         if info.credentials.username and self.config.app.use_session_file:
             sessionfile = self.load_session_file()
             if not sessionfile:
