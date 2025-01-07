@@ -363,11 +363,9 @@ def update_config(
     ),
     force: bool = typer.Option(False, "--force", help="Skip confirmation prompt."),
 ) -> None:
-    """Write the current configuration to the config file.
+    """Update the config file with the current application state.
 
-    Useful if you authenticate with a new user or change the URL,
-    and want to save the changes to the config file. Furthermore,
-    this helps to migrate an outdated config file to the newest version."""
+    Adds missing fields and updates deprecated fields to their new values."""
     from zabbix_cli.output.prompts import bool_prompt
 
     config_file = config_file or app.state.config.config_path

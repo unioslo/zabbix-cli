@@ -21,7 +21,8 @@ import tomli_w
 sys.path.append(Path(__file__).parent.as_posix())
 
 
-from common import DATA_DIR  # noqa
+from common import DATA_DIR  # noqa: I001
+from common import add_path_placeholders
 
 # Set up environment variables for the CLI
 env = os.environ.copy()
@@ -44,7 +45,9 @@ def add_config_bogus_defaults(output: str) -> str:
     """Give bogus defaults to certain config values."""
     config = tomli.loads(output)
     # TODO: replace local username with a default value
-    return tomli_w.dumps(config)
+    out = tomli_w.dumps(config)
+    out = add_path_placeholders(out)
+    return out
 
 
 COMMAND_HELP = Command(["zabbix-cli", "--help"], "help.txt")
