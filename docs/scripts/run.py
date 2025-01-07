@@ -11,6 +11,7 @@ import gen_cli_data  # noqa
 import gen_cli_options  # noqa
 import gen_command_list  # noqa
 import gen_formats  # noqa
+import gen_config_data  # noqa
 
 
 def main(*args: Any, **kwargs: Any) -> None:
@@ -20,5 +21,6 @@ def main(*args: Any, **kwargs: Any) -> None:
         gen_command_list,
         gen_commands,
         gen_formats,
+        gen_config_data,
     ]:
         mod.main()

@@ -49,6 +49,8 @@ from zabbix_cli._v2_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
 from zabbix_cli.bulk import BulkRunnerMode
 from zabbix_cli.config.constants import AUTH_FILE
 from zabbix_cli.config.constants import AUTH_TOKEN_FILE
+from zabbix_cli.config.constants import HISTORY_FILE
+from zabbix_cli.config.constants import LOG_FILE
 from zabbix_cli.config.constants import SESSION_FILE
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.constants import SecretMode
@@ -58,12 +60,11 @@ from zabbix_cli.config.utils import get_deprecated_fields_set
 from zabbix_cli.config.utils import load_config_conf
 from zabbix_cli.config.utils import load_config_toml
 from zabbix_cli.config.utils import update_deprecated_fields
-from zabbix_cli.dirs import DATA_DIR
 from zabbix_cli.dirs import EXPORT_DIR
-from zabbix_cli.dirs import LOGS_DIR
 from zabbix_cli.exceptions import ConfigError
 from zabbix_cli.exceptions import ConfigOptionNotFound
 from zabbix_cli.exceptions import PluginConfigTypeError
+from zabbix_cli.exceptions import ZabbixCLIFileError
 from zabbix_cli.logs import LogLevelStr
 from zabbix_cli.pyzabbix.enums import ExportFormat
 from zabbix_cli.utils.fs import mkdir_if_not_exists
@@ -101,24 +102,42 @@ class BaseModel(PydanticBaseModel):
 
 
 class APIConfig(BaseModel):
+    """Configuration for the Zabbix API."""
+
     url: str = Field(
         default="",
         # Changed in V3: zabbix_api_url -> url
         validation_alias=AliasChoices("url", "zabbix_api_url"),
+        description="URL of the Zabbix API host. Should not include `/api_jsonrpc.php`.",
+        examples=["https://zabbix.example.com"],
     )
     username: str = Field(
         default="Admin",
         # Changed in V3: system_id -> username
         validation_alias=AliasChoices("username", "system_id"),
+        description="Username for the Zabbix API.",
+        examples=["Admin"],
     )
-    password: SecretStr = Field(default=SecretStr(""))
-    auth_token: SecretStr = Field(default=SecretStr(""))
+    password: SecretStr = Field(
+        default=SecretStr(""),
+        description="Password for user.",
+        examples=["zabbix"],
+    )
+    auth_token: SecretStr = Field(
+        default=SecretStr(""),
+        description="API auth token.",
+        examples=["API_TOKEN_123"],
+    )
     verify_ssl: bool = Field(
         default=True,
         # Changed in V3: cert_verify -> verify_ssl
         validation_alias=AliasChoices("verify_ssl", "cert_verify"),
+        description="Verify SSL certificate of the Zabbix API host.",
     )
-    timeout: Optional[int] = 0
+    timeout: Optional[int] = Field(
+        default=0,
+        description="API request timeout in seconds.",
+    )
 
     @model_validator(mode="after")
     def _validate_model(self) -> Self:
@@ -149,10 +168,25 @@ class APIConfig(BaseModel):
 
 
 class OutputConfig(BaseModel):
-    format: OutputFormat = OutputFormat.TABLE
-    color: bool = True
-    paging: bool = False
-    theme: str = "default"
+    """Configuration for output formatting."""
+
+    format: OutputFormat = Field(
+        default=OutputFormat.TABLE,
+        description="Default output format.",
+    )
+    color: bool = Field(
+        default=True,
+        description="Use colors in terminal output.",
+    )
+    paging: bool = Field(
+        default=False,
+        description="Use paging in terminal output.",
+    )
+    theme: str = Field(
+        default="default",
+        description="Color theme to use.",
+        exclude=True,
+    )
 
     @field_validator("format", mode="before")
     @classmethod
@@ -164,10 +198,18 @@ class OutputConfig(BaseModel):
 
 
 class AppConfig(BaseModel):
+    """Configuration for app defaults and behavior."""
+
+    # Zabbix defaults
     default_hostgroups: list[str] = Field(
         default=["All-hosts"],
         # Changed in V3: default_hostgroup -> default_hostgroups
         validation_alias=AliasChoices("default_hostgroups", "default_hostgroup"),
+        description=(
+            "Default host groups to assign to hosts created with `create_host`. "
+            "Hosts are always added to these groups unless `--no-default-hostgroup` "
+            "is provided."
+        ),
     )
     default_admin_usergroups: list[str] = Field(
         default=[],
@@ -175,12 +217,21 @@ class AppConfig(BaseModel):
         validation_alias=AliasChoices(
             "default_admin_usergroups", "default_admin_usergroup"
         ),
+        description=(
+            "Default user groups to give read/write permissions to groups "
+            "created with `create_hostgroup` and `create_templategroup` "
+            "when `--rw-groups` option is not provided."
+        ),
     )
     default_create_user_usergroups: list[str] = Field(
         default=[],
         # Changed in V3: default_create_user_usergroup -> default_create_user_usergroups
         validation_alias=AliasChoices(
             "default_create_user_usergroups", "default_create_user_usergroup"
+        ),
+        description=(
+            "Default user groups to add users created with `create_user` "
+            "to when `--usergroups` is not provided."
         ),
     )
     default_notification_users_usergroups: list[str] = Field(
@@ -190,11 +241,18 @@ class AppConfig(BaseModel):
             "default_notification_users_usergroups",
             "default_notification_users_usergroup",
         ),
+        description=(
+            "Default user groups to add notification users created with "
+            "`create_notification_user` to when `--usergroups` is not provided."
+        ),
     )
+
+    # Exports
     export_directory: Path = Field(
         default=EXPORT_DIR,
         # Changed in V3: default_directory_exports -> export_directory
         validation_alias=AliasChoices("default_directory_exports", "export_directory"),
+        description="Default directory to export files to.",
     )
     export_format: ExportFormat = Field(
         # Changed in V3: Config options are now lower-case by default,
@@ -204,6 +262,7 @@ class AppConfig(BaseModel):
         default=ExportFormat.JSON,
         # Changed in V3: default_export_format -> export_format
         validation_alias=AliasChoices("default_export_format", "export_format"),
+        description="Default export format.",
     )
     export_timestamps: bool = Field(
         default=False,
@@ -211,21 +270,53 @@ class AppConfig(BaseModel):
         validation_alias=AliasChoices(
             "include_timestamp_export_filename", "export_timestamps"
         ),
+        description="Include timestamps in exported filenames.",
     )
 
+    # Auth
     use_session_file: bool = Field(
         default=True,
         validation_alias=AliasChoices("use_session_file", "use_auth_token_file"),
+        description="Use session file for storing API session IDs for persistent sessions.",
     )
 
-    session_file: Path = SESSION_FILE
-    auth_token_file: Path = AUTH_TOKEN_FILE
-    auth_file: Path = AUTH_FILE
+    session_file: Path = Field(
+        default=SESSION_FILE,
+        description="Path to session file.",
+    )
+    auth_token_file: Path = Field(
+        default=AUTH_TOKEN_FILE,
+        description="Path to legacy auth token file.",
+        deprecated=True,
+    )
+    auth_file: Path = Field(
+        default=AUTH_FILE,
+        description="Path to auth file.",
+    )
+    # TODO: rename symbol to allow_insecure_auth
+    allow_insecure_auth_file: bool = Field(
+        default=True,
+        # Changed in V3: allow_insecure_authfile -> allow_insecure_auth_file
+        validation_alias=AliasChoices(
+            "allow_insecure_auth",
+            "allow_insecure_auth_file",
+            "allow_insecure_authfile",
+        ),
+    )
 
-    history: bool = True
-    history_file: Path = DATA_DIR / "history"
+    # History
+    history: bool = Field(
+        default=True,
+        description="Enable command history.",
+    )
+    history_file: Path = Field(
+        default=HISTORY_FILE,
+        description="Path to history file.",
+    )
+
     bulk_mode: BulkRunnerMode = Field(
-        default=BulkRunnerMode.STRICT, description="Bulk mode error handling."
+        default=BulkRunnerMode.STRICT,
+        description="Bulk mode error handling.",
     )
 
     # Deprecated/moved fields
@@ -256,25 +347,24 @@ class AppConfig(BaseModel):
     )
 
     # Legacy options
-    allow_insecure_auth_file: bool = Field(
-        default=True,
-        # Changed in V3: allow_insecure_authfile -> allow_insecure_auth_file
-        validation_alias=AliasChoices(
-            "allow_insecure_auth_file",
-            "allow_insecure_authfile",
-        ),
+    legacy_json_format: bool = Field(
+        default=False,
+        description="Use legacy JSON format.",
     )
-    legacy_json_format: bool = False
     """Mimicks V2 behavior where the JSON output was ALWAYS a dict, where
     each entry was stored under the keys "0", "1", "2", etc.
     """
-    is_legacy: bool = Field(default=False, exclude=True)
+
+    is_legacy: bool = Field(  # TODO: use PrivateAttr instead of Field
+        default=False,
+        exclude=True,
+    )
+    """Marks whether the configuration was loaded from a legacy config file."""
 
     # Sub-models
     output: OutputConfig = Field(default_factory=OutputConfig)
 
     @field_validator(
-        # Group names that were previously singular that are now plural
         "default_admin_usergroups",
         "default_create_user_usergroups",
         "default_hostgroups",
@@ -303,14 +393,21 @@ class AppConfig(BaseModel):
 
     @model_validator(mode="after")
     def ensure_history_file(self) -> Self:
-        if not self.history or self.history_file.exists():
+        if not self.history:
             return self
+
+        if self.history_file.exists():
+            if self.history_file.is_file():
+                return self
+            raise ConfigError(
+                f"History file {self.history_file} is a directory, not a file. Disable history or specify a different path in the configuration file."
+            )
+
         # If user passes in path to non-existent directory, we have to create that too
         # TODO: add some abstraction for creating files & directories and raising exceptions
         try:
-            self.history_file.parent.mkdir(parents=True, exist_ok=True)
-            self.history_file.touch(exist_ok=True)
-        except OSError as e:
+            mkdir_if_not_exists(self.history_file.parent)
+        except ZabbixCLIFileError as e:
             # TODO: print path to config file in error message
             raise ConfigError(
                 f"Unable to create history file {self.history_file}. Disable history or specify a different path in the configuration file."
@@ -319,15 +416,25 @@ class AppConfig(BaseModel):
 
 
 class LoggingConfig(BaseModel):
+    """Configuration for application logs."""
+
     enabled: bool = Field(
         default=True,
         # Changed in V3: logging -> enabled (we also allow enable [why?])
         validation_alias=AliasChoices("logging", "enabled", "enable"),
+        description="Enable logging.",
     )
-    log_level: LogLevelStr = "INFO"
-    log_file: Optional[Path] = (
+    log_level: LogLevelStr = Field(
+        default="INFO",
+        description="Log level.",
+    )
+    log_file: Optional[Path] = Field(
         # TODO: define this default path elsewhere
-        LOGS_DIR / "zabbix-cli.log"
+        default=LOG_FILE,
+        description=(
+            "File for storing logs. "
+            "Can be omitted to log to stderr (**warning:** NOISY)."
+        ),
     )
 
     @field_validator("log_file", mode="before")
@@ -463,6 +570,8 @@ class PluginsConfig(RootModel[dict[str, PluginConfig]]):
 
 
 class Config(BaseModel):
+    """Configuration for the application."""
+
     api: APIConfig = Field(
         default_factory=APIConfig,
         # Changed in V3: zabbix_api -> api
@@ -614,6 +723,12 @@ class Config(BaseModel):
             deprecated_fields = get_deprecated_fields_set(self)
             if not deprecated_fields:
                 return
+
+            # If none of the deprecated fields have a replacement, we don't
+            # need to inform the user about them. They can be safely ignored.
+            if all(not field.replacement for field in deprecated_fields):
+                return
+
             warning(
                 "Your configuration file contains deprecated options.\n"
                 "  To update your config file with the new options, run:\n"

@@ -11,6 +11,7 @@ from strenum import StrEnum
 
 from zabbix_cli.dirs import CONFIG_DIR
 from zabbix_cli.dirs import DATA_DIR
+from zabbix_cli.dirs import LOGS_DIR
 from zabbix_cli.dirs import SITE_CONFIG_DIR
 
 logger = logging.getLogger("zabbix_cli.config")
@@ -27,6 +28,7 @@ CONFIG_PRIORITY = (
 )
 
 
+# File path defaults
 AUTH_TOKEN_FILE = DATA_DIR / ".zabbix-cli_auth_token"
 """Path to file containing API session token."""
 
@@ -35,6 +37,11 @@ AUTH_FILE = DATA_DIR / ".zabbix-cli_auth"
 
 SESSION_FILE = DATA_DIR / ".zabbix-cli_session.json"
 """Path to JSON file containing API session IDs."""
+
+HISTORY_FILE = DATA_DIR / "history"
+"""Path to file containing REPL history."""
+
+LOG_FILE = LOGS_DIR / "zabbix-cli.log"
 
 
 # Environment variable names

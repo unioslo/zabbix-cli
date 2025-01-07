@@ -51,6 +51,7 @@ plugins:
         - commandlist: docs/data/commandlist.yaml
         - formats: docs/data/formats.yaml
         - options: docs/data/options.yaml
+        - config_options: docs/data/config_options.yaml
   - mkdocstrings:
       enable_inventory: true
       handlers:
