@@ -459,7 +459,13 @@ def get_deprecated_fields(model: Union[type[BaseModel], BaseModel]) -> list[str]
 def test_get_deprecated_fields() -> None:
     """Ensure we are aware of all deprecated fields in the Config model"""
     assert get_deprecated_fields(Config) == snapshot(
-        ["app.output_format", "app.use_colors", "app.use_paging", "app.system_id"]
+        [
+            "app.auth_token_file",
+            "app.output_format",
+            "app.use_colors",
+            "app.use_paging",
+            "app.system_id",
+        ]
     )
 
 
