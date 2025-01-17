@@ -48,10 +48,10 @@ def open_directory(
         if not directory.exists():
             raise FileNotFoundError
         directory = directory.resolve(strict=True)
-    except FileNotFoundError:
-        raise ZabbixCLIError(f"Directory {directory} does not exist")
-    except OSError:
-        raise ZabbixCLIError(f"Unable to resolve symlinks for {directory}")
+    except FileNotFoundError as e:
+        raise ZabbixCLIError(f"Directory {directory} does not exist") from e
+    except OSError as e:
+        raise ZabbixCLIError(f"Unable to resolve symlinks for {directory}") from e
     if not directory.is_dir():
         raise ZabbixCLIError(f"{directory} is not a directory")
 
@@ -80,7 +80,7 @@ def mkdir_if_not_exists(path: Path) -> None:
     except Exception as e:
         raise ZabbixCLIFileError(f"Failed to create directory {path}: {e}") from e
     else:
-        logger.info(f"Created directory: {path}")
+        logger.info("Created directory: %s", path)
 
 
 def sanitize_filename(filename: str) -> str:
@@ -120,7 +120,7 @@ def move_file(src: Path, dest: Path, mkdir: bool = True) -> None:
     except Exception as e:
         raise ZabbixCLIError(f"Failed to move {src} to {dest}: {e}") from e
     else:
-        logger.info(f"Moved {src} to {dest}")
+        logger.info("Moved %s to %s", src, dest)
 
 
 @contextmanager

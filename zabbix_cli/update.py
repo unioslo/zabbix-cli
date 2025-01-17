@@ -358,8 +358,10 @@ class PyInstallerUpdater(Updater):
             raise UpdateError(f"Failed to get latest release: {resp.text}")
         try:
             release = GitHubRelease.model_validate_json(resp.text)
-        except ValidationError:
-            raise UpdateError(f"Failed to parse GitHub release info: {resp.text}")
+        except ValidationError as e:
+            raise UpdateError(
+                f"Failed to parse GitHub release info: {resp.text}"
+            ) from e
         if not release.tag_name:
             raise UpdateError(f"Latest GitHub release {release.url!r} has no tag name.")
         return release.tag_name
@@ -377,7 +379,7 @@ class PyInstallerUpdater(Updater):
             if alias_path.name == "python":
                 raise UpdateError(
                     "Unable to resolve PyInstaller executable. Please update manually."
-                )
+                ) from None
             return alias_path
 
     @staticmethod
@@ -459,7 +461,7 @@ def to_path(p: str) -> Optional[Path]:
     try:
         return Path(p).expanduser().resolve()
     except Exception as e:
-        logger.debug(f"Unable to resolve path {p}: {e}")
+        logger.debug("Unable to resolve path %s: %s", p, e)
     return None
 
 
@@ -525,7 +527,7 @@ class InstallationMethodDetector:
                 ["pipx", "environment", "--value", "PIPX_BIN_DIR"], text=True
             )
         except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to get pipx bin dir with command {e.cmd!r}: {e}")
+            logger.error("Failed to get pipx bin dir with command %r: %s", e.cmd, e)
             return
         except FileNotFoundError:
             return  # pipx not installed

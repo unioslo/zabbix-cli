@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from ...logs import logger
-from .constants import NONE_STR
+from zabbix_cli.logs import logger
+from zabbix_cli.output.formatting.constants import NONE_STR
 
 
 def datetime_str(

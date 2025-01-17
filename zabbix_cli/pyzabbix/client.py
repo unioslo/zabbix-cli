@@ -167,7 +167,7 @@ def parse_name_or_id_arg(
 
     # If we have a wildcard, we can omit names or IDs entirely
     if "*" in names_or_ids:
-        names_or_ids = tuple()
+        names_or_ids = ()
 
     if len(names_or_ids) > 1:
         logger.debug(

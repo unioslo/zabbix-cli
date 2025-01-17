@@ -35,7 +35,7 @@ class ZabbixCache:
             self._populate_hostgroup_cache()
             self._populate_templategroup_cache()
         except Exception as e:
-            raise ZabbixCLIError(f"Failed to populate Zabbix cache: {e}")
+            raise ZabbixCLIError(f"Failed to populate Zabbix cache: {e}") from e
 
     def _populate_hostgroup_cache(self) -> None:
         """Populates the hostgroup caches with data from the Zabbix API."""

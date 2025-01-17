@@ -154,11 +154,27 @@ extend-include = [
   "tests/**/*.py",
 ]
 
+
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.ruff.lint]
-extend-select = ["I"]
+extend-select = [
+  "E",       # pydecodestyle (errors)
+  "W",       # pydecodestyle (warnings)
+  "G",       # flake8-logging-format
+  "I",       # isort
+  "LOG",     # flake8-logging
+  "PLE1205", # pylint (too many logging args)
+  "PLE1206", # pylint (too few logging args)
+  "TID252",  # flake8-tidy-imports (prefer absolute imports)
+  "C4",      # flake8-comprehensions
+  "B",       # flake8-bugbear
+]
+ignore = [
+  "E501", # Avoid enforcing line-length violations
+  "B008", # Argument default function call (incompatible with typer)
+]
 
 
 [tool.ruff.lint.isort]

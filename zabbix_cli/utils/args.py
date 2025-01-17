@@ -29,7 +29,7 @@ def is_set(ctx: typer.Context, option: str) -> bool:
 
     src = ctx.get_parameter_source(option)
     if not src:
-        logging.warning(f"Parameter {option} not found in context.")
+        logging.warning("Parameter %s not found in context.", option)
         return False
 
     # HACK: A typer callback that sets an empty list as a default value

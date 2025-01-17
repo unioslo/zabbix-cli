@@ -60,5 +60,5 @@ def _do_test_is_headless(envvar: str, value: str | None, expected: bool):
         assert is_headless() == expected
     finally:
         # IMPORTANT: Remove envvar and clear cache after each test
-        os.environ = _orig_environ  # type: ignore
+        os.environ = _orig_environ  # type: ignore  # noqa: B003 # I _think_ this is fine?
         is_headless.cache_clear()

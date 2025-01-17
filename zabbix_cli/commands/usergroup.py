@@ -58,7 +58,7 @@ def sort_ugroups(
         try:
             return sorted(ugroups, key=lambda ug: int(ug.usrgrpid))
         except Exception as e:
-            logging.error(f"Failed to sort user groups by ID: {e}")
+            logging.error("Failed to sort user groups by ID: %s", e)
             # Fall back on unsorted (likely sorted by ID anyway)
     return ugroups
 
