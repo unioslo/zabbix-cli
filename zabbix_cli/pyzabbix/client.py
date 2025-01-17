@@ -169,6 +169,14 @@ def parse_name_or_id_arg(
     if "*" in names_or_ids:
         names_or_ids = tuple()
 
+    if len(names_or_ids) > 1:
+        logger.debug(
+            "Multiple names or IDs provided, using search instead of filter for %s",
+            names_or_ids,
+            stacklevel=2,
+        )
+        search = True
+
     if names_or_ids:
         for name_or_id in names_or_ids:
             name_or_id = name_or_id.strip()
@@ -2224,7 +2232,7 @@ class ZabbixAPI:
                 params["hostids"] = [h.hostid for h in hosts]
         if hostgroups:
             if self.version.release >= (6, 0, 0):
-                params["groups"] = {"groupid": hg.groupid for hg in hostgroups}
+                params["groups"] = [{"groupid": hg.groupid} for hg in hostgroups]
             else:
                 params["groupids"] = [hg.groupid for hg in hostgroups]
         if data_collection:
