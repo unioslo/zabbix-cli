@@ -87,7 +87,7 @@ def add_user_to_usergroup(
 ) -> None:
     """Add users to usergroups.
 
-    Ignores users not in user groups. Users and groups must exist.
+    Users and groups must exist.
     """
     from zabbix_cli.commands.results.usergroup import UsergroupAddUsers
 

@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## [Unreleased] -->
+## [Unreleased]
+
+### Fixed
+
+- `create_maintenance_definition` with multiple host groups only including the first group in the maintenance definition for Zabbix >=6.0.
+- `add_user_to_usergroup` and `remove_user_from_usergroup` using deprecated API parameters for Zabbix >=6.0.
+- Commands that allow multiple names or IDs to be specified should now correctly handle searching for multiple values.
 
 ## [3.5.0](https://github.com/unioslo/zabbix-cli/releases/tag/3.5.0) - 2025-01-13
 
