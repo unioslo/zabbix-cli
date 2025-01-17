@@ -604,7 +604,8 @@ class Authenticator:
             if contents:
                 return path, contents
         logger.info(
-            f"No auth token file found. Searched in {', '.join(str(p) for p in paths)}"
+            "No auth token file found. Searched in %s",
+            {", ".join(str(p) for p in paths)},
         )
         return None, None
 
@@ -616,7 +617,7 @@ class Authenticator:
             if contents:
                 return path, contents
         logger.info(
-            f"No auth file found. Searched in {', '.join(str(p) for p in paths)}"
+            "No auth file found. Searched in %s", {", ".join(str(p) for p in paths)}
         )
         return None, None
 
@@ -709,7 +710,7 @@ def write_auth_token_file(
 
     try:
         file.write_text(f"{username}::{auth_token}")
-        logger.info(f"Wrote auth token file {file}")
+        logger.info("Wrote auth token file %s", file)
     except OSError as e:
         raise AuthTokenFileError(f"Unable to write auth token file {file}: {e}") from e
 

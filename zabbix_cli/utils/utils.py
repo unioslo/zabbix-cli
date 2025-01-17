@@ -274,7 +274,7 @@ def convert_duration(time: str) -> timedelta:
         try:
             return int(s)
         except ValueError:
-            raise ZabbixCLIError(f"Invalid time value: {s}")
+            raise ZabbixCLIError(f"Invalid time value: {s}") from None
 
     time = time.replace(" ", "")
     for time_value in TIME_VALUES:

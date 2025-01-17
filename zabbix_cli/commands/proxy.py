@@ -203,7 +203,7 @@ def load_balance_proxy_hosts(
     all_hosts = list(itertools.chain.from_iterable(p.hosts for p in proxies))
     if not all_hosts:
         exit_err("Proxies have no hosts to load balance.")
-    logging.debug(f"Found {len(all_hosts)} hosts to load balance.")
+    logging.debug("Found %d hosts to load balance.", len(all_hosts))
 
     lb_proxies = {
         p.proxyid: LBProxy(proxy=p, weight=w) for p, w in zip(proxies, weights)
@@ -226,7 +226,7 @@ def load_balance_proxy_hosts(
                     "Proxy '%s' has no hosts after balancing.", lb_proxy.proxy.name
                 )
                 continue
-            logging.debug(f"Moving {n_hosts} hosts to proxy {lb_proxy.proxy.name!r}")
+            logging.debug("Moving %d hosts to proxy %r", n_hosts, lb_proxy.proxy.name)
 
             app.state.client.move_hosts_to_proxy(
                 hosts=lb_proxy.hosts,

@@ -49,7 +49,7 @@ class InternalCommand(NamedTuple):
     description: str
 
 
-_internal_commands: dict[str, InternalCommand] = dict()
+_internal_commands: dict[str, InternalCommand] = {}
 
 
 def _register_internal_command(

@@ -315,7 +315,7 @@ class InterfaceType(APIStrEnum):
         try:
             return self.value.metadata["port"]
         except KeyError:
-            raise ZabbixCLIError(f"Unknown interface type: {self}")
+            raise ZabbixCLIError(f"Unknown interface type: {self}") from None
 
 
 class InventoryMode(APIStrEnum):

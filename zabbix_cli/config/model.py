@@ -547,7 +547,9 @@ class PluginConfig(BaseModel):
             adapter = _get_type_adapter(type)
             return adapter.validate_python(attr)
         except AttributeError:
-            raise ConfigOptionNotFound(f"Plugin configuration key '{key}' not found")
+            raise ConfigOptionNotFound(
+                f"Plugin configuration key '{key}' not found"
+            ) from None
         except ValidationError as e:
             raise PluginConfigTypeError(
                 f"Plugin config key '{key}' failed to validate as type {type}: {e}"

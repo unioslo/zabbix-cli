@@ -21,8 +21,8 @@ def get_random_proxy(client: ZabbixAPI, pattern: Optional[str] = None) -> Proxy:
     if pattern:
         try:
             re_pattern = re.compile(pattern)
-        except re.error:
-            raise ZabbixAPICallError(f"Invalid proxy regex pattern: {pattern!r}")
+        except re.error as e:
+            raise ZabbixAPICallError(f"Invalid proxy regex pattern: {pattern!r}") from e
         proxies = [proxy for proxy in proxies if re_pattern.match(proxy.name)]
         if not proxies:
             raise ZabbixNotFoundError(f"No proxies matching pattern {pattern!r}")

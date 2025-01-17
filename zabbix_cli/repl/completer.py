@@ -237,7 +237,7 @@ class ClickCompleter(Completer):
                 current_args = args[param.nargs * -1 :]
 
                 # Show only unused opts
-                already_present = any([opt in previous_args for opt in opts])
+                already_present = any(opt in previous_args for opt in opts)
                 hide = self.show_only_unused and already_present and not param.multiple
 
                 # Show only shortest opt
