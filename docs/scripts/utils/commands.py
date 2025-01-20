@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from functools import lru_cache
+from functools import cache
 from typing import Any
 from typing import Optional
 from typing import Union
@@ -276,7 +276,7 @@ def get_command_help(command: typer.models.CommandInfo) -> str:
     return ""
 
 
-@lru_cache(maxsize=None)
+@cache
 def get_app_commands(app: typer.Typer) -> list[CommandSummary]:
     """Get a list of commands from a typer app."""
     return _get_app_commands(app)

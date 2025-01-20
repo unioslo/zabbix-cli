@@ -170,6 +170,7 @@ extend-select = [
   "TID252",  # flake8-tidy-imports (prefer absolute imports)
   "C4",      # flake8-comprehensions
   "B",       # flake8-bugbear
+  "UP",      # pyupgrade
 ]
 ignore = [
   "E501", # Avoid enforcing line-length violations
@@ -182,3 +183,7 @@ ignore = [
 force-single-line = true
 # Add annotations import to every file
 required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true

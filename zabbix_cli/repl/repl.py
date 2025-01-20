@@ -10,7 +10,6 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
-from typing import DefaultDict
 from typing import NamedTuple
 from typing import NoReturn
 from typing import Optional
@@ -83,7 +82,7 @@ def _help_internal() -> str:
         formatter.write_text('prefix external commands with "!"')
     with formatter.section("Internal Commands"):
         formatter.write_text('prefix internal commands with ":"')
-        info_table: DefaultDict[str, list[str]] = defaultdict(list)
+        info_table: defaultdict[str, list[str]] = defaultdict(list)
         for mnemonic, target_info in _internal_commands.items():
             info_table[target_info[1]].append(mnemonic)
         formatter.write_dl(
