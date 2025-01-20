@@ -99,7 +99,8 @@ def test_login_fails(zabbix_client_mock_version: ZabbixAPI) -> None:
 
 def test_logout_fails(zabbix_client_mock_version: ZabbixAPI) -> None:
     """Test that we get the correct exception type when login fails
-    due to a connection error."""
+    due to a connection error.
+    """
     client = zabbix_client_mock_version
     client.set_url("http://some-url-that-will-fail.gg")
     assert client.url == snapshot("http://some-url-that-will-fail.gg/api_jsonrpc.php")

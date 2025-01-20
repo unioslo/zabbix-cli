@@ -83,7 +83,8 @@ def test_get_auth_token_file_paths_override(tmp_path: Path, config: Config) -> N
 @pytest.fixture
 def table_renderable_mock(monkeypatch) -> type[TableRenderable]:
     """Replace TableRenderable class in zabbix_cli.models with mock class
-    so that tests can mutate it without affecting other tests."""
+    so that tests can mutate it without affecting other tests.
+    """
     from zabbix_cli.models import TableRenderable
 
     class MockTableRenderable(TableRenderable):

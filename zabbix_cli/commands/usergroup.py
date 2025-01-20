@@ -49,7 +49,8 @@ def sort_ugroups(
 
     I.e. we have some custom types that all share the samse attributes
     `name` and `usrgrpid`. This function sorts them based on the given
-    sorting method."""
+    sorting method.
+    """
     if sort == UsergroupSorting.NAME:
         return sorted(ugroups, key=lambda ug: ug.name)
     elif sort == UsergroupSorting.ID:
@@ -330,7 +331,8 @@ def show_usergroups(
 ) -> None:
     """Show all suser groups.
 
-    Can be filtered by name or ID."""
+    Can be filtered by name or ID.
+    """
     _do_show_usergroups(usergroup, sort=sort, limit=limit)
 
 

@@ -196,7 +196,6 @@ def init_config(
     """Creates required directories and boostraps config with
     options required to connect to the Zabbix API.
     """
-
     from zabbix_cli import auth
     from zabbix_cli.config.model import Config
     from zabbix_cli.dirs import init_directories

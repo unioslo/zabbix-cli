@@ -1,3 +1,5 @@
+"""DEPRECATED: Bulk execution of Zabbix commands."""
+
 from __future__ import annotations
 
 import subprocess

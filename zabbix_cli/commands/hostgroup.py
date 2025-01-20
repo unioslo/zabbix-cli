@@ -422,7 +422,8 @@ def show_hostgroups(
 ) -> None:
     """Show details for host groups.
 
-    Limits results to 20 by default. Fetching all host groups with hosts can be extremely slow."""
+    Limits results to 20 by default. Fetching all host groups with hosts can be extremely slow.
+    """
     from zabbix_cli.commands.results.hostgroup import HostGroupResult
     from zabbix_cli.models import AggregateResult
 

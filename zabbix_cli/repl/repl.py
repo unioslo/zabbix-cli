@@ -111,8 +111,7 @@ def bootstrap_prompt(
     show_only_unused: bool = False,
     shortest_only: bool = False,
 ) -> dict[str, Any]:
-    """
-    Bootstrap prompt_toolkit kwargs or use user defined values.
+    """Bootstrap prompt_toolkit kwargs or use user defined values.
 
     :param prompt_kwargs: The user specified prompt kwargs.
     """

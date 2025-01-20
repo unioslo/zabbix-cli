@@ -252,7 +252,6 @@ class Authenticator:
         7. Session ID in legacy auth token file (if `use_session_file=true`)
         8. Username and password from prompt
         """
-
         for credentials in self._iter_all_credentials():
             if not credentials.is_valid():
                 logger.debug("No valid credentials found with %s", credentials)
@@ -562,7 +561,8 @@ class Authenticator:
     def _get_auth_token_file_legacy(self) -> Optional[Credentials]:
         """Get auth token (session ID) from a legacy auth token file.
 
-        From Zabbix-CLI 3.5.0 onwards, we use a new session file."""
+        From Zabbix-CLI 3.5.0 onwards, we use a new session file.
+        """
         if not self.config.app.use_session_file:
             logger.debug("Not configured to use auth token file.")
             return

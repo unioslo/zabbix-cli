@@ -209,9 +209,8 @@ def add_common_params(
 
     Based on https://www.zabbix.com/documentation/7.0/en/manual/api/reference_commentary#common-get-method-parameters
 
-    NOTE
-    ----
-    `parse_name_or_id_arg` handles the `search*` parameters
+    Note:
+        `parse_name_or_id_arg` handles the `search*` parameters
     """
     if sort_field:
         params["sortfield"] = sort_field

@@ -170,7 +170,6 @@ class BulkRunner:
             CommandFileError: If command file cannot be parsed or a command fails (in STRICT mode)
 
         Example:
-
         ```bash
         $ cat /tmp/commands.txt
 

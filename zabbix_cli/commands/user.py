@@ -330,7 +330,8 @@ def show_users(
 ) -> None:
     """Show all users.
 
-    Users can be filtered by name, ID, or role."""
+    Users can be filtered by name, ID, or role.
+    """
     from zabbix_cli.models import AggregateResult
     from zabbix_cli.pyzabbix.compat import user_name
 

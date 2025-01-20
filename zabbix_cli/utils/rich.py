@@ -1,3 +1,5 @@
+"""Utility functions for working with the Rich library."""
+
 from __future__ import annotations
 
 import logging
