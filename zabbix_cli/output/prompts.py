@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 import os
-from functools import lru_cache
+from functools import cache
 from functools import wraps
 from pathlib import Path
 from typing import Any
@@ -66,7 +66,7 @@ TRUE_ARGS = ["1", "true"]  # case-insensitive
 
 
 # NOTE: if testing this function, clear cache after each test
-@lru_cache(maxsize=None)
+@cache
 def is_headless() -> bool:
     """Determines if we are running in a headless environment (e.g. CI, Docker, etc.)"""
     # Truthy values indicate headless
