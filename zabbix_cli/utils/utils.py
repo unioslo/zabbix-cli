@@ -1,7 +1,8 @@
 """Uncategorized utility functions.
 
 Some stemming from Zabbix-cli v2, while others relate to converting
-values and flags from the Zabbix API."""
+values and flags from the Zabbix API.
+"""
 
 from __future__ import annotations
 
@@ -48,7 +49,16 @@ def get_monitoring_status(code: Optional[str], with_code: bool = False) -> str:
 
 
 def get_maintenance_active_days(schedule: int | None) -> list[str]:
-    """Get maintenance day of week from code."""
+    """Get maintenance day of week from code.
+
+    The schedule bitmask is a 7-bit integer where each bit represents a day of the week.
+
+    Args:
+        schedule (int): Integer bitmask representing active days.
+
+    Returns:
+        list[str]: List of active days
+    """
     if schedule is None:
         return []
     days = {
@@ -70,6 +80,16 @@ def get_maintenance_active_days(schedule: int | None) -> list[str]:
 
 
 def get_maintenance_active_months(schedule: int | None) -> list[str]:
+    """Get active maintenance month(s) from integer bitmask.
+
+    The schedule bitmask is a 12-bit integer where each bit represents a month.
+
+    Args:
+        schedule (int): Integer bitmask representing active months.
+
+    Returns:
+        list[str]: List of active months.
+    """
     if schedule is None:
         return []
     months = {
@@ -121,6 +141,7 @@ def get_acknowledge_action_value(
     change_to_cause: bool = False,
     change_to_symptom: bool = False,
 ) -> int:
+    """Get acknowledge action bitmask value."""
     value = 0
     if close:
         value += ACKNOWLEDGE_ACTION_BITMASK["close"]
@@ -219,6 +240,17 @@ def convert_time_to_interval(time: str) -> tuple[datetime, datetime]:
 
 
 def convert_timestamp(ts: str) -> datetime:
+    """Convert a datetime or timestamp string to a datetime object.
+
+    Args:
+        ts (str): Timestamp string
+
+    Raises:
+        ZabbixCLIError: String cannot be converted to a datetime object.
+
+    Returns:
+        datetime: Converted datetime object
+    """
     try:
         return datetime.fromisoformat(ts)
     except ValueError:

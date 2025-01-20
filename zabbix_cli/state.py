@@ -31,6 +31,8 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Optional
 
+from typing_extensions import Self
+
 # This module should not import from other local modules because it's widely
 # used throughout the application, and we don't want to create circular imports.
 # Runtime imports from other modules should be done inside functions,
@@ -46,13 +48,16 @@ logger = logging.getLogger(__name__)
 
 
 class State:
-    """Object that encapsulates the current state of the application.
+    """Application state singleton.
+
+    Object that encapsulates the current state of the application.
     Holds the current configuration, Zabbix client, and other stateful objects.
     """
 
     _instance = None
 
-    def __new__(cls, *args: Any, **kwargs: Any):
+    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
+        """Instantiate the singleton object or return the existing instance."""
         if cls._instance is None:
             cls._instance = super().__new__(cls, *args, **kwargs)
         return cls._instance
@@ -89,6 +94,7 @@ class State:
     @property
     def client(self) -> ZabbixAPI:
         """Zabbix API client object.
+
         Fails if the client is not configured.
         """
         from zabbix_cli.exceptions import ZabbixCLIError
@@ -103,10 +109,12 @@ class State:
 
     @property
     def is_client_loaded(self) -> bool:
+        """Zabbix client is configured and ready to use."""
         return self._client is not None
 
     @property
     def config(self) -> Config:
+        """Current Config object."""
         if self._config is None:
             from zabbix_cli.config.model import Config
             from zabbix_cli.logs import configure_logging
@@ -124,8 +132,10 @@ class State:
 
     @config.setter
     def config(self, config: Config) -> None:
-        """Set the configuration object and update active configuration of
-        loggers, consoles, etc."""
+        """Set the config object and update active configurations.
+
+        Triggers an update of configuration of logging, consoles, etc.
+        """
         from zabbix_cli.logs import configure_logging
         from zabbix_cli.output.console import configure_console
 
@@ -138,6 +148,7 @@ class State:
 
     @property
     def is_config_loaded(self) -> bool:
+        """Config has been loaded from file."""
         return self._config_loaded
 
     @property
@@ -216,7 +227,8 @@ class State:
         Uses the authentication info from the config to log into the Zabbix API.
 
         Also sets the JSON rendering mode on the TableRenderable base class
-        used to render application output."""
+        used to render application output.
+        """
         from zabbix_cli import auth
         from zabbix_cli.models import TableRenderable
 

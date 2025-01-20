@@ -1,3 +1,5 @@
+"""DEPRECATED: Set up Zabbix-CLI configuration."""
+
 from __future__ import annotations
 
 import subprocess
@@ -58,6 +60,7 @@ def main_callback(
 
 
 def main() -> None:
+    """Run the CLI."""
     app()
 
 

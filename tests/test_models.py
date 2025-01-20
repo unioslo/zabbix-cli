@@ -68,7 +68,8 @@ def test_all_metakeys() -> None:
 
 def test_rows_with_unknown_base_model(caplog: LogCaptureFixture) -> None:
     """Test that we log when we try to render a BaseModel
-    instance that does not inherit from TableRenderable."""
+    instance that does not inherit from TableRenderable.
+    """
 
     class FooModel(BaseModel):
         foo: str

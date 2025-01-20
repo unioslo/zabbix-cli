@@ -126,7 +126,8 @@ def add_log_context(field: str, value: Any) -> None:
 def get_file_handler_safe(filename: Path) -> logging.Handler:
     """Return a FileHandler that does not fail if the file cannot be opened.
 
-    Returns a stderr StreamHandler if the file cannot be opened."""
+    Returns a stderr StreamHandler if the file cannot be opened.
+    """
     from zabbix_cli.utils.fs import mkdir_if_not_exists
 
     try:

@@ -131,7 +131,8 @@ def serialize_host_list_json(
 
     Most of the time we don't want to serialize _all_ fields of a host.
     This serializer assumes that we want to serialize the minimal representation
-    of hosts unless the context specifies otherwise."""
+    of hosts unless the context specifies otherwise.
+    """
     if isinstance(info.context, dict):
         if info.context.get("full_host"):  # pyright: ignore[reportUnknownMemberType]
             return [host.model_dump(mode="json") for host in hosts]
@@ -146,7 +147,8 @@ HostList = Annotated[
 
 def age_from_datetime(dt: Optional[datetime]) -> Optional[str]:
     """Returns the age of a datetime object as a human-readable
-    string, or None if the datetime is None."""
+    string, or None if the datetime is None.
+    """
     if not dt:
         return None
     n = datetime.now(tz=dt.tzinfo)
@@ -157,7 +159,8 @@ def age_from_datetime(dt: Optional[datetime]) -> Optional[str]:
 
 def format_datetime(dt: Optional[datetime]) -> str:
     """Returns a formatted datetime string, or empty string if the
-    datetime is None."""
+    datetime is None.
+    """
     if not dt:
         return ""
     return dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -234,7 +237,8 @@ class ZabbixAPIBaseModel(TableRenderable):
     def model_dump_api(self) -> dict[str, Any]:
         """Dump the model as a JSON-serializable dict used in API calls.
 
-        Excludes computed fields by default."""
+        Excludes computed fields by default.
+        """
         return self.model_dump(
             mode="json",
             exclude=set(self.model_computed_fields),
@@ -609,6 +613,8 @@ class HostInterface(ZabbixAPIBaseModel):
 
 
 class CreateHostInterfaceDetails(ZabbixAPIBaseModel):
+    """Parameters for creating a host interface."""
+
     version: int
     bulk: Optional[int] = None
     community: Optional[str] = None
@@ -623,6 +629,8 @@ class CreateHostInterfaceDetails(ZabbixAPIBaseModel):
 
 
 class UpdateHostInterfaceDetails(ZabbixAPIBaseModel):
+    """Parameters for updating a host interface."""
+
     version: Optional[int] = None
     bulk: Optional[int] = None
     community: Optional[str] = None
@@ -637,6 +645,8 @@ class UpdateHostInterfaceDetails(ZabbixAPIBaseModel):
 
 
 class Proxy(ZabbixAPIBaseModel):
+    """Zabbix Proxy object."""
+
     proxyid: str
     name: str = Field(..., validation_alias=AliasChoices("host", "name"))
     hosts: HostList = Field(default_factory=list)
@@ -689,6 +699,8 @@ class Proxy(ZabbixAPIBaseModel):
 
 
 class ProxyGroup(ZabbixAPIBaseModel):
+    """Zabbix Proxy Group object."""
+
     proxy_groupid: str
     name: str
     description: str
@@ -759,10 +771,14 @@ class Macro(MacroBase):
 
 
 class GlobalMacro(MacroBase):
+    """Global macro object."""
+
     globalmacroid: str
 
 
 class Item(ZabbixAPIBaseModel):
+    """Zabbix Item."""
+
     itemid: str
     delay: Optional[str] = None
     hostid: Optional[str] = None
@@ -795,7 +811,7 @@ class Item(ZabbixAPIBaseModel):
     def _LEGACY_type_serializer(
         self, v: Optional[int], _info: FieldSerializationInfo
     ) -> Union[str, int, None]:
-        """Serializes the item type as a formatted string in legacy JSON mode"""
+        """Serializes the item type as a formatted string in legacy JSON mode."""
         if self.legacy_json_format:
             return self.type_str
         return v
@@ -804,7 +820,7 @@ class Item(ZabbixAPIBaseModel):
     def _LEGACY_value_type_serializer(
         self, v: Optional[int], _info: FieldSerializationInfo
     ) -> Union[str, int, None]:
-        """Serializes the item type as a formatted string in legacy JSON mode"""
+        """Serializes the item type as a formatted string in legacy JSON mode."""
         if self.legacy_json_format:
             return self.type_str
         return v

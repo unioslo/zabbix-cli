@@ -1,3 +1,5 @@
+"""Filesystem utilities."""
+
 from __future__ import annotations
 
 import logging
@@ -127,7 +129,8 @@ def move_file(src: Path, dest: Path, mkdir: bool = True) -> None:
 def temp_directory() -> Generator[Path, None, None]:
     """Context manager for creating a temporary directory.
 
-    Ripped from: https://github.com/pypa/hatch/blob/35f8ffdacc937bdcf3b250e0be1bbdf5cde30c4c/src/hatch/utils/fs.py#L112-L117"""
+    Ripped from: https://github.com/pypa/hatch/blob/35f8ffdacc937bdcf3b250e0be1bbdf5cde30c4c/src/hatch/utils/fs.py#L112-L117
+    """
     from tempfile import TemporaryDirectory
 
     with TemporaryDirectory() as d:

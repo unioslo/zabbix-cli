@@ -1,3 +1,5 @@
+"""Completer functionality for Click commands in the REPL."""
+
 from __future__ import annotations
 
 import os
@@ -24,17 +26,21 @@ AUTO_COMPLETION_PARAM = "shell_complete"
 
 
 def split_arg_string(string: str, posix: bool = True) -> list[str]:
-    """Split an argument string as with :func:`shlex.split`, but don't
-    fail if the string is incomplete. Ignores a missing closing quote or
-    incomplete escape sequence and uses the partial token as-is.
-    .. code-block:: python
-        split_arg_string("example 'my file")
-        ["example", "my file"]
-        split_arg_string("example my\\")
-        ["example", "my"]
-    :param string: String to split.
-    """
+    r"""Split an argument in a shlex-like way, but don't fail if the string is incomplete.
 
+    Args:
+        string (str): String to split
+        posix (bool, optional): Posix-like parsing. Defaults to True.
+
+    Returns:
+        list[str]: String split into tokens.
+
+    Examples:
+        >>> split_arg_string("example 'my file")
+        ["example", "my file"]
+        >>> split_arg_string("example my\\")
+        ["example", "my"]
+    """
     lex = shlex.shlex(string, posix=posix)
     lex.whitespace_split = True
     lex.commenters = ""
@@ -53,14 +59,20 @@ def split_arg_string(string: str, posix: bool = True) -> list[str]:
 
 
 def _resolve_context(args: list[Any], ctx: click.Context) -> click.Context:
-    """Produce the context hierarchy starting with the command and
+    """Resolve context and return the last context in the chain.
+
+    Produce the context hierarchy starting with the command and
     traversing the complete arguments. This only follows the commands,
     it doesn't trigger input prompts or callbacks.
 
-    :param args: List of complete args before the incomplete value.
-    :param cli_ctx: `click.Context` object of the CLI group
-    """
 
+    Args:
+        args (list[Any]): List of complete args before the incomplete value.
+        ctx (click.Context): `click.Context` object of the CLI group
+
+    Returns:
+        click.Context: Resolved context.
+    """
     while args:
         command = ctx.command
 
@@ -99,6 +111,8 @@ def _resolve_context(args: list[Any], ctx: click.Context) -> click.Context:
 
 
 class ClickCompleter(Completer):
+    """Completer for Click commands."""
+
     __slots__ = ("cli", "ctx", "parsed_args", "parsed_ctx", "ctx_command")
 
     def __init__(
@@ -284,6 +298,15 @@ class ClickCompleter(Completer):
     def get_completions(
         self, document: Document, complete_event: Optional[CompleteEvent] = None
     ) -> Generator[Completion, Any, None]:
+        """Generator of completions for the current input.
+
+        Args:
+            document (Document): Current prompt_toolkit document.
+            complete_event (Optional[CompleteEvent], optional): Event that triggered the completion. Defaults to None.
+
+        Yields:
+            Generator[Completion, Any, None]: Completions for the current input.
+        """
         # Code analogous to click._bashcomplete.do_complete
 
         args = split_arg_string(document.text_before_cursor, posix=False)

@@ -365,7 +365,8 @@ def update_config(
 ) -> None:
     """Update the config file with the current application state.
 
-    Adds missing fields and updates deprecated fields to their new values."""
+    Adds missing fields and updates deprecated fields to their new values.
+    """
     from zabbix_cli.output.prompts import bool_prompt
 
     config_file = config_file or app.state.config.config_path
@@ -385,7 +386,8 @@ def update_application(ctx: typer.Context) -> None:
     """Update the application to the latest version.
 
     Primarily intended for use with PyInstaller builds, but can also be
-    used for updating other installations (except Homebrew)."""
+    used for updating other installations (except Homebrew).
+    """
     from zabbix_cli.__about__ import __version__
     from zabbix_cli.update import update
 

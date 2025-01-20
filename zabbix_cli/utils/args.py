@@ -83,6 +83,7 @@ def parse_hostgroups_arg(
     select_hosts: bool = False,
     select_templates: bool = False,
 ) -> list[HostGroup]:
+    """Parse host group names or IDs and return a list of host groups."""
     from zabbix_cli.output.console import exit_err
     from zabbix_cli.output.prompts import str_prompt
 
@@ -111,6 +112,7 @@ def parse_hosts_arg(
     hostnames_or_ids: Optional[str],
     strict: bool = False,
 ) -> list[Host]:
+    """Parse host names or IDs and return a list of hosts."""
     from zabbix_cli.output.console import exit_err
     from zabbix_cli.output.prompts import str_prompt
 
@@ -135,6 +137,7 @@ def parse_templates_arg(
     strict: bool = False,
     select_hosts: bool = False,
 ) -> list[Template]:
+    """Parse template names or IDs and return a list of templates."""
     from zabbix_cli.output.console import exit_err
 
     template_args = parse_list_arg(template_names_or_ids)
@@ -158,6 +161,7 @@ def parse_templategroups_arg(
     strict: bool = False,
     select_templates: bool = False,
 ) -> list[TemplateGroup]:
+    """Parse template group names or IDs and return a list of template groups."""
     tg_args = parse_list_arg(tgroup_names_or_ids)
     if not tg_args:
         exit_err("At least one template group name/ID is required.")
@@ -211,7 +215,8 @@ def get_hostgroup_hosts(
 
     Args:
         app: The application instance.
-        hostgroups: List of host groups or a comma-separated string of host group names."""
+        hostgroups: List of host groups or a comma-separated string of host group names.
+    """
     if isinstance(hostgroups, str):
         hostgroup_names = parse_list_arg(hostgroups)
         hostgroups = app.state.client.get_hostgroups(
@@ -233,7 +238,8 @@ def check_at_least_one_option_set(ctx: typer.Context) -> None:
     """Check that at least one option is set in the context.
 
     Useful for commands used to update resources, where all options
-    are optional, but at least one is required to make a change."""
+    are optional, but at least one is required to make a change.
+    """
     optional_params: set[str] = set()
     for param in ctx.command.params:
         if param.required:

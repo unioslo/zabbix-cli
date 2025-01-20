@@ -7,7 +7,8 @@ ended up growing in scope to encompass all the supported installation methods.
 
 The primary use case we focus on is updating PyInstaller binaries. The other
 installation methods are supported, but rely on some less-than-ideal heuristics
-for detection."""
+for detection.
+"""
 
 from __future__ import annotations
 
@@ -47,6 +48,8 @@ class UpdateError(ZabbixCLIError):  # move to zabbix_cli.exceptions?
 
 
 class Updater(ABC):
+    """ABC for updaters."""
+
     def __init__(self, installation_info: InstallationInfo) -> None:
         self.installation_info = installation_info
 
@@ -54,12 +57,16 @@ class Updater(ABC):
     def update(self) -> Optional[UpdateInfo]:
         """Update the application to the latest version.
 
-        May return information about the update, such as the new version."""
+        May return information about the update, such as the new version.
+        """
         raise NotImplementedError
 
 
 class GitUpdater(Updater):
+    """Updater for packages installed via Git."""
+
     def update(self) -> UpdateInfo:
+        """Update the application to the latest version."""
         # TODO: let user pass git remote, branch and other args
         subprocess.run(["git", "pull"], cwd=self.installation_info.bindir)
         # subprocess.run(["git", "-C", str(repoself.installation_info.bindir_path.absolute()), "pull"])
@@ -129,17 +136,21 @@ class PypiUpdater(Updater):
         raise UpdateError(f"Unable to detect package name from {self.package_manager}.")
 
     def update(self) -> None:
+        """Update the package to the latest version."""
         package = self.detect_package_name()
         cmd = self.upgrade_command + [package]
         subprocess.run(cmd)
 
 
 class PipxListOutput(BaseModel):
+    """Model for the output of `pipx list --json`."""
+
     # pipx_spec_version: str # ignore this for now
     venvs: dict[str, Any]  # we just care about the keys
 
     @classmethod
     def from_json(cls, j: str) -> Self:
+        """Parse JSON output from `pipx list --json`."""
         return cls.model_validate_json(j)
 
     def package_names(self) -> set[str]:
@@ -148,6 +159,8 @@ class PipxListOutput(BaseModel):
 
 
 class PipxUpdater(PypiUpdater):
+    """Updater for packages installed via pipx."""
+
     @property
     def package_manager(self) -> str:
         """The name of package manager used to install the package."""
@@ -165,6 +178,7 @@ class PipxUpdater(PypiUpdater):
         return ["pipx", "upgrade"]
 
     def get_packages(self) -> set[str]:
+        """Get all installed pipx packages."""
         out = subprocess.check_output(["pipx", "list", "--json"], text=True)
 
         try:
@@ -174,7 +188,7 @@ class PipxUpdater(PypiUpdater):
 
 
 class PipUpdater(PypiUpdater):
-    """Updater for bare pip installations (PLEASE DONT USE THIS!!!!)"""
+    """Updater for bare pip installations (PLEASE DONT USE THIS!!!!)."""
 
     @property
     def package_manager(self) -> str:
@@ -193,6 +207,7 @@ class PipUpdater(PypiUpdater):
         return ["pip", "install", "--upgrade"]
 
     def get_packages(self) -> set[str]:
+        """Get all installed pip packages."""
         pkgs: set[str] = set()
 
         out = subprocess.check_output(["pip", "freeze"], text=True)
@@ -206,6 +221,7 @@ class PipUpdater(PypiUpdater):
         return pkgs
 
     def detect_package_name(self) -> str:
+        """Get the name of the package to update."""
         # Special case for pip, since if we are at the point where
         # we have both zabbix-cli and zabbix-cli-uio installed, we
         # might have already migrated to a mirror package on PyPI
@@ -225,6 +241,8 @@ class PipUpdater(PypiUpdater):
 
 
 class UvUpdater(PypiUpdater):
+    """Updater for packages installed via uv."""
+
     @property
     def package_manager(self) -> str:
         """The name of package manager used to install the package."""
@@ -242,6 +260,7 @@ class UvUpdater(PypiUpdater):
         return ["uv", "tool", "upgrade"]
 
     def get_packages(self) -> set[str]:
+        """Get all installed uv packages."""
         pkgs: set[str] = set()
 
         out = subprocess.check_output(["uv", "tool", "list"], text=True)
@@ -257,6 +276,7 @@ class UvUpdater(PypiUpdater):
 
 
 def download_file(url: str, destination: Path) -> None:
+    """Download a file from a URL to a destination path."""
     logger.debug("Downloading %s to %s", url, destination)
     with httpx.stream("GET", url, follow_redirects=True) as response:
         with Progress() as progress:
@@ -279,6 +299,8 @@ def download_file(url: str, destination: Path) -> None:
 
 
 class GitHubRelease(BaseModel):
+    """Model for a GitHub release."""
+
     url: str
     tag_name: str
 
@@ -288,7 +310,8 @@ def get_release_arch(arch: str) -> str:
 
     Attempts to map the platform.machine() name to the name used
     in the GitHub release artifacts. If no mapping is found, the
-    original name is returned."""
+    original name is returned.
+    """
     ARCH_MAP: dict[str, str] = {
         "x86_64": "x86_64",
         "amd64": "x86_64",
@@ -302,10 +325,10 @@ def get_release_arch(arch: str) -> str:
 def get_release_os(os: str) -> str:
     """Get the correct os name for a GitHub release artifact.
 
-
     Attempts to map the sys.platform name to the name used
     in the GitHub release artifacts. If no mapping is found, the
-    original name is returned."""
+    original name is returned.
+    """
     PLATFORM_MAP: dict[str, str] = {
         "linux": "linux",
         "darwin": "macos",
@@ -316,6 +339,8 @@ def get_release_os(os: str) -> str:
 
 
 class PyInstallerUpdater(Updater):
+    """Updater for PyInstaller installations."""
+
     URL_FMT = "https://github.com/unioslo/zabbix-cli/releases/latest/download/zabbix-cli-{version}-{os}-{arch}{ext}"
     """URL format for downloading the latest release."""
 
@@ -323,6 +348,7 @@ class PyInstallerUpdater(Updater):
     """URL for latest release info from API."""
 
     def update(self) -> Optional[UpdateInfo]:
+        """Update the application to the latest version."""
         if not self.installation_info.bindir:
             raise UpdateError("Unable to determine PyInstaller binary directory")
         if not self.installation_info.executable:
@@ -415,7 +441,8 @@ class PyInstallerUpdater(Updater):
 
         Attempts to map the platform.machine() name to the name used
         in the GitHub release artifacts. If no mapping is found, the
-        original name is returned."""
+        original name is returned.
+        """
         ARCH_MAP: dict[str, str] = {
             "x86_64": "x86_64",
             "amd64": "x86_64",
@@ -429,10 +456,10 @@ class PyInstallerUpdater(Updater):
     def get_release_os(os: str) -> str:
         """Get the correct os name for a GitHub release artifact.
 
-
         Attempts to map the sys.platform name to the name used
         in the GitHub release artifacts. If no mapping is found, the
-        original name is returned."""
+        original name is returned.
+        """
         PLATFORM_MAP: dict[str, str] = {
             "linux": "linux",
             "darwin": "macos",
@@ -443,6 +470,8 @@ class PyInstallerUpdater(Updater):
 
 
 class InstallationMethod(StrEnum):
+    """Installation method of the application."""
+
     GIT = "git"
     PIP = "pip"
     PIPX = "pipx"
@@ -451,6 +480,8 @@ class InstallationMethod(StrEnum):
 
 
 class InstallationInfo(NamedTuple):
+    """Information about the installation method of the application."""
+
     method: InstallationMethod
     package: Optional[str] = None
     executable: Optional[Path] = None
@@ -458,6 +489,7 @@ class InstallationInfo(NamedTuple):
 
 
 def to_path(p: str) -> Optional[Path]:
+    """Convert a string to a Path, returning None if the path is invalid."""
     try:
         return Path(p).expanduser().resolve()
     except Exception as e:
@@ -481,18 +513,21 @@ def cmd_exists(command: str, help: bool = True) -> bool:
 
 
 class InstallationMethodDetector:
+    """Detects the installation method of the application."""
+
     def __init__(self) -> None:
         self.executable = Path(sys.argv[0])
         self.parent_dir = self.executable.parent
 
     @classmethod
     def detect(cls) -> InstallationInfo:
+        """Attempt to detect the installation method of the application."""
         try:
-            return cls().do_detect()
+            return cls()._do_detect()
         except Exception as e:
             raise UpdateError(f"Unable to detect installation method: {e}") from e
 
-    def do_detect(self) -> InstallationInfo:
+    def _do_detect(self) -> InstallationInfo:
         for method in [
             # Methods ranked in order of best->worst detection heuristics
             # as well as likelyhood of being used by the user
@@ -508,7 +543,7 @@ class InstallationMethodDetector:
         raise NotImplementedError("No detection methods succeeded")
 
     def detect_git(self) -> Optional[InstallationInfo]:
-        """Get the path of the local Git repository."""
+        """Get app installation via a local Git repository."""
         f = Path(__file__).resolve()
         package_dir = f.parent.parent
         git_dir = package_dir / ".git"
@@ -520,6 +555,7 @@ class InstallationMethodDetector:
 
     @staticmethod
     def get_pipx_bin_dir() -> Optional[Path]:
+        """Detect the pipx bin directory."""
         if (bd := os.environ.get("PIPX_BIN_DIR")) and (bindir := to_path(bd)):
             return bindir
         try:
@@ -534,6 +570,7 @@ class InstallationMethodDetector:
         return to_path(t)
 
     def detect_pipx(self) -> Optional[InstallationInfo]:
+        """Detect app installation via pipx."""
         if not cmd_exists("pipx"):
             return
         bindir = self.get_pipx_bin_dir()
@@ -545,6 +582,7 @@ class InstallationMethodDetector:
 
     @staticmethod
     def has_pip_package(pkg: str) -> bool:
+        """Check if a package is installed via pip."""
         try:
             subprocess.check_call(["pip", "show", pkg])
         except subprocess.CalledProcessError:
@@ -552,6 +590,7 @@ class InstallationMethodDetector:
         return True
 
     def detect_pip(self) -> Optional[InstallationInfo]:
+        """Detect app installation via pip."""
         if not cmd_exists("pip"):
             return
         for pkg in ["zabbix-cli", "zabbix-cli-uio"]:
@@ -559,6 +598,7 @@ class InstallationMethodDetector:
                 return InstallationInfo(method=InstallationMethod.PIP, package=pkg)
 
     def detect_pyinstaller(self) -> Optional[InstallationInfo]:
+        """Detect app installation via pyinstaller."""
         if not hasattr(sys, "_MEIPASS"):
             return
         # TODO: resolve alias, symlinks, etc.
@@ -570,6 +610,7 @@ class InstallationMethodDetector:
 
     @staticmethod
     def get_uv_bin_dir() -> Optional[Path]:
+        """Detect the uv bin directory."""
         try:
             t = subprocess.check_output(["uv", "tool", "dir"], text=True)
         except subprocess.CalledProcessError:
@@ -580,6 +621,7 @@ class InstallationMethodDetector:
 
     @staticmethod
     def get_uv_pkg_name() -> Optional[str]:
+        """Detect the installed uv package name."""
         for pkg in ZCLI_PACKAGES:
             try:
                 subprocess.check_output(["uv", "tool", "list", pkg])
@@ -588,6 +630,7 @@ class InstallationMethodDetector:
             return pkg
 
     def detect_uv(self) -> Optional[InstallationInfo]:
+        """Detect app installation via uv."""
         if not cmd_exists("uv"):
             return
         bindir = self.get_uv_bin_dir()
@@ -608,12 +651,15 @@ UPDATERS: dict[InstallationMethod, type[Updater]] = {
 
 
 class UpdateInfo(NamedTuple):
+    """Information about a completed update."""
+
     method: InstallationMethod
     version: str
     path: Optional[Path] = None
 
 
 def get_updater(method: InstallationMethod) -> type[Updater]:
+    """Get the updater class for an installation method."""
     updater = UPDATERS.get(method)
     if updater is None:
         raise UpdateError(f"No updater available for installation method {method}")

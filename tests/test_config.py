@@ -58,7 +58,8 @@ def remove_path_options(config_path: Path, tmp_path: Path) -> None:
     """Remove all path options from a TOML config file.
 
     Some config options require a directory or file to exist, which is not always
-    possible or desirable in a test environment."""
+    possible or desirable in a test environment.
+    """
     contents = config_path.read_text()
     new_contents = "\n".join(
         line for line in contents.splitlines() if "/path/to" not in line
@@ -531,7 +532,8 @@ def test_load_deprecated_config_with_new_and_old_options(tmp_path: Path) -> None
     """Test loading a config file where both new and deprecated options are present.
 
     The deprecated options should _not_ be assigned to the new options, as the new options
-    are already set"""
+    are already set
+    """
     conf = tmp_path / "zabbix-cli.toml"
     conf.write_text(
         """
