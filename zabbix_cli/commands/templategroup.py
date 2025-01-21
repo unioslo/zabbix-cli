@@ -60,11 +60,11 @@ def add_template_to_group(
 
     groups: Union[list[HostGroup], list[TemplateGroup]]
     if app.state.client.version.release >= (6, 2, 0):
-        groups = parse_templategroups_arg(app, group_names_or_ids, strict)
+        groups = parse_templategroups_arg(app, group_names_or_ids, strict=strict)
     else:
-        groups = parse_hostgroups_arg(app, group_names_or_ids, strict)
+        groups = parse_hostgroups_arg(app, group_names_or_ids, strict=strict)
 
-    templates = parse_templates_arg(app, template_names_or_ids, strict)
+    templates = parse_templates_arg(app, template_names_or_ids, strict=strict)
 
     with app.state.console.status("Adding templates..."):
         app.state.client.link_templates_to_groups(templates, groups)

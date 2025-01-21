@@ -475,7 +475,7 @@ class Host(ZabbixAPIBaseModel):
             return
         self.proxy = proxy
 
-    def get_active_status(self, with_code: bool = False) -> str:
+    def get_active_status(self, *, with_code: bool = False) -> str:
         """Returns the active interface status as a formatted string."""
         if self.zabbix_version.release >= (7, 0, 0):
             return ActiveInterface.string_from_value(
@@ -1245,6 +1245,7 @@ class ImportRules(ZabbixAPIBaseModel):
     @classmethod
     def get(
         cls,
+        *,
         create_missing: bool = False,
         update_existing: bool = False,
         delete_missing: bool = False,

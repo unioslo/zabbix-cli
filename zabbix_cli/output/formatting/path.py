@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def path_link(path: Path, absolute: bool = True) -> str:
+def path_link(path: Path, *, absolute: bool = True) -> str:
     """Return a link to a path."""
     abspath = path.resolve().absolute()
     if absolute:

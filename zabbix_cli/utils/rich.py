@@ -21,7 +21,7 @@ def get_safe_renderable(renderable: RenderableType) -> RenderableType:
     return renderable
 
 
-def get_text(text: str, log: bool = True) -> Text:
+def get_text(text: str, *, log: bool = True) -> Text:
     """Interpret text as markup-styled text, or plain text if it fails."""
     try:
         return Text.from_markup(text)

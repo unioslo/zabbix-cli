@@ -156,6 +156,7 @@ def add_param(
 def parse_name_or_id_arg(
     params: ParamsType,
     names_or_ids: tuple[str, ...],
+    *,
     name_param: str,
     id_param: str,
     search: bool = True,
@@ -239,6 +240,7 @@ class ZabbixAPI:
     def __init__(
         self,
         server: str = "http://localhost/zabbix",
+        *,
         timeout: Optional[int] = None,
         verify_ssl: bool = True,
     ) -> None:
@@ -278,7 +280,7 @@ class ZabbixAPI:
         return client
 
     def _get_client(
-        self, verify_ssl: bool, timeout: Union[float, int, None] = None
+        self, *, verify_ssl: bool, timeout: Union[float, int, None] = None
     ) -> httpx.Client:
         kwargs: HTTPXClientKwargs = {}
         if timeout is not None:
@@ -544,6 +546,7 @@ class ZabbixAPI:
     def get_hostgroup(
         self,
         name_or_id: str,
+        *,
         search: bool = False,
         select_hosts: bool = False,
         select_templates: bool = False,
@@ -685,6 +688,7 @@ class ZabbixAPI:
     def get_templategroup(
         self,
         name_or_id: str,
+        *,
         search: bool = False,
         select_templates: bool = False,
     ) -> TemplateGroup:
@@ -789,6 +793,7 @@ class ZabbixAPI:
     def get_host(
         self,
         name_or_id: str,
+        *,
         select_groups: bool = False,
         select_templates: bool = False,
         select_interfaces: bool = False,
@@ -1084,6 +1089,7 @@ class ZabbixAPI:
 
     def create_host_interface(
         self,
+        *,
         host: Host,
         main: bool,
         type: InterfaceType,
@@ -1174,6 +1180,7 @@ class ZabbixAPI:
     def get_usergroup(
         self,
         name_or_id: str,
+        *,
         select_users: bool = False,
         select_rights: bool = False,
         search: bool = True,
@@ -1231,6 +1238,7 @@ class ZabbixAPI:
     def create_usergroup(
         self,
         usergroup_name: str,
+        *,
         disabled: bool = False,
         gui_access: GUIAccess = GUIAccess.DEFAULT,
     ) -> str:
@@ -1260,7 +1268,7 @@ class ZabbixAPI:
         self._update_usergroup_users(usergroup_name, users, remove=True)
 
     def _update_usergroup_users(
-        self, usergroup_name: str, users: list[User], remove: bool = False
+        self, usergroup_name: str, users: list[User], *, remove: bool = False
     ) -> None:
         """Add/remove users from user group.
 
@@ -1290,6 +1298,7 @@ class ZabbixAPI:
         usergroup_name: str,
         groups: list[str],
         permission: UsergroupPermission,
+        *,
         hostgroup: bool,
     ) -> None:
         """Update usergroup rights for host or template groups."""
@@ -1346,7 +1355,7 @@ class ZabbixAPI:
         return rights
 
     def get_proxy(
-        self, name_or_id: str, select_hosts: bool = False, search: bool = True
+        self, name_or_id: str, *, select_hosts: bool = False, search: bool = True
     ) -> Proxy:
         """Fetches a single proxy matching the given name."""
         proxies = self.get_proxies(name_or_id, select_hosts=select_hosts, search=search)
@@ -1388,6 +1397,7 @@ class ZabbixAPI:
     def get_proxy_group(
         self,
         name_or_id: str,
+        *,
         proxies: Optional[list[Proxy]] = None,
         select_proxies: bool = False,
     ) -> ProxyGroup:
@@ -1490,6 +1500,7 @@ class ZabbixAPI:
 
     def get_macro(
         self,
+        *,
         host: Optional[Host] = None,
         macro_name: Optional[str] = None,
         search: bool = False,
@@ -1521,6 +1532,7 @@ class ZabbixAPI:
 
     def get_macros(
         self,
+        *,
         macro_name: Optional[str] = None,
         host: Optional[Host] = None,
         search: bool = False,
@@ -1560,6 +1572,7 @@ class ZabbixAPI:
 
     def get_global_macro(
         self,
+        *,
         macro_name: Optional[str] = None,
         search: bool = False,
         sort_field: Optional[str] = "macro",
@@ -1578,6 +1591,7 @@ class ZabbixAPI:
 
     def get_global_macros(
         self,
+        *,
         macro_name: Optional[str] = None,
         search: bool = False,
         sort_field: Optional[str] = "macro",
@@ -1723,6 +1737,7 @@ class ZabbixAPI:
     def get_template(
         self,
         template_name_or_id: str,
+        *,
         select_hosts: bool = False,
         select_templates: bool = False,
         select_parent_templates: bool = False,
@@ -1805,7 +1820,7 @@ class ZabbixAPI:
             raise ZabbixAPICallError("Failed to link templates") from e
 
     def unlink_templates_from_hosts(
-        self, templates: list[Template], hosts: list[Host], clear: bool = True
+        self, templates: list[Template], hosts: list[Host], *, clear: bool = True
     ) -> None:
         """Unlinks and clears one or more templates from one or more hosts.
 
@@ -1861,7 +1876,7 @@ class ZabbixAPI:
             raise ZabbixAPICallError("Failed to link templates") from e
 
     def unlink_templates(
-        self, source: list[Template], destination: list[Template], clear: bool = True
+        self, source: list[Template], destination: list[Template], *, clear: bool = True
     ) -> None:
         """Unlinks template(s) from template(s) and optionally clears them.
 
@@ -2201,6 +2216,7 @@ class ZabbixAPI:
 
     def create_maintenance(
         self,
+        *,
         name: str,
         active_since: datetime,
         active_till: datetime,
@@ -2304,6 +2320,7 @@ class ZabbixAPI:
         # NOTE: Does this API make sense?
         # Should we just expose event_id instead, and then
         # use `get_events()` for everything else?
+        *,
         event_id: Optional[str] = None,
         group_id: Optional[str] = None,
         host_id: Optional[str] = None,
@@ -2338,6 +2355,7 @@ class ZabbixAPI:
 
     def get_events(
         self,
+        *,
         event_ids: Union[str, list[str], None] = None,
         # Why are we taking in strings here instead of objects?
         # Should we instead take in objects and then extract the IDs?
@@ -2367,6 +2385,7 @@ class ZabbixAPI:
 
     def get_triggers(
         self,
+        *,
         trigger_ids: Union[str, list[str], None] = None,
         hostgroups: Optional[list[HostGroup]] = None,
         templates: Optional[list[Template]] = None,
@@ -2469,6 +2488,7 @@ class ZabbixAPI:
 
     def export_configuration(
         self,
+        *,
         host_groups: Optional[list[HostGroup]] = None,
         template_groups: Optional[list[TemplateGroup]] = None,
         hosts: Optional[list[Host]] = None,
@@ -2519,6 +2539,7 @@ class ZabbixAPI:
     def import_configuration(
         self,
         to_import: Path,
+        *,
         create_missing: bool = True,
         update_existing: bool = True,
         delete_missing: bool = False,

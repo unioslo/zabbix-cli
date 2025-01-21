@@ -101,6 +101,7 @@ def warning(message: str, icon: str = Icon.WARNING, **kwargs: Any) -> None:
 def error(
     message: str,
     icon: str = Icon.ERROR,
+    *,
     exc_info: bool = False,
     log: bool = True,
     **kwargs: Any,

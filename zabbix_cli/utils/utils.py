@@ -22,7 +22,7 @@ from zabbix_cli.exceptions import ZabbixCLIError
 # NOTE: consider setting with_code to False by default...
 # The only downside is possibly breaking backwards compatibility
 def _format_code(
-    code: Union[str, int, None], status_map: dict[Any, str], with_code: bool = True
+    code: Union[str, int, None], status_map: dict[Any, str], *, with_code: bool = True
 ) -> str:
     status = status_map.get(code, "Unknown")
     if with_code and code is not None:
@@ -35,14 +35,14 @@ def _format_code(
 # than the ones used in Zabbix-cli v2. This function is used to map the
 # the API values to the old string values when serializing to JSON.
 # Should be removed when we drop support for legacy JSON output.
-def get_maintenance_status(code: Optional[str], with_code: bool = False) -> str:
+def get_maintenance_status(code: Optional[str], *, with_code: bool = False) -> str:
     """Get maintenance status from code."""
     maintenance_status = {"0": "No maintenance", "1": "In progress"}
     return _format_code(code, maintenance_status, with_code=with_code)
 
 
 # LEGACY: Kept for backwards compatibility in JSON output
-def get_monitoring_status(code: Optional[str], with_code: bool = False) -> str:
+def get_monitoring_status(code: Optional[str], *, with_code: bool = False) -> str:
     """Get monitoring status from code."""
     monitoring_status = {"0": "Monitored", "1": "Not monitored"}
     return _format_code(code, monitoring_status, with_code=with_code)
@@ -131,6 +131,7 @@ ACKNOWLEDGE_ACTION_BITMASK: Final[dict[str, int]] = {
 
 
 def get_acknowledge_action_value(
+    *,
     close: bool = False,
     acknowledge: bool = False,
     message: bool = False,

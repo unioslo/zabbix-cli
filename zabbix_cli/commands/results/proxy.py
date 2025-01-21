@@ -136,7 +136,7 @@ class ShowProxiesResult(TableRenderable):
     show_hosts: bool = Field(default=False, exclude=True)
 
     @classmethod
-    def from_result(cls, proxy: Proxy, show_hosts: bool = False) -> Self:
+    def from_result(cls, proxy: Proxy, *, show_hosts: bool = False) -> Self:
         return cls(proxy=proxy, show_hosts=show_hosts)
 
     @property

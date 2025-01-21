@@ -34,6 +34,7 @@ def main_callback(
         "-c",
         help="Use non-default configuration file location",
     ),
+    *,
     overwrite: bool = typer.Option(
         False,
         "--overwrite",

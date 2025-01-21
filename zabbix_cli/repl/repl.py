@@ -107,6 +107,7 @@ def bootstrap_prompt(
     prompt_kwargs: Optional[dict[str, Any]],
     group: click.Group,
     ctx: click.Context,
+    *,
     show_only_unused: bool = False,
     shortest_only: bool = False,
 ) -> dict[str, Any]:
@@ -171,6 +172,7 @@ def repl(  # noqa: C901
     old_ctx: Context,
     app: StatefulApp,
     prompt_kwargs: Optional[dict[str, Any]] = None,
+    *,
     allow_system_commands: bool = True,
     allow_internal_commands: bool = True,
 ) -> None:

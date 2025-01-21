@@ -183,7 +183,7 @@ class Emoji(StrEnum):
     NO = EMOJI_NO
 
     @classmethod
-    def fmt_bool(cls, value: bool) -> str:
+    def fmt_bool(cls, value: bool) -> str:  # noqa: FBT001
         return success(cls.YES) if value else error(cls.NO)
 
 

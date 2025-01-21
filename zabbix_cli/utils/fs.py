@@ -34,7 +34,7 @@ def read_file(file: Path) -> str:
 
 
 def open_directory(
-    directory: Path, command: Optional[str] = None, force: bool = False
+    directory: Path, command: Optional[str] = None, *, force: bool = False
 ) -> None:
     """Open directory in file explorer.
 
@@ -113,7 +113,7 @@ def make_executable(path: Path) -> None:
         logger.debug("File %s is already executable", path)
 
 
-def move_file(src: Path, dest: Path, mkdir: bool = True) -> None:
+def move_file(src: Path, dest: Path, *, mkdir: bool = True) -> None:
     """Move a file to a new location."""
     try:
         if mkdir:

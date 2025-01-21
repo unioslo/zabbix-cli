@@ -31,6 +31,7 @@ class APIStr(str, Generic[T]):
         s: str,
         api_value: T = None,
         metadata: Optional[Mapping[str, Any]] = None,
+        *,
         hidden: bool = False,
     ) -> APIStr[T]:
         if isinstance(s, APIStr):
@@ -189,12 +190,16 @@ class APIStrEnum(Choice):
     # to string, thereby losing the API associated value.
     # If we are to do that, we need to hijack the object creation and inject
     # the member value somehow?
-    def as_status(self, default: str = "Unknown", with_code: bool = False) -> str:
+    def as_status(self, default: str = "Unknown", *, with_code: bool = False) -> str:
         return self.string_from_value(self.value, default=default, with_code=with_code)
 
     @classmethod
     def string_from_value(
-        cls: type[Self], value: Any, default: str = "Unknown", with_code: bool = False
+        cls: type[Self],
+        value: Any,
+        default: str = "Unknown",
+        *,
+        with_code: bool = False,
     ) -> str:
         """Get a formatted status string given a value."""
         try:

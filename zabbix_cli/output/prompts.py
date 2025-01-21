@@ -87,6 +87,7 @@ def prompt_msg(*msgs: str) -> str:
 @no_headless
 def str_prompt(
     prompt: str,
+    *,
     default: str = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
     password: bool = False,
     show_default: bool = True,
@@ -158,6 +159,7 @@ def str_prompt(
 @no_headless
 def str_prompt_optional(
     prompt: str,
+    *,
     default: str = "",
     password: bool = False,
     show_default: bool = False,
@@ -184,6 +186,7 @@ TypeConstructor = Callable[[object], T]
 @no_headless
 def list_prompt(
     prompt: str,
+    *,
     empty_ok: bool = True,
     strip: bool = True,
     keep_empty: bool = False,
@@ -208,6 +211,7 @@ def list_prompt(
 @no_headless
 def int_prompt(
     prompt: str,
+    *,
     default: int | None = None,
     show_default: bool = True,
     min: int | None = None,
@@ -230,6 +234,7 @@ def int_prompt(
 @no_headless
 def float_prompt(
     prompt: str,
+    *,
     default: float | None = None,
     show_default: bool = True,
     min: float | None = None,
@@ -256,6 +261,7 @@ def float_prompt(
 def _number_prompt(
     prompt_type: type[IntPrompt],
     prompt: str,
+    *,
     default: int | float | None = ...,
     show_default: bool = ...,
     min: int | float | None = ...,
@@ -269,6 +275,7 @@ def _number_prompt(
 def _number_prompt(
     prompt_type: type[FloatPrompt],
     prompt: str,
+    *,
     default: int | float | None = ...,
     show_default: bool = ...,
     min: int | float | None = ...,
@@ -281,6 +288,7 @@ def _number_prompt(
 def _number_prompt(
     prompt_type: type[IntPrompt] | type[FloatPrompt],
     prompt: str,
+    *,
     default: int | float | None = None,
     show_default: bool = True,
     min: int | float | None = None,
@@ -338,6 +346,7 @@ def _number_prompt(
 @no_headless
 def bool_prompt(
     prompt: str,
+    *,
     default: bool = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
     show_default: bool = True,
     warning: bool = False,
@@ -356,6 +365,7 @@ def bool_prompt(
 def path_prompt(
     prompt: str,
     default: str | Path = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
+    *,
     show_default: bool = True,
     exist_ok: bool = True,
     must_exist: bool = False,

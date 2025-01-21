@@ -66,9 +66,9 @@ def link_template_to_host(
     from zabbix_cli.models import AggregateResult
 
     templates = parse_templates_arg(
-        app, template_names_or_ids, strict, select_hosts=True
+        app, template_names_or_ids, strict=strict, select_hosts=True
     )
-    hosts = parse_hosts_arg(app, hostnames_or_ids, strict)
+    hosts = parse_hosts_arg(app, hostnames_or_ids, strict=strict)
     if not dryrun:
         with app.state.console.status("Linking templates..."):
             app.state.client.link_templates_to_hosts(templates, hosts)
@@ -280,9 +280,9 @@ def unlink_template_from_host(
     from zabbix_cli.models import AggregateResult
 
     templates = parse_templates_arg(
-        app, template_names_or_ids, strict, select_hosts=True
+        app, template_names_or_ids, strict=strict, select_hosts=True
     )
-    hosts = parse_hosts_arg(app, hostnames_or_ids, strict)
+    hosts = parse_hosts_arg(app, hostnames_or_ids, strict=strict)
 
     action = "Unlink and clear" if clear else "Unlink"
     if not dryrun:
@@ -362,8 +362,8 @@ def unlink_template_from_template(
     """
     from zabbix_cli.commands.results.template import LinkTemplateResult
 
-    source_templates = parse_templates_arg(app, source, strict)
-    dest_templates = parse_templates_arg(app, dest, strict)
+    source_templates = parse_templates_arg(app, source, strict=strict)
+    dest_templates = parse_templates_arg(app, dest, strict=strict)
     if not dryrun:
         with app.state.console.status("Unlinking templates..."):
             app.state.client.unlink_templates(
