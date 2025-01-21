@@ -67,7 +67,7 @@ def find_config(
     return None
 
 
-def get_config(filename: Optional[Path] = None, init: bool = False) -> Config:
+def get_config(filename: Optional[Path] = None, *, init: bool = False) -> Config:
     """Get a configuration object.
 
     Args:
@@ -187,6 +187,7 @@ class DeprecatedField(NamedTuple):
 def init_config(
     config: Optional[Config] = None,
     config_file: Optional[Path] = None,
+    *,
     overwrite: bool = False,
     # Compatibility with V2 zabbix-cli-init args
     url: Optional[str] = None,
@@ -215,7 +216,9 @@ def init_config(
     if not config:
         config = Config.sample_config()
     if not url:
-        url = str_prompt("Zabbix URL (without /api_jsonrpc.php)", url or config.api.url)
+        url = str_prompt(
+            "Zabbix URL (without /api_jsonrpc.php)", default=url or config.api.url
+        )
     config.api.url = url
 
     # Add username if provided

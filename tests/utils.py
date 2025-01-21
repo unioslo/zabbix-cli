@@ -13,6 +13,7 @@ from zabbix_cli.pyzabbix.types import Json
 def add_zabbix_endpoint(
     httpserver: HTTPServer,
     method: str,  # method is zabbix API method, not HTTP method
+    *,
     params: dict[str, Any],
     response: Json,
     auth: Optional[str] = None,

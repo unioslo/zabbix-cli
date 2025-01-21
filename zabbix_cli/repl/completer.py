@@ -25,7 +25,7 @@ IS_WINDOWS = os.name == "nt"
 AUTO_COMPLETION_PARAM = "shell_complete"
 
 
-def split_arg_string(string: str, posix: bool = True) -> list[str]:
+def split_arg_string(string: str, *, posix: bool = True) -> list[str]:
     r"""Split an argument in a shlex-like way, but don't fail if the string is incomplete.
 
     Args:
@@ -119,6 +119,7 @@ class ClickCompleter(Completer):
         self,
         cli: click.Group,
         ctx: click.Context,
+        *,
         show_only_unused: bool = False,
         shortest_only: bool = False,
     ) -> None:

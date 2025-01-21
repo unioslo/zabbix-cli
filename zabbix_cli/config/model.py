@@ -563,7 +563,7 @@ class PluginConfig(BaseModel):
 class PluginsConfig(RootModel[dict[str, PluginConfig]]):
     root: dict[str, PluginConfig] = Field(default_factory=dict)
 
-    def get(self, key: str, strict: bool = False) -> Optional[PluginConfig]:
+    def get(self, key: str, *, strict: bool = False) -> Optional[PluginConfig]:
         """Get a plugin configuration by name."""
         conf = self.root.get(key)
         if conf is None and strict:
@@ -614,7 +614,9 @@ class Config(BaseModel):
         return cls(api=APIConfig(url="https://zabbix.example.com"), sample=True)
 
     @classmethod
-    def from_file(cls, filename: Optional[Path] = None, init: bool = False) -> Config:
+    def from_file(
+        cls, filename: Optional[Path] = None, *, init: bool = False
+    ) -> Config:
         """Load configuration from a file.
 
         Attempts to find a config file to load if none is specified.

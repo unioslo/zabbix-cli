@@ -61,7 +61,7 @@ class DebugInfo(TableRenderable):
         )
 
     @classmethod
-    def from_debug_data(cls, state: State, with_auth: bool = False) -> DebugInfo:
+    def from_debug_data(cls, state: State, *, with_auth: bool = False) -> DebugInfo:
         # So far we only use state, but we can expand this in the future
         from zabbix_cli.exceptions import ZabbixCLIError
 

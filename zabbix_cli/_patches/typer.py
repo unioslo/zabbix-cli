@@ -294,7 +294,7 @@ def patch__get_rich_console() -> None:
     )
     TYPER_THEME = Theme(styles)
 
-    def _get_rich_console(stderr: bool = False) -> Console:
+    def _get_rich_console(stderr: bool = False) -> Console:  # noqa: FBT002
         return Console(
             theme=TYPER_THEME,
             highlighter=highlighter,

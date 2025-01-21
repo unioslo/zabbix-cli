@@ -497,7 +497,7 @@ def to_path(p: str) -> Optional[Path]:
     return None
 
 
-def cmd_exists(command: str, help: bool = True) -> bool:
+def cmd_exists(command: str, *, help: bool = True) -> bool:
     """Check if a command is available in the system."""
     cmd = [command, "--help"] if help else [command]
     try:

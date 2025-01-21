@@ -240,7 +240,12 @@ def test_client_logout(httpserver: HTTPServer, auth_type: AuthType, auth: str) -
 
     # We only expect a logout request if we are using a sessionid and have an auth token
     if auth_type == "sessionid" and auth:
-        add_zabbix_endpoint(httpserver, "user.logout", {}, True)
+        add_zabbix_endpoint(
+            httpserver,
+            "user.logout",
+            params={},
+            response=True,  # the value `True` as the response
+        )
     zabbix_client = ZabbixAPI(server=httpserver.url_for("/api_jsonrpc.php"))
     zabbix_client.auth = auth
     if auth_type == "token":

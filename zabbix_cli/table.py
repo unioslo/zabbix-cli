@@ -14,6 +14,7 @@ def get_table(
     cols: ColsType,
     rows: RowsType,
     title: str | None = None,
+    *,
     show_lines: bool = True,
     box: box.Box = box.ROUNDED,
 ) -> Table:

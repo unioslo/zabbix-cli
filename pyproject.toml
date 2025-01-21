@@ -171,6 +171,7 @@ extend-select = [
   "C4",      # flake8-comprehensions
   "B",       # flake8-bugbear
   "UP",      # pyupgrade
+  "FBT002",  # flake8-boolean-trap (Positional bool values with defaults)
 ]
 ignore = [
   "E501", # Avoid enforcing line-length violations

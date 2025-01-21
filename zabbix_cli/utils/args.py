@@ -53,7 +53,7 @@ def parse_int_arg(arg: str) -> int:
         raise ZabbixCLIError(f"Invalid integer value: {arg}") from e
 
 
-def parse_list_arg(arg: Optional[str], keep_empty: bool = False) -> list[str]:
+def parse_list_arg(arg: Optional[str], *, keep_empty: bool = False) -> list[str]:
     """Convert comma-separated string to list."""
     try:
         args = arg.strip().split(",") if arg else []
@@ -79,6 +79,7 @@ def parse_int_list_arg(arg: str) -> list[int]:
 def parse_hostgroups_arg(
     app: StatefulApp,
     hgroup_names_or_ids: Optional[str],
+    *,
     strict: bool = False,
     select_hosts: bool = False,
     select_templates: bool = False,
@@ -110,6 +111,7 @@ def parse_hostgroups_arg(
 def parse_hosts_arg(
     app: StatefulApp,
     hostnames_or_ids: Optional[str],
+    *,
     strict: bool = False,
 ) -> list[Host]:
     """Parse host names or IDs and return a list of hosts."""
@@ -134,6 +136,7 @@ def parse_hosts_arg(
 def parse_templates_arg(
     app: StatefulApp,
     template_names_or_ids: Optional[str],
+    *,
     strict: bool = False,
     select_hosts: bool = False,
 ) -> list[Template]:
@@ -158,6 +161,7 @@ def parse_templates_arg(
 def parse_templategroups_arg(
     app: StatefulApp,
     tgroup_names_or_ids: str,
+    *,
     strict: bool = False,
     select_templates: bool = False,
 ) -> list[TemplateGroup]:
@@ -193,7 +197,7 @@ def parse_bool_arg(arg: str) -> bool:
         raise ZabbixCLIError(f"Invalid boolean value: {arg}")
 
 
-def parse_path_arg(arg: str, must_exist: bool = False) -> Path:
+def parse_path_arg(arg: str, *, must_exist: bool = False) -> Path:
     """Convert string to Path."""
     try:
         p = Path(arg)

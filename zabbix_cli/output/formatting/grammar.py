@@ -9,7 +9,7 @@ def _pluralize_word(word: str, count: int) -> str:
     return word + "s"
 
 
-def pluralize(word: str, count: int, with_count: bool = True) -> str:
+def pluralize(word: str, count: int, *, with_count: bool = True) -> str:
     """Pluralize a word based on a count.
 
     Examples:

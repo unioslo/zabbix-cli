@@ -126,7 +126,7 @@ class SessionFile(RootModel[dict[str, SessionList]]):
         self.set_sessions(url, session)
 
     @classmethod
-    def load(cls, file: Path, allow_insecure: bool = False) -> SessionFile:
+    def load(cls, file: Path, *, allow_insecure: bool = False) -> SessionFile:
         """Load the contents of a session file."""
         if not file.exists():
             raise SessionFileNotFoundError("Session file does not exist: %s", file)
@@ -143,7 +143,9 @@ class SessionFile(RootModel[dict[str, SessionList]]):
         except Exception as e:
             raise SessionFileError(f"Unable to load session file {file}: {e}") from e
 
-    def save(self, path: Optional[Path] = None, allow_insecure: bool = False) -> None:
+    def save(
+        self, path: Optional[Path] = None, *, allow_insecure: bool = False
+    ) -> None:
         path = path or self._path
         if not path:
             raise SessionFileError("Cannot save session file without a path.")
@@ -264,13 +266,13 @@ class Authenticator:
         )
 
     def _iter_all_credentials(
-        self, prompt_password: bool = True
+        self, *, prompt_password: bool = True
     ) -> Generator[Credentials, None, None]:
-        """Generator that yields credentials from all possible sources.
+        """Generator of credentials from all possible sources.
 
         Only yields non-empty credentials, but does not check if they are valid.
 
-        Finally yields a prompt for username and password if `prompt_password` is True.
+        Finally yields a prompt for username and password if `prompt_password=True`.
         """
         for func in [
             self._get_auth_token_env,
@@ -455,7 +457,7 @@ class Authenticator:
         ):
             self.config.api.auth_token = SecretStr(credentials.auth_token)
 
-    def get_zabbix_url(self, prompt: bool = True) -> str:
+    def get_zabbix_url(self, *, prompt: bool = True) -> str:
         """Get the URL of the Zabbix server from env, config, then finally prompt for it.."""
         for source in [self._get_zabbix_url_env, self._get_zabbix_url_config]:
             url = source()
@@ -697,6 +699,7 @@ def write_auth_token_file(
     username: str,
     auth_token: str,
     file: Path = AUTH_TOKEN_FILE,
+    *,
     allow_insecure: bool = False,
 ) -> Path:
     """Write a username/auth token pair to the auth token file."""

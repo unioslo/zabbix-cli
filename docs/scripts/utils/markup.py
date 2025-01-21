@@ -62,7 +62,7 @@ class MarkdownSymbol:
         return s
 
     @classmethod
-    def from_span(cls, span: MarkdownSpan, end: bool = False) -> MarkdownSymbol:
+    def from_span(cls, span: MarkdownSpan, *, end: bool = False) -> MarkdownSymbol:
         return cls(
             position=span.end if end else span.start,
             italic=span.italic,
