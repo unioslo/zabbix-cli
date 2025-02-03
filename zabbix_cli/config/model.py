@@ -128,11 +128,11 @@ class APIConfig(BaseModel):
         description="API auth token.",
         examples=["API_TOKEN_123"],
     )
-    verify_ssl: bool = Field(
+    verify_ssl: Union[bool, Path] = Field(
         default=True,
         # Changed in V3: cert_verify -> verify_ssl
         validation_alias=AliasChoices("verify_ssl", "cert_verify"),
-        description="Verify SSL certificate of the Zabbix API host.",
+        description="Verify SSL certificate of the Zabbix API host. Can also be a path to a CA bundle.",
     )
     timeout: Optional[int] = Field(
         default=0,
