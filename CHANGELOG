@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for custom CA file bundles for Zabbix API connections. The config option `api.verify_ssl` now accepts a path to a custom CA file bundle.
+
 ### Fixed
 
 - `create_maintenance_definition` with multiple host groups only including the first group in the maintenance definition for Zabbix >=6.0.

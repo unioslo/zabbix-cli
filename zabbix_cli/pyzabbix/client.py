@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import logging
+import ssl
 from collections.abc import MutableMapping
 from datetime import datetime
 from functools import cached_property
@@ -242,12 +243,12 @@ class ZabbixAPI:
         server: str = "http://localhost/zabbix",
         *,
         timeout: Optional[int] = None,
-        verify_ssl: bool = True,
+        verify_ssl: Union[bool, Path] = True,
     ) -> None:
         """Parameters:
         server: Base URI for zabbix web interface (omitting /api_jsonrpc.php)
-        session: optional pre-configured requests.Session instance
-        timeout: optional connect and read timeout in seconds.
+        timeout: Read and connect timeout for HTTP requests in seconds.
+        verify_ssl: Verify SSL certificates. Can be a boolean or a path to a CA bundle.
         """
         self.timeout = timeout if timeout else None
         self.session = self._get_client(verify_ssl=verify_ssl, timeout=timeout)
@@ -279,14 +280,28 @@ class ZabbixAPI:
         )
         return client
 
+    def _get_ssl_context(
+        self, verify_ssl: Union[bool, Path]
+    ) -> Union[ssl.SSLContext, bool]:
+        if isinstance(verify_ssl, Path):
+            if not verify_ssl.exists():
+                raise ValueError(f"CA bundle not found: {verify_ssl}")
+            if verify_ssl.is_dir():
+                ctx = ssl.create_default_context(capath=verify_ssl)
+            else:
+                ctx = ssl.create_default_context(cafile=verify_ssl)
+        else:
+            ctx = verify_ssl
+        return ctx
+
     def _get_client(
-        self, *, verify_ssl: bool, timeout: Union[float, int, None] = None
+        self, *, verify_ssl: Union[bool, Path], timeout: Union[float, int, None] = None
     ) -> httpx.Client:
         kwargs: HTTPXClientKwargs = {}
         if timeout is not None:
             kwargs["timeout"] = timeout
         client = httpx.Client(
-            verify=verify_ssl,
+            verify=self._get_ssl_context(verify_ssl),
             # Default headers for all requests
             headers={
                 "Content-Type": "application/json-rpc",
