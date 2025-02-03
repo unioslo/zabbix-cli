@@ -165,6 +165,8 @@ class ConfigOption(ConfigBase):
             return None
         if isinstance(value, SecretStr):
             return value.get_secret_value()
+        if isinstance(value, bool):
+            return str(value).lower()
         return value
 
     @field_validator("type", mode="before")
@@ -175,6 +177,24 @@ class ConfigOption(ConfigBase):
 
         origin = get_origin(value)
         args = get_args(value)
+
+        def type_to_str(t: type[Any]) -> str:
+            if lenient_issubclass(value, str):
+                return "str"
+            if lenient_issubclass(value, Enum):
+                # Get the name of the first enum member type
+                # Will fail if enum has no members
+                return str(list(value)[0])  # pyright: ignore[reportUnknownArgumentType]
+            # Types that are represented as strings in config (paths, secrets, etc.)
+            if typ := TYPE_MAP.get(t):
+                return typ
+            # Primitives and built-in generics (str, int, list[str], dict[str, int], etc.)
+            if origin in TYPE_CAN_STR:
+                return str(value)
+            # Fall back on the string representation of the type
+            return getattr(value, "__name__", str(value))
+
+        # Handle generics, literals, etc.
         if origin and args:
             # Get the name of the first type in the Literal type
             # NOTE: we expect that Literal is only used with a single type
@@ -183,26 +203,11 @@ class ConfigOption(ConfigBase):
             # Get first non-None type in Union
             # NOTE: we expect that the config does not have unions of more than 2 types
             elif origin is Union and args:
-                return next(a.__name__ for a in args if a is not type(None))
+                # Strip None from the Union
+                ar = (type_to_str(a) for a in args if a is not type(None))
+                return " | ".join(ar)
 
-        if lenient_issubclass(value, str):
-            return "str"
-
-        if lenient_issubclass(value, Enum):
-            # Get the name of the first enum member type
-            # Will fail if enum has no members
-            return str(list(value)[0])  # pyright: ignore[reportUnknownArgumentType]
-
-        # Types that are represented as strings in config (paths, secrets, etc.)
-        if t := TYPE_MAP.get(value):
-            return t
-
-        # Primitives and built-in generics (str, int, list[str], dict[str, int], etc.)
-        if origin in TYPE_CAN_STR:
-            return str(value)
-
-        # Fall back on the string representation of the type
-        return getattr(value, "__name__", str(value))
+        return type_to_str(value)
 
     @field_validator("description", mode="before")
     @classmethod
