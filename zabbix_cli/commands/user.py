@@ -14,6 +14,8 @@ from zabbix_cli.app import Example
 from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
+from zabbix_cli.output.console import info
+from zabbix_cli.output.console import success
 from zabbix_cli.output.console import warning
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.output.render import render_result
@@ -169,6 +171,11 @@ def create_notification_user(
         "--usergroups",
         help="Comma-separated list of usergroups to add the user to. Overrides user groups in config file.",
     ),
+    dryrun: bool = typer.Option(
+        False,
+        "--dryrun",
+        help="Do not create the user, just show what would be done.",
+    ),
     # Legacy V2 args
     args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
@@ -191,8 +198,7 @@ def create_notification_user(
     Adds the user to the default user group and default notification user group
     unless [option]--usergroups[/option] is specified.
     """
-    from zabbix_cli.models import Result
-    from zabbix_cli.pyzabbix.types import User
+    from zabbix_cli.commands.results.user import CreateNotificationUserResult
     from zabbix_cli.pyzabbix.types import UserMedia
 
     if args:
@@ -233,6 +239,7 @@ def create_notification_user(
         ug_list: list[str] = []
         ug_list.extend(app.state.config.app.default_notification_users_usergroups)
         ug_list.extend(app.state.config.app.default_create_user_usergroups)
+
     with app.status("Fetching user group(s)..."):
         ugroups = [app.state.client.get_usergroup(ug) for ug in set(ug_list)]
 
@@ -246,6 +253,14 @@ def create_notification_user(
         )
     ]
 
+    result = CreateNotificationUserResult(
+        username=username, media=user_media, userid="", usergroups=ugroups
+    )
+    if dryrun:
+        info("Would create:")
+        render_result(result)
+        return
+
     with app.status("Creating user..."):
         userid = app.state.client.create_user(
             username=username,
@@ -257,12 +272,10 @@ def create_notification_user(
             media=user_media,
         )
 
-    render_result(
-        Result(
-            message=f"Created notification user {username!r} ({userid}).",
-            result=User(userid=userid, username=username),
-        ),
-    )
+    result.userid = userid
+
+    success(f"Created notification user {username!r} ({userid}).")
+    render_result(result)
 
 
 @app.command("remove_user", rich_help_panel=HELP_PANEL)

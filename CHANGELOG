@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## [Unreleased] -->
+## [Unreleased]
+
+### Added
+
+- `create_notification_user --dryrun` option to preview changes without making them.
+
+### Changed
+
+- `create_notification_user` now always shows a table of the user that has been created, along with its media types.
 
 ## [3.5.1](https://github.com/unioslo/zabbix-cli/releases/tag/3.5.1) - 2025-02-03
 
