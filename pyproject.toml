@@ -82,7 +82,7 @@ docs = [
   "jinja2",
   "pyyaml",
 ]
-build = ["pyinstaller"]
+build = ["hatch", "pyinstaller"]
 
 [project.urls]
 Documentation = "https://github.com/unioslo/zabbix-cli#readme"
