@@ -102,7 +102,7 @@ def create_host_interface(
         help="Use bulk SNMP requests.",
     ),
     snmp_community: str = typer.Option(
-        "${SNMP_COMMUNITY}",
+        "{$SNMP_COMMUNITY}",
         "--snmp-community",
         help="SNMPv{1,2} community.",
         show_default=False,
