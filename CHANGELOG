@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `create_notification_user --dryrun` option to preview changes without making them.
+- `create_host --create-interface/--no-create-interface` option to control creation of interface when creating a host.
+- Persistent configuration of commands via a new config table `[app.commands]`.
+- Configuration table `app.commands.create_host` to configure the `create_host` command.
+- Configuration option `app.commands.create_host.create_interface` to enable/disable creating interfaces when creating a host.
 
 ### Changed
 
