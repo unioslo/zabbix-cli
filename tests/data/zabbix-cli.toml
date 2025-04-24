@@ -13,16 +13,22 @@ default_notification_users_usergroups = ["All-notification-users"]
 export_directory = "/path/to/exports"
 export_format = "json"
 export_timestamps = false
-use_colors = true
 use_session_file = true
 auth_token_file = "/path/to/auth_token_file"
 auth_file = "/path/to/auth_file"
-use_paging = false
-output_format = "table"
 history = true
 history_file = "/path/to/history_file"
 allow_insecure_auth_file = true
 legacy_json_format = false
+
+[app.commands.create_host]
+create_interface = true
+
+[app.output]
+format = "table"
+color = true
+paging = false
+
 
 [logging]
 enabled = true

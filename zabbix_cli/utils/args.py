@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Optional
+from typing import TypeVar
 
 import typer
 
@@ -21,6 +22,8 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import HostGroup
     from zabbix_cli.pyzabbix.types import Template
     from zabbix_cli.pyzabbix.types import TemplateGroup
+
+T = TypeVar("T")
 
 
 def is_set(ctx: typer.Context, option: str) -> bool:
@@ -255,3 +258,24 @@ def check_at_least_one_option_set(ctx: typer.Context) -> None:
     if not any(is_set(ctx, param) for param in optional_params):
         print_help(ctx)
         exit_err("At least one option is required.")
+
+
+def resolve_option(
+    opt: Optional[T], config_opt: Optional[T], *, default: Optional[T] = None
+) -> Optional[T]:
+    """Resolve an option value.
+
+    If the option is not set, return the config value if it is set,
+    otherwise return the default value.
+
+    Args:
+        opt (Optional[T]): The option value.
+        config_opt (Optional[T]): The config value.
+        default (Optional[T], optional): The default value. Defaults to None.
+
+    Returns:
+        Optional[T]: resolved option value.
+    """
+    if opt is None:
+        return config_opt if config_opt is not None else default
+    return opt

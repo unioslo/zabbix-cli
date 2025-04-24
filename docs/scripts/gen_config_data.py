@@ -301,6 +301,9 @@ def get_config_options(
             continue
         if not field.annotation:
             continue
+        if field.default is None:
+            continue
+
         if lenient_issubclass(field.annotation, RootModel):
             logging.debug("Skipping %s. It is a root model.", field_name)
             continue
@@ -334,7 +337,7 @@ def generate_config_info() -> ConfigTable:
 
 def main() -> None:
     conf = generate_config_info()
-    out = yaml.dump(conf.model_dump(mode="json"), sort_keys=False)
+    out = yaml.dump(conf.model_dump(mode="json", exclude_none=True), sort_keys=False)
     out = add_path_placeholders(out)  # type: ignore
     # Replace paths with placeholders
     with open(DATA_DIR / "config_options.yaml", "w") as f:

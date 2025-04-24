@@ -20,6 +20,7 @@ from zabbix_cli.pyzabbix.enums import InventoryMode
 from zabbix_cli.pyzabbix.enums import MonitoringStatus
 from zabbix_cli.utils.args import check_at_least_one_option_set
 from zabbix_cli.utils.args import parse_list_arg
+from zabbix_cli.utils.args import resolve_option
 
 HELP_PANEL = "Host"
 
@@ -61,6 +62,11 @@ def create_host(
         "--description",
         help="Description of the host.",
     ),
+    create_interface: Optional[bool] = typer.Option(
+        None,
+        "--create-interface/--no-create-interface",
+        help="Do not create an interface for the host.",
+    ),
     # LEGACY: V2-style positional args
     args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
@@ -70,6 +76,8 @@ def create_host(
     is specified.
 
     Selects a random proxy by default unless [option]--proxy[/] [value]-[/] is specified.
+
+    Creates an interface for the host by default unless [option]--no-interface[/] is specified.
     """
     # NOTE: this was one of the first commands ported over to V3, and as such
     # it uses a lot of V2 semantics and patterns. It should be changed to have
@@ -103,16 +111,20 @@ def create_host(
         interface_ip = hostname_or_ip
         interface_dns = ""
 
-    interfaces = [
-        HostInterface(
-            type=InterfaceType.AGENT.as_api_value(),
-            main=True,
-            useip=useip,
-            ip=interface_ip,
-            dns=interface_dns,
-            port=InterfaceType.AGENT.get_port(),
+    interfaces: list[HostInterface] = []
+
+    create_iface_opt = app.state.config.app.commands.create_host.create_interface
+    if resolve_option(create_interface, create_iface_opt):
+        interfaces.append(
+            HostInterface(
+                type=InterfaceType.AGENT.as_api_value(),
+                main=True,
+                useip=useip,
+                ip=interface_ip,
+                dns=interface_dns,
+                port=InterfaceType.AGENT.get_port(),
+            )
         )
-    ]
 
     # Determine host group IDs
     hg_args: list[str] = []

@@ -30,16 +30,13 @@ from typing import Union
 from typing import overload
 
 from pydantic import AliasChoices
-from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict
 from pydantic import Field
-from pydantic import PrivateAttr
 from pydantic import RootModel
 from pydantic import SecretStr
 from pydantic import SerializationInfo
 from pydantic import TypeAdapter
 from pydantic import ValidationError
-from pydantic import ValidationInfo
 from pydantic import field_serializer
 from pydantic import field_validator
 from pydantic import model_validator
@@ -47,6 +44,8 @@ from typing_extensions import Self
 
 from zabbix_cli._v2_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
 from zabbix_cli.bulk import BulkRunnerMode
+from zabbix_cli.config.base import BaseModel
+from zabbix_cli.config.commands import CreateHost
 from zabbix_cli.config.constants import AUTH_FILE
 from zabbix_cli.config.constants import AUTH_TOKEN_FILE
 from zabbix_cli.config.constants import HISTORY_FILE
@@ -54,7 +53,6 @@ from zabbix_cli.config.constants import LOG_FILE
 from zabbix_cli.config.constants import SESSION_FILE
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.constants import SecretMode
-from zabbix_cli.config.utils import check_deprecated_fields
 from zabbix_cli.config.utils import find_config
 from zabbix_cli.config.utils import get_deprecated_fields_set
 from zabbix_cli.config.utils import load_config_conf
@@ -72,33 +70,6 @@ from zabbix_cli.utils.fs import mkdir_if_not_exists
 T = TypeVar("T")
 
 logger = logging.getLogger("zabbix_cli.config")
-
-
-class BaseModel(PydanticBaseModel):
-    model_config = ConfigDict(validate_assignment=True, extra="ignore")
-
-    _deprecation_checked: bool = PrivateAttr(default=False)
-    """Has performed a deprecaction check for the fields on the model."""
-
-    @field_validator("*")
-    @classmethod
-    def _conf_bool_validator_compat(cls, v: Any, info: ValidationInfo) -> Any:
-        """Handles old config files that specified bools as ON/OFF."""
-        if not isinstance(v, str):
-            return v
-        if v.upper() == "ON":
-            return True
-        if v.upper() == "OFF":
-            return False
-        return v
-
-    @model_validator(mode="after")
-    def _check_deprecated_fields(self) -> Self:
-        """Check for deprecated fields and log warnings."""
-        if not self._deprecation_checked:
-            check_deprecated_fields(self)
-            self._deprecation_checked = True
-        return self
 
 
 class APIConfig(BaseModel):
@@ -165,6 +136,12 @@ class APIConfig(BaseModel):
             return str(v)  # SecretStr masks by default
         else:  # fall back on hidden otherwise
             return ""
+
+
+class CommandConfig(BaseModel):
+    """Configuration of commands."""
+
+    create_host: CreateHost = Field(default_factory=CreateHost)
 
 
 class OutputConfig(BaseModel):
@@ -362,6 +339,7 @@ class AppConfig(BaseModel):
     """Marks whether the configuration was loaded from a legacy config file."""
 
     # Sub-models
+    commands: CommandConfig = Field(default_factory=CommandConfig)
     output: OutputConfig = Field(default_factory=OutputConfig)
 
     @field_validator(
