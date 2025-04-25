@@ -116,6 +116,8 @@ test = "pytest {args}"
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=zabbix_cli --cov=tests {args}"
 no-cov = "cov --no-cov {args}"
 lint = "ruff check zabbix_cli {args}"
+# Version bumping
+bump = "python scripts/bump_version.py {args}"
 
 [[tool.hatch.envs.test.matrix]]
 python = ["39", "310", "311"]
