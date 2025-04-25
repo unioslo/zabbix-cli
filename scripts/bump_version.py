@@ -187,7 +187,7 @@ class VersionBumper(StateMachine):
 
     If dry_run is True, the command will be printed but not executed."""
 
-    source_dir = Path("harborapi")
+    source_dir = Path("zabbix_cli")
     version_file = source_dir / "__about__.py"
     changelog_file = Path("CHANGELOG.md")
     changelog_file_bak = changelog_file.with_suffix(".bak")
@@ -207,7 +207,7 @@ class VersionBumper(StateMachine):
 
     @property
     def tag(self) -> str:
-        return f"harborapi-v{self.new_version}"
+        return f"{self.new_version}"
 
     def get_runner(self, dry_run: bool) -> Runner:
         def dryrun_subprocess_run(
@@ -313,7 +313,7 @@ class VersionBumper(StateMachine):
     @advance(State.GIT_ADD)
     def git_add(self, *files: str) -> CompletedProcess[bytes]:
         p_git_add = self.run(
-            ["git", "add", "harborapi/__about__.py", "CHANGELOG.md", *files],
+            ["git", "add", "zabbix_cli/__about__.py", "CHANGELOG.md", *files],
             capture_output=True,
         )
         if p_git_add.returncode != 0:
@@ -394,7 +394,7 @@ class VersionBumper(StateMachine):
         if index is None:
             exit_err("Failed to find '## Unreleased' section in CHANGELOG.md")
 
-        header = f"## [{new_version}](https://github.com/unioslo/harborapi/tree/harborapi-v{new_version}) - {datetime.now().strftime('%Y-%m-%d')}"
+        header = f"## [{new_version}](https://github.com/unioslo/zabbix-cli/tree/{new_version}) - {datetime.now().strftime('%Y-%m-%d')}"
         lines[index] = "<!-- ## Unreleased -->"  # comment out
         lines.insert(index + 1, f"\n{header}")  # insert after
         self.changelog_file.write_text("\n".join(lines))
