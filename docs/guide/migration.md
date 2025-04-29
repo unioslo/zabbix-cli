@@ -114,7 +114,7 @@ Furthermore, the formats are no longer case-sensitive. For example, `YAML` and `
 
 ### New default export filenames
 
-Exported files are no longer prefixed with `zabbix_export_`. This behavior can be re-enabled with the `--legacy-filenames` option.
+Exported files are no longer prefixed with `zabbix_export_`. This behavior can be re-enabled with the `export_configuration --legacy-filenames` option.
 
 Exported files no longer include a timestamp in the filename by default. Newer exports overwrite older ones automatically. Timestamps can be re-anbled by setting the `app.export_timestamps` option in the configuration file.
 
