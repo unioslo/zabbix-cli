@@ -65,13 +65,7 @@ A sample configuration file can be printed to the terminal with the `sample_conf
 zabbix-cli sample_config > /path/to/config.toml
 ```
 
-A more convoluted way of creating a default config file in the default location would be:
-
-```
-zabbix-cli sample_config > "$(zabbix-cli open --path config)/zabbix-cli.toml"
-```
-
-The created config looks like this:
+The created config looks like this (with actual paths instead of placeholders)
 
 ```toml
 {% include "data/sample_config.toml" %}

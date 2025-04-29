@@ -112,7 +112,7 @@ Zabbix CLI 3.0 introduces two new export formats: `yaml` and `php`. The availabi
 
 Furthermore, the formats are no longer case-sensitive. For example, `YAML` and `yaml` are now equivalent.
 
-### New default export filenames*
+### New default export filenames
 
 Exported files are no longer prefixed with `zabbix_export_`. This behavior can be re-enabled with the `--legacy-filenames` option.
 
