@@ -23,6 +23,22 @@ legacy_json_format = false
 
 [app.commands.create_host]
 create_interface = true
+hostgroups = []
+
+[app.commands.create_hostgroup]
+ro_groups = []
+rw_groups = []
+
+[app.commands.create_notification_user]
+usergroups = []
+
+[app.commands.create_user]
+usergroups = []
+
+[app.commands.export]
+directory = "/path/to/exports"
+format = "json"
+timestamps = false
 
 [app.output]
 format = "table"

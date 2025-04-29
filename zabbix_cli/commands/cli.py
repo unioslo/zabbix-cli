@@ -376,6 +376,8 @@ def update_config(
         if not bool_prompt("Update config file?", default=False):
             exit_err("Update cancelled.")
 
+    # When we dump the config, we automatically exclude the deprecated fields
+    # while taking advantage of the validators that update the new fields.
     config = app.state.config
     config.dump_to_file(config_file, secrets=secrets)
     success(f"Config saved to {path_link(config_file)}")

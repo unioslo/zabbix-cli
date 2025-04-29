@@ -47,10 +47,11 @@ def create_host(
         "--status",
         help="Host monitoring status.",
     ),
-    default_hostgroup: bool = typer.Option(
+    use_default_hostgroups: bool = typer.Option(
         True,
         "--default-hostgroup/--no-default-hostgroup",
-        help="Add host to default host group(s) defined in config.",
+        "--default-hostgroups/--no-default-hostgroups",
+        help="Add host to default host groups defined in config.",
     ),
     name: Optional[str] = typer.Option(
         None,
@@ -72,10 +73,10 @@ def create_host(
 ) -> None:
     """Create a host.
 
-    Always adds the host to the default host group unless --no-default-hostgroup
-    is specified.
+    Always adds the host to the default host groups specified in the config
+    under [configopt]app.commands.create_host.hostgroups[/] unless [option]--no-default-hostgroup[/] is specified.
 
-    Selects a random proxy by default unless [option]--proxy[/] [value]-[/] is specified.
+    Selects a random proxy by default unless [option]--proxy[/] [value]"-"[/] is specified.
 
     Creates an interface for the host by default unless [option]--no-interface[/] is specified.
     """
@@ -126,20 +127,17 @@ def create_host(
             )
         )
 
-    # Determine host group IDs
-    hg_args: list[str] = []
-
-    # Default host groups from config
-    def_hgs = app.state.config.app.default_hostgroups
-    if default_hostgroup and def_hgs:
-        grp = pnc("group", len(def_hgs))  # pluralize
-        info(f"Will add host to default host {grp}: {', '.join(def_hgs)}")
-        hg_args.extend(def_hgs)
-
     # Host group args
-    if hostgroups:
-        hostgroup_args = parse_list_arg(hostgroups)
-        hg_args.extend(hostgroup_args)
+    hg_args = parse_list_arg(hostgroups)
+
+    # Add default host groups if requested
+    default_hostgroups = app.state.config.app.commands.create_host.hostgroups
+    if use_default_hostgroups and default_hostgroups:
+        grp = pnc("group", len(default_hostgroups))  # pluralize
+        info(f"Will add host to default host {grp}: {', '.join(default_hostgroups)}")
+        hg_args.extend(default_hostgroups)
+
+    # Ensure we have at least 1 host group
     hgs = [app.state.client.get_hostgroup(hg) for hg in set(hg_args)]
     if not hgs:
         raise ZabbixCLIError("Unable to create a host without at least one host group.")
@@ -149,9 +147,6 @@ def create_host(
         prox = get_random_proxy(app.state.client, pattern=proxy)
     except ZabbixNotFoundError:
         prox = None
-
-    if app.state.client.host_exists(hostname_or_ip):
-        exit_err(f"Host {hostname_or_ip!r} already exists.")
 
     host_id = app.state.client.create_host(
         host_name,

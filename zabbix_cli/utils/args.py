@@ -5,10 +5,12 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Optional
 from typing import TypeVar
+from typing import overload
 
 import typer
 
@@ -22,8 +24,6 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import HostGroup
     from zabbix_cli.pyzabbix.types import Template
     from zabbix_cli.pyzabbix.types import TemplateGroup
-
-T = TypeVar("T")
 
 
 def is_set(ctx: typer.Context, option: str) -> bool:
@@ -260,22 +260,36 @@ def check_at_least_one_option_set(ctx: typer.Context) -> None:
         exit_err("At least one option is required.")
 
 
-def resolve_option(
-    opt: Optional[T], config_opt: Optional[T], *, default: Optional[T] = None
-) -> Optional[T]:
-    """Resolve an option value.
+T = TypeVar("T")
 
-    If the option is not set, return the config value if it is set,
-    otherwise return the default value.
+
+@overload
+def resolve_option(*args: T) -> T: ...
+@overload
+def resolve_option(*args: Optional[T], default: T) -> T: ...
+@overload
+def resolve_option(*args: Optional[T], default: Optional[T] = None) -> Optional[T]: ...
+
+
+def resolve_option(*args: Optional[T], default: Optional[T] = None) -> Optional[T]:
+    """Resolve an option value given a list of arguments.
+
+    Prefers non-empty iterables over empty ones, and returns the first non-empty
+    argument. If all arguments are None or empty, returns the default value.
+
 
     Args:
-        opt (Optional[T]): The option value.
-        config_opt (Optional[T]): The config value.
+        *args (Optional[T]): The option values.
         default (Optional[T], optional): The default value. Defaults to None.
 
     Returns:
         Optional[T]: resolved option value.
     """
-    if opt is None:
-        return config_opt if config_opt is not None else default
-    return opt
+    for arg in args:
+        if arg is None:
+            continue
+        # Return 0, but not empty containers
+        if isinstance(arg, Iterable) and not arg:
+            continue
+        return arg
+    return default

@@ -8,6 +8,7 @@ from typing import NamedTuple
 from typing import Optional
 
 from pydantic import BaseModel
+from pydantic.fields import FieldInfo
 
 from zabbix_cli.config.constants import CONFIG_PRIORITY
 from zabbix_cli.config.constants import DEFAULT_CONFIG_FILE
@@ -81,6 +82,22 @@ def get_config(filename: Optional[Path] = None, *, init: bool = False) -> Config
     return Config.from_file(filename, init=init)
 
 
+def get_replacement_fields(field: FieldInfo) -> list[str]:
+    replacement: list[str] = []
+    # NOTE: I think this is silly over doing `isinstance(field.json_schema_extra, dict)`
+    #       but Pyright fails to infer types correctly when doing so, because it
+    #       assumes the type is `dict[Unknown, Unknown]` after performing such
+    #       isinstance checks. Not great.
+    if isinstance(field.json_schema_extra, dict):
+        # if field.json_schema_extra and not callable(field.json_schema_extra):
+        rep = field.json_schema_extra.get("replacement")
+        if isinstance(rep, str):
+            replacement.append(rep)
+        elif isinstance(rep, list):
+            replacement = list({r for r in rep if isinstance(r, str)})
+    return replacement
+
+
 # TODO: can we bake this into get_deprecated_fields_set? Should we?
 def check_deprecated_fields(model: BaseModel) -> None:
     """Check for deprecated fields in a model and log a warning."""
@@ -90,13 +107,12 @@ def check_deprecated_fields(model: BaseModel) -> None:
         if not f:
             continue
         if f.deprecated:
-            if isinstance(f.json_schema_extra, dict) and (
-                replacement := f.json_schema_extra.get("replacement")
-            ):
+            if replacements := get_replacement_fields(f):
                 from zabbix_cli.output.console import warning
 
+                r = ", ".join(replacements)
                 warning(
-                    f"Config option [configopt]{field_name}[/] is deprecated. Use [configopt]{replacement}[/] instead."
+                    f"Config option [configopt]{field_name}[/] is deprecated. Replaced by: [configopt]{r}[/]."
                 )
             else:
                 logger.warning("Config option `%s` is deprecated.", field_name)
@@ -133,13 +149,8 @@ def get_deprecated_fields_set(
             if not field.deprecated:
                 continue
             name = f"{parent}.{field_name}" if parent else field_name
-            replacement = None
-            # Only accept replacement field if it is a string
-            if isinstance(field.json_schema_extra, dict):
-                rep = field.json_schema_extra.get("replacement")
-                if isinstance(rep, str):
-                    replacement = rep
-            fields.append(DeprecatedField(name, value, replacement))
+            replacements = get_replacement_fields(field)
+            fields.append(DeprecatedField(name, value, replacements))
     return fields
 
 
@@ -149,31 +160,38 @@ def update_deprecated_fields(model: BaseModel) -> None:
         if not field.replacement:
             continue
         # Update the model with the new field
-        try:
-            # Decompose the replacement field into its attributes
-            attributes = field.replacement.split(".")
-            to_replace = model
-            for attr in attributes[:-1]:
-                to_replace = getattr(to_replace, attr)
-            field_to_update = attributes[-1]
+        for replacement in field.replacement:
+            _set_replacement_field(model, field, replacement)
 
-            # Don't update if replacement field is already set
-            if (
-                isinstance(to_replace, BaseModel)
-                and field_to_update in to_replace.model_fields_set
-            ):
-                logger.debug("Field `%s` is already set, skipping", field.replacement)
-                continue
 
-            setattr(to_replace, field_to_update, field.value)
-        except AttributeError as e:
-            logger.error(
-                "Failed to update field `%s` with value `%s` from  deprecated field `%s`: %s",
-                field.replacement,
-                field.value,
-                field.field_name,
-                e,
-            )
+def _set_replacement_field(
+    model: BaseModel, field: DeprecatedField, replacement: str
+) -> None:
+    try:
+        # Decompose the replacement field into its attributes
+        attributes = replacement.split(".")
+        to_replace = model
+        for attr in attributes[:-1]:
+            to_replace = getattr(to_replace, attr)
+        field_to_update = attributes[-1]
+
+        # Don't update if replacement field is already set
+        if (
+            isinstance(to_replace, BaseModel)
+            and field_to_update in to_replace.model_fields_set
+        ):
+            logger.debug("Field `%s` is already set, skipping", field.replacement)
+            return
+
+        setattr(to_replace, field_to_update, field.value)
+    except AttributeError as e:
+        logger.error(
+            "Failed to update field `%s` with value `%s` from  deprecated field `%s`: %s",
+            field.replacement,
+            field.value,
+            field.field_name,
+            e,
+        )
 
 
 class DeprecatedField(NamedTuple):
@@ -181,7 +199,7 @@ class DeprecatedField(NamedTuple):
 
     field_name: str
     value: Any
-    replacement: Optional[str]
+    replacement: list[str] = []
 
 
 def init_config(

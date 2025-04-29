@@ -45,7 +45,7 @@ from typing_extensions import Self
 from zabbix_cli._v2_compat import CONFIG_PRIORITY as CONFIG_PRIORITY_LEGACY
 from zabbix_cli.bulk import BulkRunnerMode
 from zabbix_cli.config.base import BaseModel
-from zabbix_cli.config.commands import CreateHost
+from zabbix_cli.config.commands import CommandConfig
 from zabbix_cli.config.constants import AUTH_FILE
 from zabbix_cli.config.constants import AUTH_TOKEN_FILE
 from zabbix_cli.config.constants import HISTORY_FILE
@@ -138,12 +138,6 @@ class APIConfig(BaseModel):
             return ""
 
 
-class CommandConfig(BaseModel):
-    """Configuration of commands."""
-
-    create_host: CreateHost = Field(default_factory=CreateHost)
-
-
 class OutputConfig(BaseModel):
     """Configuration for output formatting."""
 
@@ -176,79 +170,6 @@ class OutputConfig(BaseModel):
 
 class AppConfig(BaseModel):
     """Configuration for app defaults and behavior."""
-
-    # Zabbix defaults
-    default_hostgroups: list[str] = Field(
-        default=["All-hosts"],
-        # Changed in V3: default_hostgroup -> default_hostgroups
-        validation_alias=AliasChoices("default_hostgroups", "default_hostgroup"),
-        description=(
-            "Default host groups to assign to hosts created with `create_host`. "
-            "Hosts are always added to these groups unless `--no-default-hostgroup` "
-            "is provided."
-        ),
-    )
-    default_admin_usergroups: list[str] = Field(
-        default=[],
-        # Changed in V3: default_admin_usergroup -> default_admin_usergroups
-        validation_alias=AliasChoices(
-            "default_admin_usergroups", "default_admin_usergroup"
-        ),
-        description=(
-            "Default user groups to give read/write permissions to groups "
-            "created with `create_hostgroup` and `create_templategroup` "
-            "when `--rw-groups` option is not provided."
-        ),
-    )
-    default_create_user_usergroups: list[str] = Field(
-        default=[],
-        # Changed in V3: default_create_user_usergroup -> default_create_user_usergroups
-        validation_alias=AliasChoices(
-            "default_create_user_usergroups", "default_create_user_usergroup"
-        ),
-        description=(
-            "Default user groups to add users created with `create_user` "
-            "to when `--usergroups` is not provided."
-        ),
-    )
-    default_notification_users_usergroups: list[str] = Field(
-        default=["All-notification-users"],
-        # Changed in V3: default_notification_users_usergroup -> default_notification_users_usergroups
-        validation_alias=AliasChoices(
-            "default_notification_users_usergroups",
-            "default_notification_users_usergroup",
-        ),
-        description=(
-            "Default user groups to add notification users created with "
-            "`create_notification_user` to when `--usergroups` is not provided."
-        ),
-    )
-
-    # Exports
-    export_directory: Path = Field(
-        default=EXPORT_DIR,
-        # Changed in V3: default_directory_exports -> export_directory
-        validation_alias=AliasChoices("default_directory_exports", "export_directory"),
-        description="Default directory to export files to.",
-    )
-    export_format: ExportFormat = Field(
-        # Changed in V3: Config options are now lower-case by default,
-        #                but we also allow upper-case for backwards-compatibility
-        #                i.e. both "json" and "JSON" are valid
-        # Changed in V3: Default format is now JSON
-        default=ExportFormat.JSON,
-        # Changed in V3: default_export_format -> export_format
-        validation_alias=AliasChoices("default_export_format", "export_format"),
-        description="Default export format.",
-    )
-    export_timestamps: bool = Field(
-        default=False,
-        # Changed in V3: include_timestamp_export_filename -> export_timestamps
-        validation_alias=AliasChoices(
-            "include_timestamp_export_filename", "export_timestamps"
-        ),
-        description="Include timestamps in exported filenames.",
-    )
 
     # Auth
     use_session_file: bool = Field(
@@ -300,27 +221,92 @@ class AppConfig(BaseModel):
     output_format: OutputFormat = Field(
         default=OutputFormat.TABLE,
         deprecated=True,
-        json_schema_extra={"replacement": "app.output.format"},
         exclude=True,
+        json_schema_extra={"replacement": "app.output.format"},
     )
     use_colors: bool = Field(
         default=True,
         deprecated=True,
-        json_schema_extra={"replacement": "app.output.color"},
         exclude=True,
+        json_schema_extra={"replacement": "app.output.color"},
     )
     use_paging: bool = Field(
         default=False,
         deprecated=True,
-        json_schema_extra={"replacement": "app.output.paging"},
         exclude=True,
+        json_schema_extra={"replacement": "app.output.paging"},
     )
     system_id: str = Field(
         default="",
         validation_alias=AliasChoices("username", "system_id"),
         deprecated=True,
-        json_schema_extra={"replacement": "api.username"},
         exclude=True,
+        json_schema_extra={"replacement": "api.username"},
+    )
+    default_hostgroups: list[str] = Field(
+        default=[],
+        validation_alias=AliasChoices("default_hostgroups", "default_hostgroup"),
+        deprecated=True,
+        exclude=True,
+        json_schema_extra={"replacement": "app.commands.create_host.hostgroups"},
+    )
+    default_admin_usergroups: list[str] = Field(
+        default=[],
+        validation_alias=AliasChoices(
+            "default_admin_usergroups", "default_admin_usergroup"
+        ),
+        description=(
+            "Default user groups to give read/write permissions to groups "
+            "created with `create_hostgroup` and `create_templategroup` "
+            "when `--rw-groups` option is not provided."
+        ),
+        deprecated=True,
+        exclude=True,
+        json_schema_extra={"replacement": "app.commands.create_hostgroup.rw_groups"},
+    )
+    default_create_user_usergroups: list[str] = Field(
+        default=[],
+        validation_alias=AliasChoices(
+            "default_create_user_usergroups", "default_create_user_usergroup"
+        ),
+        deprecated=True,
+        exclude=True,
+        json_schema_extra={
+            "replacement": [
+                "app.commands.create_user.usergroups",
+                "app.commands.create_hostgroup.ro_groups",
+            ]
+        },
+    )
+    default_notification_users_usergroups: list[str] = Field(
+        default=[],
+        validation_alias=AliasChoices(
+            "default_notification_users_usergroups",
+            "default_notification_users_usergroup",
+        ),
+        deprecated=True,
+        exclude=True,
+        json_schema_extra={
+            "replacement": "app.commands.create_notification_user.usergroups"
+        },
+    )
+    export_directory: Path = Field(
+        default=EXPORT_DIR,
+        deprecated=True,
+        exclude=True,
+        json_schema_extra={"replacement": "app.commands.export.directory"},
+    )
+    export_format: ExportFormat = Field(
+        default=ExportFormat.JSON,
+        deprecated=True,
+        exclude=True,
+        json_schema_extra={"replacement": "app.commands.export.format"},
+    )
+    export_timestamps: bool = Field(
+        default=False,
+        deprecated=True,
+        exclude=True,
+        json_schema_extra={"replacement": "app.commands.export.timestamps"},
     )
 
     # Legacy options

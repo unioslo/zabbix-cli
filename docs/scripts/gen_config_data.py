@@ -181,16 +181,20 @@ class ConfigOption(ConfigBase):
         def type_to_str(t: type[Any]) -> str:
             if lenient_issubclass(value, str):
                 return "str"
+
             if lenient_issubclass(value, Enum):
                 # Get the name of the first enum member type
-                # Will fail if enum has no members
+                # NOTE: Will fail if enum has no members
                 return str(list(value)[0])  # pyright: ignore[reportUnknownArgumentType]
+
             # Types that are represented as strings in config (paths, secrets, etc.)
             if typ := TYPE_MAP.get(t):
                 return typ
+
             # Primitives and built-in generics (str, int, list[str], dict[str, int], etc.)
             if origin in TYPE_CAN_STR:
                 return str(value)
+
             # Fall back on the string representation of the type
             return getattr(value, "__name__", str(value))
 
@@ -302,6 +306,8 @@ def get_config_options(
         if not field.annotation:
             continue
         if field.default is None:
+            continue
+        if field.deprecated:
             continue
 
         if lenient_issubclass(field.annotation, RootModel):
