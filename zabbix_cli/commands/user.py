@@ -46,7 +46,28 @@ def get_random_password() -> str:
     return x.hexdigest()
 
 
-@app.command("create_user", rich_help_panel=HELP_PANEL)
+@app.command(
+    "create_user",
+    rich_help_panel=HELP_PANEL,
+    examples=[
+        Example(
+            "Create a user with a random password",
+            "create_user jdoe --firstname John --lastname Doe",
+        ),
+        Example(
+            "Create a user with a specific password",
+            "create_user jdoe --firstname John --lastname Doe --passwd 'MyPassword'",
+        ),
+        Example(
+            "Create a user with a password from stdin",
+            "create_user jdoe --firstname John --lastname Doe --passwd -",
+        ),
+        Example(
+            "Create a user with a specific role and user groups",
+            "create_user jdoe --firstname John --lastname Doe --role admin --groups 'All-admins,Linux-admins'",
+        ),
+    ],
+)
 def create_user(
     ctx: typer.Context,
     username: str = typer.Argument(
@@ -62,6 +83,7 @@ def create_user(
     password: Optional[str] = typer.Option(
         None,
         "--passwd",
+        "--password",
         help="Password of the user to create. Set to '-' to prompt for password. Generates random password if omitted.",
     ),
     role: UserRole = typer.Option(
@@ -76,7 +98,20 @@ def create_user(
         help="User session lifetime in seconds. Set to 0 to never expire. Can be a time unit with suffix (0s, 15m, 1h, 1d, etc.)",
     ),
     groups: Optional[str] = typer.Option(
-        None, help="Comma-separated list of group IDs to add the user to."
+        None,
+        "--groups",
+        "--usergroups",
+        help="Comma-separated list of user group names or IDs to add the user to.",
+        show_default=False,
+    ),
+    use_default_usergroups: bool = typer.Option(
+        True,
+        "--default-usergroups/--no-default-usergroups",
+        help=(
+            "Add the user to the default user groups defined in the config file in addition to "
+            "any groups specified with [option]--groups[/]. This is the default behavior."
+        ),
+        show_default=True,
     ),
     # Legacy V2 positional args
     args: Optional[list[str]] = ARGS_POSITIONAL,
@@ -115,8 +150,9 @@ def create_user(
         password = get_random_password()
 
     grouplist = parse_list_arg(groups)
-    # FIXME: add to default user group if no user group passed in
-    ugroups = [app.state.client.get_usergroup(ug) for ug in grouplist]
+    if use_default_usergroups:
+        grouplist.extend(app.state.config.app.commands.create_user.usergroups)
+    ugroups = [app.state.client.get_usergroup(ug) for ug in set(grouplist)]
 
     userid = app.state.client.create_user(
         username,
@@ -170,6 +206,14 @@ def create_notification_user(
         None,
         "--usergroups",
         help="Comma-separated list of usergroups to add the user to. Overrides user groups in config file.",
+    ),
+    use_default_usergroups: bool = typer.Option(
+        True,
+        "--default-usergroups/--no-default-usergroups",
+        help=(
+            "Add the user to the default user groups defined in the config file in addition to "
+            "any groups specified with [option]--usergroups[/]. This is the default behavior."
+        ),
     ),
     dryrun: bool = typer.Option(
         False,
@@ -233,12 +277,11 @@ def create_notification_user(
         )
 
     # Parse user groups args or use defaults
-    if usergroups:
-        ug_list = parse_list_arg(usergroups)
-    else:
-        ug_list: list[str] = []
-        ug_list.extend(app.state.config.app.default_notification_users_usergroups)
-        ug_list.extend(app.state.config.app.default_create_user_usergroups)
+    ug_list = parse_list_arg(usergroups)
+    if use_default_usergroups:
+        ug_list.extend(
+            app.state.config.app.commands.create_notification_user.usergroups
+        )
 
     with app.status("Fetching user group(s)..."):
         ugroups = [app.state.client.get_usergroup(ug) for ug in set(ug_list)]

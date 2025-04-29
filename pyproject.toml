@@ -46,6 +46,7 @@ dependencies = [
   "strenum>=0.4.15",
   "typing-extensions>=4.8.0",
   "importlib-metadata>=8.5.0; python_version < '3.10'",
+  "shellingham>=1.5.4",
 ]
 dynamic = ["version"]
 
@@ -56,7 +57,7 @@ dev = [
   { include-group = "build" },
   { include-group = "docs" },
 ]
-lint = ["ruff", "pyright"]
+lint = ["ruff", "basedpyright>=1.29.1"]
 test = [
   "pytest>=8.0.0",
   "pytest-cov>=5.0.0",
@@ -146,6 +147,7 @@ venvPath = "."
 venv = ".venv"
 ignore = ["zabbix_cli/commands/_dev.py"]
 typeCheckingMode = "strict"
+strictGenericNarrowing = true
 
 [tool.ruff]
 src = ["zabbix_cli"]

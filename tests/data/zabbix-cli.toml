@@ -6,13 +6,6 @@ verify_ssl = true
 auth_token = ""
 
 [app]
-default_hostgroups = ["All-hosts"]
-default_admin_usergroups = []
-default_create_user_usergroups = []
-default_notification_users_usergroups = ["All-notification-users"]
-export_directory = "/path/to/exports"
-export_format = "json"
-export_timestamps = false
 use_session_file = true
 auth_token_file = "/path/to/auth_token_file"
 auth_file = "/path/to/auth_file"
@@ -21,8 +14,42 @@ history_file = "/path/to/history_file"
 allow_insecure_auth_file = true
 legacy_json_format = false
 
+# Deprecated (replaced by [app.commands.*] sections)
+default_hostgroups = ["All-hosts"]
+default_admin_usergroups = []
+default_create_user_usergroups = []
+default_notification_users_usergroups = ["All-notification-users"]
+export_directory = "/path/to/exports"
+export_format = "json"
+export_timestamps = false
+
 [app.commands.create_host]
 create_interface = true
+hostgroups = ["All-hosts"]
+
+[app.commands.create_hostgroup]
+ro_groups = []
+rw_groups = []
+
+[app.commands.create_notification_user]
+usergroups = ["All-notification-users"]
+
+[app.commands.create_templategroup]
+ro_groups = []
+rw_groups = []
+
+[app.commands.create_user]
+usergroups = []
+
+[app.commands.export]
+directory = "/path/to/exports"
+format = "json"
+timestamps = false
+
+# Shared fallback for create_{host,template}group commands
+[app.commands.create_group]
+ro_groups = []
+rw_groups = []
 
 [app.output]
 format = "table"
