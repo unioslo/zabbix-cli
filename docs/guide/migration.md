@@ -196,4 +196,4 @@ Which means when a command fails to execute or returns an error, the shape of th
 }
 ```
 
-In case of a chain of errors, the application makes an attempt to populate the `errors` array with all the errors encountered during the execution of the command.
+In case of a chain of errors, the application makes an attempt to populate the `errors` array with all the exceptions raised when unwinding the stack.
