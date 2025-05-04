@@ -91,6 +91,7 @@ def str_prompt(
     default: str = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
     password: bool = False,
     show_default: bool = True,
+    show_choices: bool = True,
     choices: Optional[list[str]] = None,
     empty_ok: bool = False,
     strip: bool = True,
@@ -140,6 +141,7 @@ def str_prompt(
             console=err_console,
             password=password,
             show_default=show_default,
+            show_choices=show_choices,
             default=default,
             choices=choices,
             **kwargs,
@@ -187,6 +189,7 @@ TypeConstructor = Callable[[object], T]
 def list_prompt(
     prompt: str,
     *,
+    default: list[T] | None = None,
     empty_ok: bool = True,
     strip: bool = True,
     keep_empty: bool = False,
@@ -198,7 +201,14 @@ def list_prompt(
     """Prompt user for a comma-separated list of values."""
     from zabbix_cli.utils.args import parse_list_arg
 
-    inp = str_prompt(prompt, empty_ok=empty_ok, strip=strip)
+    default_arg = ",".join(str(d) for d in default) if default else ...
+
+    inp = str_prompt(
+        prompt,
+        default=default_arg,  # pyright: ignore[reportArgumentType] # rich ellipses...
+        empty_ok=empty_ok,
+        strip=strip,
+    )
     arglist = parse_list_arg(inp, keep_empty=keep_empty)
     try:
         # NOTE: type() in this context is the constructor for the type

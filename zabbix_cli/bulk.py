@@ -100,9 +100,14 @@ class CommandExecution:
 class BulkRunnerMode(StrEnum):
     """Mode of operation for BulkRunner."""
 
-    STRICT = "strict"  # Stop on first error
-    CONTINUE = "continue"  # Continue on errors, report at end
-    SKIP = "skip"  # Skip lines that can't be parsed
+    STRICT = "strict"
+    """Stop on first error."""
+
+    CONTINUE = "continue"
+    """Continue on errors, report at end."""
+
+    SKIP = "skip"
+    """Skip lines with errors. No reporting."""
 
 
 class BulkRunner:

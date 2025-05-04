@@ -152,15 +152,20 @@ class ZabbixExporter:
     def check_export_types(self) -> None:
         """Check export types for compatibility."""
         # If we have no specific exports, export all object types
-        for export_type in self.export_types:
-            self._check_export_type_compat(export_type)
+        for export_type in list(self.export_types):
+            if not self._is_valid_export_type(export_type):
+                # If the export type is not valid, remove it from the list
+                self.export_types.remove(export_type)
+                warning(
+                    f"Export type {export_type.human_readable()} is not supported in this "
+                    f"version of Zabbix ({self.client.version})."
+                )
 
-    def _check_export_type_compat(self, export_type: ExportType) -> None:
+    def _is_valid_export_type(self, export_type: ExportType) -> bool:
         if export_type == ExportType.TEMPLATE_GROUPS:
             if self.client.version.release < (6, 2, 0):
-                raise ZabbixCLIError(
-                    "Template group exports are not supported in Zabbix versions < 6.2."
-                )
+                return False
+        return True
 
     def get_exporters(self) -> list[Exporter]:
         """Get a list of exporters to run."""

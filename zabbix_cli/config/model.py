@@ -187,6 +187,11 @@ class AppConfig(BaseModel):
         description="Path to legacy auth token file.",
         deprecated=True,
     )
+
+    use_auth_file: bool = Field(
+        default=True,
+        description="Look for user credentials stored in plaintext in auth file.",
+    )
     auth_file: Path = Field(
         default=AUTH_FILE,
         description="Path to auth file.",
