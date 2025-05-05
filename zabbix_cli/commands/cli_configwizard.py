@@ -371,7 +371,7 @@ COMMAND_OPTIONS = {
     # Hosts
     "create_host": [
         ConfigOption(
-            name="Default host group(s)",
+            name="Default host groups",
             attr="app.commands.create_host.hostgroups",
             type=list[str],
         ),
@@ -385,13 +385,13 @@ COMMAND_OPTIONS = {
     # Groups
     "create_hostgroup": [
         ConfigOption(
-            name="Default read-only user group(s)",
+            name="Default read-only user groups",
             attr="app.commands.create_hostgroup.ro_groups",
             type=list[str],
             empty_ok=True,
         ),
         ConfigOption(
-            name="Default read/write user group(s)",
+            name="Default read/write user groups",
             attr="app.commands.create_hostgroup.rw_groups",
             type=list[str],
             empty_ok=True,
@@ -399,13 +399,13 @@ COMMAND_OPTIONS = {
     ],
     "create_templategroup": [
         ConfigOption(
-            name="Default read-only user group(s)",
+            name="Default read-only user groups",
             attr="app.commands.create_templategroup.ro_groups",
             type=list[str],
             empty_ok=True,
         ),
         ConfigOption(
-            name="Default read/write user group(s)",
+            name="Default read/write user groups",
             attr="app.commands.create_templategroup.rw_groups",
             type=list[str],
             empty_ok=True,
@@ -414,8 +414,16 @@ COMMAND_OPTIONS = {
     # Users
     "create_user": [
         ConfigOption(
-            name="Default usergroup(s)",
+            name="Default usergroups",
             attr="app.commands.create_user.usergroups",
+            type=list[str],
+            empty_ok=True,
+        ),
+    ],
+    "create_notification_user": [
+        ConfigOption(
+            name="Default usergroups",
+            attr="app.commands.create_notification_user.usergroups",
             type=list[str],
             empty_ok=True,
         ),
@@ -559,7 +567,9 @@ This wizard will help you set up your Zabbix CLI configuration file.\
                 show_default=True,
             )
         # TODO: improve heuristic for union types
-        elif get_args(option.type) == (bool, Path):
+        elif (args := get_args(option.type)) and all(
+            arg in (bool, Path) for arg in args
+        ):
             value = bool_path_prompt(
                 option.get_message(),
                 option.attr,
