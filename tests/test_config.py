@@ -12,6 +12,8 @@ from pydantic import BaseModel
 from pydantic import Field
 from pydantic import model_validator
 from typing_extensions import Self
+from zabbix_cli.config.commands import CommandConfig
+from zabbix_cli.config.commands import CreateHostOrTemplateGroup
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.constants import SecretMode
 from zabbix_cli.config.model import APIConfig
@@ -654,3 +656,100 @@ def test_load_deprecated_config_legacy(legacy_config_path: Path) -> None:
     assert "use_colors" in config.app.model_fields_set
     assert "use_paging" in config.app.model_fields_set
     assert "output_format" not in config.app.model_fields_set
+
+
+def test_shared_command_config(tmp_path: Path) -> None:
+    """Test that the shared command config is loaded correctly."""
+
+    # Test via kwargs
+    config = Config(
+        app=AppConfig(
+            commands=CommandConfig(
+                create_group=CreateHostOrTemplateGroup(
+                    ro_groups=["All-users", "Guests"],
+                    rw_groups=["All-admin-users", "All-techs"],
+                )
+            )
+        )
+    )
+    assert config.app.commands.create_hostgroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert config.app.commands.create_hostgroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
+    assert config.app.commands.create_templategroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert config.app.commands.create_templategroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
+
+    # Test via config file
+    conf_str = """
+    [app.commands.create_group]
+    ro_groups = ["All-users", "Guests"]
+    rw_groups = ["All-admin-users", "All-techs"]
+    """
+    conf_path = tmp_path / "zabbix-cli.toml"
+    conf_path.write_text(conf_str)
+    config_shared = Config.from_toml_file(conf_path)
+
+    assert config_shared.app.commands.create_hostgroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert config_shared.app.commands.create_hostgroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
+    assert config_shared.app.commands.create_templategroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert config_shared.app.commands.create_templategroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
+
+    # Test via config file (fails, create_hostgroup is set)
+    conf_str = """
+    [app.commands.create_hostgroup]
+    ro_groups = ["All-users"]
+    rw_groups = ["All-admin-users"]
+
+    [app.commands.create_group]
+    ro_groups = ["All-users", "Guests"]
+    rw_groups = ["All-admin-users", "All-techs"]
+    """
+    conf_path = tmp_path / "zabbix-cli_hg_set.toml"
+    conf_path.write_text(conf_str)
+    conf_hg_set = Config.from_toml_file(conf_path)
+
+    assert conf_hg_set.app.commands.create_hostgroup.ro_groups == snapshot(
+        ["All-users"]
+    )
+    assert conf_hg_set.app.commands.create_hostgroup.rw_groups == snapshot(
+        ["All-admin-users"]
+    )
+    assert conf_hg_set.app.commands.create_templategroup.ro_groups == snapshot([])
+    assert conf_hg_set.app.commands.create_templategroup.rw_groups == snapshot([])
+
+    # Test via config file (fails, create_templategroup is set)
+    conf_str = """
+    [app.commands.create_templategroup]
+    ro_groups = ["All-users"]
+    rw_groups = ["All-admin-users"]
+
+    [app.commands.create_group]
+    ro_groups = ["All-users", "Guests"]
+    rw_groups = ["All-admin-users", "All-techs"]
+    """
+    conf_path = tmp_path / "zabbix-cli_tg_set.toml"
+    conf_path.write_text(conf_str)
+    conf_tg_set = Config.from_toml_file(conf_path)
+
+    assert conf_tg_set.app.commands.create_hostgroup.ro_groups == snapshot([])
+    assert conf_tg_set.app.commands.create_hostgroup.rw_groups == snapshot([])
+    assert conf_tg_set.app.commands.create_templategroup.ro_groups == snapshot(
+        ["All-users"]
+    )
+    assert conf_tg_set.app.commands.create_templategroup.rw_groups == snapshot(
+        ["All-admin-users"]
+    )

@@ -185,8 +185,8 @@ def parse_templategroups_arg(
     return templategroups
 
 
-TRUE_CHOICES = ["true", "yes", "1", "on"]
-FALSE_CHOICES = ["false", "no", "0", "off"]
+TRUE_CHOICES = ["true", "y", "yes", "1", "on"]
+FALSE_CHOICES = ["false", "n", "no", "0", "off"]
 
 
 def parse_bool_arg(arg: str) -> bool:

@@ -15,8 +15,6 @@ from typing import NoReturn
 from typing import Optional
 
 import click
-import click.parser
-import click.shell_completion
 from click.exceptions import Exit as ClickExit
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.shortcuts import prompt

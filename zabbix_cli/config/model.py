@@ -607,11 +607,7 @@ class Config(BaseModel):
             if init:
                 from zabbix_cli.config.utils import init_config
 
-                fp = init_config(config_file=filename)
-                if not fp.exists():
-                    raise ConfigError(
-                        "Failed to create configuration file. Run [command]zabbix-cli-init[/] to create one."
-                    )
+                return init_config(config_file=filename)
             else:
                 return cls.sample_config()
 

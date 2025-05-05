@@ -6,6 +6,8 @@ from pathlib import Path
 
 from pydantic import AliasChoices
 from pydantic import Field
+from pydantic import model_validator
+from typing_extensions import Self
 
 from zabbix_cli.config.base import BaseModel
 from zabbix_cli.dirs import EXPORT_DIR
@@ -63,9 +65,7 @@ class CreateUser(BaseModel):
     )
 
 
-class CreateHostGroup(BaseModel):
-    """Configuration for the `create_hostgroup` command."""
-
+class _CreateGroupBase(BaseModel):
     ro_groups: list[str] = Field(
         default=[],
         validation_alias=AliasChoices(
@@ -90,6 +90,22 @@ class CreateHostGroup(BaseModel):
             "when `--rw-groups` option is not provided."
         ),
     )
+
+
+class CreateHostGroup(_CreateGroupBase):
+    """Configuration for the `create_hostgroup` command."""
+
+
+class CreateTemplateGroup(_CreateGroupBase):
+    """Configuration for the `create_templategroup` command."""
+
+
+class CreateHostOrTemplateGroup(_CreateGroupBase):
+    """Shared config for `create_hostgroup` and `create_templategroup` commands.
+
+    Can be used to configure both commands at once. Has no effect if
+    `create_hostgroup` or `create_templategroup` is set.
+    """
 
 
 class ExportImport(BaseModel):
@@ -135,6 +151,9 @@ class CommandConfig(BaseModel):
     create_notification_user: CreateNotificationUser = Field(
         default_factory=CreateNotificationUser
     )
+    create_templategroup: CreateTemplateGroup = Field(
+        default_factory=CreateTemplateGroup,
+    )
     create_user: CreateUser = Field(default_factory=CreateUser)
     export: ExportImport = Field(
         default_factory=ExportImport,
@@ -146,3 +165,28 @@ class CommandConfig(BaseModel):
             "import_configuration",
         ),
     )
+
+    # Custom configs (shared between commands, etc.)
+    create_group: CreateHostOrTemplateGroup = Field(
+        default_factory=CreateHostOrTemplateGroup,
+    )
+
+    @model_validator(mode="after")
+    def check_create_group(self) -> Self:
+        """Check if create_hostgroup and create_templategroup are the same."""
+        if (
+            # create_{host,template}group are not set
+            all(
+                f not in self.model_fields_set
+                for f in ["create_hostgroup", "create_templategroup"]
+            )
+            # Shared config is set
+            and "create_group" in self.model_fields_set
+        ):
+            self.create_hostgroup = self.create_hostgroup.model_validate(
+                self.create_group, from_attributes=True
+            )
+            self.create_templategroup = self.create_templategroup.model_validate(
+                self.create_group, from_attributes=True
+            )
+        return self

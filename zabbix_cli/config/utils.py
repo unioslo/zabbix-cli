@@ -210,16 +210,13 @@ def init_config(
     # Compatibility with V2 zabbix-cli-init args
     url: Optional[str] = None,
     username: Optional[str] = None,
-    login: bool = False,
-) -> Path:
+) -> Config:
     """Creates required directories and boostraps config with
     options required to connect to the Zabbix API.
     """
-    from zabbix_cli import auth
+
     from zabbix_cli.config.model import Config
     from zabbix_cli.dirs import init_directories
-    from zabbix_cli.output.console import info
-    from zabbix_cli.output.prompts import str_prompt
 
     # Create required directories
     init_directories()
@@ -233,20 +230,11 @@ def init_config(
 
     if not config:
         config = Config.sample_config()
-    if not url:
-        url = str_prompt(
-            "Zabbix URL (without /api_jsonrpc.php)", default=url or config.api.url
-        )
-    config.api.url = url
+    config.config_path = config_file
 
-    # Add username if provided
-    # otherwise auth will prompt for it
+    if url:
+        config.api.url = url
     if username:
         config.api.username = username
 
-    if login:
-        auth.login(config)
-
-    config.dump_to_file(config_file)
-    info(f"Configuration file created: {config_file}")
-    return config_file
+    return config

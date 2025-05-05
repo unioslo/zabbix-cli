@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Optional
 
 import typer
-import typer.core
 from pydantic import BaseModel
 from pydantic import Field
 from strenum import StrEnum

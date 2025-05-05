@@ -113,14 +113,31 @@ def init(
     url: Optional[str] = typer.Option(
         None, "--url", "-u", help="Zabbix API URL to use."
     ),
+    wizard: bool = typer.Option(
+        True,
+        "--wizard/--no-wizard",
+        help="Run the interactive wizard to set up the configuration file.",
+    ),
 ) -> None:
     """Create and initialize config file."""
+    from zabbix_cli.commands.cli_configwizard import run_wizard
+    from zabbix_cli.config.constants import DEFAULT_CONFIG_FILE
     from zabbix_cli.config.utils import init_config
 
     try:
-        init_config(config_file=config_file, overwrite=overwrite, url=url)
+        config = init_config(config_file=config_file, overwrite=overwrite, url=url)
     except ConfigExistsError as e:
         raise ZabbixCLIError(f"{e}. Use [option]--overwrite[/] to overwrite it") from e
+
+    if not config.config_path:
+        # If the config file was not specified, set it to the default
+        config.config_path = DEFAULT_CONFIG_FILE
+
+    if wizard:
+        run_wizard(config)
+
+    config.dump_to_file(config.config_path)
+    info(f"Configuration file created: {config_file}")
 
 
 @app.command(name="login", rich_help_panel=HELP_PANEL)

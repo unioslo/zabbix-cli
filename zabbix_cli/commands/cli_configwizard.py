@@ -9,7 +9,7 @@ import sys
 import textwrap
 from collections.abc import Iterable
 from enum import Enum
-from enum import EnumType
+from enum import EnumMeta
 from operator import attrgetter
 from pathlib import Path
 from typing import Any
@@ -22,6 +22,7 @@ from typing import Union
 from typing import get_args
 
 from pydantic import SecretStr
+from rich.panel import Panel
 
 from zabbix_cli.bulk import BulkRunnerMode
 from zabbix_cli.config.constants import OutputFormat
@@ -133,14 +134,14 @@ def enum_prompt(
 
     if default:
         default_arg = next(
-            iter(k for k, v in member_map.items() if v.member == default), Ellipsis
+            iter(k for k, v in member_map.items() if v.member == default), None
         )
     else:
-        default_arg = Ellipsis
+        default_arg = None
 
     choice = str_prompt(
         "Enter selection",
-        default=default_arg,  # pyright: ignore[reportArgumentType] # rich ellipses...
+        default=default_arg,
         show_default=show_default,
         choices=list(member_map.keys()),
         show_choices=True,
@@ -162,7 +163,7 @@ def enum_prompt(
 
 def is_enum_type(obj: object) -> bool:
     """Check if an object is an enum."""
-    return type(obj) is EnumType
+    return type(obj) is EnumMeta
 
 
 T = TypeVar("T")
@@ -214,7 +215,7 @@ def secret_str_prompt(
     """Prompt for a secret string input."""
     value = str_prompt(
         message,
-        default=default.get_secret_value() if default else ...,
+        default=default.get_secret_value() if default else None,
         show_default=show_default,
         empty_ok=empty_ok,
         password=password,
@@ -296,7 +297,7 @@ _CONFIG_OPTIONS: dict[str, list[ConfigOption[Any]]] = {
             name="Verify SSL",
             message="Verify SSL certificates? (can also be path to custom CA bundle)",
             attr="api.verify_ssl",
-            type=Union[bool, Path],
+            type=Union[bool, Path],  # pyright: ignore[reportArgumentType] # TODO: fix union types
         ),
     ],
     "Application Settings": [
@@ -365,6 +366,7 @@ _CONFIG_OPTIONS: dict[str, list[ConfigOption[Any]]] = {
 }
 
 COMMAND_OPTIONS = {
+    # Hosts
     "create_host": [
         ConfigOption(
             name="Default host group(s)",
@@ -378,23 +380,42 @@ COMMAND_OPTIONS = {
             type=bool,
         ),
     ],
+    # Groups
     "create_hostgroup": [
         ConfigOption(
             name="Default read-only user group(s)",
             attr="app.commands.create_hostgroup.ro_groups",
             type=list[str],
+            empty_ok=True,
         ),
         ConfigOption(
             name="Default read/write user group(s)",
             attr="app.commands.create_hostgroup.rw_groups",
             type=list[str],
+            empty_ok=True,
         ),
     ],
+    "create_templategroup": [
+        ConfigOption(
+            name="Default read-only user group(s)",
+            attr="app.commands.create_templategroup.ro_groups",
+            type=list[str],
+            empty_ok=True,
+        ),
+        ConfigOption(
+            name="Default read/write user group(s)",
+            attr="app.commands.create_templategroup.rw_groups",
+            type=list[str],
+            empty_ok=True,
+        ),
+    ],
+    # Users
     "create_user": [
         ConfigOption(
             name="Default usergroup(s)",
             attr="app.commands.create_user.usergroups",
             type=list[str],
+            empty_ok=True,
         ),
     ],
 }
@@ -404,7 +425,33 @@ class ConfigWizard:
     def __init__(self, config: Config) -> None:
         self.config = config
 
-    def configure_with_option_list(self) -> None:
+    def print_section(self, title: str) -> None:
+        """Print a section title."""
+        console.rule(title)
+
+    def print_command_subsection(self, command: str) -> None:
+        """Print a command subsection title."""
+        console.rule(f"[command]{command}[/]")
+
+    def run(self) -> None:
+        """Run the configuration wizard.
+
+        Modifies the config object in place.
+        """
+        panel = Panel(
+            """\
+Welcome to the Zabbix CLI configuration wizard!
+This wizard will help you set up your Zabbix CLI configuration file.\
+""",
+            title="Zabbix CLI Configuration Wizard",
+            expand=False,
+        )
+        console.print(panel)
+
+        str_prompt("Press Enter to continue...", empty_ok=True, show_default=False)
+        self.do_run()
+
+    def do_run(self) -> None:
         # Keep track of options we have set and their values
         options_set: dict[str, Any] = {}
 
@@ -425,7 +472,8 @@ class ConfigWizard:
                 # Only update config if the value has changed
                 if v_pre != v_new:
                     self.assign_config_value(option.attr, v_new)
-                    options_set[option.attr] = v_new
+
+                options_set[option.attr] = v_new
 
                 console.print("")  # newline between inputs
 
@@ -465,7 +513,7 @@ class ConfigWizard:
                 option.get_message(),
                 default=option.get_value(self.config),
                 show_default=True,
-                empty_ok=False,
+                empty_ok=option.empty_ok,
             )
         elif option.type == SecretStr:
             value = secret_str_prompt(
@@ -486,20 +534,20 @@ class ConfigWizard:
                 option.get_message(),
                 default=option.get_value(self.config),
                 show_default=True,
-                empty_ok=False,
+                empty_ok=option.empty_ok,
             )
         elif option.type is float:
             value = float_prompt(
                 option.get_message(),
                 default=option.get_value(self.config),
                 show_default=True,
-                empty_ok=False,
+                empty_ok=option.empty_ok,
             )
         elif option.type == list[str]:
             value = list_prompt(
                 option.get_message(),
                 default=option.get_value(self.config),
-                empty_ok=False,
+                empty_ok=option.empty_ok,
                 type=str,
             )
         elif option.type == Path:
@@ -507,7 +555,6 @@ class ConfigWizard:
                 option.get_message(),
                 default=option.get_value(self.config),
                 show_default=True,
-                empty_ok=False,
             )
         # TODO: improve heuristic for union types
         elif get_args(option.type) == (bool, Path):
@@ -528,205 +575,6 @@ class ConfigWizard:
         else:
             raise ValueError(f"Unsupported type for config option: {option.type}")
         return value
-
-    def print_section(self, title: str) -> None:
-        """Print a section title."""
-        console.rule(title)
-
-    def print_command_subsection(self, command: str) -> None:
-        """Print a command subsection title."""
-        console.rule(f"[command]{command}[/]")
-
-    def run(self) -> None:
-        console.print(
-            """\
-Zabbix CLI Configuration Wizard
-==============================
-
-Welcome to the Zabbix CLI configuration wizard!
-This wizard will help you set up your Zabbix CLI configuration file.
-    """
-        )
-        str_prompt("Press Enter to continue...", empty_ok=True, show_default=False)
-        self.configure_api_settings()
-        self.configure_app_settings()
-        if bool_prompt("Would you like to configure command defaults?", default=True):
-            self.configure_commands()
-
-    def configure_api_settings(self) -> None:
-        """Configure API settings."""
-        self.print_section("API Connection Settings")
-
-        # TODO: retry if pydantic fails to validate input value!
-        # need some sort of context manager that loops. How?
-
-        # API URL
-        self.config.api.url = str_prompt(
-            "Enter Zabbix API URL",
-            default=self.config.api.url,
-            show_default=True,
-            empty_ok=False,
-        )
-        # Username
-        self.config.api.username = str_prompt(
-            "Enter username",
-            default=self.config.api.username,
-            show_default=True,
-            empty_ok=False,
-        )
-
-        # Password
-        self.config.api.password = SecretStr(
-            str_prompt(
-                "Enter password (leave empty for no password)",
-                default=self.config.api.password.get_secret_value(),
-                empty_ok=True,
-                password=True,
-            )
-        )
-
-        # Auth token
-        self.config.api.auth_token = SecretStr(
-            str_prompt(
-                "API auth token (leave empty for no auth token)",
-                default=self.config.api.auth_token.get_secret_value(),
-                empty_ok=True,
-                password=True,
-            )
-        )
-
-        self.configure_verify_ssl()
-
-    def configure_verify_ssl(self) -> None:
-        # Verify SSL
-        conf_val = self.config.api.verify_ssl
-        default = (
-            str(conf_val) if isinstance(conf_val, Path) else "y" if conf_val else "n"
-        )
-        verify_ssl_inp = str_prompt(
-            "Verify SSL certificates? (can also be path to custom CA bundle) [y/n/<path>]",
-            default=default,
-            show_default=True,
-            show_choices=False,
-        )
-        try:
-            val = parse_bool_arg(verify_ssl_inp)
-        except ZabbixCLIError:
-            try:
-                val = Path(verify_ssl_inp)
-            except Exception:
-                exit_err(
-                    f"Invalid input for verify_ssl: {verify_ssl_inp}. Must be 'y', 'n', or a valid path to a file."
-                )
-
-        self.config.api.verify_ssl = val
-
-    def configure_app_settings(self) -> None:
-        self.print_section("Application Settings")
-
-        # Session file
-        self.config.app.use_session_file = bool_prompt(
-            "Use session file?",
-            default=self.config.app.use_session_file,
-        )
-
-        if self.config.app.use_session_file:
-            self.config.app.session_file = path_prompt(
-                "Session file location",
-                default=self.config.app.session_file,
-                show_default=True,
-                empty_ok=False,
-            )
-        elif bool_prompt("Use auth file? (username and password stored in plaintext)"):
-            self.config.app.auth_file = path_prompt(
-                "Auth file location",
-                default=self.config.app.auth_file,
-                show_default=True,
-                empty_ok=False,
-            )
-
-        if self.config.app.use_session_file or self.config.app.auth_file:
-            self.config.app.allow_insecure_auth_file = bool_prompt(
-                "Allow insecure session/auth file? (no 600 permissions check)",
-                default=self.config.app.allow_insecure_auth_file,
-            )
-
-        # History
-        self.config.app.history = bool_prompt(
-            "Enable command history?",
-            default=self.config.app.history,
-        )
-        if self.config.app.history:
-            self.config.app.history_file = path_prompt(
-                "History file location",
-                default=self.config.app.history_file,
-                show_default=True,
-                empty_ok=False,
-            )
-
-        # Bulk operation mode
-        self.config.app.bulk_mode = enum_prompt(
-            "Bulk operation mode",
-            BulkRunnerMode,
-            default=self.config.app.bulk_mode,
-            show_default=True,
-        )
-
-    def configure_commands(self) -> None:
-        self.configure_command_host_create()
-
-    def configure_command_create_host(self) -> None:
-        self.print_command_subsection("host_create")
-        self.config.app.commands.create_host.create_interface = bool_prompt(
-            "Automatically create interfaces?",
-            default=self.config.app.commands.create_host.create_interface,
-        )
-
-        hostgroups = list_prompt(
-            "Default host group(s) (comma-separated)",
-            default=self.config.app.commands.create_host.hostgroups,
-            type=str,
-        )
-        self.config.app.commands.create_host.hostgroups = hostgroups
-
-    def configure_command_create_hostgroup(self) -> None:
-        self.print_command_subsection("create_hostgroup")
-
-        # RO
-        ro_groups = list_prompt(
-            "Default read-only user group(s) (comma-separated)",
-            default=self.config.app.commands.create_hostgroup.ro_groups,
-            type=str,
-        )
-        self.config.app.commands.create_hostgroup.ro_groups = ro_groups
-
-        # RW
-        rw_groups = list_prompt(
-            "Default read/write user group(s) (comma-separated)",
-            default=self.config.app.commands.create_hostgroup.rw_groups,
-            type=str,
-        )
-        self.config.app.commands.create_hostgroup.ro_groups = rw_groups
-
-    def configure_command_create_user(self) -> None:
-        self.print_command_subsection("create_user")
-
-        usergroups = list_prompt(
-            "Default usergroup(s) (comma-separated)",
-            default=self.config.app.commands.create_user.usergroups,
-            type=str,
-        )
-        self.config.app.commands.create_user.usergroups = usergroups
-
-    def configure_command_create_notification_user(self) -> None:
-        self.print_command_subsection("create_notification_user")
-
-        usergroups = list_prompt(
-            "Default usergroup(s) (comma-separated)",
-            default=self.config.app.commands.create_user.usergroups,
-            type=str,
-        )
-        self.config.app.commands.create_user.usergroups = usergroups
 
 
 def run_wizard(config: Config) -> None:
