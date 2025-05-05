@@ -124,8 +124,16 @@ def init(
     from zabbix_cli.config.constants import DEFAULT_CONFIG_FILE
     from zabbix_cli.config.utils import init_config
 
+    if config_file is None:
+        config_file = app.state.config.config_path
+
     try:
-        config = init_config(config_file=config_file, overwrite=overwrite, url=url)
+        config = init_config(
+            config=app.state.config,
+            config_file=config_file,
+            overwrite=overwrite,
+            url=url,
+        )
     except ConfigExistsError as e:
         raise ZabbixCLIError(f"{e}. Use [option]--overwrite[/] to overwrite it") from e
 
@@ -137,7 +145,8 @@ def init(
         run_wizard(config)
 
     config.dump_to_file(config.config_path)
-    info(f"Configuration file created: {config_file}")
+    info(f"Configuration file created: {config.config_path}")
+    app.state.config = config
 
 
 @app.command(name="login", rich_help_panel=HELP_PANEL)
