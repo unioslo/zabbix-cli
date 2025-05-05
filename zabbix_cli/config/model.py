@@ -76,7 +76,7 @@ class APIConfig(BaseModel):
     """Configuration for the Zabbix API."""
 
     url: str = Field(
-        default="",
+        default="https://zabbix.example.com",
         # Changed in V3: zabbix_api_url -> url
         validation_alias=AliasChoices("url", "zabbix_api_url"),
         description="URL of the Zabbix API host. Should not include `/api_jsonrpc.php`.",
@@ -557,7 +557,10 @@ class Config(BaseModel):
     plugins: PluginsConfig = Field(default_factory=PluginsConfig)
 
     config_path: Optional[Path] = Field(default=None, exclude=True)
-    sample: bool = Field(default=False, exclude=True)
+
+    @property
+    def sample(self) -> bool:
+        return len(self.model_fields_set) > 0
 
     @model_validator(mode="after")
     def _set_deprecated_fields_in_new_location(self) -> Self:
@@ -580,7 +583,7 @@ class Config(BaseModel):
     @classmethod
     def sample_config(cls) -> Config:
         """Get a sample configuration."""
-        return cls(api=APIConfig(url="https://zabbix.example.com"), sample=True)
+        return cls()
 
     @classmethod
     def from_file(
