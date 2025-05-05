@@ -75,6 +75,11 @@ class ConfigBase(BaseModel):
     def validate_description(cls, value: Any) -> str:
         return value or ""
 
+    @field_validator("description", mode="after")
+    @classmethod
+    def dedent_description(cls, value: str) -> str:
+        return "\n".join(line.strip() for line in value.splitlines())
+
 
 class ConfigOption(ConfigBase):
     type: str
@@ -212,11 +217,6 @@ class ConfigOption(ConfigBase):
                 return " | ".join(ar)
 
         return type_to_str(value)
-
-    @field_validator("description", mode="before")
-    @classmethod
-    def validate_description(cls, value: Any) -> str:
-        return value or ""
 
     @field_validator("examples", mode="before")
     @classmethod
