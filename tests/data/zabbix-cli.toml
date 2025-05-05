@@ -30,7 +30,11 @@ ro_groups = []
 rw_groups = []
 
 [app.commands.create_notification_user]
-usergroups = []
+usergroups = ["All-notification-users"]
+
+[app.commands.create_templategroup]
+ro_groups = []
+rw_groups = []
 
 [app.commands.create_user]
 usergroups = []
@@ -39,6 +43,10 @@ usergroups = []
 directory = "/path/to/exports"
 format = "json"
 timestamps = false
+
+[app.commands.create_group]
+ro_groups = []
+rw_groups = []
 
 [app.output]
 format = "table"
