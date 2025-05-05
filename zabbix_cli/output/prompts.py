@@ -33,7 +33,10 @@ P = ParamSpec("P")
 
 
 def no_headless(f: Callable[P, T]) -> Callable[P, T]:
-    """Decorator that causes application to exit if called from a headless environment."""
+    """Decorator that causes application to exit if called from a headless environment
+    when the prompt does not have a default value (i.e. required input).
+
+    If the prompt has a default value, that value is returned instead."""
 
     @wraps(f)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -73,10 +76,20 @@ def is_headless() -> bool:
     for envvar in HEADLESS_VARS_SET:
         if os.environ.get(envvar, "").lower() in ["1", "true"]:
             return True
+
     # Specific values indicate headless
     for envvar, value in HEADLESS_VARS_SET_MAP.items():
         if os.environ.get(envvar, None) == value:
             return True
+
+    import shellingham  # pyright: ignore[reportMissingTypeStubs]
+
+    try:
+        shellingham.detect_shell()  # pyright: ignore[reportUnknownMemberType]
+    except shellingham.ShellDetectionFailure:
+        # If we can't detect the shell, assume we're in a headless environment
+        return True
+
     return False
 
 
@@ -88,62 +101,69 @@ def prompt_msg(*msgs: str) -> str:
 def str_prompt(
     prompt: str,
     *,
-    default: str = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
+    default: str | None = None,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
     password: bool = False,
-    show_default: bool = True,
     choices: Optional[list[str]] = None,
+    show_default: bool = True,
+    show_choices: bool = True,
     empty_ok: bool = False,
     strip: bool = True,
-    **kwargs: Any,
 ) -> str:
-    """Prompts the user for a string input. Optionally controls
-    for empty input. Loops until a valid input is provided.
+    """Prompts the user for a string input.
 
-    Parameters
-    ----------
-    prompt : str
-        Prompt to display to the user.
-    default : Any, optional
-        Default value to use if the user does not provide input.
-        If not provided, the user will be required to provide input.
-    password : bool, optional
-        Whether to hide the input, by default False
-    show_default : bool, optional
-        Show the default value, by default True
-        `password=True` supercedes this option, and sets it to False.
-    empty_ok : bool, optional
-        Allow input consisting of no characters or only whitespace,
-        by default False
-    strip : bool, optional
-        Strip whitespace from the input, by default True
-        Must be `False` to preserve whitespace when `empty_ok=True`.
-    callback : Callable[[str], str], optional
-        Callback function to run on the input before returning it,
-        by default None
+    Optionally controls for empty input. Loops until a valid input is provided.
+
+    Args:
+        prompt (str): String prompt to display to the user.
+        default (Any, optional): Default value to use if the user does not provide input.
+            If not provided, the user will be required to provide input.
+        password (bool, optional): Whether to hide the input. Defaults to False.
+        choices (list[str], optional): List of valid choices. If provided, the user
+            must select one of the choices. Defaults to None.
+        show_default (bool, optional): Show the default value. Defaults to True.
+            If `password=True`, this option is overridden and set to False.
+        show_choices (bool, optional): Show the choices in the prompt. Defaults to True.
+        empty_ok (bool, optional): Allow input consisting of no characters or only whitespace.
+            Defaults to False.
+        strip (bool, optional): Strip whitespace from the input. Defaults to True.
+            Must be `False` to preserve whitespace when `empty_ok=True`.
+
+    Returns:
+        str: The user input as a string. If `strip=True`, leading and trailing whitespace
+            will be removed from the input.
     """
-    # Don't permit secrets to be shown ever + no empty defaults shown
-    if password or default is ... or not default:  # pyright: ignore[reportUnnecessaryComparison]
+
+    prompt_parts = [prompt]
+
+    # Never show password default or empty default
+    if password or not default:
         show_default = False
 
-    # Notify user that a default secret will be used,
-    # but don't actually show the secret
-    if password and default not in (None, ..., ""):
-        _prompt_add = "(leave empty to use existing value)"
-    else:
-        _prompt_add = ""
-    msg = prompt_msg(prompt, _prompt_add)
+    # Add notice for hidden password default
+    if password and default:
+        prompt_parts.append("(leave empty to use existing value)")
 
-    inp = None
-    while not inp:
-        inp = Prompt.ask(
+    msg = prompt_msg(*prompt_parts)
+
+    # Rich uses `...` to signify no default, which is clunky when wrapping
+    # Prompt.ask, since it doesn't have an overload for explicitly passing
+    # in `...`. To work around that, we don't pass in the default kwarg
+    # if it's None.
+    kwargs: dict[str, Any] = {}
+    if default is not None:
+        kwargs["default"] = default
+
+    while not (
+        inp := Prompt.ask(
             msg,
             console=err_console,
             password=password,
             show_default=show_default,
-            default=default,
+            show_choices=show_choices,
             choices=choices,
             **kwargs,
         )
+    ):
         if empty_ok:  # nothing else to check
             break
 
@@ -165,7 +185,6 @@ def str_prompt_optional(
     show_default: bool = False,
     choices: Optional[list[str]] = None,
     strip: bool = True,
-    **kwargs: Any,
 ) -> str:
     prompt = f"{prompt} [i](optional)[/]"
     return str_prompt(
@@ -176,7 +195,6 @@ def str_prompt_optional(
         choices=choices,
         empty_ok=True,
         strip=strip,
-        **kwargs,
     )
 
 
@@ -187,6 +205,7 @@ TypeConstructor = Callable[[object], T]
 def list_prompt(
     prompt: str,
     *,
+    default: list[T] | None = None,
     empty_ok: bool = True,
     strip: bool = True,
     keep_empty: bool = False,
@@ -198,7 +217,14 @@ def list_prompt(
     """Prompt user for a comma-separated list of values."""
     from zabbix_cli.utils.args import parse_list_arg
 
-    inp = str_prompt(prompt, empty_ok=empty_ok, strip=strip)
+    default_arg = ",".join(str(d) for d in default) if default else None
+
+    inp = str_prompt(
+        prompt,
+        default=default_arg,
+        empty_ok=empty_ok,
+        strip=strip,
+    )
     arglist = parse_list_arg(inp, keep_empty=keep_empty)
     try:
         # NOTE: type() in this context is the constructor for the type
@@ -219,6 +245,21 @@ def int_prompt(
     show_range: bool = True,
     **kwargs: Any,
 ) -> int:
+    """Prompt user for an integer input. Loops until a valid input is provided.
+
+    Args:
+        prompt (str): String prompt to display to the user.
+        default (int, optional): Default value to use if the user does not provide input.
+            If not provided, the user will be required to provide input.
+        show_default (bool, optional): Show the default value. Defaults to True.
+        min (int, optional): Minimum value. Defaults to None.
+        max (int, optional): Maximum value. Defaults to None.
+        show_range (bool, optional): Show the range in the prompt. Defaults to True.
+        **kwargs: Additional keyword arguments to pass to the prompt.
+
+    Returns:
+        int: The user input as an integer.
+    """
     return _number_prompt(
         IntPrompt,
         prompt,
@@ -242,6 +283,21 @@ def float_prompt(
     show_range: bool = True,
     **kwargs: Any,
 ) -> float:
+    """Prompt user for a float input. Loops until a valid input is provided.
+
+    Args:
+        prompt (str): String prompt to display to the user.
+        default (float, optional): Default value to use if the user does not provide input.
+            If not provided, the user will be required to provide input.
+        show_default (bool, optional): Show the default value. Defaults to True.
+        min (float, optional): Minimum value. Defaults to None.
+        max (float, optional): Maximum value. Defaults to None.
+        show_range (bool, optional): Show the range in the prompt. Defaults to True.
+        **kwargs: Additional keyword arguments to pass to the prompt.
+
+    Returns:
+        float: The user input as a float.
+    """
     val = _number_prompt(
         FloatPrompt,
         prompt,
@@ -250,7 +306,6 @@ def float_prompt(
         min=min,
         max=max,
         show_range=show_range,
-        **kwargs,
     )
     # explicit cast to float since users might pass in int as default
     # and we have no logic inside _number_prompt to handle that
@@ -267,7 +322,6 @@ def _number_prompt(
     min: int | float | None = ...,
     max: int | float | None = ...,
     show_range: bool = ...,
-    **kwargs: Any,
 ) -> int: ...
 
 
@@ -281,7 +335,6 @@ def _number_prompt(
     min: int | float | None = ...,
     max: int | float | None = ...,
     show_range: bool = ...,
-    **kwargs: Any,
 ) -> float: ...
 
 
@@ -294,34 +347,32 @@ def _number_prompt(
     min: int | float | None = None,
     max: int | float | None = None,
     show_range: bool = True,
-    **kwargs: Any,
 ) -> int | float:
-    # NOTE: pyright really doesn't like Ellipsis as default!
-    default_arg = (  # pyright: ignore[reportUnknownVariableType]
-        ... if default is None else default
-    )
-
-    IntPrompt.ask()
-
-    _prompt_add = ""
+    prompt_parts = [prompt]
     if show_range:
+        input_range_str = ""
         if min is not None and max is not None:
             if min > max:
                 raise ValueError("min must be less than or equal to max")
-            _prompt_add = f"{min}<=x<={max}"
+            input_range_str = f"{min}<=x<={max}"
         elif min is not None:
-            _prompt_add = f"x>={min}"
+            input_range_str = f"x>={min}"
         elif max is not None:
-            _prompt_add = f"x<={max}"
-        if _prompt_add:
-            _prompt_add = Color.YELLOW(_prompt_add)
-    msg = prompt_msg(prompt, _prompt_add)
+            input_range_str = f"x<={max}"
+        if input_range_str:
+            prompt_parts.append(Color.YELLOW(input_range_str))
+
+    msg = prompt_msg(*prompt_parts)
+
+    # See str_prompt() for why we use pass default as part of the kwargs mapping
+    kwargs: dict[str, Any] = {}
+    if default is not None:
+        kwargs["default"] = default
 
     while True:
         val = prompt_type.ask(  # pyright: ignore[reportUnknownVariableType]
             msg,
             console=err_console,
-            default=default_arg,  # pyright: ignore[reportUnknownArgumentType]
             show_default=show_default,
             **kwargs,
         )
@@ -347,16 +398,29 @@ def _number_prompt(
 def bool_prompt(
     prompt: str,
     *,
-    default: bool = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
+    default: bool | None = None,
     show_default: bool = True,
-    warning: bool = False,
-    **kwargs: Any,
 ) -> bool:
+    """Prompt user for a boolean input (y/n). Loops until a valid input is provided.
+
+    Args:
+        prompt (str): String prompt to display to the user.
+        default (bool, optional): Default value to use if the user does not provide input.
+            If not provided, the user will be required to provide input.
+        show_default (bool, optional): Show the default value. Defaults to True.
+        warning (bool, optional): Show a warning message if the user selects "no". Defaults to False.
+        **kwargs: Additional keyword arguments to pass to the prompt.
+    Returns:
+        bool: The user input as a boolean.
+    """
+    kwargs: dict[str, Any] = {}
+    if default is not None:
+        kwargs["default"] = default
+
     return Confirm.ask(
         prompt_msg(prompt),
         console=err_console,
         show_default=show_default,
-        default=default,
         **kwargs,
     )
 
@@ -364,13 +428,27 @@ def bool_prompt(
 @no_headless
 def path_prompt(
     prompt: str,
-    default: str | Path = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
+    default: str | Path | None = None,
     *,
     show_default: bool = True,
     exist_ok: bool = True,
     must_exist: bool = False,
-    **kwargs: Any,
 ) -> Path:
+    """Prompt user for a path.
+
+    Optionally checks if the path exists OR if it does _not_ exist.
+
+    Args:
+        prompt (str): String prompt to display to the user.
+        default (str | Path, optional): Default value to use if the user does not provide input.
+            If not provided, the user will be required to provide input.
+        show_default (bool, optional): Show the default value. Defaults to True.
+        exist_ok (bool, optional): Allow existing paths. Defaults to True.
+        must_exist (bool, optional): Require existing paths. Defaults to False.
+
+    Returns:
+        The user input as a Path object.
+    """
     if isinstance(default, Path):
         default_arg = str(default)
     else:
@@ -379,9 +457,8 @@ def path_prompt(
     while True:
         path_str = str_prompt(
             prompt,
-            default=default_arg,  # pyright: ignore[reportUnknownVariableType]
+            default=default_arg,
             show_default=show_default,
-            **kwargs,
         )
         path = Path(path_str)
 

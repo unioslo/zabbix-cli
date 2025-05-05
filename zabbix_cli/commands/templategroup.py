@@ -104,10 +104,11 @@ def create_templategroup(
         None,
         help="User group(s) to give read-only permissions. Comma-separated.",
     ),
-    no_usergroup_permissions: bool = typer.Option(
-        False,
-        "--no-usergroup-permissions",
-        help="Do not assign user group permissions.",
+    use_default_usergroups: bool = typer.Option(
+        True,
+        "--default-usergroups/--no-default-usergroups",
+        "--usergroup-permissions/--no-usergroup-permissions",
+        help="Assign default user group permissions from configs.",
     ),
 ) -> None:
     """Create a new template group.
@@ -129,7 +130,7 @@ def create_templategroup(
             hostgroup=templategroup,
             rw_groups=rw_groups,
             ro_groups=ro_groups,
-            no_usergroup_permissions=no_usergroup_permissions,
+            use_default_usergroups=use_default_usergroups,
         )
         return
 
@@ -137,11 +138,11 @@ def create_templategroup(
 
     app_config = app.state.config.app
 
-    rw_grps: list[str] = []
-    ro_grps: list[str] = []
-    if not no_usergroup_permissions:
-        rw_grps = parse_list_arg(rw_groups) or app_config.default_admin_usergroups
-        ro_grps = parse_list_arg(ro_groups) or app_config.default_create_user_usergroups
+    rw_grps: list[str] = parse_list_arg(rw_groups)
+    ro_grps: list[str] = parse_list_arg(ro_groups)
+    if use_default_usergroups:
+        rw_grps.extend(app_config.commands.create_templategroup.rw_groups)
+        ro_grps.extend(app_config.commands.create_templategroup.ro_groups)
 
     try:
         # Admin group(s) gets Read/Write

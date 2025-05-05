@@ -46,6 +46,7 @@ dependencies = [
   "strenum>=0.4.15",
   "typing-extensions>=4.8.0",
   "importlib-metadata>=8.5.0; python_version < '3.10'",
+  "shellingham>=1.5.4",
 ]
 dynamic = ["version"]
 

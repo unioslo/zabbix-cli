@@ -2003,9 +2003,7 @@ class ZabbixAPI:
             search=search,
         )
         if templates:
-            params: ParamsType = {
-                "templateids": [template.templateid for template in templates]
-            }
+            params["templateids"] = [template.templateid for template in templates]
         if monitored:
             params["monitored"] = monitored  # false by default in API
         if select_hosts:

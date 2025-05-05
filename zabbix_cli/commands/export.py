@@ -104,6 +104,7 @@ class ZabbixExporter:
         names: list[str],
         directory: Path,
         format: ExportFormat,
+        timestamps: bool,
         legacy_filenames: bool,
         pretty: bool,
         ignore_errors: bool,
@@ -114,6 +115,7 @@ class ZabbixExporter:
         self.names = names
         self.directory = directory
         self.format = format
+        self.timestamps = timestamps
         self.legacy_filenames = legacy_filenames
         self.pretty = pretty
         self.ignore_errors = ignore_errors
@@ -150,15 +152,20 @@ class ZabbixExporter:
     def check_export_types(self) -> None:
         """Check export types for compatibility."""
         # If we have no specific exports, export all object types
-        for export_type in self.export_types:
-            self._check_export_type_compat(export_type)
+        for export_type in list(self.export_types):
+            if not self._is_valid_export_type(export_type):
+                # If the export type is not valid, remove it from the list
+                self.export_types.remove(export_type)
+                warning(
+                    f"Export type {export_type.human_readable()} is not supported in this "
+                    f"version of Zabbix ({self.client.version})."
+                )
 
-    def _check_export_type_compat(self, export_type: ExportType) -> None:
+    def _is_valid_export_type(self, export_type: ExportType) -> bool:
         if export_type == ExportType.TEMPLATE_GROUPS:
             if self.client.version.release < (6, 2, 0):
-                raise ZabbixCLIError(
-                    "Template group exports are not supported in Zabbix versions < 6.2."
-                )
+                return False
+        return True
 
     def get_exporters(self) -> list[Exporter]:
         """Get a list of exporters to run."""
@@ -183,7 +190,7 @@ class ZabbixExporter:
             fn = self._get_legacy_filename_stem(name, id)
         else:
             fn = self._get_filename_stem(name, id)
-        if self.config.app.export_timestamps:
+        if self.timestamps:
             ts = datetime.now().strftime("%Y-%m-%dT%H%M%S%Z")
             fn = f"{fn}_{ts}"
         return sanitize_filename(fn)
@@ -372,6 +379,11 @@ def export_configuration(
         "--format",
         help="Format to export to. Overrides export format in config.",
     ),
+    timestamps: Optional[bool] = typer.Option(
+        None,
+        "--timestamps",
+        help="Add timestamps to exported filenames. Overrides config option.",
+    ),
     # TODO: move/add this option to config
     legacy_filenames: bool = typer.Option(
         False,
@@ -411,7 +423,7 @@ def export_configuration(
 
         [code]DIRECTORY/OBJECT_TYPE/zabbix_export_OBJECT_TYPE_NAME_ID_\[timestamp].FORMAT[/]
 
-    Timestamps are disabled by default, but can be enabled with the [configopt]app.export_timestamps[/]
+    Timestamps are disabled by default, but can be enabled with [option]--timestamps[/] or the [configopt]app.commands.export.timestamps[/]
     configuration option.
 
     Shows detailed information about exported files in JSON output mode.
@@ -432,16 +444,16 @@ def export_configuration(
             "--legacy-filenames is deprecated and will be removed in a future version."
         )
 
-    exportdir = directory or app.state.config.app.export_directory
-
     # V2 compat: passing in #all# exports all names
     if names == "#all#":
         obj_names = []
     else:
         obj_names = parse_list_arg(names)
 
-    if not format:
-        format = app.state.config.app.export_format
+    # Options with config defaults
+    exportdir = directory or app.state.config.app.commands.export.directory
+    format = format or app.state.config.app.commands.export.format
+    timestamps = timestamps or app.state.config.app.commands.export.timestamps
 
     # TODO: guard this in try/except and render useful error if it fails
     exporter = ZabbixExporter(
@@ -451,6 +463,7 @@ def export_configuration(
         names=obj_names,
         directory=exportdir,
         format=format,
+        timestamps=timestamps,
         legacy_filenames=legacy_filenames,
         pretty=pretty,
         ignore_errors=ignore_errors,
