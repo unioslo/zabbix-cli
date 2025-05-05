@@ -8,6 +8,8 @@ import logging
 import sys
 import textwrap
 from collections.abc import Iterable
+from dataclasses import dataclass
+from dataclasses import field
 from enum import Enum
 from enum import EnumMeta
 from operator import attrgetter
@@ -15,7 +17,6 @@ from pathlib import Path
 from typing import Any
 from typing import Callable
 from typing import Generic
-from typing import NamedTuple
 from typing import Optional
 from typing import TypeVar
 from typing import Union
@@ -57,7 +58,8 @@ logger = logging.getLogger(__name__)
 EnumT = TypeVar("EnumT", bound=Enum)
 
 
-class EnumMember(NamedTuple, Generic[EnumT]):
+@dataclass
+class EnumMember(Generic[EnumT]):
     member: EnumT
     description: str = ""  # docstring
 
@@ -167,7 +169,6 @@ def is_enum_type(obj: object) -> bool:
 
 
 T = TypeVar("T")
-T2 = TypeVar("T2")
 
 
 class AnySet(set[T]):
@@ -182,7 +183,8 @@ class AllSet(set[T]):
 # TODO: NotAllSet
 
 
-class ConfigOption(NamedTuple, Generic[T]):
+@dataclass
+class ConfigOption(Generic[T]):
     """Configuration option for the CLI."""
 
     name: str
@@ -190,7 +192,7 @@ class ConfigOption(NamedTuple, Generic[T]):
     type: type[T]
     empty_ok: bool = True
     message: Optional[str] = None
-    depends_on: Union[AnySet[str], AllSet[str]] = AnySet()
+    depends_on: Union[AnySet[str], AllSet[str]] = field(default_factory=AnySet)
 
     def get_value(self, config: Config) -> T:
         return attrgetter(self.attr)(config)
