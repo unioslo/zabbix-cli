@@ -111,7 +111,6 @@ class CreateHostOrTemplateGroup(_CreateGroupBase):
 class ExportImport(BaseModel):
     """Shared configuration for `export_configuration` and `import_configuration` commands."""
 
-    # Exports
     directory: Path = Field(
         default=EXPORT_DIR,
         validation_alias=AliasChoices(
@@ -146,15 +145,22 @@ class ExportImport(BaseModel):
 class CommandConfig(BaseModel):
     """Configuration of commands."""
 
+    # Hosts
     create_host: CreateHost = Field(default_factory=CreateHost)
+
+    # Groups
     create_hostgroup: CreateHostGroup = Field(default_factory=CreateHostGroup)
-    create_notification_user: CreateNotificationUser = Field(
-        default_factory=CreateNotificationUser
-    )
     create_templategroup: CreateTemplateGroup = Field(
         default_factory=CreateTemplateGroup,
     )
+
+    # Users
     create_user: CreateUser = Field(default_factory=CreateUser)
+    create_notification_user: CreateNotificationUser = Field(
+        default_factory=CreateNotificationUser
+    )
+
+    # Export
     export: ExportImport = Field(
         default_factory=ExportImport,
         validation_alias=AliasChoices(
