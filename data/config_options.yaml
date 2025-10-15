@@ -1,0 +1,584 @@
+name: ''
+description: ''
+parents: []
+fields:
+- name: api
+  description: Configuration for the Zabbix API.
+  parents: []
+  fields:
+  - name: url
+    description: URL of the Zabbix API host. Should not include `/api_jsonrpc.php`.
+    parents:
+    - api
+    type: str
+    default: ''
+    required: false
+    examples:
+    - https:/zabbix.example.com
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      url = "https:/zabbix.example.com"
+
+      '
+  - name: username
+    description: Username for the Zabbix API.
+    parents:
+    - api
+    type: str
+    default: Admin
+    required: false
+    examples:
+    - Admin
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      username = "Admin"
+
+      '
+  - name: password
+    description: Password for user.
+    parents:
+    - api
+    type: str
+    default: ''
+    required: false
+    examples:
+    - zabbix
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      password = "zabbix"
+
+      '
+  - name: auth_token
+    description: API auth token.
+    parents:
+    - api
+    type: str
+    default: ''
+    required: false
+    examples:
+    - API_TOKEN_123
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      auth_token = "API_TOKEN_123"
+
+      '
+  - name: verify_ssl
+    description: Verify SSL certificate of the Zabbix API host. Can also be a path
+      to a CA bundle.
+    parents:
+    - api
+    type: Union | str
+    default: 'true'
+    required: false
+    examples:
+    - true
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      verify_ssl = true
+
+      '
+  - name: timeout
+    description: API request timeout in seconds.
+    parents:
+    - api
+    type: Optional
+    default: 0
+    required: false
+    examples:
+    - 0
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      timeout = 0
+
+      '
+  is_model: true
+  example: '[api]
+
+    url = "https:/zabbix.example.com"
+
+
+    [api.api]
+
+    timeout = 0
+
+    '
+- name: app
+  description: Configuration for app defaults and behavior.
+  parents: []
+  fields:
+  - name: default_hostgroups
+    description: Default host groups to assign to hosts created with `create_host`.
+      Hosts are always added to these groups unless `--no-default-hostgroup` is provided.
+    parents:
+    - app
+    type: list[str]
+    default:
+    - All-hosts
+    required: false
+    examples:
+    - - All-hosts
+    is_model: false
+    parents_str: app
+    example: "[app]\ndefault_hostgroups = [\n    \"All-hosts\",\n]\n"
+  - name: default_admin_usergroups
+    description: Default user groups to give read/write permissions to groups created
+      with `create_hostgroup` and `create_templategroup` when `--rw-groups` option
+      is not provided.
+    parents:
+    - app
+    type: list[str]
+    default: []
+    required: false
+    examples:
+    - []
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      default_admin_usergroups = []
+
+      '
+  - name: default_create_user_usergroups
+    description: Default user groups to add users created with `create_user` to when
+      `--usergroups` is not provided.
+    parents:
+    - app
+    type: list[str]
+    default: []
+    required: false
+    examples:
+    - []
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      default_create_user_usergroups = []
+
+      '
+  - name: default_notification_users_usergroups
+    description: Default user groups to add notification users created with `create_notification_user`
+      to when `--usergroups` is not provided.
+    parents:
+    - app
+    type: list[str]
+    default:
+    - All-notification-users
+    required: false
+    examples:
+    - - All-notification-users
+    is_model: false
+    parents_str: app
+    example: "[app]\ndefault_notification_users_usergroups = [\n    \"All-notification-users\"\
+      ,\n]\n"
+  - name: export_directory
+    description: Default directory to export files to.
+    parents:
+    - app
+    type: str
+    default: /path/to/data_dir/exports
+    required: false
+    examples:
+    - /path/to/data_dir/exports
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      export_directory = "/path/to/data_dir/exports"
+
+      '
+  - name: export_format
+    description: Default export format.
+    parents:
+    - app
+    type: str
+    default: json
+    required: false
+    examples:
+    - json
+    is_model: false
+    choices:
+    - xml
+    - json
+    - yaml
+    - php
+    choices_str: xml, json, yaml, php
+    parents_str: app
+    example: '[app]
+
+      export_format = "json"
+
+      '
+  - name: export_timestamps
+    description: Include timestamps in exported filenames.
+    parents:
+    - app
+    type: bool
+    default: 'false'
+    required: false
+    examples:
+    - false
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      export_timestamps = false
+
+      '
+  - name: use_session_file
+    description: Use session file for storing API session IDs for persistent sessions.
+    parents:
+    - app
+    type: bool
+    default: 'true'
+    required: false
+    examples:
+    - true
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      use_session_file = true
+
+      '
+  - name: session_file
+    description: Path to session file.
+    parents:
+    - app
+    type: str
+    default: /path/to/data_dir/.zabbix-cli_session.json
+    required: false
+    examples:
+    - /path/to/data_dir/.zabbix-cli_session.json
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      session_file = "/path/to/data_dir/.zabbix-cli_session.json"
+
+      '
+  - name: auth_token_file
+    description: Path to legacy auth token file.
+    parents:
+    - app
+    type: str
+    default: /path/to/data_dir/.zabbix-cli_auth_token
+    required: false
+    examples:
+    - /path/to/data_dir/.zabbix-cli_auth_token
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      auth_token_file = "/path/to/data_dir/.zabbix-cli_auth_token"
+
+      '
+  - name: auth_file
+    description: Path to auth file.
+    parents:
+    - app
+    type: str
+    default: /path/to/data_dir/.zabbix-cli_auth
+    required: false
+    examples:
+    - /path/to/data_dir/.zabbix-cli_auth
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      auth_file = "/path/to/data_dir/.zabbix-cli_auth"
+
+      '
+  - name: allow_insecure_auth_file
+    description: ''
+    parents:
+    - app
+    type: bool
+    default: 'true'
+    required: false
+    examples:
+    - true
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      allow_insecure_auth_file = true
+
+      '
+  - name: history
+    description: Enable command history.
+    parents:
+    - app
+    type: bool
+    default: 'true'
+    required: false
+    examples:
+    - true
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      history = true
+
+      '
+  - name: history_file
+    description: Path to history file.
+    parents:
+    - app
+    type: str
+    default: /path/to/data_dir/history
+    required: false
+    examples:
+    - /path/to/data_dir/history
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      history_file = "/path/to/data_dir/history"
+
+      '
+  - name: bulk_mode
+    description: Bulk mode error handling.
+    parents:
+    - app
+    type: str
+    default: strict
+    required: false
+    examples:
+    - strict
+    is_model: false
+    choices:
+    - strict
+    - continue
+    - skip
+    choices_str: strict, continue, skip
+    parents_str: app
+    example: '[app]
+
+      bulk_mode = "strict"
+
+      '
+  - name: legacy_json_format
+    description: Use legacy JSON format.
+    parents:
+    - app
+    type: bool
+    default: 'false'
+    required: false
+    examples:
+    - false
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      legacy_json_format = false
+
+      '
+  - name: app.commands
+    description: Configuration of commands.
+    parents:
+    - app
+    fields:
+    - name: app.commands.create_host
+      description: Configuration for the `create_host` command.
+      parents:
+      - app
+      - commands
+      fields:
+      - name: create_interface
+        description: ''
+        parents:
+        - app
+        - commands
+        - create_host
+        type: bool
+        default: 'true'
+        required: false
+        examples:
+        - true
+        is_model: false
+        parents_str: app.commands.create_host
+        example: '[app.commands.create_host]
+
+          create_interface = true
+
+          '
+      is_model: true
+      example: '[app.commands.create_host]
+
+        create_interface = true
+
+        '
+    is_model: true
+    example: ''
+  - name: app.output
+    description: Configuration for output formatting.
+    parents:
+    - app
+    fields:
+    - name: format
+      description: Default output format.
+      parents:
+      - app
+      - output
+      type: str
+      default: table
+      required: false
+      examples:
+      - table
+      is_model: false
+      choices:
+      - csv
+      - json
+      - table
+      choices_str: csv, json, table
+      parents_str: app.output
+      example: '[app.output]
+
+        format = "table"
+
+        '
+    - name: color
+      description: Use colors in terminal output.
+      parents:
+      - app
+      - output
+      type: bool
+      default: 'true'
+      required: false
+      examples:
+      - true
+      is_model: false
+      parents_str: app.output
+      example: '[app.output]
+
+        color = true
+
+        '
+    - name: paging
+      description: Use paging in terminal output.
+      parents:
+      - app
+      - output
+      type: bool
+      default: 'false'
+      required: false
+      examples:
+      - false
+      is_model: false
+      parents_str: app.output
+      example: '[app.output]
+
+        paging = false
+
+        '
+    is_model: true
+    example: '[app.output]
+
+      format = "table"
+
+
+      [app.output.app.output]
+
+      paging = false
+
+
+      [output]
+
+      format = "table"
+
+
+      [output.app.output]
+
+      paging = false
+
+      '
+  is_model: true
+  example: "[app]\ndefault_hostgroups = [\n    \"All-hosts\",\n]\n\n[app.app]\nlegacy_json_format\
+    \ = false\n"
+- name: logging
+  description: Configuration for application logs.
+  parents: []
+  fields:
+  - name: enabled
+    description: Enable logging.
+    parents:
+    - logging
+    type: bool
+    default: 'true'
+    required: false
+    examples:
+    - true
+    is_model: false
+    parents_str: logging
+    example: '[logging]
+
+      enabled = true
+
+      '
+  - name: log_level
+    description: Log level.
+    parents:
+    - logging
+    type: str
+    default: INFO
+    required: false
+    examples:
+    - INFO
+    is_model: false
+    choices:
+    - DEBUG
+    - INFO
+    - WARN
+    - WARNING
+    - ERROR
+    - CRITICAL
+    - FATAL
+    choices_str: DEBUG, INFO, WARN, WARNING, ERROR, CRITICAL, FATAL
+    parents_str: logging
+    example: '[logging]
+
+      log_level = "INFO"
+
+      '
+  - name: log_file
+    description: File for storing logs. Can be omitted to log to stderr (**warning:**
+      NOISY).
+    parents:
+    - logging
+    type: str
+    default: /path/to/logs_dir/zabbix-cli.log
+    required: false
+    examples:
+    - /path/to/logs_dir/zabbix-cli.log
+    is_model: false
+    parents_str: logging
+    example: '[logging]
+
+      log_file = "/path/to/logs_dir/zabbix-cli.log"
+
+      '
+  is_model: true
+  example: '[logging]
+
+    enabled = true
+
+
+    [logging.logging]
+
+    log_file = "/path/to/logs_dir/zabbix-cli.log"
+
+    '
+is_model: true
+example: ''
