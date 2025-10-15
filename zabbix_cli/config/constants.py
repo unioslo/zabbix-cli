@@ -53,9 +53,12 @@ class ConfigEnvVars:
 
 
 class OutputFormat(StrEnum):
-    CSV = "csv"
+    # CSV = "csv"
     JSON = "json"
+    """JSON-serialized output."""
+
     TABLE = "table"
+    """Rich terminal table output."""
 
 
 class SecretMode(StrEnum):

@@ -111,7 +111,7 @@ class Choice(Enum):
     def from_prompt(
         cls: type[MixinType],
         prompt: Optional[str] = None,
-        default: MixinType = ...,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
+        default: Optional[MixinType] = None,
     ) -> MixinType:
         """Prompt the user to select a choice from the enum.
 
@@ -130,11 +130,13 @@ class Choice(Enum):
             # Uppercase first letter without mangling the rest of the string
             if prompt and prompt[0].islower():
                 prompt = prompt[0].upper() + prompt[1:]
-        default = default if default is ... else str(default)  # pyright: ignore[reportUnnecessaryComparison]
+
+        default_val = str(default) if default else None
+
         choice = str_prompt(
             prompt,
             choices=cls.choices(),
-            default=default,
+            default=default_val,
         )
         return cls(choice)
 
