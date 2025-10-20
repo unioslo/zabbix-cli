@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## [Unreleased] -->
+<!-- ## Unreleased -->
+
+## [3.5.3](https://github.com/unioslo/zabbix-cli/tree/3.5.3) - 2025-10-20
+
+### Fixed
+
+- Force-load typer.rich_utils [#312](https://github.com/unioslo/zabbix-cli/pull/312) by [@sur5r](https://github.com/sur5r)
+
+### Changed
+
+- Use stdlib tomllib instead of standalone tomli on Python 3.11+ [#306](https://github.com/unioslo/zabbix-cli/pull/306) by [@a-detiste](https://github.com/a-detiste)
 
 ## [3.5.2](https://github.com/unioslo/zabbix-cli/releases/tag/3.5.2) - 2025-04-24
 
