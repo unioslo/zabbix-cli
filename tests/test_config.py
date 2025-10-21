@@ -6,7 +6,10 @@ from typing import Optional
 from typing import Union
 
 import pytest
-import tomli
+try:
+    import tomllib
+except:
+    import tomli as tomllib
 from inline_snapshot import snapshot
 from pydantic import BaseModel
 from pydantic import Field
@@ -287,7 +290,7 @@ def test_config_dump_to_file_masked(tmp_path: Path) -> None:
     conf.dump_to_file(conf_file, secrets=SecretMode.MASK)
 
     toml_str = conf_file.read_text()
-    config_dict = tomli.loads(toml_str)
+    config_dict = tomllib.loads(toml_str)
     assert config_dict["api"]["password"] == snapshot("**********")
     assert config_dict["api"]["auth_token"] == snapshot("**********")
 

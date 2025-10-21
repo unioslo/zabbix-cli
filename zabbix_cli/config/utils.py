@@ -22,11 +22,14 @@ logger = logging.getLogger(__name__)
 
 def load_config_toml(filename: Path) -> dict[str, Any]:
     """Load a TOML configuration file."""
-    import tomli
+    try:
+        import tomllib
+    except ImportError:
+        import tomli as tomllib
 
     try:
-        return tomli.loads(filename.read_text())
-    except tomli.TOMLDecodeError as e:
+        return tomllib.loads(filename.read_text())
+    except tomllib.TOMLDecodeError as e:
         raise ConfigError(f"Error decoding TOML file {filename}: {e}") from e
     except OSError as e:
         raise ConfigError(f"Error reading TOML file {filename}: {e}") from e

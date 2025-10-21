@@ -15,7 +15,10 @@ from typing import NamedTuple
 from typing import Optional
 from typing import Protocol
 
-import tomli
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
 import tomli_w
 
 sys.path.append(Path(__file__).parent.as_posix())
@@ -43,7 +46,7 @@ class Command(NamedTuple):
 
 def add_config_bogus_defaults(output: str) -> str:
     """Give bogus defaults to certain config values."""
-    config = tomli.loads(output)
+    config = tomllib.loads(output)
     # TODO: replace local username with a default value
     out = tomli_w.dumps(config)
     out = add_path_placeholders(out)

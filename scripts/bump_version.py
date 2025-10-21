@@ -189,7 +189,7 @@ class VersionBumper(StateMachine):
 
     source_dir = Path("zabbix_cli")
     version_file = source_dir / "__about__.py"
-    changelog_file = Path("CHANGELOG.md")
+    changelog_file = Path("CHANGELOG")
     changelog_file_bak = changelog_file.with_suffix(".bak")
     old_version: str | None = None
     new_version: str | None = None
@@ -313,7 +313,13 @@ class VersionBumper(StateMachine):
     @advance(State.GIT_ADD)
     def git_add(self, *files: str) -> CompletedProcess[bytes]:
         p_git_add = self.run(
-            ["git", "add", "zabbix_cli/__about__.py", "CHANGELOG.md", *files],
+            [
+                "git",
+                "add",
+                str(self.version_file.absolute()),
+                str(self.changelog_file.absolute()),
+                *files,
+            ],
             capture_output=True,
         )
         if p_git_add.returncode != 0:
@@ -372,7 +378,7 @@ class VersionBumper(StateMachine):
     def add_changelog_header(self, new_version: str) -> None:
         if self.dry_run:
             console.print(
-                f"Would add changelog header for version {new_version} to CHANGELOG.md"
+                f"Would add changelog header for version {new_version} to {self.changelog_file}"
             )
             return
 
@@ -392,7 +398,7 @@ class VersionBumper(StateMachine):
             None,
         )
         if index is None:
-            exit_err("Failed to find '## Unreleased' section in CHANGELOG.md")
+            exit_err(f"Failed to find '## Unreleased' section in {self.changelog_file}")
 
         header = f"## [{new_version}](https://github.com/unioslo/zabbix-cli/tree/{new_version}) - {datetime.now().strftime('%Y-%m-%d')}"
         lines[index] = "<!-- ## Unreleased -->"  # comment out
@@ -433,7 +439,7 @@ def main(
         is_flag=True,
     ),
     branch: str = typer.Option(
-        "main",
+        "master",
         "--branch",
         help="The remote branch to push to.",
     ),

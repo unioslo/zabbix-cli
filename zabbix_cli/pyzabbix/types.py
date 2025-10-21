@@ -705,22 +705,9 @@ class ProxyGroup(ZabbixAPIBaseModel):
     name: str
     description: str
     failover_delay: str
-    min_online: int  # This is a str in the spec, but it's a number 1-1000!
+    min_online: str  # 1-1000, may be a macro
     state: ProxyGroupState
     proxies: list[Proxy] = Field(default_factory=list)
-
-    @field_validator("min_online", mode="before")
-    def _handle_non_numeric_min_online(cls, v: Any) -> Any:
-        # The spec states that this value is a string, but its value
-        # is a number between 1-1000. Thus, we try to interpret this as
-        # a number, and default to 1 if it's not.
-        if isinstance(v, str) and not v.isnumeric():
-            logger.error(
-                "Invalid min_online value: %s. Expected a numeric value. Defaulting to 1.",
-                v,
-            )
-            return 1
-        return v
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = [
