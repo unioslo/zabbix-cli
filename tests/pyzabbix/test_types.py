@@ -59,7 +59,7 @@ from zabbix_cli.pyzabbix.types import ZabbixRight
             name="test",
             description="yeah",
             failover_delay="60",
-            min_online=1,
+            min_online="1",
             state=ProxyGroupState.ONLINE,
         ),
         MacroBase(macro="foo", value="bar", type=0, description="baz"),
