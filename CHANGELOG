@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `create_notification_user`: `[app.commands.create_notification_user]`
   - `export_configuration`: `[app.commands.export]`
   - `import_configuration`: `[app.commands.export]`
-  - **NOTE:** `export_configuration` and `import_configuration` share the same configuration table.
+  - **NOTE:** `export_configuration` and `import_configuration` share the same configuration table to maintain consistency.
 - New option `create_user --default-usergroups/--no-default-usergroups`
 - New option `create_notification_user --default-usergroups/--no-default-usergroups`
 

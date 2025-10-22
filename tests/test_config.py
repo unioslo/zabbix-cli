@@ -6,9 +6,10 @@ from typing import Optional
 from typing import Union
 
 import pytest
+
 try:
     import tomllib
-except:
+except ImportError:
     import tomli as tomllib
 from inline_snapshot import snapshot
 from pydantic import BaseModel
@@ -756,3 +757,46 @@ def test_shared_command_config(tmp_path: Path) -> None:
     assert conf_tg_set.app.commands.create_templategroup.rw_groups == snapshot(
         ["All-admin-users"]
     )
+
+
+def test_config_command_alias_priority(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test loading a config file with duplicate sections with different aliases"""
+    conf_import_first = """\
+[app.commands.import]
+format = "csv"
+
+[app.commands.export]
+format = "json"
+"""
+    conf_export_first = """\
+[app.commands.export]
+format = "json"
+
+[app.commands.import]
+format = "csv"
+"""
+
+    # Assert that the `import` alias is never used when `export` is defined
+    for conf_str in [conf_import_first, conf_export_first]:
+        conf_path = tmp_path / "zabbix-cli.toml"
+        conf_path.write_text(conf_str)
+
+        with caplog.at_level("WARNING", logger="zabbix_cli.config.commands"):
+            conf = Config.from_toml_file(conf_path)
+
+            # Uses the first alias found in the file regardless
+            assert conf.app.commands.export.format == OutputFormat.JSON
+
+            # The log record tuple should be the same for both cases
+            assert caplog.record_tuples == snapshot(
+                [
+                    (
+                        "zabbix_cli.config.commands",
+                        30,
+                        "Multiple export/import configuration sections found ('export', 'import'). Using the first one: 'export'",
+                    )
+                ]
+            )
+            caplog.clear()

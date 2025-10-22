@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
+from typing import Any
 
 from pydantic import AliasChoices
 from pydantic import Field
@@ -12,6 +14,8 @@ from typing_extensions import Self
 from zabbix_cli.config.base import BaseModel
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.pyzabbix.enums import ExportFormat
+
+logger = logging.getLogger(__name__)
 
 
 class CreateHost(BaseModel):
@@ -164,11 +168,12 @@ class CommandConfig(BaseModel):
     export: ExportImport = Field(
         default_factory=ExportImport,
         validation_alias=AliasChoices(
-            # short-hand + command names
+            # short-hand + command + combined names
             "export",
             "import",
             "export_configuration",
             "import_configuration",
+            "export_import",
         ),
     )
 
@@ -196,3 +201,25 @@ class CommandConfig(BaseModel):
                 self.create_group, from_attributes=True
             )
         return self
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_export_import(cls, data: Any) -> Any:
+        """Emit warning if multiple export/import aliases are used."""
+        if not isinstance(data, dict):
+            return data
+
+        if field := cls.model_fields.get("export"):
+            if isinstance(field.validation_alias, AliasChoices):
+                aliases = field.validation_alias.choices
+                # NOTE: we assume alias order is identical to definition order
+                # Coerce to str, even though we shouldn't have any AliasPath here
+                found = [str(alias) for alias in aliases if alias in data]
+                if len(found) > 1:
+                    logger.warning(
+                        "Multiple export/import configuration sections found (%s). "
+                        "Using the first one: %s",
+                        ", ".join(f"{f!r}" for f in found),
+                        f"{found[0]!r}",
+                    )
+        return data  # pyright: ignore[reportUnknownVariableType]
