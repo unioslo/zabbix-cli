@@ -795,7 +795,7 @@ format = "csv"
                     (
                         "zabbix_cli.config.commands",
                         30,
-                        "Multiple export/import configuration sections found ('export', 'import'). Using the first one: 'export'",
+                        "Multiple export/import configuration sections found ([app.commands.export], [app.commands.import]). Using section: [app.commands.export]",
                     )
                 ]
             )

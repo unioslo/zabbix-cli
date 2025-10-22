@@ -218,8 +218,8 @@ class CommandConfig(BaseModel):
                 if len(found) > 1:
                     logger.warning(
                         "Multiple export/import configuration sections found (%s). "
-                        "Using the first one: %s",
-                        ", ".join(f"{f!r}" for f in found),
-                        f"{found[0]!r}",
+                        "Using section: [app.commands.%s]",
+                        ", ".join(f"[app.commands.{f}]" for f in found),
+                        found[0],
                     )
         return data  # pyright: ignore[reportUnknownVariableType]
