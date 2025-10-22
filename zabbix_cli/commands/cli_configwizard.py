@@ -297,7 +297,7 @@ _CONFIG_OPTIONS: dict[str, list[ConfigOption[Any]]] = {
         ),
         ConfigOption(
             name="Verify SSL",
-            message="Verify SSL certificates? (can also be path to custom CA bundle)",
+            message="Verify SSL certificates? (y/n or path to custom CA bundle)",
             attr="api.verify_ssl",
             type=Union[bool, Path],  # pyright: ignore[reportArgumentType] # TODO: fix union types
         ),
@@ -325,6 +325,7 @@ _CONFIG_OPTIONS: dict[str, list[ConfigOption[Any]]] = {
             name="Auth file location",
             attr="app.auth_file",
             type=Path,
+            depends_on=AnySet({"app.use_auth_file"}),
         ),
         ConfigOption(
             name="Insecure session/auth file",
