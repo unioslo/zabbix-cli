@@ -1517,6 +1517,7 @@ class ZabbixAPI:
         self,
         *,
         host: Optional[Host] = None,
+        template: Optional[Template] = None,
         macro_name: Optional[str] = None,
         search: bool = False,
         select_hosts: bool = False,
@@ -1528,6 +1529,7 @@ class ZabbixAPI:
         macros = self.get_macros(
             macro_name=macro_name,
             host=host,
+            template=template,
             search=search,
             select_hosts=select_hosts,
             select_templates=select_templates,
@@ -1550,6 +1552,7 @@ class ZabbixAPI:
         *,
         macro_name: Optional[str] = None,
         host: Optional[Host] = None,
+        template: Optional[Template] = None,
         search: bool = False,
         select_hosts: bool = False,
         select_templates: bool = False,
@@ -1561,6 +1564,11 @@ class ZabbixAPI:
 
         if host:
             params["hostids"] = host.hostid
+
+        # NOTE: Fetching macros for a template uses the param `hostids` as well!
+        # https://www.zabbix.com/documentation/current/en/manual/api/reference/usermacro/get#retrieving-host-macros-for-a-template
+        if template:
+            params["hostids"] = template.templateid
 
         if macro_name:
             add_param(params, "search", "macro", macro_name)
@@ -1630,8 +1638,8 @@ class ZabbixAPI:
 
         return [GlobalMacro(**macro) for macro in result]
 
-    def create_macro(self, host: Host, macro: str, value: str) -> str:
-        """Creates a macro given a host ID, macro name and value."""
+    def create_host_macro(self, host: Host, macro: str, value: str) -> str:
+        """Creates a user macro for a host."""
         try:
             resp = self.usermacro.create(hostid=host.hostid, macro=macro, value=value)
         except ZabbixAPIException as e:
@@ -1641,6 +1649,25 @@ class ZabbixAPI:
         if not resp or not resp.get("hostmacroids"):
             raise ZabbixNotFoundError(
                 f"No macro ID returned when creating macro {macro!r} for host {host}"
+            )
+        return resp["hostmacroids"][0]
+
+    def create_template_macro(self, template: Template, macro: str, value: str) -> str:
+        """Creates a user macro for a template."""
+        try:
+            resp = self.usermacro.create(
+                # NOTE: Uses the param `hostid` for templates too
+                hostid=template.templateid,
+                macro=macro,
+                value=value,
+            )
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError(
+                f"Failed to create macro {macro!r} for template {template}"
+            ) from e
+        if not resp or not resp.get("hostmacroids"):
+            raise ZabbixNotFoundError(
+                f"No macro ID returned when creating macro {macro!r} for template {template}"
             )
         return resp["hostmacroids"][0]
 
@@ -1754,6 +1781,7 @@ class ZabbixAPI:
         template_name_or_id: str,
         *,
         select_hosts: bool = False,
+        select_macros: bool = False,
         select_templates: bool = False,
         select_parent_templates: bool = False,
     ) -> Template:
@@ -1761,6 +1789,7 @@ class ZabbixAPI:
         templates = self.get_templates(
             template_name_or_id,
             select_hosts=select_hosts,
+            select_macros=select_macros,
             select_templates=select_templates,
             select_parent_templates=select_parent_templates,
         )
@@ -1772,6 +1801,7 @@ class ZabbixAPI:
         self,
         *template_names_or_ids: str,
         select_hosts: bool = False,
+        select_macros: bool = False,
         select_templates: bool = False,
         select_parent_templates: bool = False,
     ) -> list[Template]:
@@ -1786,6 +1816,8 @@ class ZabbixAPI:
 
         if select_hosts:
             params["selectHosts"] = "extend"
+        if select_macros:
+            params["selectMacros"] = "extend"
         if select_templates:
             params["selectTemplates"] = "extend"
         if select_parent_templates:

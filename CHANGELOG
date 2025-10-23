@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **NOTE:** `export_configuration` and `import_configuration` share the same configuration table to maintain consistency.
 - New option `create_user --default-usergroups/--no-default-usergroups`
 - New option `create_notification_user --default-usergroups/--no-default-usergroups`
+- New command `define_template_macro` to define a macro for a template.
+- New command `show_template_macros` to show macros for a template.
 
 ### Changed
 
@@ -37,6 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `create_notification_user` no longer uses the same default user groups as `create_user`.
   - The default user groups is now set by `app.commands.create_notification_user.usergroups` in the config file.
 - `show_hostgroups` no longer requires a name argument. Shows all host groups by default.
+- Renamed macro commands. The term "usermacro" is a remnant of Zabbix-CLI v2 and only exists as part of the API. In the documentation and web interface, these are simply referred to as "Macros" in the global context and "Host/Template Macros" in the host/template context.
+  - `define_host_usermacro` → `define_host_macro`
+  - `show_host_usermacros` → `show_host_macros`
+  - `show_usermacro_host_list` → `show_macro_hosts`
+  - `show_usermacro_template_list` → `show_macro_templates`
 
 ### Deprecated
 
@@ -48,6 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `app.export_directory`
   - `app.export_format`
   - `app.export_timestamps`
+- Commands containing "usermacro" in the name are deprecated in favor of the new names without "user":
+  - `define_host_usermacro`
+  - `show_host_usermacros`
+  - `show_usermacro_host_list`
+  - `show_usermacro_template_list`
 
 ### Fixed
 
