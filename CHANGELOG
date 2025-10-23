@@ -9,6 +9,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Configuration wizard for creating/updating the configuration file via `zabbix-cli init --wizard/--no-wizard`.
+  - The wizard is enabled by default.
+- Configuration file tables for the following commands:
+  - `create_host`: `[app.commands.create_host]`
+  - `create_user`: `[app.commands.create_user]`
+  - `create_notification_user`: `[app.commands.create_notification_user]`
+  - `export_configuration`: `[app.commands.export]`
+  - `import_configuration`: `[app.commands.export]`
+  - **NOTE:** `export_configuration` and `import_configuration` share the same configuration table to maintain consistency.
+- New option `create_user --default-usergroups/--no-default-usergroups`
+- New option `create_notification_user --default-usergroups/--no-default-usergroups`
+
+### Changed
+
+- Moved the following config options to the new `[app.commands]` table:
+  - `app.default_hostgroups` → `app.commands.create_host.hostgroups`
+  - `app.default_admin_usergroups` → `app.commands.create_hostgroup.rw_groups`
+  - `app.default_create_user_usergroups` → `app.commands.create_user.usergroups` & `app.commands.create_hostgroup.ro_groups`
+  - `app.default_notification_users_usergroups` → `app.commands.create_notification_user.usergroups`
+  - `app.export_directory` → `app.commands.export.directory`
+  - `app.export_format` → `app.commands.export.format`
+  - `app.export_timestamps` → `app.commands.export.timestamps`
+- Removed default value in config for notification user groups (`All-notification-users`).
+- `create_notification_user` no longer uses the same default user groups as `create_user`.
+  - The default user groups is now set by `app.commands.create_notification_user.usergroups` in the config file.
+- `show_hostgroups` no longer requires a name argument. Shows all host groups by default.
+
+### Deprecated
+
+- Deprecated the following config options (moved to the new `[app.commands]` table):
+  - `app.default_hostgroups`
+  - `app.default_admin_usergroups`
+  - `app.default_create_user_usergroups`
+  - `app.default_notification_users_usergroups`
+  - `app.export_directory`
+  - `app.export_format`
+  - `app.export_timestamps`
+
 ### Fixed
 
 - Proxy groups with macros for `min_online` causing validation to fail and fallback to a default value of `1`. Removed this check to allow macros to be used.

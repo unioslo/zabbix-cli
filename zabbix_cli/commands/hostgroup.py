@@ -98,15 +98,15 @@ def add_host_to_hostgroup(
     rich_help_panel=HELP_PANEL,
     examples=[
         Example(
-            "Create a host group with default user group permissions",
+            "Create a host group with default user group permissions from config",
             "create_hostgroup 'My Host Group'",
         ),
         Example(
-            "Create a host group with specific RO and RW groups",
+            "Create a host group with specific RO and RW user group access",
             "create_hostgroup 'My Host Group' --ro-groups users --rw-groups admins",
         ),
         Example(
-            "Create a host group with no user group permissions",
+            "Create a host group without default user group permissions",
             "create_hostgroup 'My Host Group' --no-usergroup-permissions",
         ),
     ],
@@ -126,19 +126,20 @@ def create_hostgroup(
         "--ro-groups",
         help="User group(s) to give read-only permissions. Comma-separated.",
     ),
-    no_usergroup_permissions: bool = typer.Option(
-        False,
-        "--no-usergroup-permissions",
-        help="Do not assign user group permissions.",
+    use_default_usergroups: bool = typer.Option(
+        True,
+        "--default-usergroups/--no-default-usergroups",
+        "--usergroup-permissions/--no-usergroup-permissions",
+        help="Assign default user group permissions from configs.",
     ),
 ) -> None:
     """Create a new host group.
 
     Assigns default user group permissions by default.
 
-    * [option]--rw-groups[/] defaults to config option [configopt]app.default_admin_usergroups[/].
-    * [option]--ro-groups[/] defaults to config option [configopt]app.default_create_user_usergroups[/].
-    * Use [option]--no-usergroup-permissions[/] to create a group without any user group permissions.
+    * [option]--rw-groups[/] defaults to config option [configopt]app.commands.create_hostgroup.rw_groups[/].
+    * [option]--ro-groups[/] defaults to config option [configopt]app.commands.create_hostgroup.ro_groups[/].
+    * Use [option]--no-default-usergroups[/] to avoid adding user to default user groups.
     """
     from zabbix_cli.models import Result
 
@@ -150,11 +151,11 @@ def create_hostgroup(
 
     app_config = app.state.config.app
 
-    rw_grps: list[str] = []
-    ro_grps: list[str] = []
-    if not no_usergroup_permissions:
-        rw_grps = parse_list_arg(rw_groups) or app_config.default_admin_usergroups
-        ro_grps = parse_list_arg(ro_groups) or app_config.default_create_user_usergroups
+    rw_grps: list[str] = parse_list_arg(rw_groups)
+    ro_grps: list[str] = parse_list_arg(ro_groups)
+    if use_default_usergroups:
+        rw_grps.extend(app_config.commands.create_hostgroup.rw_groups)
+        ro_grps.extend(app_config.commands.create_hostgroup.ro_groups)
 
     try:
         # Admin group(s) gets Read/Write
@@ -397,8 +398,8 @@ def show_hostgroup(
     rich_help_panel=HELP_PANEL,
     examples=[
         Example(
-            "Show all host groups",
-            "show_hostgroups --limit 0",
+            "Show all host groups (excluding hosts)",
+            "show_hostgroups --no-hosts",
         ),
         Example(
             "Show all host groups starting with 'Web-'",
@@ -411,7 +412,8 @@ def show_hostgroup(
     ],
 )
 def show_hostgroups(
-    name: Optional[str] = typer.Argument(
+    name: str = typer.Argument(
+        "*",
         help="Name of host group(s). Comma-separated. Supports wildcards.",
         show_default=False,
     ),
@@ -422,7 +424,8 @@ def show_hostgroups(
 ) -> None:
     """Show details for host groups.
 
-    Limits results to 20 by default. Fetching all host groups with hosts can be extremely slow.
+    Fetching all host groups with hosts can be extremely slow. It is recommended to
+    use [option]--no-hosts[/] when not using a specific name filter.
     """
     from zabbix_cli.commands.results.hostgroup import HostGroupResult
     from zabbix_cli.models import AggregateResult

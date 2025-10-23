@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Optional
 
 import typer
-import typer.core
 from pydantic import BaseModel
 from pydantic import Field
 from strenum import StrEnum
@@ -100,9 +99,14 @@ class CommandExecution:
 class BulkRunnerMode(StrEnum):
     """Mode of operation for BulkRunner."""
 
-    STRICT = "strict"  # Stop on first error
-    CONTINUE = "continue"  # Continue on errors, report at end
-    SKIP = "skip"  # Skip lines that can't be parsed
+    STRICT = "strict"
+    """Stop on first error."""
+
+    CONTINUE = "continue"
+    """Continue on errors, report at end."""
+
+    SKIP = "skip"
+    """Skip lines with errors. No reporting."""
 
 
 class BulkRunner:

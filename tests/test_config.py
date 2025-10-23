@@ -6,15 +6,18 @@ from typing import Optional
 from typing import Union
 
 import pytest
+
 try:
     import tomllib
-except:
+except ImportError:
     import tomli as tomllib
 from inline_snapshot import snapshot
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic import model_validator
 from typing_extensions import Self
+from zabbix_cli.config.commands import CommandConfig
+from zabbix_cli.config.commands import CreateHostOrTemplateGroup
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.constants import SecretMode
 from zabbix_cli.config.model import APIConfig
@@ -308,22 +311,22 @@ def test_deprecated_field_warnings(caplog: pytest.LogCaptureFixture) -> None:
             (
                 "zabbix_cli",
                 30,
-                "Config option [configopt]output_format[/] is deprecated. Use [configopt]app.output.format[/] instead.",
+                "Config option [configopt]output_format[/] is deprecated. Replaced by: [configopt]app.output.format[/].",
             ),
             (
                 "zabbix_cli",
                 30,
-                "Config option [configopt]system_id[/] is deprecated. Use [configopt]api.username[/] instead.",
+                "Config option [configopt]system_id[/] is deprecated. Replaced by: [configopt]api.username[/].",
             ),
             (
                 "zabbix_cli",
                 30,
-                "Config option [configopt]use_colors[/] is deprecated. Use [configopt]app.output.color[/] instead.",
+                "Config option [configopt]use_colors[/] is deprecated. Replaced by: [configopt]app.output.color[/].",
             ),
             (
                 "zabbix_cli",
                 30,
-                "Config option [configopt]use_paging[/] is deprecated. Use [configopt]app.output.paging[/] instead.",
+                "Config option [configopt]use_paging[/] is deprecated. Replaced by: [configopt]app.output.paging[/].",
             ),
             (
                 "zabbix_cli",
@@ -354,18 +357,22 @@ def test_get_deprecated_fields_set() -> None:
             DeprecatedField(
                 field_name="app.output_format",
                 value=OutputFormat.JSON,
-                replacement="app.output.format",
+                replacement=["app.output.format"],
             ),
             DeprecatedField(
                 field_name="app.system_id",
                 value="System-User",
-                replacement="api.username",
+                replacement=["api.username"],
             ),
             DeprecatedField(
-                field_name="app.use_colors", value=True, replacement="app.output.color"
+                field_name="app.use_colors",
+                value=True,
+                replacement=["app.output.color"],
             ),
             DeprecatedField(
-                field_name="app.use_paging", value=True, replacement="app.output.paging"
+                field_name="app.use_paging",
+                value=True,
+                replacement=["app.output.paging"],
             ),
         ]
     )
@@ -407,7 +414,7 @@ def test_get_deprecated_fields_deep_nesting() -> None:
             DeprecatedField(
                 field_name="bar.qux_deprecated",
                 value="test123",
-                replacement="bar.baz.qux",
+                replacement=["bar.baz.qux"],
             )
         ]
     )
@@ -469,6 +476,13 @@ def test_get_deprecated_fields() -> None:
             "app.use_colors",
             "app.use_paging",
             "app.system_id",
+            "app.default_hostgroups",
+            "app.default_admin_usergroups",
+            "app.default_create_user_usergroups",
+            "app.default_notification_users_usergroups",
+            "app.export_directory",
+            "app.export_format",
+            "app.export_timestamps",
         ]
     )
 
@@ -487,13 +501,6 @@ auth_token = ""
 verify_ssl = true
 
 [app]
-default_hostgroups = ["All-hosts"]
-default_admin_usergroups = []
-default_create_user_usergroups = []
-default_notification_users_usergroups = ["All-notification-users"]
-export_directory = "{tmp_path}/exports"
-export_format = "json"
-export_timestamps = false
 use_session_file = true
 auth_token_file = "{tmp_path}/.zabbix-cli_auth_token"
 auth_file = "{tmp_path}/.zabbix-cli_auth"
@@ -502,6 +509,13 @@ history_file = "{tmp_path}/history"
 bulk_mode = "strict"
 
 # Deprecated options (moved)
+default_hostgroups = ["All-hosts"]
+default_admin_usergroups = ["All-admin-users"]
+default_create_user_usergroups = ["All-users"]
+default_notification_users_usergroups = ["All-notification-users"]
+export_directory = "{tmp_path}/exports"
+export_format = "json"
+export_timestamps = false
 use_colors = false
 use_paging = true
 output_format = "json"
@@ -525,10 +539,21 @@ log_file = "{tmp_path}/zabbix-cli.log"
     config = Config.from_file(conf)
 
     # Check that the deprecated fields are assigned to the new fields
+    assert config.app.commands.create_host.hostgroups == ["All-hosts"]
+    assert config.app.commands.create_hostgroup.rw_groups == ["All-admin-users"]
+    assert config.app.commands.create_hostgroup.ro_groups == ["All-users"]
+    assert config.app.commands.create_notification_user.usergroups == [
+        "All-notification-users"
+    ]
+    assert config.app.commands.create_user.usergroups == ["All-users"]
+    assert config.app.commands.export.directory == tmp_path / "exports"
+    assert config.app.commands.export.format == OutputFormat.JSON
+    assert config.app.commands.export.timestamps is False
+
     assert config.app.output.color is False
     assert config.app.output.paging is True
     assert config.app.output.format == OutputFormat.JSON
-    assert config.api.username == "System-User"
+    assert config.api.username == "System-User"  # assigned from app.system_id
 
 
 def test_load_deprecated_config_with_new_and_old_options(tmp_path: Path) -> None:
@@ -539,15 +564,44 @@ def test_load_deprecated_config_with_new_and_old_options(tmp_path: Path) -> None
     """
     conf = tmp_path / "zabbix-cli.toml"
     conf.write_text(
-        """
-[api]
-username = "Admin"
+        f"""
+##### Deprecated options (should be ignored) #####
 
 [app]
+default_hostgroups = ["All-hosts-deprecated"]
+default_admin_usergroups = ["All-admin-users-deprecated"]
+default_create_user_usergroups = ["All-users-deprecated"]
+default_notification_users_usergroups = ["All-notification-users-deprecated"]
+export_directory = "{tmp_path}/exports_deprecated"
+export_format = "yaml"
+export_timestamps = true
 use_colors = false
 use_paging = true
 output_format = "json"
 system_id = "System-User"
+
+##### New options (should be used) #####
+
+[api]
+username = "Admin"
+
+[app.commands.create_user]
+usergroups = ["All-users"]
+
+[app.commands.create_notification_user]
+usergroups = ["All-notification-users"]
+
+[app.commands.create_host]
+hostgroups = ["All-hosts"]
+
+[app.commands.create_hostgroup]
+ro_groups = ["All-users"]
+rw_groups = ["All-admin-users"]
+
+[app.commands.export]
+directory = "{tmp_path}/exports"
+format = "json"
+timestamps = false
 
 [app.output]
 color = true
@@ -558,6 +612,18 @@ paging = false
     config = Config.from_file(conf)
 
     # New fields should NOT be overwritten by deprecated fields
+    assert config.app.commands.create_host.hostgroups == ["All-hosts"]
+    assert config.app.commands.create_hostgroup.rw_groups == ["All-admin-users"]
+    assert config.app.commands.create_hostgroup.ro_groups == ["All-users"]
+    assert config.app.commands.create_user.usergroups == ["All-users"]
+    assert config.app.commands.create_notification_user.usergroups == [
+        "All-notification-users"
+    ]
+    assert config.app.commands.create_hostgroup.ro_groups == ["All-users"]
+    assert config.app.commands.create_hostgroup.rw_groups == ["All-admin-users"]
+    assert config.app.commands.export.directory == tmp_path / "exports"
+    assert config.app.commands.export.format == OutputFormat.JSON
+    assert config.app.commands.export.timestamps is False
     assert config.api.username == "Admin"
     assert config.app.output.color is True
     assert config.app.output.paging is False
@@ -594,3 +660,151 @@ def test_load_deprecated_config_legacy(legacy_config_path: Path) -> None:
     assert "use_colors" in config.app.model_fields_set
     assert "use_paging" in config.app.model_fields_set
     assert "output_format" not in config.app.model_fields_set
+
+
+def test_shared_command_config(tmp_path: Path) -> None:
+    """Test that the shared command config is loaded correctly."""
+
+    # Test via kwargs
+    config = Config(
+        app=AppConfig(
+            commands=CommandConfig(
+                create_group=CreateHostOrTemplateGroup(
+                    ro_groups=["All-users", "Guests"],
+                    rw_groups=["All-admin-users", "All-techs"],
+                )
+            )
+        )
+    )
+    assert config.app.commands.create_hostgroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert config.app.commands.create_hostgroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
+    assert config.app.commands.create_templategroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert config.app.commands.create_templategroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
+
+    # Test via config file
+    conf_str = """
+    [app.commands.create_group]
+    ro_groups = ["All-users", "Guests"]
+    rw_groups = ["All-admin-users", "All-techs"]
+    """
+    conf_path = tmp_path / "zabbix-cli.toml"
+    conf_path.write_text(conf_str)
+    config_shared = Config.from_toml_file(conf_path)
+
+    assert config_shared.app.commands.create_hostgroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert config_shared.app.commands.create_hostgroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
+    assert config_shared.app.commands.create_templategroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert config_shared.app.commands.create_templategroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
+
+    # Test via config file (create_hostgroup is set: only create_templategroup uses shared)
+    conf_str = """
+    [app.commands.create_hostgroup]
+    ro_groups = ["All-users"]
+    rw_groups = ["All-admin-users"]
+
+    [app.commands.create_group]
+    ro_groups = ["All-users", "Guests"]
+    rw_groups = ["All-admin-users", "All-techs"]
+    """
+    conf_path = tmp_path / "zabbix-cli_hg_set.toml"
+    conf_path.write_text(conf_str)
+    conf_hg_set = Config.from_toml_file(conf_path)
+
+    assert conf_hg_set.app.commands.create_hostgroup.ro_groups == snapshot(
+        ["All-users"]
+    )
+    assert conf_hg_set.app.commands.create_hostgroup.rw_groups == snapshot(
+        ["All-admin-users"]
+    )
+    assert conf_hg_set.app.commands.create_templategroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert conf_hg_set.app.commands.create_templategroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
+
+    # Test via config file (create_templategroup is set: only create_hostgroup uses shared)
+    conf_str = """
+    [app.commands.create_templategroup]
+    ro_groups = ["All-users"]
+    rw_groups = ["All-admin-users"]
+
+    [app.commands.create_group]
+    ro_groups = ["All-users", "Guests"]
+    rw_groups = ["All-admin-users", "All-techs"]
+    """
+    conf_path = tmp_path / "zabbix-cli_tg_set.toml"
+    conf_path.write_text(conf_str)
+    conf_tg_set = Config.from_toml_file(conf_path)
+
+    assert conf_tg_set.app.commands.create_hostgroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert conf_tg_set.app.commands.create_hostgroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
+    assert conf_tg_set.app.commands.create_templategroup.ro_groups == snapshot(
+        ["All-users"]
+    )
+    assert conf_tg_set.app.commands.create_templategroup.rw_groups == snapshot(
+        ["All-admin-users"]
+    )
+
+
+def test_config_command_alias_priority(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test loading a config file with duplicate sections with different aliases"""
+    conf_import_first = """\
+[app.commands.import]
+format = "csv"
+
+[app.commands.export]
+format = "json"
+"""
+    conf_export_first = """\
+[app.commands.export]
+format = "json"
+
+[app.commands.import]
+format = "csv"
+"""
+
+    # Assert that the `import` alias is never used when `export` is defined
+    for conf_str in [conf_import_first, conf_export_first]:
+        conf_path = tmp_path / "zabbix-cli.toml"
+        conf_path.write_text(conf_str)
+
+        with caplog.at_level("WARNING", logger="zabbix_cli.config.commands"):
+            conf = Config.from_toml_file(conf_path)
+
+            # Uses the first alias found in the file regardless
+            assert conf.app.commands.export.format == OutputFormat.JSON
+
+            # The log record tuple should be the same for both cases
+            assert caplog.record_tuples == snapshot(
+                [
+                    (
+                        "zabbix_cli.config.commands",
+                        30,
+                        "Multiple export/import configuration sections found ([app.commands.export], [app.commands.import]). Using section: [app.commands.export]",
+                    )
+                ]
+            )
+            caplog.clear()

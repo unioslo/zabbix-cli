@@ -40,6 +40,11 @@ def main_callback(
         "-o",
         help="Overwrite existing configuration file",
     ),
+    wizard: bool = typer.Option(
+        False,
+        "--wizard/--no-wizard",
+        help="Run the interactive wizard to set up the configuration file",
+    ),
 ) -> None:
     warning(
         "[command]zabbix-cli-init[/] is deprecated. Use [command]zabbix-cli init[/]."
@@ -55,6 +60,8 @@ def main_callback(
         args.extend(["--config-file", str(config_file)])
     if overwrite:
         args.append("--overwrite")
+    if not wizard:
+        args.append("--no-wizard")
 
     subprocess.run(args)
 

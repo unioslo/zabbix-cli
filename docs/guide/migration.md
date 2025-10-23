@@ -112,9 +112,9 @@ Zabbix CLI 3.0 introduces two new export formats: `yaml` and `php`. The availabi
 
 Furthermore, the formats are no longer case-sensitive. For example, `YAML` and `yaml` are now equivalent.
 
-### New default export filenames*
+### New default export filenames
 
-Exported files are no longer prefixed with `zabbix_export_`. This behavior can be re-enabled with the `--legacy-filenames` option.
+Exported files are no longer prefixed with `zabbix_export_`. This behavior can be re-enabled with the `export_configuration --legacy-filenames` option.
 
 Exported files no longer include a timestamp in the filename by default. Newer exports overwrite older ones automatically. Timestamps can be re-anbled by setting the `app.export_timestamps` option in the configuration file.
 
@@ -196,4 +196,4 @@ Which means when a command fails to execute or returns an error, the shape of th
 }
 ```
 
-In case of a chain of errors, the application makes an attempt to populate the `errors` array with all the errors encountered during the execution of the command.
+In case of a chain of errors, the application makes an attempt to populate the `errors` array with all the exceptions raised when unwinding the stack.
