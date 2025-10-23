@@ -2030,6 +2030,7 @@ docs = [
 ]
 lint = [
     { name = "basedpyright" },
+    { name = "prek" },
     { name = "ruff" },
 ]
 test = [
@@ -2110,6 +2111,7 @@ docs = [
 ]
 lint = [
     { name = "basedpyright", specifier = ">=1.29.1" },
+    { name = "prek", specifier = ">=0.2.10" },
     { name = "ruff" },
 ]
 test = [
