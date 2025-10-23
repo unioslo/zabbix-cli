@@ -15,7 +15,7 @@ from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.render import render_result
 
-HELP_PANEL_USER = "Macro (User)"
+HELP_PANEL_HOST = "Macro (Host)"
 HELP_PANEL_GLOBAL = "Macro (Global)"
 
 
@@ -86,20 +86,29 @@ def show_global_macros(ctx: typer.Context) -> None:
 
 
 @app.command(
-    name="define_host_usermacro",
-    rich_help_panel=HELP_PANEL_USER,
+    "define_host_macro",
+    rich_help_panel=HELP_PANEL_HOST,
     examples=[
         Example(
             "Create a macro named {$SNMP_COMMUNITY} for a host",
-            "define_host_usermacro foo.example.com '{$SNMP_COMMUNITY}' public",
+            "define_host_macro foo.example.com '{$SNMP_COMMUNITY}' public",
         ),
         Example(
             "Create a macro named {$SITE_URL} for a host (automatic name conversion)",
-            "define_host_usermacro foo.example.com site_url https://example.com",
+            "define_host_macro foo.example.com site_url https://example.com",
         ),
     ],
+    help="Define a host macro.",
 )
-def define_host_usermacro(
+@app.command(
+    # old name for backwards compatibility
+    "define_host_usermacro",
+    hidden=True,
+    deprecated=True,
+    rich_help_panel=HELP_PANEL_HOST,
+    help="DEPRECATED: Use add_template_to_group instead.",
+)
+def define_host_macro(
     # NOTE: should this use old style args?
     hostname: str = typer.Argument(
         help="Host to define macro for.", show_default=False
@@ -126,7 +135,7 @@ def define_host_usermacro(
     try:
         macro = app.state.client.get_macro(host=host, macro_name=macro_name)
     except ZabbixNotFoundError:
-        macro_id = app.state.client.create_macro(
+        macro_id = app.state.client.create_host_macro(
             host=host, macro=macro_name, value=macro_value
         )
         action = "Created"
@@ -143,8 +152,19 @@ def define_host_usermacro(
     )
 
 
-@app.command(name="show_host_usermacros", rich_help_panel=HELP_PANEL_USER, hidden=False)
-def show_host_usermacros(
+@app.command(
+    name="show_host_macros",
+    rich_help_panel=HELP_PANEL_HOST,
+    help="Show all macros defined for a host.",
+)
+@app.command(
+    name="show_host_usermacros",
+    rich_help_panel=HELP_PANEL_HOST,
+    hidden=True,
+    deprecated=True,
+    help="DEPRECATED: Use show_host_macros instead.",
+)
+def show_host_macros(
     hostname_or_id: str = typer.Argument(
         help="Hostname or ID to show macros for",
         show_default=False,
@@ -169,9 +189,17 @@ def show_host_usermacros(
 
 
 @app.command(
-    name="show_usermacro_host_list", rich_help_panel=HELP_PANEL_USER, hidden=False
+    name="show_macro_hosts",
+    rich_help_panel=HELP_PANEL_HOST,
 )
-def show_usermacro_host_list(
+@app.command(
+    name="show_usermacro_host_list",
+    rich_help_panel=HELP_PANEL_HOST,
+    hidden=True,
+    deprecated=True,
+    help="DEPRECATED: Use show_macro_hosts instead.",
+)
+def show_macro_hosts(
     usermacro: str = typer.Argument(
         help=(
             "Name of macro to find hosts with. "
@@ -217,16 +245,110 @@ def show_usermacro_host_list(
 
 
 @app.command(
-    "show_usermacro_template_list",
-    rich_help_panel=HELP_PANEL_USER,
+    "define_template_macro",
+    rich_help_panel=HELP_PANEL_HOST,
+    examples=[
+        Example(
+            "Create a macro named {$SNMP_COMMUNITY} with the value 'public' for a template",
+            "define_template_macro Mytemplate '{$SNMP_COMMUNITY}' public",
+        ),
+        Example(
+            "Create a macro named {$SITE_URL} with an URL value for a template (automatic name conversion)",
+            "define_template_macro Mytemplate site_url https://example.com",
+        ),
+    ],
+    help="Define a template macro.",
+)
+def define_template_macro(
+    template_name: str = typer.Argument(
+        help="Name of template to define macro for.", show_default=False
+    ),
+    macro_name: str = typer.Argument(
+        help=(
+            "Name of macro. "
+            "Names will be converted to the Zabbix format, "
+            "i.e. [value]site_url[/] becomes [value]{$SITE_URL}[/]."
+        ),
+        show_default=False,
+    ),
+    macro_value: str = typer.Argument(
+        help="Default value of macro.", show_default=False
+    ),
+) -> None:
+    """Create or update a template macro."""
+    from zabbix_cli.models import Result
+
+    template = app.state.client.get_template(template_name)
+    macro_name = fmt_macro_name(macro_name)
+
+    # Determine if we should create or update macro
+    try:
+        macro = app.state.client.get_macro(template=template, macro_name=macro_name)
+    except ZabbixNotFoundError:
+        macro_id = app.state.client.create_template_macro(
+            template=template, macro=macro_name, value=macro_value
+        )
+        action = "Created"
+    else:
+        macro_id = app.state.client.update_macro(
+            macroid=macro.hostmacroid, value=macro_value
+        )
+        action = "Updated"
+
+    render_result(
+        Result(
+            message=f"{action} macro {macro_name!r} with ID {macro_id} for template {template}."
+        )
+    )
+
+
+@app.command(
+    name="show_template_macros",
+    rich_help_panel=HELP_PANEL_HOST,
+    help="Show all macros defined for a template.",
+)
+def show_template_macros(
+    template_name_or_id: str = typer.Argument(
+        help="Template name or ID to show macros for",
+        show_default=False,
+    ),
+) -> None:
+    """Show all macros defined for a host."""
+    from zabbix_cli.commands.results.macro import ShowHostUserMacrosResult
+    from zabbix_cli.models import AggregateResult
+
+    # By getting the macros via the template, we also ensure the template exists.
+    template = app.state.client.get_template(template_name_or_id, select_macros=True)
+
+    render_result(
+        AggregateResult(
+            result=[
+                ShowHostUserMacrosResult.from_result(macro)
+                # Sort macros by name when rendering
+                for macro in sorted(template.macros, key=lambda m: m.macro)
+            ]
+        )
+    )
+
+
+@app.command(
+    "show_macro_templates",
+    rich_help_panel=HELP_PANEL_HOST,
     examples=[
         Example(
             "Show all templates with a user macro named {$SNMP_COMMUNITY}",
-            "show_usermacro_template_list SNMP_COMMUNITY",
+            "show_macro_templates SNMP_COMMUNITY",
         )
     ],
 )
-def show_usermacro_template_list(
+@app.command(
+    "show_usermacro_template_list",
+    rich_help_panel=HELP_PANEL_HOST,
+    hidden=True,
+    deprecated=True,
+    help="DEPRECATED: Use show_macro_templates instead.",
+)
+def show_macro_templates(
     ctx: typer.Context,
     macro_name: str = typer.Argument(
         help="Name of the macro to find templates with. Automatically formatted.",
@@ -234,7 +356,7 @@ def show_usermacro_template_list(
     ),
     limit: Optional[int] = get_limit_option(),
 ) -> None:
-    """Find all templates with a user macro of the given name."""
+    """Find all templates with a macro of the given name."""
     import itertools
 
     from zabbix_cli.commands.results.macro import ShowUsermacroTemplateListResult

@@ -347,6 +347,8 @@ class Template(ZabbixAPIBaseModel):
     templateid: str
     host: str
     hosts: HostList = []
+    macros: list[Macro] = []
+
     templates: list[Template] = []
     """Child templates (templates inherited from this template)."""
 
@@ -359,6 +361,9 @@ class Template(ZabbixAPIBaseModel):
 
     name: Optional[str] = None
     """The visible name of the template."""
+
+    def __str__(self) -> str:
+        return f"{self.name or self.host!r} ({self.templateid})"
 
     def __cols_rows__(self) -> ColsRowsType:
         cols = ["ID", "Name", "Hosts", "Parents", "Children"]
