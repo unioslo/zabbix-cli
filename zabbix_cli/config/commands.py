@@ -183,28 +183,6 @@ class CommandConfig(BaseModel):
         ),
     )
 
-    @model_validator(mode="after")
-    def check_create_group(self) -> Self:
-        """Fallback to `create_group` if `create_{host,template}group` are not set."""
-        if (
-            # one or both of create_{host,template}group is not set/empty
-            any(not f for f in [self.create_hostgroup, self.create_templategroup])
-            # Shared config is defined
-            and "create_group" in self.model_fields_set
-            # and has at least one type of group defined
-            and (self.create_group.ro_groups or self.create_group.rw_groups)
-        ):
-            # Only override if empty/not set
-            if not self.create_hostgroup:
-                self.create_hostgroup = self.create_hostgroup.model_validate(
-                    self.create_group, from_attributes=True
-                )
-            if not self.create_templategroup:
-                self.create_templategroup = self.create_templategroup.model_validate(
-                    self.create_group, from_attributes=True
-                )
-        return self
-
     @model_validator(mode="before")
     @classmethod
     def check_export_import(cls, data: Any) -> Any:
@@ -226,3 +204,25 @@ class CommandConfig(BaseModel):
                         found[0],
                     )
         return data  # pyright: ignore[reportUnknownVariableType]
+
+    @model_validator(mode="after")
+    def check_create_group(self) -> Self:
+        """Fallback to `create_group` if `create_{host,template}group` are not set."""
+        if (
+            # one or both of create_{host,template}group is not set/empty
+            any(not f for f in [self.create_hostgroup, self.create_templategroup])
+            # Shared config is defined
+            and "create_group" in self.model_fields_set
+            # and has at least one type of group defined
+            and (self.create_group.ro_groups or self.create_group.rw_groups)
+        ):
+            # Only override if empty/not set
+            if not self.create_hostgroup:
+                self.create_hostgroup = self.create_hostgroup.model_validate(
+                    self.create_group, from_attributes=True
+                )
+            if not self.create_templategroup:
+                self.create_templategroup = self.create_templategroup.model_validate(
+                    self.create_group, from_attributes=True
+                )
+        return self
