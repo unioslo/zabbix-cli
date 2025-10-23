@@ -712,7 +712,7 @@ def test_shared_command_config(tmp_path: Path) -> None:
         ["All-admin-users", "All-techs"]
     )
 
-    # Test via config file (fails, create_hostgroup is set)
+    # Test via config file (create_hostgroup is set: only create_templategroup uses shared)
     conf_str = """
     [app.commands.create_hostgroup]
     ro_groups = ["All-users"]
@@ -732,10 +732,14 @@ def test_shared_command_config(tmp_path: Path) -> None:
     assert conf_hg_set.app.commands.create_hostgroup.rw_groups == snapshot(
         ["All-admin-users"]
     )
-    assert conf_hg_set.app.commands.create_templategroup.ro_groups == snapshot([])
-    assert conf_hg_set.app.commands.create_templategroup.rw_groups == snapshot([])
+    assert conf_hg_set.app.commands.create_templategroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert conf_hg_set.app.commands.create_templategroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
 
-    # Test via config file (fails, create_templategroup is set)
+    # Test via config file (create_templategroup is set: only create_hostgroup uses shared)
     conf_str = """
     [app.commands.create_templategroup]
     ro_groups = ["All-users"]
@@ -749,8 +753,12 @@ def test_shared_command_config(tmp_path: Path) -> None:
     conf_path.write_text(conf_str)
     conf_tg_set = Config.from_toml_file(conf_path)
 
-    assert conf_tg_set.app.commands.create_hostgroup.ro_groups == snapshot([])
-    assert conf_tg_set.app.commands.create_hostgroup.rw_groups == snapshot([])
+    assert conf_tg_set.app.commands.create_hostgroup.ro_groups == snapshot(
+        ["All-users", "Guests"]
+    )
+    assert conf_tg_set.app.commands.create_hostgroup.rw_groups == snapshot(
+        ["All-admin-users", "All-techs"]
+    )
     assert conf_tg_set.app.commands.create_templategroup.ro_groups == snapshot(
         ["All-users"]
     )

@@ -95,6 +95,9 @@ class _CreateGroupBase(BaseModel):
         ),
     )
 
+    def __bool__(self) -> bool:
+        return bool(self.ro_groups or self.rw_groups)
+
 
 class CreateHostGroup(_CreateGroupBase):
     """Configuration for the `create_hostgroup` command."""
@@ -153,6 +156,9 @@ class CommandConfig(BaseModel):
     create_host: CreateHost = Field(default_factory=CreateHost)
 
     # Groups
+    create_group: CreateHostOrTemplateGroup = Field(
+        default_factory=CreateHostOrTemplateGroup,
+    )
     create_hostgroup: CreateHostGroup = Field(default_factory=CreateHostGroup)
     create_templategroup: CreateTemplateGroup = Field(
         default_factory=CreateTemplateGroup,
@@ -177,29 +183,26 @@ class CommandConfig(BaseModel):
         ),
     )
 
-    # Custom configs (shared between commands, etc.)
-    create_group: CreateHostOrTemplateGroup = Field(
-        default_factory=CreateHostOrTemplateGroup,
-    )
-
     @model_validator(mode="after")
     def check_create_group(self) -> Self:
         """Fallback to `create_group` if `create_{host,template}group` are not set."""
         if (
-            # create_{host,template}group are not set
-            all(
-                f not in self.model_fields_set
-                for f in ["create_hostgroup", "create_templategroup"]
-            )
-            # Shared config is set
+            # one or both of create_{host,template}group is not set/empty
+            any(not f for f in [self.create_hostgroup, self.create_templategroup])
+            # Shared config is defined
             and "create_group" in self.model_fields_set
+            # and has at least one type of group defined
+            and (self.create_group.ro_groups or self.create_group.rw_groups)
         ):
-            self.create_hostgroup = self.create_hostgroup.model_validate(
-                self.create_group, from_attributes=True
-            )
-            self.create_templategroup = self.create_templategroup.model_validate(
-                self.create_group, from_attributes=True
-            )
+            # Only override if empty/not set
+            if not self.create_hostgroup:
+                self.create_hostgroup = self.create_hostgroup.model_validate(
+                    self.create_group, from_attributes=True
+                )
+            if not self.create_templategroup:
+                self.create_templategroup = self.create_templategroup.model_validate(
+                    self.create_group, from_attributes=True
+                )
         return self
 
     @model_validator(mode="before")
