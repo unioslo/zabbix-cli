@@ -52,6 +52,7 @@ dynamic = ["version"]
 
 [dependency-groups]
 dev = [
+  "prek>=0.2.10",
   { include-group = "test" },
   { include-group = "lint" },
   { include-group = "build" },
