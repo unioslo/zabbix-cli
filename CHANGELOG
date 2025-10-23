@@ -53,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Proxy groups with macros for `min_online` causing validation to fail and fallback to a default value of `1`. Removed this check to allow macros to be used.
 
+### Internal
+
+- Replace `pre-commit` with [`prek`](https://github.com/j178/prek).
+
 ## [3.5.3](https://github.com/unioslo/zabbix-cli/tree/3.5.3) - 2025-10-20
 
 ### Fixed

@@ -57,7 +57,7 @@ dev = [
   { include-group = "build" },
   { include-group = "docs" },
 ]
-lint = ["ruff", "basedpyright>=1.29.1"]
+lint = ["ruff", "basedpyright>=1.29.1", "prek>=0.2.10"]
 test = [
   "pytest>=8.0.0",
   "pytest-cov>=5.0.0",
