@@ -106,3 +106,16 @@ class MoveTemplatesResult(TableRenderable):
         cols = ["Templates"]
         rows: RowsType = [["\n".join(self.templates)]]
         return cols, rows
+
+
+class TemplateGroupPermissions(TableRenderable):
+    """Result type for template group permissions."""
+
+    groupid: str
+    name: str
+    permissions: list[str]
+
+    def __cols_rows__(self) -> ColsRowsType:
+        cols = ["GroupID", "Name", "Permissions"]
+        rows: RowsType = [[self.groupid, self.name, "\n".join(self.permissions)]]
+        return cols, rows

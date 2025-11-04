@@ -515,3 +515,52 @@ def show_templategroups(
             result=[ShowTemplateGroupResult.from_result(tg, templates) for tg in groups]
         )
     )
+
+
+@app.command("show_templategroup_permissions", rich_help_panel=HELP_PANEL)
+def show_templategroup_permissions(
+    templategroups: str = typer.Argument(
+        help="Template group name(s). Comma-separated. Supports wildcards.",
+        show_default=False,
+    ),
+) -> None:
+    """Show usergroups with permissions for the given templategroup.
+
+    Shows permissions for all template groups by default.
+    """
+    from zabbix_cli.commands.results.templategroup import TemplateGroupPermissions
+    from zabbix_cli.models import AggregateResult
+
+    tg_names = parse_list_arg(templategroups)
+
+    with app.status("Fetching template groups..."):
+        usergroups = app.state.client.get_usergroups()
+        tgs = app.state.client.get_templategroups(
+            *tg_names,
+            sort_field="name",
+            sort_order="ASC",
+            select_templates=False,
+            search=True,
+        )
+
+    result: list[TemplateGroupPermissions] = []
+    for tg in tgs:
+        permissions: list[str] = []
+        for usergroup in usergroups:
+            if app.api_version >= (6, 2, 0):
+                rights = usergroup.templategroup_rights
+            else:
+                rights = usergroup.rights
+            for right in rights:
+                if right.id == tg.groupid:
+                    perm = UsergroupPermission.string_from_value(right.permission)
+                    permissions.append(f"{usergroup.name} ({perm})")
+                    break
+        result.append(
+            TemplateGroupPermissions(
+                groupid=tg.groupid,
+                name=tg.name,
+                permissions=permissions,
+            )
+        )
+    return render_result(AggregateResult(result=result))
