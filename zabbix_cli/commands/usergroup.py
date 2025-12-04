@@ -20,6 +20,7 @@ from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import success
 from zabbix_cli.output.console import warning
+from zabbix_cli.output.formatting.grammar import pluralize as p
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import GUIAccess
 from zabbix_cli.pyzabbix.enums import UsergroupPermission
@@ -230,6 +231,78 @@ def create_usergroup(
             usergroup, gui_access=gui_access, disabled=disabled
         )
     success(f"Created user group {usergroup!r} ({usergroupid}).")
+
+
+@app.command("remove_usergroup", rich_help_panel=HELP_PANEL)
+def remove_usergroup(
+    ctx: typer.Context,
+    usergroup: str = typer.Argument(
+        help="Name of the user group(s) to delete. Comma-separated. Supports wildcards.",
+        show_default=False,
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Force deletion if any user groups contain users.",
+    ),
+) -> None:
+    """Remove a user group."""
+    from zabbix_cli.pyzabbix.types import Usergroup
+
+    # Require force for * (delete all) to avoid accidental mass deletions
+    if usergroup.strip() == "*" and not force:
+        exit_err(
+            "The [option]--force[/option] option is required when deleting all user groups."
+        )
+
+    ug_names = parse_list_arg(usergroup)
+    if not ug_names:
+        exit_err("At least one user group name must be specified.")
+
+    usergroups: list[Usergroup] = []
+    with app.status("Fetching user groups"):
+        for usergroup in ug_names:
+            try:
+                ugs = app.state.client.get_usergroups(
+                    usergroup, select_users=True, search=True
+                )
+            except ZabbixNotFoundError:
+                exit_err(f"User group {usergroup!r} does not exist.")
+            else:
+                if not ugs:
+                    exit_err(f"No user groups found matching {usergroup!r}.")
+                usergroups.extend(ugs)
+
+    # dedup
+    # TODO: add dedup function with HasName interface
+    seen: set[str] = set()
+    unique_usergroups: list[Usergroup] = []
+    for ug in usergroups:
+        if ug.name not in seen:
+            seen.add(ug.name)
+            unique_usergroups.append(ug)
+    usergroups = unique_usergroups
+
+    # Check for users in user groups
+    has_users: list[Usergroup] = []
+    for ug in usergroups:
+        if ug.users:
+            has_users.append(ug)
+
+    # Format names + pluralization
+    ug_names_str = ", ".join(f"{ug.name!r}" for ug in has_users)
+    ugs_fmt = p("user group", len(usergroups), with_count=False)
+    if has_users and not force:
+        exit_err(
+            f"{ugs_fmt.capitalize()} with users: {ug_names_str}. [option]--force[/option] is required."
+        )
+
+    with app.status("Removing user group") as status:
+        for ug in usergroups:
+            status.update(f"Removing user group {ug.name!r}...")
+            app.state.client.delete_usergroup(ug)
+
+    success(f"Removed {ugs_fmt} {ug_names_str}.")
 
 
 @app.command("remove_user_from_usergroup", rich_help_panel=HELP_PANEL)

@@ -1274,6 +1274,25 @@ class ZabbixAPI:
             )
         return str(resp["usrgrpids"][0])
 
+    def delete_usergroup(self, usergroup: Usergroup) -> str:
+        """Delete the given user group."""
+        # NOTE: This method supports deleting multiple user groups at once,
+        # but that functionality is not necessarily good in a CLI context
+        # due to the poor feedback on _what_ went wrong if deletion fails.
+        # We would rather delete user groups one by one to give better
+        # error messages.
+        try:
+            resp = self.usergroup.delete(usergroup.usrgrpid)
+        except ZabbixAPIException as e:
+            raise ZabbixAPICallError(
+                f"Failed to delete user group {usergroup.name!r}"
+            ) from e
+        if not resp or not resp.get("usrgrpids"):
+            raise ZabbixAPICallError(
+                "User group deletion returned no data. Unable to determine if group was deleted."
+            )
+        return str(resp["usrgrpids"][0])
+
     def add_usergroup_users(self, usergroup_name: str, users: list[User]) -> None:
         """Add users to a user group. Ignores users already in the group."""
         self._update_usergroup_users(usergroup_name, users, remove=False)
