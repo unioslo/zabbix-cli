@@ -250,10 +250,18 @@ def remove_usergroup(
     from zabbix_cli.pyzabbix.types import Usergroup
 
     # Require force for * (delete all) to avoid accidental mass deletions
-    if usergroup.strip() == "*" and not force:
-        exit_err(
-            "The [option]--force[/option] option is required when deleting all user groups."
-        )
+    if usergroup.strip() == "*":
+        if not force:
+            exit_err(
+                "The [option]--force[/option] option is required when deleting all user groups."
+            )
+        # ALSO require confirmation
+        from zabbix_cli.output.prompts import bool_prompt
+
+        if not bool_prompt(
+            "Are you sure you want to delete ALL user groups? This action cannot be undone."
+        ):
+            exit_err("Aborted by user.")
 
     ug_names = parse_list_arg(usergroup)
     if not ug_names:
