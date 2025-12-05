@@ -91,20 +91,25 @@ def main_callback(
         "--config",
         "-c",
         help="Alternate configuration file to use.",
+        show_default=False,
     ),
     input_file: Optional[Path] = typer.Option(
         None,
         "--file",
         "--input-file",  # DEPRECATED: V2 name for compatibility
         "-f",
-        help="File with Zabbix-CLI commands to be executed in bulk mode.",
+        help="File containing Zabbix-CLI commands to execute in bulk.",
+        rich_help_panel="Bulk Mode Options",
+        show_default=False,
     ),
     bulk_mode: Optional[BulkRunnerMode] = typer.Option(
         None,
         "--bulk-mode",
         "-b",
-        help="Mode of operation for bulk command execution.",
+        help="Error handling strategy when running in bulk mode.",
         case_sensitive=False,
+        rich_help_panel="Bulk Mode Options",
+        show_default=False,
     ),
     output_format: Optional[OutputFormat] = typer.Option(
         None,
@@ -113,6 +118,7 @@ def main_callback(
         "-o",
         help="Define the output format when running in command-line mode.",
         case_sensitive=False,
+        show_default=False,
     ),
     version: Optional[bool] = typer.Option(
         None,
@@ -128,6 +134,7 @@ def main_callback(
         "-C",
         help="Zabbix-CLI command to execute when running in command-line mode.",
         hidden=True,
+        show_default=False,
     ),
 ) -> None:
     # Don't run callback if --help is passed in
