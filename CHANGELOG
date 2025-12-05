@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New command `define_template_macro` to define a macro for a template.
 - New command `show_template_macros` to show macros for a template.
 - New command `show_templategroup_permissions` to show user group permissions for a template group.
+- New command `remove_usergroup` to delete one or more user groups.
 
 ### Changed
 
