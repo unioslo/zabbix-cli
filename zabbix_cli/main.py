@@ -31,6 +31,7 @@ import typer
 
 from zabbix_cli.__about__ import __version__
 from zabbix_cli.app import app
+from zabbix_cli.config.constants import BulkRunnerMode
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
 from zabbix_cli.logs import configure_logging
@@ -90,13 +91,25 @@ def main_callback(
         "--config",
         "-c",
         help="Alternate configuration file to use.",
+        show_default=False,
     ),
     input_file: Optional[Path] = typer.Option(
         None,
         "--file",
         "--input-file",  # DEPRECATED: V2 name for compatibility
         "-f",
-        help="File with Zabbix-CLI commands to be executed in bulk mode.",
+        help="File containing Zabbix-CLI commands to execute in bulk.",
+        rich_help_panel="Bulk Mode Options",
+        show_default=False,
+    ),
+    bulk_mode: Optional[BulkRunnerMode] = typer.Option(
+        None,
+        "--bulk-mode",
+        "-b",
+        help="Error handling strategy when running in bulk mode.",
+        case_sensitive=False,
+        rich_help_panel="Bulk Mode Options",
+        show_default=False,
     ),
     output_format: Optional[OutputFormat] = typer.Option(
         None,
@@ -105,6 +118,7 @@ def main_callback(
         "-o",
         help="Define the output format when running in command-line mode.",
         case_sensitive=False,
+        show_default=False,
     ),
     version: Optional[bool] = typer.Option(
         None,
@@ -120,6 +134,7 @@ def main_callback(
         "-C",
         help="Zabbix-CLI command to execute when running in command-line mode.",
         hidden=True,
+        show_default=False,
     ),
 ) -> None:
     # Don't run callback if --help is passed in
@@ -134,6 +149,8 @@ def main_callback(
     # Config overrides are always applied
     if output_format is not None:
         state.config.app.output.format = output_format
+    if bulk_mode is not None:
+        state.config.app.bulk_mode = bulk_mode
 
     if state.repl or state.bulk:
         return  # In REPL or bulk mode already; no need to re-configure.

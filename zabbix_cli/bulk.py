@@ -18,9 +18,9 @@ from typing import Optional
 import typer
 from pydantic import BaseModel
 from pydantic import Field
-from strenum import StrEnum
 from typing_extensions import Self
 
+from zabbix_cli.config.constants import BulkRunnerMode
 from zabbix_cli.exceptions import CommandFileError
 from zabbix_cli.output.console import warning
 from zabbix_cli.state import get_state
@@ -94,19 +94,6 @@ class CommandExecution:
     result: CommandResult
     error: Optional[BaseException] = None
     line_number: Optional[int] = None
-
-
-class BulkRunnerMode(StrEnum):
-    """Mode of operation for BulkRunner."""
-
-    STRICT = "strict"
-    """Stop on first error."""
-
-    CONTINUE = "continue"
-    """Continue on errors, report at end."""
-
-    SKIP = "skip"
-    """Skip lines with errors. No reporting."""
 
 
 class BulkRunner:
