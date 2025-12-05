@@ -92,3 +92,16 @@ class SecretMode(StrEnum):
                     "Got invalid secret mode from context %s: %s", context, ctx
                 )
         return cls._DEFAULT
+
+
+class BulkRunnerMode(StrEnum):
+    """Mode of operation for BulkRunner."""
+
+    STRICT = "strict"
+    """Stop on first error."""
+
+    CONTINUE = "continue"
+    """Continue on errors, report at end."""
+
+    SKIP = "skip"
+    """Skip lines with errors. No reporting."""

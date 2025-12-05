@@ -31,6 +31,7 @@ import typer
 
 from zabbix_cli.__about__ import __version__
 from zabbix_cli.app import app
+from zabbix_cli.config.constants import BulkRunnerMode
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.utils import get_config
 from zabbix_cli.logs import configure_logging
@@ -98,6 +99,13 @@ def main_callback(
         "-f",
         help="File with Zabbix-CLI commands to be executed in bulk mode.",
     ),
+    bulk_mode: Optional[BulkRunnerMode] = typer.Option(
+        None,
+        "--bulk-mode",
+        "-b",
+        help="Mode of operation for bulk command execution.",
+        case_sensitive=False,
+    ),
     output_format: Optional[OutputFormat] = typer.Option(
         None,
         "--format",
@@ -134,6 +142,8 @@ def main_callback(
     # Config overrides are always applied
     if output_format is not None:
         state.config.app.output.format = output_format
+    if bulk_mode is not None:
+        state.config.app.bulk_mode = bulk_mode
 
     if state.repl or state.bulk:
         return  # In REPL or bulk mode already; no need to re-configure.
