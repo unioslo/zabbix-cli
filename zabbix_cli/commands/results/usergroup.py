@@ -234,3 +234,24 @@ class ShowUsergroupPermissionsResult(TableRenderable):
                 ).as_table()
             )
         return cols, [row]
+
+
+class RemoveUsergroupResult(TableRenderable):
+    """Result type for removing user groups."""
+
+    __title__ = "Removed User Groups"
+
+    usergroups: list[Usergroup] = []
+
+    def __cols_rows__(self) -> ColsRowsType:
+        return (
+            ["User group", "Users"],
+            [
+                [ug.name, ", ".join(u.username for u in ug.users)]
+                for ug in self.usergroups
+            ],
+        )
+
+    @classmethod
+    def from_result(cls, usergroups: list[Usergroup]) -> RemoveUsergroupResult:
+        return cls(usergroups=usergroups)

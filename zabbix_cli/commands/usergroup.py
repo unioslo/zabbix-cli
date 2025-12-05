@@ -247,6 +247,7 @@ def remove_usergroup(
     ),
 ) -> None:
     """Remove a user group."""
+    from zabbix_cli.commands.results.usergroup import RemoveUsergroupResult
     from zabbix_cli.pyzabbix.types import Usergroup
 
     # Require force for * (delete all) to avoid accidental mass deletions
@@ -310,7 +311,8 @@ def remove_usergroup(
             status.update(f"Removing user group {ug.name!r}...")
             app.state.client.delete_usergroup(ug)
 
-    success(f"Removed {ugs_fmt} {ug_names_str}.")
+    render_result(RemoveUsergroupResult.from_result(usergroups))
+    success(f"Removed {len(usergroups)} {ugs_fmt}.")
 
 
 @app.command("remove_user_from_usergroup", rich_help_panel=HELP_PANEL)
