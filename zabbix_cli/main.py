@@ -204,7 +204,7 @@ def should_skip_login(ctx: typer.Context) -> bool:
     """Check if the command should skip logging in to the Zabbix API."""
     if should_skip_configuration(ctx):
         return True
-    return ctx.invoked_subcommand in ["migrate_config"]
+    return ctx.invoked_subcommand in ["migrate_config", "update_config"]
 
 
 def _parse_config_arg() -> Optional[Path]:
