@@ -36,7 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Controlled by new config table `[app.config_auto_update]`.
 - New config table `[app.config_auto_update]` to configure automatic config file updates on startup. Migrates deprecated config fields to their new locations. Options:
   - `enabled` (bool): Enable or disable automatic config updates. Defaults to `true`.
-  - `silent` (bool): Suppress output when updating the config file. Defaults to `false`.
   - `backup` (bool): Create a backup of the config file prior to updating it. Defaults to `true`.
 
 ### Changed

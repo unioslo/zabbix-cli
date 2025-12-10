@@ -177,10 +177,6 @@ class AutoUpdateConfig(BaseModel):
         default=True,
         description="Automatically update config with new config fields and migrate deprecated fields on startup.",
     )
-    silent: bool = Field(
-        default=False,
-        description="Suppress console output about config updates.",
-    )
     backup: bool = Field(
         default=True,
         description="Create a backup of the config file before updating it.",
@@ -750,9 +746,7 @@ class Config(BaseModel):
             "  For more information, see the documentation."
         )
 
-    def dump_updated_config(
-        self, config_file: Optional[Path] = None, silent: bool | None = None
-    ) -> None:
+    def dump_updated_config(self, config_file: Optional[Path] = None) -> None:
         """Update deprecated fields in the configuration to their new location.
 
         Uses the current config values to update the config file on disk.
@@ -794,9 +788,5 @@ class Config(BaseModel):
                 "to proceed without automatic updates."
             ) from e
 
-        silent = silent if silent is not None else self.app.config_auto_update.silent
-        if not silent:
-            success(f"Updated config file {path_link(config_file)}.")
-            info(
-                f"Deprecated fields updated:\n{fmt_deprecated_fields(deprecated_fields)}"
-            )
+        success(f"Updated config file {path_link(config_file)}.")
+        info(f"Deprecated fields updated:\n{fmt_deprecated_fields(deprecated_fields)}")
