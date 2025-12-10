@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## Unreleased -->
+## Unreleased
+
+### Fixed
+
+- Session file permission checking ignoring config option `app.allow_insecure_auth_file`.
 
 ## [3.6.1](https://github.com/unioslo/zabbix-cli/tree/3.6.1) - 2025-12-10
 

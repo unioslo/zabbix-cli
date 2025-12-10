@@ -590,7 +590,10 @@ class Authenticator:
     def load_session_file(self) -> Optional[SessionFile]:
         """Load a session file from configured path."""
         try:
-            return SessionFile.load(self.config.app.session_file)
+            return SessionFile.load(
+                self.config.app.session_file,
+                allow_insecure=self.config.app.allow_insecure_auth_file,
+            )
         except SessionFileError as e:
             logger.error("Unable to load session file: %s", e)
             return None
