@@ -849,10 +849,10 @@ def test_fmt_deprecated_fields() -> None:
     formatted = fmt_deprecated_fields(deprecated_fields)
     assert formatted == snapshot(
         """\
-  - app.output_format (replaced by: app.output.format)
-  - app.system_id (replaced by: api.username)
-  - app.use_colors (replaced by: app.output.color)
-  - app.use_paging (replaced by: app.output.paging)
-  - default_create_user_usergroups (replaced by: app.commands.create_user.usergroups, app.commands.create_hostgroup.ro_groups)\
+  - [option]app.output_format[/] (replaced by: [option]app.output.format[/])
+  - [option]app.system_id[/] (replaced by: [option]api.username[/])
+  - [option]app.use_colors[/] (replaced by: [option]app.output.color[/])
+  - [option]app.use_paging[/] (replaced by: [option]app.output.paging[/])
+  - [option]default_create_user_usergroups[/] (replaced by: [option]app.commands.create_user.usergroups[/], [option]app.commands.create_hostgroup.ro_groups[/])\
 """
     )
