@@ -407,7 +407,7 @@ def update_config(
     # When we dump the config, we automatically exclude the deprecated fields
     # while taking advantage of the validators that update the new fields.
     config = app.state.config
-    config.dump_updated_config(config_file=config_file)
+    config.dump_updated_config(config_file=config_file, silent=False)
 
 
 @app.command("update", rich_help_panel=HELP_PANEL, hidden=True)

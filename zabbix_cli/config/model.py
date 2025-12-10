@@ -750,7 +750,9 @@ class Config(BaseModel):
             "  For more information, see the documentation."
         )
 
-    def dump_updated_config(self, config_file: Optional[Path] = None) -> None:
+    def dump_updated_config(
+        self, config_file: Optional[Path] = None, silent: bool | None = None
+    ) -> None:
         """Update deprecated fields in the configuration to their new location.
 
         Uses the current config values to update the config file on disk.
@@ -792,5 +794,9 @@ class Config(BaseModel):
                 "to proceed without automatic updates."
             ) from e
 
-        success(f"Updated config file {path_link(config_file)}.")
-        info(f"Deprecated fields updated:\n{fmt_deprecated_fields(deprecated_fields)}")
+        silent = silent if silent is not None else self.app.config_auto_update.silent
+        if not silent:
+            success(f"Updated config file {path_link(config_file)}.")
+            info(
+                f"Deprecated fields updated:\n{fmt_deprecated_fields(deprecated_fields)}"
+            )
