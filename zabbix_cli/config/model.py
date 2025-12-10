@@ -581,7 +581,8 @@ class Config(BaseModel):
 
     @property
     def sample(self) -> bool:
-        return len(self.model_fields_set) > 0
+        # No fields set means this is a sample config
+        return not bool(self.model_fields_set)
 
     @model_validator(mode="after")
     def _set_deprecated_fields_in_new_location(self) -> Self:
