@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import copy
+import sys
 from typing import Any
+from typing import Callable
 
 import pytest
 import typer
@@ -78,23 +80,31 @@ def test_patch__get_rich_console(
     )
 
 
-def test_patch_generate_enum_convertor() -> None:
+def _do_patch_generate_enum_convertor() -> Callable[[Any], Any]:
     original = copy.deepcopy(typer.main.generate_enum_convertor)
     typ.patch_generate_enum_convertor()
     new = typer.main.generate_enum_convertor
     assert original != new
+    return new
 
+
+def test_patch_generate_enum_convertor_apistrenum() -> None:
+    generate_converter = _do_patch_generate_enum_convertor()
+
+    # Test that the new convertor can handle APIStrEnum
     class APIEnum(APIStrEnum):
         FOO = APIStr("foo", 0)
         BAR = APIStr("bar", 1)
 
-    converter = new(APIEnum)
+    converter = generate_converter(APIEnum)
     assert converter("foo") == APIEnum.FOO
     assert converter("bar") == APIEnum.BAR
     assert converter(0) == APIEnum.FOO
     assert converter(1) == APIEnum.BAR
     assert converter("0") == APIEnum.FOO
     assert converter("1") == APIEnum.BAR
+    assert converter(APIEnum.FOO) == APIEnum.FOO
+    assert converter(APIEnum.BAR) == APIEnum.BAR
 
     with pytest.raises(ZabbixCLIError):
         assert converter("baz")
@@ -102,6 +112,44 @@ def test_patch_generate_enum_convertor() -> None:
         assert converter(2)
     with pytest.raises(ZabbixCLIError):
         assert converter("2")
+
+
+def test_patch_generate_enum_convertor_strenum_lib() -> None:
+    """Test patched converter with StrEnum from strenum library."""
+    from strenum import StrEnum
+
+    generate_converter = _do_patch_generate_enum_convertor()
+
+    class TestEnum(StrEnum):
+        FOO = "foo"
+        BAR = "bar"
+
+    converter = generate_converter(TestEnum)
+    assert converter("foo") == TestEnum.FOO
+    assert converter("bar") == TestEnum.BAR
+    assert converter("FOO") == TestEnum.FOO
+    assert converter("BAR") == TestEnum.BAR
+    assert converter(TestEnum.FOO) == TestEnum.FOO
+    assert converter(TestEnum.BAR) == TestEnum.BAR
+
+
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="Requires Python 3.11+")
+def test_patch_generate_enum_convertor_strenum_stdlib() -> None:
+    from enum import StrEnum
+
+    generate_converter = _do_patch_generate_enum_convertor()
+
+    class TestEnum(StrEnum):
+        FOO = "foo"
+        BAR = "bar"
+
+    converter = generate_converter(TestEnum)
+    assert converter("foo") == TestEnum.FOO
+    assert converter("bar") == TestEnum.BAR
+    assert converter("FOO") == TestEnum.FOO
+    assert converter("BAR") == TestEnum.BAR
+    assert converter(TestEnum.FOO) == TestEnum.FOO
+    assert converter(TestEnum.BAR) == TestEnum.BAR
 
 
 def test_patch_get_click_type() -> None:
