@@ -25,7 +25,6 @@ from zabbix_cli.output.console import info
 from zabbix_cli.output.console import print_path
 from zabbix_cli.output.console import print_toml
 from zabbix_cli.output.console import success
-from zabbix_cli.output.formatting.path import path_link
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.fs import open_directory
 
@@ -385,7 +384,10 @@ def update_config(
         None, "--config-file", "-c", help="Location of the config file to update."
     ),
     secrets: SecretMode = typer.Option(
-        SecretMode.PLAIN, "--secrets", help="Visibility mode for secrets."
+        SecretMode.PLAIN,
+        "--secrets",
+        help="DEPRECATED: Visibility mode for secrets.",
+        hidden=True,
     ),
     force: bool = typer.Option(False, "--force", help="Skip confirmation prompt."),
 ) -> None:
@@ -405,8 +407,7 @@ def update_config(
     # When we dump the config, we automatically exclude the deprecated fields
     # while taking advantage of the validators that update the new fields.
     config = app.state.config
-    config.dump_to_file(config_file, secrets=secrets)
-    success(f"Config saved to {path_link(config_file)}")
+    config.dump_updated_config(config_file=config_file)
 
 
 @app.command("update", rich_help_panel=HELP_PANEL, hidden=True)

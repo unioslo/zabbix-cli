@@ -33,6 +33,8 @@ class BaseModel(PydanticBaseModel):
             return False
         return v
 
+    # TODO: move this validator to Config, so we can provide exact config
+    # field names, as well as optionally silencing the warnings with a flag.
     @model_validator(mode="after")
     def _check_deprecated_fields(self) -> Self:
         """Check for deprecated fields and log warnings."""

@@ -157,7 +157,12 @@ def get_deprecated_fields_set(
     return fields
 
 
-def update_deprecated_fields(model: BaseModel) -> None:
+def replace_deprecated_fields(model: BaseModel) -> None:
+    """Set replacement fields for deprecated fields in a model.
+
+    I.e. if field `old_field` is deprecated and replaced by `new_field`,
+    set `new_field` to the value of `old_field` if `new_field` is not already set.
+    """
     deprecated_fields = get_deprecated_fields_set(model)
     for field in deprecated_fields:
         if not field.replacement:
@@ -195,6 +200,20 @@ def _set_replacement_field(
             field.field_name,
             e,
         )
+
+
+def fmt_deprecated_fields(fields: list[DeprecatedField]) -> str:
+    """Format a list of deprecated fields for logging."""
+    lines: list[str] = []
+    for field in fields:
+        if field.replacement:
+            replacements = ", ".join(f"[option]{r}[/]" for r in field.replacement)
+            lines.append(
+                f"  - [option]{field.field_name}[/] (replaced by: {replacements})"
+            )
+        else:
+            lines.append(f"  - [option]{field.field_name}[/] (removed)")
+    return "\n".join(lines)
 
 
 class DeprecatedField(NamedTuple):

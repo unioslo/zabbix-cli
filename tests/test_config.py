@@ -11,6 +11,7 @@ try:
     import tomllib
 except ImportError:
     import tomli as tomllib
+
 from inline_snapshot import snapshot
 from pydantic import BaseModel
 from pydantic import Field
@@ -22,12 +23,14 @@ from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.constants import SecretMode
 from zabbix_cli.config.model import APIConfig
 from zabbix_cli.config.model import AppConfig
+from zabbix_cli.config.model import AutoUpdateConfig
 from zabbix_cli.config.model import Config
 from zabbix_cli.config.model import PluginConfig
 from zabbix_cli.config.model import PluginsConfig
 from zabbix_cli.config.utils import DeprecatedField
+from zabbix_cli.config.utils import fmt_deprecated_fields
 from zabbix_cli.config.utils import get_deprecated_fields_set
-from zabbix_cli.config.utils import update_deprecated_fields
+from zabbix_cli.config.utils import replace_deprecated_fields
 from zabbix_cli.exceptions import ConfigOptionNotFound
 from zabbix_cli.exceptions import PluginConfigTypeError
 
@@ -304,6 +307,7 @@ def test_deprecated_field_warnings(caplog: pytest.LogCaptureFixture) -> None:
             use_colors=True,
             use_paging=True,
             system_id="System-User",
+            config_auto_update=AutoUpdateConfig(enabled=False),
         )
     )
     assert caplog.record_tuples == snapshot(
@@ -403,7 +407,7 @@ def test_get_deprecated_fields_deep_nesting() -> None:
         @model_validator(mode="after")
         def _set_deprecated_fields_in_new_location(self) -> Self:
             """Set deprecated fields in their new location."""
-            update_deprecated_fields(self)
+            replace_deprecated_fields(self)
             return self
 
     foo = Foo(bar=Bar(qux_deprecated="test123"))
@@ -808,3 +812,47 @@ format = "csv"
                 ]
             )
             caplog.clear()
+
+
+def test_fmt_deprecated_fields() -> None:
+    deprecated_fields = [
+        # A subset of deprecated fields for testing
+        DeprecatedField(
+            field_name="app.output_format",
+            value=OutputFormat.JSON,
+            replacement=["app.output.format"],
+        ),
+        DeprecatedField(
+            field_name="app.system_id",
+            value="System-User",
+            replacement=["api.username"],
+        ),
+        DeprecatedField(
+            field_name="app.use_colors",
+            value=True,
+            replacement=["app.output.color"],
+        ),
+        DeprecatedField(
+            field_name="app.use_paging",
+            value=True,
+            replacement=["app.output.paging"],
+        ),
+        DeprecatedField(
+            field_name="default_create_user_usergroups",
+            value=[],
+            replacement=[
+                "app.commands.create_user.usergroups",
+                "app.commands.create_hostgroup.ro_groups",
+            ],
+        ),
+    ]
+    formatted = fmt_deprecated_fields(deprecated_fields)
+    assert formatted == snapshot(
+        """\
+  - [option]app.output_format[/] (replaced by: [option]app.output.format[/])
+  - [option]app.system_id[/] (replaced by: [option]api.username[/])
+  - [option]app.use_colors[/] (replaced by: [option]app.output.color[/])
+  - [option]app.use_paging[/] (replaced by: [option]app.output.paging[/])
+  - [option]default_create_user_usergroups[/] (replaced by: [option]app.commands.create_user.usergroups[/], [option]app.commands.create_hostgroup.ro_groups[/])\
+"""
+    )
