@@ -84,6 +84,7 @@ docs = [
   "pyyaml",
 ]
 build = ["hatch", "pyinstaller"]
+profile = ["py-spy>=0.4.1"]
 
 [project.urls]
 Documentation = "https://github.com/unioslo/zabbix-cli#readme"

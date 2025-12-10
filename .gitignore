@@ -29,3 +29,6 @@ site/
 
 # Pyinstaller
 *.spec
+
+# Profiling output
+profile.svg
