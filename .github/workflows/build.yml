@@ -107,28 +107,11 @@ jobs:
           path: dist/${{ env.BINARY_NAME }}
           if-no-files-found: error
 
-  publish_pypi:
-    name: Publish PyPI release
-    needs:
-      - build_pypi
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: pypi_artifacts
-          path: dist
-
-      - name: Push build artifacts to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-
   publish_github:
     name: Publish GitHub release
     needs:
       - build_pypi
       - build_pyinstaller
-      - publish_pypi
     runs-on: ubuntu-latest
 
     steps:
@@ -196,3 +179,50 @@ jobs:
             ```
           draft: false
           prerelease: false
+
+  publish_pypi:
+    name: Publish PyPI release
+    needs:
+      - build_pypi
+      - publish_github
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pypi_artifacts
+          path: dist
+
+      - name: Push build artifacts to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  rollback_on_failure:
+    name: Rollback on publish failure
+    if: ${{ always() && (needs.publish_github.result == 'failure' || needs.publish_pypi.result == 'failure') }}
+    needs:
+      - publish_github
+      - publish_pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Rollback GitHub release and tag
+        if: ${{ needs.publish_github.result == 'success' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Deleting GitHub release..."
+          gh release delete ${{ github.ref_name }} --repo ${{ github.repository }} --yes || true
+
+          echo "Deleting git tag..."
+          git push --delete origin "refs/tags/${{ github.ref_name }}" || true
+      - name: Rollback notification
+        run: |
+          echo "::notice::Rolling back release ${{ github.ref_name }} due to publish failure"
+          echo "GitHub release status: ${{ needs.publish_github.result }}"
+          echo "PyPI publish status: ${{ needs.publish_pypi.result }}"
