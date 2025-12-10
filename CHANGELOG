@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `strict`
     - `continue`
     - `ignore`
+- Automatic config updates on startup. Deprecated and moved fields are migrated to their new locations in the config file.
+  - Controlled by new config table `[app.config_auto_update]`.
+- New config table `[app.config_auto_update]` to configure automatic config file updates on startup. Migrates deprecated config fields to their new locations. Options:
+  - `enabled` (bool): Enable or disable automatic config updates. Defaults to `true`.
+  - `silent` (bool): Suppress output when updating the config file. Defaults to `false`.
+  - `backup` (bool): Create a backup of the config file prior to updating it. Defaults to `true`.
 
 ### Changed
 
@@ -52,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `show_host_usermacros` → `show_host_macros`
   - `show_usermacro_host_list` → `show_macro_hosts`
   - `show_usermacro_template_list` → `show_macro_templates`
+- `update_config` no longer requires authentication.
 
 ### Deprecated
 
@@ -68,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `show_host_usermacros`
   - `show_usermacro_host_list`
   - `show_usermacro_template_list`
+- `update_config --secrets <hide|mask|plain>` option. Now always dumps secrets in the plain format when updating the config file. This option never made sense.
 
 ### Fixed
 

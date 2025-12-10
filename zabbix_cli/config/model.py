@@ -32,6 +32,7 @@ from typing import overload
 from pydantic import AliasChoices
 from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import PrivateAttr
 from pydantic import RootModel
 from pydantic import SecretStr
 from pydantic import SerializationInfo
@@ -54,10 +55,11 @@ from zabbix_cli.config.constants import SESSION_FILE
 from zabbix_cli.config.constants import OutputFormat
 from zabbix_cli.config.constants import SecretMode
 from zabbix_cli.config.utils import find_config
+from zabbix_cli.config.utils import fmt_deprecated_fields
 from zabbix_cli.config.utils import get_deprecated_fields_set
 from zabbix_cli.config.utils import load_config_conf
 from zabbix_cli.config.utils import load_config_toml
-from zabbix_cli.config.utils import update_deprecated_fields
+from zabbix_cli.config.utils import replace_deprecated_fields
 from zabbix_cli.dirs import EXPORT_DIR
 from zabbix_cli.exceptions import ConfigError
 from zabbix_cli.exceptions import ConfigOptionNotFound
@@ -168,6 +170,23 @@ class OutputConfig(BaseModel):
         return v
 
 
+class AutoUpdateConfig(BaseModel):
+    """Configuration for automatic config updates."""
+
+    enabled: bool = Field(
+        default=True,
+        description="Automatically update config with new config fields and migrate deprecated fields on startup.",
+    )
+    silent: bool = Field(
+        default=False,
+        description="Suppress console output about config updates.",
+    )
+    backup: bool = Field(
+        default=True,
+        description="Create a backup of the config file before updating it.",
+    )
+
+
 class AppConfig(BaseModel):
     """Configuration for app defaults and behavior."""
 
@@ -205,6 +224,10 @@ class AppConfig(BaseModel):
             "allow_insecure_auth_file",
             "allow_insecure_authfile",
         ),
+    )
+    config_auto_update: AutoUpdateConfig = Field(
+        default_factory=AutoUpdateConfig,
+        description="Configuration for automatic config updates.",
     )
 
     # History
@@ -558,26 +581,37 @@ class Config(BaseModel):
 
     config_path: Optional[Path] = Field(default=None, exclude=True)
 
+    _deprecated_fields_migrated: bool = PrivateAttr(default=False)
+
     @property
     def sample(self) -> bool:
         return len(self.model_fields_set) > 0
 
     @model_validator(mode="after")
     def _set_deprecated_fields_in_new_location(self) -> Self:
-        """Set values specified on deprecated fields in their new location.
-
-        Only updates new fields if the old field is set and the new field is not.
+        """Set values specified on deprecated fields in their new location
+        and optionally update the config file on disk.
 
         I.e. `app.username` -> `api.username`.
              `app.output_format` -> `app.output.format`.
+
+        Only updates new fields if the old field is set and the new field is not.
         """
+        if self._deprecated_fields_migrated:
+            return self
+
         # Guard against failure in case we have a config that cannot be updated
         # After all, this validator is added for _increased_ compatibility, not decreased
         try:
-            update_deprecated_fields(self)
+            replace_deprecated_fields(self)
+            self.check_emit_upgrade_instructions()
+            if self.app.config_auto_update.enabled:
+                self.dump_updated_config()
         except Exception as e:
-            logger.error("Failed to update deprecated fields: %s", e)
-        self.check_emit_upgrade_instructions()
+            logger.error("Failed to update deprecated fields in config: %s", e)
+
+        # Mark as migrated even if we failed to avoid repeated attempts
+        self._deprecated_fields_migrated = True
         return self
 
     @classmethod
@@ -684,6 +718,9 @@ class Config(BaseModel):
 
         # TODO: Detmermine whether or not to prefix command with `zabbix-cli`
         #       based on whether or not we are in the REPL
+
+        # Legacy configs provide different instructions
+        # and we cannot use the same heuristics for determining deprecations
         if self.app.is_legacy:
             warning(
                 "Your configuration file is from an older version of Zabbix-CLI.\n"
@@ -691,19 +728,69 @@ class Config(BaseModel):
                 "  [command]zabbix-cli migrate_config[/]\n"
                 "  For more information, see the documentation."
             )
-        else:
-            deprecated_fields = get_deprecated_fields_set(self)
-            if not deprecated_fields:
-                return
+            return
 
-            # If none of the deprecated fields have a replacement, we don't
-            # need to inform the user about them. They can be safely ignored.
-            if all(not field.replacement for field in deprecated_fields):
-                return
+        # Auto-updates do not require user intervention
+        if self.app.config_auto_update.enabled:
+            return
 
-            warning(
-                "Your configuration file contains deprecated options.\n"
-                "  To update your config file with the new options, run:\n"
-                "  [command]zabbix-cli update_config[/]\n"
-                "  For more information, see the documentation."
-            )
+        deprecated_fields = get_deprecated_fields_set(self)
+        if not deprecated_fields:
+            return
+
+        # Deprecated fields have no replacements – nothing to inform about
+        # NOTE: unless we want to provide a way to remove deprecated fields?
+        if all(not field.replacement for field in deprecated_fields):
+            return
+
+        warning(
+            "Your configuration file contains deprecated options.\n"
+            "  To update your config file with the new options, run:\n"
+            "  [command]zabbix-cli update_config[/]\n"
+            "  For more information, see the documentation."
+        )
+
+    def dump_updated_config(self, config_file: Optional[Path] = None) -> None:
+        """Update deprecated fields in the configuration to their new location.
+
+        Uses the current config values to update the config file on disk.
+        """
+        from zabbix_cli.output.console import info
+        from zabbix_cli.output.console import success
+        from zabbix_cli.output.formatting.path import path_link
+
+        deprecated_fields = get_deprecated_fields_set(self)
+        if not deprecated_fields:
+            return  # no deprecated fields
+        elif not any(field.replacement for field in deprecated_fields):
+            return  # no replacements for deprecated fields
+
+        config_file = config_file or self.config_path
+        if not config_file:
+            logger.warning("Cannot update configuration file: no config file path set.")
+            return
+
+        if self.app.config_auto_update.backup:
+            backup_file = config_file.with_suffix(config_file.suffix + ".bak")
+            try:
+                backup_file.write_text(config_file.read_text())
+            except OSError as e:
+                raise ConfigError(
+                    f"Failed to create backup of config file {config_file} "
+                    f"before updating it: {e}. "
+                    "Disable backups with [option]app.config_auto_update.backup=false[/] "
+                    "to proceed without a backup."
+                ) from e
+            logger.info("Created backup of config file at %s", backup_file)
+
+        try:
+            self.dump_to_file(config_file, secrets=SecretMode.PLAIN)
+        except ConfigError as e:
+            raise ConfigError(
+                f"Failed to update config file {config_file} with new fields: {e}. "
+                "Disable automatic config updates with [option]app.config_auto_update.enabled=false[/] "
+                "to proceed without automatic updates."
+            ) from e
+
+        success(f"Updated config file {path_link(config_file)}.")
+        info(f"Deprecated fields updated:\n{fmt_deprecated_fields(deprecated_fields)}")
