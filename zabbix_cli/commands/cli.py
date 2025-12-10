@@ -342,7 +342,10 @@ def sample_config(ctx: typer.Context) -> None:
 def show_config(
     ctx: typer.Context,
     secrets: SecretMode = typer.Option(
-        SecretMode.MASK, "--secrets", help="Display mode for secrets."
+        SecretMode.MASK,
+        "--secrets",
+        help="Display mode for secrets.",
+        case_sensitive=False,
     ),
 ) -> None:
     """Show the current application configuration."""
@@ -388,6 +391,7 @@ def update_config(
         "--secrets",
         help="DEPRECATED: Visibility mode for secrets.",
         hidden=True,
+        case_sensitive=False,
     ),
     force: bool = typer.Option(False, "--force", help="Skip confirmation prompt."),
 ) -> None:

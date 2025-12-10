@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Session file permission checking ignoring config option `app.allow_insecure_auth_file`.
+- `show_config` & `update_config` `--secrets` default throwing an error on Click>8.2.0.
 
 ## [3.6.1](https://github.com/unioslo/zabbix-cli/tree/3.6.1) - 2025-12-10
 
