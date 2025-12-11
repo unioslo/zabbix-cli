@@ -14,6 +14,7 @@ from enum import Enum
 from enum import EnumMeta
 from operator import attrgetter
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import Generic
@@ -25,9 +26,8 @@ from typing import get_args
 from pydantic import SecretStr
 from rich.panel import Panel
 
-from zabbix_cli.bulk import BulkRunnerMode
+from zabbix_cli.config.constants import BulkRunnerMode
 from zabbix_cli.config.constants import OutputFormat
-from zabbix_cli.config.model import Config
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.output.console import console
 from zabbix_cli.output.console import exit_err
@@ -38,6 +38,12 @@ from zabbix_cli.output.prompts import list_prompt
 from zabbix_cli.output.prompts import path_prompt
 from zabbix_cli.output.prompts import str_prompt
 from zabbix_cli.utils.args import parse_bool_arg
+
+if TYPE_CHECKING:
+    # NOTE: this is a potential HUGE footgun if anyone tries to use
+    # this import outside of annotations. I don't like it, but
+    # we really want to avoid defining the Pydantic models on startup
+    from zabbix_cli.config.model import Config
 
 if sys.version_info >= (3, 10):
     from itertools import pairwise
