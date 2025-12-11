@@ -1,0 +1,2588 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.44">
+    
+    
+      
+        <title>Changelog - zabbix-cli</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.0253249f.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+   <link href="../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }
+    .gscrollbar-fixer { padding-right: 15px; }
+    .gdesc-inner { font-size: 0.75rem; }
+    body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color);}
+    body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color);}
+    body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}</style> <script src="../assets/javascripts/glightbox.min.js"></script></head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="blue" data-md-color-accent="orange">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="zabbix-cli" class="md-header__button md-logo" aria-label="zabbix-cli" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            zabbix-cli
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/unioslo/zabbix-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unioslo/zabbix-cli
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+    
+  
+  Home
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../guide/installation/" class="md-tabs__link">
+          
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../commands/" class="md-tabs__link">
+          
+  
+    
+  
+  Commands
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../plugins/" class="md-tabs__link">
+          
+  
+    
+  
+  Plugins
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="zabbix-cli" class="md-nav__button md-logo" aria-label="zabbix-cli" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    zabbix-cli
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/unioslo/zabbix-cli" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    unioslo/zabbix-cli
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href=".." class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Home
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/installation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/authentication/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Authentication
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/usage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Usage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/logging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Logging
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/bulk/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Bulk Operations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/migration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Migration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../commands/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Commands
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Commands
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/CLI/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CLI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Host/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Host
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Host_Group/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Host Group
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Host_Interface/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Host Interface
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Host_Monitoring/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Host Monitoring
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/ImportExport/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Import/Export
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Macro_%28Global%29/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Macro (Global)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Macro_%28Host%29/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Macro (Host)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Maintenance/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Maintenance
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Media/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Media
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Problem/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Problem
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Proxy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Proxy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Proxy_Group/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Proxy Group
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Template/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Template
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/Template_Group/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Template Group
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/User/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    User
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/User_Group/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    User Group
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../plugins/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Plugins
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Plugins
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Writing plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/local-plugins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Local plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/external-plugins/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    External plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#362-2025-12-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.6.2 - 2025-12-10
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.6.2 - 2025-12-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#361-2025-12-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.6.1 - 2025-12-10
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.6.1 - 2025-12-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#360-2025-12-10" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.6.0 - 2025-12-10
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.6.0 - 2025-12-10">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deprecated" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecated
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#internal" class="md-nav__link">
+    <span class="md-ellipsis">
+      Internal
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#353-2025-10-20" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.5.3 - 2025-10-20
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.5.3 - 2025-10-20">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#352-2025-04-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.5.2 - 2025-04-24
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.5.2 - 2025-04-24">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#351-2025-02-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.5.1 - 2025-02-03
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.5.1 - 2025-02-03">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#350-2025-01-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.5.0 - 2025-01-13
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.5.0 - 2025-01-13">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deprecated_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecated
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#342-2024-12-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.4.2 - 2024-12-16
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.4.2 - 2024-12-16">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#341-2024-12-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.4.1 - 2024-12-04
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.4.1 - 2024-12-04">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deprecated_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecated
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#340-2024-11-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.4.0 - 2024-11-28
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.4.0 - 2024-11-28">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deprecated_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecated
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#330-2024-11-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.3.0 - 2024-11-06
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.3.0 - 2024-11-06">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deprecated_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecated
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#320-2024-10-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.2.0 - 2024-10-29
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.2.0 - 2024-10-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#313-2024-10-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.1.3 - 2024-10-15
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.1.3 - 2024-10-15">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#312-2024-10-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.1.2 - 2024-10-01
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.1.2 - 2024-10-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#311-2024-10-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.1.1 - 2024-10-01
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.1.1 - 2024-10-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#310-2024-09-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.1.0 - 2024-09-27
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.1.0 - 2024-09-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#303-2024-09-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.0.3 - 2024-09-16
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.0.3 - 2024-09-16">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#302-2024-09-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.0.2 - 2024-09-06
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.0.2 - 2024-09-06">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#301-2024-09-05" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.0.1 - 2024-09-05
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.0.1 - 2024-09-05">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#300-2024-09-02" class="md-nav__link">
+    <span class="md-ellipsis">
+      3.0.0 - 2024-09-02
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.0.0 - 2024-09-02">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deprecated_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deprecated
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#internal_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Internal
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/unioslo/zabbix-cli/edit/master/docs/changelog.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="changelog">Changelog</h1>
+<p>This page documents all the changes to released versions of Zabbix CLI.</p>
+<!-- ## Unreleased -->
+
+<h2 id="362-2025-12-10"><a href="https://github.com/unioslo/zabbix-cli/tree/3.6.2">3.6.2</a> - 2025-12-10</h2>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li>Session file permission checking ignoring config option <code>app.allow_insecure_auth_file</code>.</li>
+<li><code>show_config</code> &amp; <code>update_config</code> <code>--secrets</code> default throwing an error on Click&gt;8.2.0.</li>
+</ul>
+<h2 id="361-2025-12-10"><a href="https://github.com/unioslo/zabbix-cli/tree/3.6.1">3.6.1</a> - 2025-12-10</h2>
+<h3 id="fixed_1">Fixed</h3>
+<ul>
+<li>Broken GitHub release publishing step in CI workflow.</li>
+</ul>
+<h2 id="360-2025-12-10"><a href="https://github.com/unioslo/zabbix-cli/tree/3.6.0">3.6.0</a> - 2025-12-10</h2>
+<h3 id="added">Added</h3>
+<ul>
+<li>Configuration wizard for creating/updating the configuration file via <code>zabbix-cli init --wizard/--no-wizard</code>.</li>
+<li>The wizard is enabled by default.</li>
+<li>Configuration file tables for the following commands:</li>
+<li><code>create_host</code>: <code>[app.commands.create_host]</code></li>
+<li><code>create_user</code>: <code>[app.commands.create_user]</code></li>
+<li><code>create_notification_user</code>: <code>[app.commands.create_notification_user]</code></li>
+<li><code>export_configuration</code>: <code>[app.commands.export]</code></li>
+<li><code>import_configuration</code>: <code>[app.commands.export]</code></li>
+<li><strong>NOTE:</strong> <code>export_configuration</code> and <code>import_configuration</code> share the same configuration table to maintain consistency.</li>
+<li>New option <code>create_user --default-usergroups/--no-default-usergroups</code></li>
+<li>New option <code>create_notification_user --default-usergroups/--no-default-usergroups</code></li>
+<li>New command <code>define_template_macro</code> to define a macro for a template.</li>
+<li>New command <code>show_template_macros</code> to show macros for a template.</li>
+<li>New command <code>show_templategroup_permissions</code> to show user group permissions for a template group.</li>
+<li>New command <code>remove_usergroup</code> to delete one or more user groups.</li>
+<li>New top-level option <code>--bulk-mode/-b</code> to enable bulk mode for command file execution.</li>
+<li>Overrides <code>app.bulk_mode</code> in config file.</li>
+<li>Possible values:<ul>
+<li><code>strict</code></li>
+<li><code>continue</code></li>
+<li><code>ignore</code></li>
+</ul>
+</li>
+<li>Automatic config updates on startup. Deprecated and moved fields are migrated to their new locations in the config file.</li>
+<li>Controlled by new config table <code>[app.config_auto_update]</code>.</li>
+<li>New config table <code>[app.config_auto_update]</code> to configure automatic config file updates on startup. Migrates deprecated config fields to their new locations. Options:</li>
+<li><code>enabled</code> (bool): Enable or disable automatic config updates. Defaults to <code>true</code>.</li>
+<li><code>backup</code> (bool): Create a backup of the config file prior to updating it. Defaults to <code>true</code>.</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li>Moved the following config options to the new <code>[app.commands]</code> table:</li>
+<li><code>app.default_hostgroups</code> → <code>app.commands.create_host.hostgroups</code></li>
+<li><code>app.default_admin_usergroups</code> → <code>app.commands.create_hostgroup.rw_groups</code></li>
+<li><code>app.default_create_user_usergroups</code> → <code>app.commands.create_user.usergroups</code> &amp; <code>app.commands.create_hostgroup.ro_groups</code></li>
+<li><code>app.default_notification_users_usergroups</code> → <code>app.commands.create_notification_user.usergroups</code></li>
+<li><code>app.export_directory</code> → <code>app.commands.export.directory</code></li>
+<li><code>app.export_format</code> → <code>app.commands.export.format</code></li>
+<li><code>app.export_timestamps</code> → <code>app.commands.export.timestamps</code></li>
+<li>Removed default value in config for notification user groups (<code>All-notification-users</code>).</li>
+<li><code>create_notification_user</code> no longer uses the same default user groups as <code>create_user</code>.</li>
+<li>The default user groups is now set by <code>app.commands.create_notification_user.usergroups</code> in the config file.</li>
+<li><code>show_hostgroups</code> no longer requires a name argument. Shows all host groups by default.</li>
+<li>Renamed macro commands. The term "usermacro" is a remnant of Zabbix-CLI v2 and only exists as part of the API. In the documentation and web interface, these are simply referred to as "Macros" in the global context and "Host/Template Macros" in the host/template context.</li>
+<li><code>define_host_usermacro</code> → <code>define_host_macro</code></li>
+<li><code>show_host_usermacros</code> → <code>show_host_macros</code></li>
+<li><code>show_usermacro_host_list</code> → <code>show_macro_hosts</code></li>
+<li><code>show_usermacro_template_list</code> → <code>show_macro_templates</code></li>
+<li><code>update_config</code> no longer requires authentication.</li>
+</ul>
+<h3 id="deprecated">Deprecated</h3>
+<ul>
+<li>Deprecated the following config options (moved to the new <code>[app.commands]</code> table):</li>
+<li><code>app.default_hostgroups</code></li>
+<li><code>app.default_admin_usergroups</code></li>
+<li><code>app.default_create_user_usergroups</code></li>
+<li><code>app.default_notification_users_usergroups</code></li>
+<li><code>app.export_directory</code></li>
+<li><code>app.export_format</code></li>
+<li><code>app.export_timestamps</code></li>
+<li>Commands containing "usermacro" in the name are deprecated in favor of the new names without "user":</li>
+<li><code>define_host_usermacro</code></li>
+<li><code>show_host_usermacros</code></li>
+<li><code>show_usermacro_host_list</code></li>
+<li><code>show_usermacro_template_list</code></li>
+<li><code>update_config --secrets &lt;hide|mask|plain&gt;</code> option. Now always dumps secrets in the plain format when updating the config file. This option never made sense.</li>
+</ul>
+<h3 id="fixed_2">Fixed</h3>
+<ul>
+<li>Proxy groups with macros for <code>min_online</code> causing validation to fail and fallback to a default value of <code>1</code>. Removed this check to allow macros to be used.</li>
+</ul>
+<h3 id="internal">Internal</h3>
+<ul>
+<li>Replace <code>pre-commit</code> with <a href="https://github.com/j178/prek"><code>prek</code></a>.</li>
+</ul>
+<h2 id="353-2025-10-20"><a href="https://github.com/unioslo/zabbix-cli/tree/3.5.3">3.5.3</a> - 2025-10-20</h2>
+<h3 id="fixed_3">Fixed</h3>
+<ul>
+<li>Force-load typer.rich_utils <a href="https://github.com/unioslo/zabbix-cli/pull/312">#312</a> by <a href="https://github.com/sur5r">@sur5r</a></li>
+</ul>
+<h3 id="changed_1">Changed</h3>
+<ul>
+<li>Use stdlib tomllib instead of standalone tomli on Python 3.11+ <a href="https://github.com/unioslo/zabbix-cli/pull/306">#306</a> by <a href="https://github.com/a-detiste">@a-detiste</a></li>
+</ul>
+<h2 id="352-2025-04-24"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.5.2">3.5.2</a> - 2025-04-24</h2>
+<h3 id="added_1">Added</h3>
+<ul>
+<li><code>create_notification_user --dryrun</code> option to preview changes without making them.</li>
+<li><code>create_host --create-interface/--no-create-interface</code> option to control creation of interface when creating a host.</li>
+<li>Persistent configuration of commands via a new config table <code>[app.commands]</code>.</li>
+<li>Configuration table <code>app.commands.create_host</code> to configure the <code>create_host</code> command.</li>
+<li>Configuration option <code>app.commands.create_host.create_interface</code> to enable/disable creating interfaces when creating a host.</li>
+</ul>
+<h3 id="changed_2">Changed</h3>
+<ul>
+<li><code>create_notification_user</code> now always shows a table of the user that has been created, along with its media types.</li>
+</ul>
+<h2 id="351-2025-02-03"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.5.1">3.5.1</a> - 2025-02-03</h2>
+<h3 id="added_2">Added</h3>
+<ul>
+<li>Support for custom CA file bundles for Zabbix API connections. The config option <code>api.verify_ssl</code> now accepts a path to a custom CA file bundle.</li>
+</ul>
+<h3 id="fixed_4">Fixed</h3>
+<ul>
+<li><code>create_maintenance_definition</code> with multiple host groups only including the first group in the maintenance definition for Zabbix &gt;=6.0.</li>
+<li><code>add_user_to_usergroup</code> and <code>remove_user_from_usergroup</code> using deprecated API parameters for Zabbix &gt;=6.0.</li>
+<li>Commands that allow multiple names or IDs to be specified should now correctly handle searching for multiple values.</li>
+</ul>
+<h2 id="350-2025-01-13"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.5.0">3.5.0</a> - 2025-01-13</h2>
+<h3 id="added_3">Added</h3>
+<ul>
+<li>Environment variable <code>ZABBIX_URL</code> to specify the URL for the Zabbix API.</li>
+<li>Session file for storing Zabbix API sessions for multiple URLs and users.</li>
+<li>This allows for multiple Zabbix instances to be used without re-authenticating.</li>
+<li>The session file is stored in the application's data directory by default with the name <code>.zabbix-cli_session.json</code>.</li>
+<li><code>app.use_session_file</code> configuration option to enable or disable session file usage.</li>
+</ul>
+<h3 id="changed_3">Changed</h3>
+<ul>
+<li>Authentication info from environment variables now take priority over the configuration file.</li>
+</ul>
+<h3 id="deprecated_1">Deprecated</h3>
+<ul>
+<li>Auth token file. Use the new session file instead. Session files are now created by default if <code>app.use_auth_token_file</code> is set to <code>true</code> in the configuration file.</li>
+<li><code>app.use_auth_token_file</code> configuration option. Use <code>app.use_session_file</code> instead.</li>
+</ul>
+<h2 id="342-2024-12-16"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.4.2">3.4.2</a> - 2024-12-16</h2>
+<h3 id="changed_4">Changed</h3>
+<ul>
+<li><code>login</code> command re-enabled. It should now behave consistently regardless of configuration and environment.</li>
+<li><code>login</code> command description updated to reflect its intended usage.</li>
+<li>Now uses new header-based authentication for Zabbix &gt;=6.4 instead of passing it as a part of the request body.</li>
+</ul>
+<h3 id="fixed_5">Fixed</h3>
+<ul>
+<li>Authentication for Zabbix 7.2 and later. The application now correctly determines how to pass in authentication data based on the Zabbix version.</li>
+</ul>
+<h2 id="341-2024-12-04"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.4.1">3.4.1</a> - 2024-12-04</h2>
+<h3 id="changed_5">Changed</h3>
+<ul>
+<li><code>create_notification_user</code>: Now adds users to the default user group in addition to the notification user group to match behavior in V2.</li>
+<li><code>show_media_types</code>: Now shows the formatted string representation of the media type <code>type</code> field instead of an integer.</li>
+<li>Auth tokens and passwords from API request errors are now masked by default in output.</li>
+</ul>
+<h3 id="deprecated_2">Deprecated</h3>
+<ul>
+<li><code>login</code> command. It is fundamentally flawed and is slated to be removed in a future version unless a valid use case is presented.</li>
+<li>Restart the application with a different configuration or launch options to change login methods instead.</li>
+</ul>
+<h3 id="fixed_6">Fixed</h3>
+<ul>
+<li>Ordering of User commands in the help output.</li>
+<li>Auth token file being written when logging in with a token.</li>
+<li>Custom auth token file path not being used when writing auth token file.</li>
+</ul>
+<h2 id="340-2024-11-28"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.4.0">3.4.0</a> - 2024-11-28</h2>
+<h3 id="added_4">Added</h3>
+<ul>
+<li>New command <code>help</code> to show help for a specific command.</li>
+<li>New command categories:</li>
+<li><code>Host Group</code></li>
+<li><code>Host Interface</code></li>
+<li><code>Host Monitoring</code></li>
+<li><code>Macro (Global)</code></li>
+<li><code>Macro (User)</code></li>
+<li><code>Media</code></li>
+<li><code>Proxy Group</code></li>
+<li><code>Template Group</code></li>
+</ul>
+<h3 id="changed_6">Changed</h3>
+<ul>
+<li>Commands are now sorted alphabetically within each category.</li>
+<li>Categories are now split up into more granular sections. See the <code>Added</code> section for the new categories.</li>
+</ul>
+<h3 id="deprecated_3">Deprecated</h3>
+<ul>
+<li><code>update_usergroup_permissions</code> command. Use <code>add_usergroup_permissions</code> instead.</li>
+<li>In the future, a <code>remove_usergroup_permissions</code> command will be added to complement the <code>add_usergroup_permissions</code> command instead of complicating the <code>update_usergroup_permissions</code> command.</li>
+</ul>
+<h3 id="fixed_7">Fixed</h3>
+<ul>
+<li>V2-style <code>-C</code> command invocation shim. Now correctly passes arguments to the new CLI.</li>
+<li>Internal Typer import error after <code>typer==0.13.0</code>.</li>
+</ul>
+<h2 id="330-2024-11-06"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.3.0">3.3.0</a> - 2024-11-06</h2>
+<h3 id="added_5">Added</h3>
+<ul>
+<li>New configuration file table <code>[app.output]</code>:</li>
+<li><code>format</code>: Default output format for commands. Defaults to <code>"table"</code>.</li>
+<li><code>color</code>: Enable or disable color output. Defaults to <code>true</code>.</li>
+<li><code>paging</code>: Enable or disable paging of output. Defaults to <code>false</code>.</li>
+<li><code>theme</code>: Color theme for output. Defaults to <code>"default"</code>.</li>
+<li>Application now automatically assigns deprecated config options to their new equivalents internally.</li>
+<li>New command <code>update_config</code> to update an outdated configuration file with new options, as well as any currently applied overrides.</li>
+<li><code>show_config --secrets &lt;hide|mask|plain&gt;</code> option for controlling the display mode of sensitive information in the configuration file. Defaults to <code>mask</code>.</li>
+<li>New command <code>update_host</code> to update basic information about a host.</li>
+<li>New command <code>show_proxy_hosts</code> to show hosts monitored by a given proxy.</li>
+</ul>
+<h3 id="changed_7">Changed</h3>
+<ul>
+<li>Custom auth (token) file paths in config now take precedence over the default path if both exist.</li>
+<li>Application now prompts for Zabbix API URL if missing from config.</li>
+<li>Default logging configuration is performed before loading the configuration file. Ensures a default logging configuration is always present.</li>
+<li>Authentication method + source is now logged on successful authentication.</li>
+<li>No longer attempts to add a user to the logging context when logging in with an auth token.</li>
+<li>Require at least one option to be set for <code>update_*</code> commands. Previously, these command would state that the resource was updated even if no changes were made.</li>
+<li>Command <code>add_proxy_to_group</code> no longer requires a local address and port argument. If not provided, the application attempts to use the proxy's <code>local_address</code> and <code>local_port</code> fields. If the proxy does not have these fields, the command fails.</li>
+</ul>
+<h3 id="deprecated_4">Deprecated</h3>
+<ul>
+<li>Config options moved to <code>[app.output]</code> table:</li>
+<li><code>app.use_colors</code> → <code>app.output.color</code></li>
+<li><code>app.use_paging</code> → <code>app.output.paging</code></li>
+<li><code>app.output_format</code> → <code>app.output.format</code></li>
+</ul>
+<h2 id="320-2024-10-29"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.2.0">3.2.0</a> - 2024-10-29</h2>
+<h3 id="added_6">Added</h3>
+<ul>
+<li>Configurable error handling modes for bulk mode under <code>app.bulk_mode</code>:</li>
+<li><code>strict</code>: Stop on first error.</li>
+<li><code>continue</code>: Continue on command execution error, report at the end.</li>
+<li><code>ignore</code>: Ignore all errors, including command file parsing errors.</li>
+<li>REPL autocompletion for enums and paths.</li>
+<li>Auto completion for <code>export_configuration --directory</code> argument.</li>
+</ul>
+<h3 id="fixed_8">Fixed</h3>
+<ul>
+<li>Screen flickering on application startup when not authenticating via username and password prompt.</li>
+<li><code>define_host_usermacro</code> not working as expected when using a macro name that already exists elsewhere.</li>
+</ul>
+<h2 id="313-2024-10-15"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.1.3">3.1.3</a> - 2024-10-15</h2>
+<h3 id="fixed_9">Fixed</h3>
+<ul>
+<li>Empty macro names not throwing an error in macro commands.</li>
+<li>Pyinstaller built binary on certain Linux versions.</li>
+</ul>
+<h2 id="312-2024-10-01"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.1.2">3.1.2</a> - 2024-10-01</h2>
+<h3 id="changed_8">Changed</h3>
+<ul>
+<li>Reduced source distribution size by excluding unnecessary files.</li>
+</ul>
+<h2 id="311-2024-10-01"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.1.1">3.1.1</a> - 2024-10-01</h2>
+<h3 id="added_7">Added</h3>
+<ul>
+<li>Publish to PyPI.</li>
+</ul>
+<h2 id="310-2024-09-27"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.1.0">3.1.0</a> - 2024-09-27</h2>
+<h3 id="added_8">Added</h3>
+<ul>
+<li>Plugin support. See the <a href="https://unioslo.github.io/zabbix-cli/plugins/">plugins documentation</a> for more information.</li>
+</ul>
+<h3 id="changed_9">Changed</h3>
+<ul>
+<li><code>--config</code> now always creates the config file at the given location if it doesn't exist.</li>
+<li><code>show_config</code> now shows the absolute path to the active configuration file.</li>
+</ul>
+<h2 id="303-2024-09-16"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.0.3">3.0.3</a> - 2024-09-16</h2>
+<h3 id="added_9">Added</h3>
+<ul>
+<li><code>--limit</code> option for <code>show_*</code> commands to limit the number of results shown:</li>
+<li><code>show_usermacro_host_list</code></li>
+<li><code>show_usermacro_template_list</code></li>
+<li><code>show_maintenance_periods</code></li>
+</ul>
+<h3 id="changed_10">Changed</h3>
+<ul>
+<li><code>show_host_usermacros</code> rendering of <code>automatic</code> field.</li>
+<li>Now shows a human readable string instead of <code>0</code> or <code>1</code>.</li>
+<li>Example formatting.</li>
+<li>Hide defaults for required positional arguments.</li>
+<li><code>show_dirs</code> and <code>init</code> no longer requires logging in to the Zabbix API or an existing configuration file.</li>
+<li>Log record format:</li>
+<li>No longer includes the process ID.</li>
+<li>Now includes filename, line number and function name.</li>
+<li>Rich markup is no longer included in log messages.</li>
+<li>Accessing the config when it is not loaded now uses the same sample config as <code>sample_config</code> instead of raising an exception.</li>
+</ul>
+<h3 id="fixed_10">Fixed</h3>
+<ul>
+<li><code>show_usermacro_host_list</code> not showing all hosts with the given macro.</li>
+<li><code>show_usermacro_template_list</code> not showing all templates with the given macro.</li>
+<li>Auth token file using username from config file instead of from prompt.</li>
+</ul>
+<h2 id="302-2024-09-06"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.0.2">3.0.2</a> - 2024-09-06</h2>
+<h3 id="added_10">Added</h3>
+<ul>
+<li><code>show_hosts</code>: <code>--hostgroup</code> option for filtering by host group names or IDs.</li>
+<li><code>show_last_values</code>: ` Item ID filtering.</li>
+<li><code>show_usergroup</code>: Group ID filtering.</li>
+<li><code>show_usergroups</code>: Group name or ID filtering.</li>
+<li><code>show_users</code>: <code>--sort</code> option for sorting results by a field.</li>
+<li>Status messages when fetching data from the Zabbix API in most <code>show_*</code> commands.</li>
+<li><code>--limit</code> option for most <code>show_*</code> commands to limit the number of results shown.</li>
+<li>Environment variable <code>ZABBIX_API_TOKEN</code> for logging in with an API token.</li>
+</ul>
+<h3 id="fixed_11">Fixed</h3>
+<ul>
+<li>Markup errors when rendering Zabbix items with keys containing special characters.</li>
+<li>Environment variables not matching V2 names.</li>
+<li>Before: <code>ZABBIX_CLI_USERNAME</code>, <code>ZABBIX_CLI_PASSWORD</code></li>
+<li>After: <code>ZABBIX_USERNAME</code>, <code>ZABBIX_PASSWORD</code></li>
+</ul>
+<h2 id="301-2024-09-05"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.0.1">3.0.1</a> - 2024-09-05</h2>
+<h3 id="changed_11">Changed</h3>
+<ul>
+<li><code>migrate_config</code> no longer requires logging in to the Zabbix API.</li>
+</ul>
+<h3 id="fixed_12">Fixed</h3>
+<ul>
+<li><code>migrate_config</code> not migrating username to the new <code>api.username</code> field in the resulting TOML configuration file.</li>
+<li><code>migrate_config</code> using <code>legacy_json_format = true</code> in the resulting TOML configuration file by default.</li>
+<li>Can force the old JSON format with the new <code>--legacy-json-format</code> flag.</li>
+</ul>
+<h2 id="300-2024-09-02"><a href="https://github.com/unioslo/zabbix-cli/releases/tag/3.0.0">3.0.0</a> - 2024-09-02</h2>
+<h3 id="added_11">Added</h3>
+<ul>
+<li>New CLI powered by <code>typer</code> and <code>click-repl</code></li>
+<li>Shell autocompletion</li>
+<li>TOML configuration file support</li>
+<li>Old configuration format is deprecated.</li>
+<li>Usage examples for most commands.</li>
+<li><strong>New configuration options:</strong></li>
+<li><code>app.default_format</code>: Sets the default CLI output format. Defaults to <code>table</code>.</li>
+<li><code>app.legacy_json_format</code>: Enables the old JSON output format. Defaults to <code>false</code>.</li>
+<li><strong>New commands:</strong></li>
+<li><code>add_proxy_to_group</code>: Add a proxy to a proxy group.</li>
+<li><code>create_templategroup</code>: Create a template group.</li>
+<li><code>extend_hostgroup</code>: Add all hosts from a host group to other host group(s) without removing them from the original group.</li>
+<li><code>extend_templategroup</code>: Add all templates from a group to other group(s) without removing them from the original group.</li>
+<li><code>init</code>: Initialize the CLI configuration file.</li>
+<li><code>link_template_to_template</code>: Link template(s) to template(s).</li>
+<li><code>move_hosts</code>: Move all hosts from one host group to another.</li>
+<li><code>move_templates</code>: Move all templates from one group to another.</li>
+<li><code>open</code>: Open a CLI directory in the system's file manager.</li>
+<li><code>remove_hostgroup</code>: Delete a host group.</li>
+<li><code>remove_host_interface</code>: Delete a host interface.</li>
+<li><code>remove_proxy_from_group</code>: Remove a proxy from a proxy group.</li>
+<li><code>remove_templategroup</code>: Delete a template group.</li>
+<li><code>show_dirs</code>: Show directories used by the CLI.</li>
+<li><code>show_host_interfaces</code>: Show interfaces for a host.</li>
+<li><code>show_media_types</code>: Show media types.</li>
+<li><code>show_proxies</code>: Show proxies.</li>
+<li><code>show_proxy_groups</code>: Show proxy groups.</li>
+<li><code>show_proxy_group_hosts</code>: Show hosts in a proxy group.</li>
+<li><code>show_templategroup</code>: Show a single template group.</li>
+<li><code>show_templategroups</code>: Show all template groups.</li>
+<li><code>show_user</code>: Show details for a single user.</li>
+<li><code>unlink_template_from_template</code>: Unlink template(s) from template(s).</li>
+<li><code>update_host_interface</code>: Update a host interface.</li>
+<li><code>update_user</code>: Update a user.</li>
+<li><code>update_hostgroup_proxy</code>: Assign a proxy to all hosts in one or more host groups.</li>
+<li><code>update_hostgroup_proxygroup</code>: Assign a proxy group to all hosts in one or more host groups.</li>
+<li><strong>New command options:</strong></li>
+<li><code>add_host_to_hostgroup</code>:<ul>
+<li><code>--dryrun</code>: Preview changes without making them.</li>
+</ul>
+</li>
+<li><code>create_host</code>:<ul>
+<li><code>--name</code>: Host name</li>
+<li>Host name still defaults to host DNS name or IP address if not specified.</li>
+<li><code>--description</code>: Host description</li>
+</ul>
+</li>
+<li><code>create_hostgroup</code>:<ul>
+<li><code>--rw-groups</code>: User groups to give RW permissions to the host group.</li>
+<li><code>--ro-groups</code>: User groups to give RO permissions to the host group. Uses groups from config file if not specified.</li>
+<li><code>--no-usergroup-permissions</code>: Do not set user group permissions. Defaults to <code>false</code>.</li>
+</ul>
+</li>
+<li><code>create_host_interface</code>:<ul>
+<li><code>--snmp...</code> TODO</li>
+</ul>
+</li>
+<li><code>import_configuration</code>:<ul>
+<li><code>--dryrun</code>: Preview files to import.</li>
+<li><code>--delete-missing</code>: Delete objects not found in the import file(s).</li>
+</ul>
+</li>
+<li><code>link_template_to_host</code>:<ul>
+<li><code>--dryrun</code>: Preview changes without making them.</li>
+</ul>
+</li>
+<li><code>remove_host_from_hostgroup</code>:<ul>
+<li><code>--dryrun</code>: Preview changes without making them.</li>
+</ul>
+</li>
+<li><code>show_host</code>:<ul>
+<li><code>--monitored/--unmonitored</code>: Filter by monitored status</li>
+<li><code>--maintenance/--no-maintenance</code>: Filter by maintenance status</li>
+<li><code>--active [available | unavailable | unknown ]</code>: Filter by active interface availability</li>
+<li>Old positional filter argument syntax is deprecated.</li>
+</ul>
+</li>
+<li><code>show_hosts</code>:<ul>
+<li><code>--limit</code>: Limit number of hosts to show.</li>
+<li>As well as the new <code>show_host</code> options.</li>
+</ul>
+</li>
+<li><code>show_hostgroup</code>:<ul>
+<li><code>--hosts/--no-hosts</code>: Show hosts in the group</li>
+</ul>
+</li>
+<li><code>show_hostgroups</code>:<ul>
+<li><code>--hosts/--no-hosts</code>: Show hosts in the group</li>
+</ul>
+</li>
+<li><code>show_trigger_events</code><ul>
+<li><code>--trigger-id</code>: Trigger ID(s) to get events for.</li>
+<li>Corresponds to old positional argument 1.</li>
+<li><code>--host</code>: Host(s) to get events for.</li>
+<li><code>--hostgroup</code>: Host group(s) to get events for.</li>
+<li><code>--limit</code>: Limit number of events to show</li>
+<li>Corresponds to old positional argument 2.</li>
+<li>Defaults to 10 (was 1).</li>
+</ul>
+</li>
+<li><code>show_usergroup</code>:<ul>
+<li><code>--sort</code>: Sort results by a field.</li>
+</ul>
+</li>
+<li><code>show_usergroups</code>:<ul>
+<li><code>--sort</code>: Sort results by a field.</li>
+</ul>
+</li>
+<li><code>show_usergroup_permissions</code>:<ul>
+<li><code>--sort</code>: Sort results by a field.</li>
+</ul>
+</li>
+<li><code>unlink_template_from_host</code>:<ul>
+<li><code>--dryrun</code>: Preview changes.</li>
+</ul>
+</li>
+<li><code>update_host_proxy</code>:<ul>
+<li><code>--dryrun</code>: Preview changes.</li>
+</ul>
+</li>
+<li><strong>New command arguments:</strong></li>
+<li><code>show_templates</code>:<ul>
+<li><code>template_names</code>: Template name(s) to filter by. Shows all templates by default. Supports wildcards.</li>
+</ul>
+</li>
+<li><code>show_hostgroup</code>:<ul>
+<li><code>name</code>: Host group name(s) to filter by. Shows all host groups by default. Supports wildcards.</li>
+</ul>
+</li>
+</ul>
+<h3 id="changed_12">Changed</h3>
+<ul>
+<li>Commands now take named options instead of positional arguments.</li>
+<li>Positional arguments are deprecated.</li>
+<li>JSON output is no longer always a dict with numeric string keys.</li>
+<li>See V3 migration guide for more information.</li>
+<li>The old format can be enabled with the new option <code>app.legacy_json_format</code> in the new TOML configuration file.</li>
+<li>When loading configuration from a legacy <code>.conf</code> file, the old format is assumed.</li>
+<li><strong>TOML configuration file option names:</strong></li>
+<li>Table [zabbix_api] → [api]<ul>
+<li><code>zabbix_api_url</code> → <code>url</code></li>
+<li><code>cert_verify</code> → <code>verify_ssl</code></li>
+</ul>
+</li>
+<li>Table [zabbix_config] → [app]<ul>
+<li><code>system_id</code> → <code>username</code></li>
+<li><code>default_directory_exports</code> → <code>export_directory</code></li>
+<li><code>default_export_format</code> → <code>export_format</code></li>
+<li><code>include_timestamp_export_filename</code> → <code>export_timestamps</code></li>
+<li><code>allow_insecure_authfile</code> → <code>allow_insecure_auth_file</code></li>
+</ul>
+</li>
+<li><code>logging.logging</code> → <code>logging.enabled</code></li>
+<li>The original names are deprecated and slated for removal in a future version.</li>
+<li><strong>Configuration file defaults:</strong></li>
+<li><code>app.default_admin_usergroups</code> defaults to <code>[]</code> (empty list)</li>
+<li><code>app.default_create_user_usergroups</code> defaults to <code>[]</code> (empty list)</li>
+<li><code>app.export_timestamps</code> defaults to <code>false</code><ul>
+<li>Exports are automatically overwritten if the file already exists.</li>
+</ul>
+</li>
+<li><code>app.export_format</code> defaults to <code>json</code> (was <code>xml</code>)</li>
+<li>Application now creates a config file on launch if it doesn't exist.</li>
+<li><strong>Command changes:</strong></li>
+<li><code>create_host_interface</code><ul>
+<li>Default port number is now determined by interface type.</li>
+<li>Agent: 10050</li>
+<li>SNMP: 161</li>
+<li>IPMI: 623</li>
+<li>JMX: 12345</li>
+</ul>
+</li>
+<li><code>define_host_monitoring_status</code>:<ul>
+<li>Renamed to <code>monitor_host</code>.</li>
+</ul>
+</li>
+<li><code>link_template_to_hostgroup</code>:<ul>
+<li>Renamed to <code>add_template_to_group</code>.</li>
+</ul>
+</li>
+<li><code>show_host_inventory</code><ul>
+<li>Now shows shows any inventory field that is set for the host in the table output.</li>
+<li>Includes <em>all</em> inventory fields in JSON output.</li>
+</ul>
+</li>
+<li><code>show_hostgroup_permissions</code>:<ul>
+<li>Shows permissions for all host groups by default.</li>
+</ul>
+</li>
+<li><code>show_proxies</code>:<ul>
+<li>Now takes a <code>name_or_id</code> argument to filter by proxy name or ID. Comma-separated. Supports wildcards.</li>
+</ul>
+</li>
+<li><code>show_zabbixcli_config</code>:<ul>
+<li>Renamed to <code>show_config</code>.</li>
+</ul>
+</li>
+<li><code>unlink_template_from_hostgroup</code>:<ul>
+<li>Renamed to <code>remove_template_from_group</code>.</li>
+<li>No longer unlinks and clears templates from each other.</li>
+<li>This was a bug/misunderstanding of the Zabbix API in the old version.</li>
+<li>Use <code>unlink_template_from_template</code> to unlink and clear templates from each other.</li>
+</ul>
+</li>
+<li><code>update_host_proxy</code><ul>
+<li>Now supports setting proxy for multiple hosts at once using wildcards.</li>
+<li>Output format is changed.</li>
+<li>Now groups hosts by proxy prior to update.</li>
+</ul>
+</li>
+</ul>
+<h3 id="deprecated_5">Deprecated</h3>
+<ul>
+<li><code>zabbix-cli.conf</code> format. Prefer the new TOML configuration file format.</li>
+<li>Config file options:</li>
+<li><code>zabbix_config.system_id</code> → <code>api.username</code></li>
+<li><strong>Commands:</strong></li>
+<li><code>unlink_template_from_hostgroup</code>:<ul>
+<li>Renamed to <code>remove_template_from_group</code>.</li>
+</ul>
+</li>
+<li><code>define_host_monitoring_status</code>:<ul>
+<li>Renamed to <code>monitor_host</code></li>
+</ul>
+</li>
+<li><code>show_zabbixcli_config</code>:<ul>
+<li>Renamed to <code>show_config</code></li>
+</ul>
+</li>
+<li><code>zabbix-cli-init</code> script.</li>
+<li>Replaced by <code>zabbix-cli init</code> command.</li>
+<li><code>zabbix-cli-bulk-execution</code> script.</li>
+<li>Replaced by <code>zabbix-cli --file</code>.</li>
+</ul>
+<h3 id="removed">Removed</h3>
+<ul>
+<li>Support for Zabbix &lt;1.8 login using <code>user.authenticate</code>.</li>
+</ul>
+<h3 id="internal_1">Internal</h3>
+<ul>
+<li>Use Hatch for building and publishing.</li>
+<li>Switch from setup.py to pyproject.toml.</li>
+<li>Add <code>pre-commit</code> hooks.</li>
+<li>Add <code>pytest</code> tests</li>
+<li>Use Ruff for linting and formatting.</li>
+<li>Use Pyright for static type checking.</li>
+<li>API code rewritten with Pydantic data models.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tracking", "content.code.annotate", "content.code.copy", "content.tabs.link", "content.action.edit", "toc.follow", "navigation.path", "navigation.top", "navigation.tabs", "navigation.footer", "navigation.sections", "navigation.indexes"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  <script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(() => { lightbox.reload() });
+</script></body>
+</html>
