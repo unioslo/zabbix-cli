@@ -66,7 +66,7 @@ def find_config(
         )  # TODO: append last when we implement multi-file config merging
     for fp in filename_prio:
         if fp.exists():
-            logging.debug("found config %r", fp)
+            logger.debug("found config %r", fp)
             return fp
     return None
 

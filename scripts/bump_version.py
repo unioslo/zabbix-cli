@@ -23,6 +23,8 @@ from rich.console import Console
 from rich.panel import Panel
 from strenum import StrEnum
 
+logger = logging.getLogger(__name__)
+
 console = Console()
 err_console = Console(stderr=True, style="red")
 
@@ -475,7 +477,7 @@ def main(
         exit_err("Bump cancelled by user.", code=ExitCode.INTERRUPTED)
     except Exception as e:
         bumper.undo()
-        logging.exception(e)
+        logger.exception(e)
         sys.exit(ExitCode.UNHANDLED_EXCEPTION)
     else:
         console.print(

@@ -37,6 +37,9 @@ if TYPE_CHECKING:
     UsergroupLikeT = TypeVar("UsergroupLikeT", bound=UsergroupLike)
 
 
+logger = logging.getLogger(__name__)
+
+
 class UsergroupSorting(StrEnum):
     NAME = "name"
     ID = "id"
@@ -60,7 +63,7 @@ def sort_ugroups(
         try:
             return sorted(ugroups, key=lambda ug: int(ug.usrgrpid))
         except Exception as e:
-            logging.error("Failed to sort user groups by ID: %s", e)
+            logger.error("Failed to sort user groups by ID: %s", e)
             # Fall back on unsorted (likely sorted by ID anyway)
     return ugroups
 

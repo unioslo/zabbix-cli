@@ -666,7 +666,7 @@ class Config(BaseModel):
     @classmethod
     def from_conf_file(cls, filename: Path) -> Config:
         """Load configuration from a legacy .conf file."""
-        logging.info("Using legacy config file (%s)", filename)
+        logger.info("Using legacy config file (%s)", filename)
         conf = load_config_conf(filename)
         # Use legacy JSON format if we load from a legacy .conf file
         # and mark the loaded config as stemming from a legacy config file

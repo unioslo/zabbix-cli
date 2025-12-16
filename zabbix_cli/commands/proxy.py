@@ -26,6 +26,8 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import Host
     from zabbix_cli.pyzabbix.types import Proxy
 
+logger = logging.getLogger(__name__)
+
 HELP_PANEL = "Proxy"
 HELP_PANEL_GROUP = "Proxy Group"
 
@@ -203,7 +205,7 @@ def load_balance_proxy_hosts(
     all_hosts = list(itertools.chain.from_iterable(p.hosts for p in proxies))
     if not all_hosts:
         exit_err("Proxies have no hosts to load balance.")
-    logging.debug("Found %d hosts to load balance.", len(all_hosts))
+    logger.debug("Found %d hosts to load balance.", len(all_hosts))
 
     lb_proxies = {
         p.proxyid: LBProxy(proxy=p, weight=w) for p, w in zip(proxies, weights)
@@ -216,17 +218,17 @@ def load_balance_proxy_hosts(
     try:
         for lb_proxy in lb_proxies.values():
             n_hosts = len(lb_proxy.hosts)
-            logging.debug(
+            logger.debug(
                 "Proxy '%s' has %d hosts after balancing.",
                 lb_proxy.proxy.name,
                 n_hosts,
             )
             if not n_hosts:
-                logging.debug(
+                logger.debug(
                     "Proxy '%s' has no hosts after balancing.", lb_proxy.proxy.name
                 )
                 continue
-            logging.debug("Moving %d hosts to proxy %r", n_hosts, lb_proxy.proxy.name)
+            logger.debug("Moving %d hosts to proxy %r", n_hosts, lb_proxy.proxy.name)
 
             app.state.client.move_hosts_to_proxy(
                 hosts=lb_proxy.hosts,

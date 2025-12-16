@@ -23,13 +23,16 @@ if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.types import TemplateGroup
 
 
+logger = logging.getLogger(__name__)
+
+
 def is_set(ctx: typer.Context, option: str) -> bool:
     """Check if option is set in context."""
     from click.core import ParameterSource
 
     src = ctx.get_parameter_source(option)
     if not src:
-        logging.warning("Parameter %s not found in context.", option)
+        logger.warning("Parameter %s not found in context.", option)
         return False
 
     # HACK: A typer callback that sets an empty list as a default value
@@ -249,7 +252,7 @@ def check_at_least_one_option_set(ctx: typer.Context) -> None:
         if param.required:
             continue
         if not param.name:
-            logging.warning("Unnamed parameter in command %s", ctx.command.name)
+            logger.warning("Unnamed parameter in command %s", ctx.command.name)
             continue
         optional_params.add(param.name)
     if not any(is_set(ctx, param) for param in optional_params):
