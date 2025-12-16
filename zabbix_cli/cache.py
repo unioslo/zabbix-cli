@@ -12,6 +12,8 @@ from zabbix_cli.exceptions import ZabbixCLIError
 if TYPE_CHECKING:
     from zabbix_cli.pyzabbix.client import ZabbixAPI
 
+logger = logging.getLogger(__name__)
+
 
 class ZabbixCache:
     """In-memory cache of frequently used Zabbix objects."""
@@ -52,7 +54,7 @@ class ZabbixCache:
         on Zabbix >= 6.2.0.
         """
         if self.client.version.release < (6, 2, 0):
-            logging.debug(
+            logger.debug(
                 "Skipping template group caching. API version is %s",
                 self.client.version,
             )

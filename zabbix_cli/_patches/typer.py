@@ -20,9 +20,9 @@ from uuid import UUID
 
 import click
 import typer
+import typer.rich_utils
 from typer.main import lenient_issubclass
 from typer.models import ParameterInfo
-import typer.rich_utils
 
 from zabbix_cli._patches.common import get_patcher
 from zabbix_cli.commands.common.args import CommandParam

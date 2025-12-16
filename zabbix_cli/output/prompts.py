@@ -32,6 +32,9 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 
+logger = logging.getLogger(__name__)
+
+
 def no_headless(f: Callable[P, T]) -> Callable[P, T]:
     """Decorator that causes application to exit if called from a headless environment
     when the prompt does not have a default value (i.e. required input).
@@ -44,9 +47,7 @@ def no_headless(f: Callable[P, T]) -> Callable[P, T]:
             # If a default argument was passed in, we can return that:
             default = kwargs.get("default")
             if "default" in kwargs and default is not ...:
-                logging.debug(
-                    "Returning default value from %s(%s, %s)", f, args, kwargs
-                )
+                logger.debug("Returning default value from %s(%s, %s)", f, args, kwargs)
                 return default  # type: ignore # bit of a hack
             # Assume first arg is the prompt:
             prompt = args[0] if args else kwargs.get("prompt", "")

@@ -251,7 +251,7 @@ class UvUpdater(PypiUpdater):
     @property
     def uninstall_command(self) -> list[str]:
         """The command used to uninstall the package."""
-        return ["uv", "tool" "uninstall"]
+        return ["uv", "tool", "uninstall"]
 
     @property
     @abstractmethod

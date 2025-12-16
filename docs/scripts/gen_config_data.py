@@ -34,8 +34,10 @@ sys.path.append(Path(__file__).parent.as_posix())
 from common import DATA_DIR  # noqa
 from common import add_path_placeholders  # noqa
 
+logger = logging.getLogger(__name__)
 
-JSONAdapter = TypeAdapter(Json)
+
+JSONAdapter: TypeAdapter[Any] = TypeAdapter(Json)
 
 TYPE_MAP = {
     SecretStr: "str",
@@ -311,7 +313,7 @@ def get_config_options(
             continue
 
         if lenient_issubclass(field.annotation, RootModel):
-            logging.debug("Skipping %s. It is a root model.", field_name)
+            logger.debug("Skipping %s. It is a root model.", field_name)
             continue
 
         if current_name:
