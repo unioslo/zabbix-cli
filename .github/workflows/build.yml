@@ -82,7 +82,7 @@ jobs:
         run: uv sync --group build --no-dev
 
       - name: Build binary with PyInstaller
-        run: uv run pyinstaller --onefile zabbix_cli/main.py --name zabbix-cli
+        run: uv run pyinstaller --onefile zabbix_cli/main.py --name zabbix-cli --collect-submodules shellingham
 
       - name: Set platform binary names
         shell: bash

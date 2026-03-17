@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-Patching of `typer.rich_utils._get_help_text` for newer Typer versions.
+- Missing shellingham submodules in Pyinstaller build.
+- Patching of `typer.rich_utils._get_help_text` for newer Typer versions.
 
 ## [3.6.2](https://github.com/unioslo/zabbix-cli/tree/3.6.2) - 2025-12-10
 
