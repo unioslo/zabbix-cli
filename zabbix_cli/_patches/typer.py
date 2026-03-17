@@ -57,14 +57,14 @@ def patch_help_text_spacing() -> None:
     from typer.rich_utils import STYLE_DEPRECATED
     from typer.rich_utils import STYLE_HELPTEXT
     from typer.rich_utils import STYLE_HELPTEXT_FIRST_LINE
-    from typer.rich_utils import MarkupMode
+    from typer.rich_utils import MarkupModeStrict
     from typer.rich_utils import _make_rich_text
 
     @group()
     def _get_help_text(
         *,
         obj: Union[click.Command, click.Group],
-        markup_mode: MarkupMode,
+        markup_mode: MarkupModeStrict,
     ) -> Iterable[Union[Markdown, Text]]:
         """Build primary help text for a click command or group.
 
