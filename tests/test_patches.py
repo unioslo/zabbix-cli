@@ -168,7 +168,7 @@ def test_patch_get_click_type() -> None:
         {
             "param_type": "Choice",
             "name": "choice",
-            "choices": ["foo", "bar", "0", "1"],
+            "choices": ("foo", "bar", "0", "1"),
             "case_sensitive": True,
         }
     )
@@ -179,7 +179,7 @@ def test_patch_get_click_type() -> None:
         {
             "param_type": "Choice",
             "name": "choice",
-            "choices": ["foo", "bar", "0", "1"],
+            "choices": ("foo", "bar", "0", "1"),
             "case_sensitive": False,
         }
     )
