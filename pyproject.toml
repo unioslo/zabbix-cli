@@ -34,7 +34,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-  "typer>=0.13.1",
+  "typer>=0.23.0",
   "rich>=13.3.1",
   "prompt_toolkit>=3.0.47",
   "httpx[socks]>=0.28.1",
