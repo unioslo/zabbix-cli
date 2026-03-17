@@ -1,0 +1,920 @@
+name: ''
+description: ''
+parents: []
+fields:
+- name: api
+  description: Configuration for the Zabbix API.
+  parents: []
+  fields:
+  - name: url
+    description: URL of the Zabbix API host. Should not include `/api_jsonrpc.php`.
+    parents:
+    - api
+    type: str
+    default: https:/zabbix.example.com
+    required: false
+    examples:
+    - https:/zabbix.example.com
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      url = "https:/zabbix.example.com"
+
+      '
+  - name: username
+    description: Username for the Zabbix API.
+    parents:
+    - api
+    type: str
+    default: Admin
+    required: false
+    examples:
+    - Admin
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      username = "Admin"
+
+      '
+  - name: password
+    description: Password for user.
+    parents:
+    - api
+    type: str
+    default: ''
+    required: false
+    examples:
+    - zabbix
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      password = "zabbix"
+
+      '
+  - name: auth_token
+    description: API auth token.
+    parents:
+    - api
+    type: str
+    default: ''
+    required: false
+    examples:
+    - API_TOKEN_123
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      auth_token = "API_TOKEN_123"
+
+      '
+  - name: verify_ssl
+    description: Verify SSL certificate of the Zabbix API host. Can also be a path
+      to a CA bundle.
+    parents:
+    - api
+    type: Union | str
+    default: 'true'
+    required: false
+    examples:
+    - true
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      verify_ssl = true
+
+      '
+  - name: timeout
+    description: API request timeout in seconds.
+    parents:
+    - api
+    type: Optional
+    default: 0
+    required: false
+    examples:
+    - 0
+    is_model: false
+    parents_str: api
+    example: '[api]
+
+      timeout = 0
+
+      '
+  is_model: true
+  example: '[api]
+
+    url = "https:/zabbix.example.com"
+
+
+    [api.api]
+
+    timeout = 0
+
+    '
+- name: app
+  description: Configuration for app defaults and behavior.
+  parents: []
+  fields:
+  - name: use_session_file
+    description: Use session file for storing API session IDs for persistent sessions.
+    parents:
+    - app
+    type: bool
+    default: 'true'
+    required: false
+    examples:
+    - true
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      use_session_file = true
+
+      '
+  - name: session_file
+    description: Path to session file.
+    parents:
+    - app
+    type: str
+    default: /path/to/data_dir/.zabbix-cli_session.json
+    required: false
+    examples:
+    - /path/to/data_dir/.zabbix-cli_session.json
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      session_file = "/path/to/data_dir/.zabbix-cli_session.json"
+
+      '
+  - name: use_auth_file
+    description: Look for user credentials stored in plaintext in auth file.
+    parents:
+    - app
+    type: bool
+    default: 'true'
+    required: false
+    examples:
+    - true
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      use_auth_file = true
+
+      '
+  - name: auth_file
+    description: Path to auth file.
+    parents:
+    - app
+    type: str
+    default: /path/to/data_dir/.zabbix-cli_auth
+    required: false
+    examples:
+    - /path/to/data_dir/.zabbix-cli_auth
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      auth_file = "/path/to/data_dir/.zabbix-cli_auth"
+
+      '
+  - name: allow_insecure_auth_file
+    description: ''
+    parents:
+    - app
+    type: bool
+    default: 'true'
+    required: false
+    examples:
+    - true
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      allow_insecure_auth_file = true
+
+      '
+  - name: app.config_auto_update
+    description: Configuration for automatic config updates.
+    parents:
+    - app
+    fields:
+    - name: enabled
+      description: Automatically update config with new config fields and migrate
+        deprecated fields on startup.
+      parents:
+      - app
+      - config_auto_update
+      type: bool
+      default: 'true'
+      required: false
+      examples:
+      - true
+      is_model: false
+      parents_str: app.config_auto_update
+      example: '[app.config_auto_update]
+
+        enabled = true
+
+        '
+    - name: backup
+      description: Create a backup of the config file before updating it.
+      parents:
+      - app
+      - config_auto_update
+      type: bool
+      default: 'true'
+      required: false
+      examples:
+      - true
+      is_model: false
+      parents_str: app.config_auto_update
+      example: '[app.config_auto_update]
+
+        backup = true
+
+        '
+    is_model: true
+    example: '[app.config_auto_update]
+
+      enabled = true
+
+
+      [app.config_auto_update.app.config_auto_update]
+
+      backup = true
+
+
+      [config_auto_update]
+
+      enabled = true
+
+
+      [config_auto_update.app.config_auto_update]
+
+      backup = true
+
+      '
+  - name: history
+    description: Enable command history.
+    parents:
+    - app
+    type: bool
+    default: 'true'
+    required: false
+    examples:
+    - true
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      history = true
+
+      '
+  - name: history_file
+    description: Path to history file.
+    parents:
+    - app
+    type: str
+    default: /path/to/data_dir/history
+    required: false
+    examples:
+    - /path/to/data_dir/history
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      history_file = "/path/to/data_dir/history"
+
+      '
+  - name: bulk_mode
+    description: Bulk mode error handling.
+    parents:
+    - app
+    type: str
+    default: strict
+    required: false
+    examples:
+    - strict
+    is_model: false
+    choices:
+    - strict
+    - continue
+    - skip
+    choices_str: strict, continue, skip
+    parents_str: app
+    example: '[app]
+
+      bulk_mode = "strict"
+
+      '
+  - name: legacy_json_format
+    description: Use legacy JSON format.
+    parents:
+    - app
+    type: bool
+    default: 'false'
+    required: false
+    examples:
+    - false
+    is_model: false
+    parents_str: app
+    example: '[app]
+
+      legacy_json_format = false
+
+      '
+  - name: app.commands
+    description: Configuration of commands.
+    parents:
+    - app
+    fields:
+    - name: app.commands.create_host
+      description: Configuration for the `create_host` command.
+      parents:
+      - app
+      - commands
+      fields:
+      - name: create_interface
+        description: Create a DNS/IP interface for the host automatically.
+        parents:
+        - app
+        - commands
+        - create_host
+        type: bool
+        default: 'true'
+        required: false
+        examples:
+        - true
+        is_model: false
+        parents_str: app.commands.create_host
+        example: '[app.commands.create_host]
+
+          create_interface = true
+
+          '
+      - name: hostgroups
+        description: Default host group to add hosts to.
+        parents:
+        - app
+        - commands
+        - create_host
+        type: list[str]
+        default: []
+        required: false
+        examples:
+        - []
+        is_model: false
+        parents_str: app.commands.create_host
+        example: '[app.commands.create_host]
+
+          hostgroups = []
+
+          '
+      is_model: true
+      example: '[app.commands.create_host]
+
+        create_interface = true
+
+
+        [app.commands.create_host.app.commands.create_host]
+
+        hostgroups = []
+
+
+        [create_host]
+
+        create_interface = true
+
+
+        [create_host.app.commands.create_host]
+
+        hostgroups = []
+
+        '
+    - name: app.commands.create_group
+      description: 'Shared config for `create_hostgroup` and `create_templategroup`
+        commands.
+
+
+        Can be used to configure both commands at once. Has no effect if
+
+        `create_hostgroup` or `create_templategroup` is set.
+
+        '
+      parents:
+      - app
+      - commands
+      fields:
+      - name: ro_groups
+        description: Default user groups to give read-only permissions to groups when
+          `--ro-groups` option is not provided.
+        parents:
+        - app
+        - commands
+        - create_group
+        type: list[str]
+        default: []
+        required: false
+        examples:
+        - []
+        is_model: false
+        parents_str: app.commands.create_group
+        example: '[app.commands.create_group]
+
+          ro_groups = []
+
+          '
+      - name: rw_groups
+        description: Default user groups to give read/write permissions to groups
+          when `--rw-groups` option is not provided.
+        parents:
+        - app
+        - commands
+        - create_group
+        type: list[str]
+        default: []
+        required: false
+        examples:
+        - []
+        is_model: false
+        parents_str: app.commands.create_group
+        example: '[app.commands.create_group]
+
+          rw_groups = []
+
+          '
+      is_model: true
+      example: '[app.commands.create_group]
+
+        ro_groups = []
+
+
+        [app.commands.create_group.app.commands.create_group]
+
+        rw_groups = []
+
+
+        [create_group]
+
+        ro_groups = []
+
+
+        [create_group.app.commands.create_group]
+
+        rw_groups = []
+
+        '
+    - name: app.commands.create_hostgroup
+      description: Configuration for the `create_hostgroup` command.
+      parents:
+      - app
+      - commands
+      fields:
+      - name: ro_groups
+        description: Default user groups to give read-only permissions to groups when
+          `--ro-groups` option is not provided.
+        parents:
+        - app
+        - commands
+        - create_hostgroup
+        type: list[str]
+        default: []
+        required: false
+        examples:
+        - []
+        is_model: false
+        parents_str: app.commands.create_hostgroup
+        example: '[app.commands.create_hostgroup]
+
+          ro_groups = []
+
+          '
+      - name: rw_groups
+        description: Default user groups to give read/write permissions to groups
+          when `--rw-groups` option is not provided.
+        parents:
+        - app
+        - commands
+        - create_hostgroup
+        type: list[str]
+        default: []
+        required: false
+        examples:
+        - []
+        is_model: false
+        parents_str: app.commands.create_hostgroup
+        example: '[app.commands.create_hostgroup]
+
+          rw_groups = []
+
+          '
+      is_model: true
+      example: '[app.commands.create_hostgroup]
+
+        ro_groups = []
+
+
+        [app.commands.create_hostgroup.app.commands.create_hostgroup]
+
+        rw_groups = []
+
+
+        [create_hostgroup]
+
+        ro_groups = []
+
+
+        [create_hostgroup.app.commands.create_hostgroup]
+
+        rw_groups = []
+
+        '
+    - name: app.commands.create_templategroup
+      description: Configuration for the `create_templategroup` command.
+      parents:
+      - app
+      - commands
+      fields:
+      - name: ro_groups
+        description: Default user groups to give read-only permissions to groups when
+          `--ro-groups` option is not provided.
+        parents:
+        - app
+        - commands
+        - create_templategroup
+        type: list[str]
+        default: []
+        required: false
+        examples:
+        - []
+        is_model: false
+        parents_str: app.commands.create_templategroup
+        example: '[app.commands.create_templategroup]
+
+          ro_groups = []
+
+          '
+      - name: rw_groups
+        description: Default user groups to give read/write permissions to groups
+          when `--rw-groups` option is not provided.
+        parents:
+        - app
+        - commands
+        - create_templategroup
+        type: list[str]
+        default: []
+        required: false
+        examples:
+        - []
+        is_model: false
+        parents_str: app.commands.create_templategroup
+        example: '[app.commands.create_templategroup]
+
+          rw_groups = []
+
+          '
+      is_model: true
+      example: '[app.commands.create_templategroup]
+
+        ro_groups = []
+
+
+        [app.commands.create_templategroup.app.commands.create_templategroup]
+
+        rw_groups = []
+
+
+        [create_templategroup]
+
+        ro_groups = []
+
+
+        [create_templategroup.app.commands.create_templategroup]
+
+        rw_groups = []
+
+        '
+    - name: app.commands.create_user
+      description: Configuration for the `create_user` command.
+      parents:
+      - app
+      - commands
+      fields:
+      - name: usergroups
+        description: Default user groups to add users to when `--usergroups` is not
+          provided.
+        parents:
+        - app
+        - commands
+        - create_user
+        type: list[str]
+        default: []
+        required: false
+        examples:
+        - []
+        is_model: false
+        parents_str: app.commands.create_user
+        example: '[app.commands.create_user]
+
+          usergroups = []
+
+          '
+      is_model: true
+      example: '[app.commands.create_user]
+
+        usergroups = []
+
+        '
+    - name: app.commands.create_notification_user
+      description: Configuration for the `create_notification_user` command.
+      parents:
+      - app
+      - commands
+      fields:
+      - name: usergroups
+        description: Default user groups to add notification users to when `--usergroups`
+          is not provided.
+        parents:
+        - app
+        - commands
+        - create_notification_user
+        type: list[str]
+        default: []
+        required: false
+        examples:
+        - []
+        is_model: false
+        parents_str: app.commands.create_notification_user
+        example: '[app.commands.create_notification_user]
+
+          usergroups = []
+
+          '
+      is_model: true
+      example: '[app.commands.create_notification_user]
+
+        usergroups = []
+
+        '
+    - name: app.commands.export
+      description: Shared configuration for `export_configuration` and `import_configuration`
+        commands.
+      parents:
+      - app
+      - commands
+      fields:
+      - name: directory
+        description: Default directory to export files to.
+        parents:
+        - app
+        - commands
+        - export
+        type: str
+        default: /path/to/data_dir/exports
+        required: false
+        examples:
+        - /path/to/data_dir/exports
+        is_model: false
+        parents_str: app.commands.export
+        example: '[app.commands.export]
+
+          directory = "/path/to/data_dir/exports"
+
+          '
+      - name: format
+        description: Default export format.
+        parents:
+        - app
+        - commands
+        - export
+        type: str
+        default: json
+        required: false
+        examples:
+        - json
+        is_model: false
+        choices:
+        - xml
+        - json
+        - yaml
+        - php
+        choices_str: xml, json, yaml, php
+        parents_str: app.commands.export
+        example: '[app.commands.export]
+
+          format = "json"
+
+          '
+      - name: timestamps
+        description: Include timestamps in exported filenames.
+        parents:
+        - app
+        - commands
+        - export
+        type: bool
+        default: 'false'
+        required: false
+        examples:
+        - false
+        is_model: false
+        parents_str: app.commands.export
+        example: '[app.commands.export]
+
+          timestamps = false
+
+          '
+      is_model: true
+      example: '[app.commands.export]
+
+        directory = "/path/to/data_dir/exports"
+
+
+        [app.commands.export.app.commands.export]
+
+        timestamps = false
+
+
+        [export]
+
+        directory = "/path/to/data_dir/exports"
+
+
+        [export.app.commands.export]
+
+        timestamps = false
+
+        '
+    is_model: true
+    example: ''
+  - name: app.output
+    description: Configuration for output formatting.
+    parents:
+    - app
+    fields:
+    - name: format
+      description: Default output format.
+      parents:
+      - app
+      - output
+      type: str
+      default: table
+      required: false
+      examples:
+      - table
+      is_model: false
+      choices:
+      - json
+      - table
+      choices_str: json, table
+      parents_str: app.output
+      example: '[app.output]
+
+        format = "table"
+
+        '
+    - name: color
+      description: Use colors in terminal output.
+      parents:
+      - app
+      - output
+      type: bool
+      default: 'true'
+      required: false
+      examples:
+      - true
+      is_model: false
+      parents_str: app.output
+      example: '[app.output]
+
+        color = true
+
+        '
+    - name: paging
+      description: Use paging in terminal output.
+      parents:
+      - app
+      - output
+      type: bool
+      default: 'false'
+      required: false
+      examples:
+      - false
+      is_model: false
+      parents_str: app.output
+      example: '[app.output]
+
+        paging = false
+
+        '
+    is_model: true
+    example: '[app.output]
+
+      format = "table"
+
+
+      [app.output.app.output]
+
+      paging = false
+
+
+      [output]
+
+      format = "table"
+
+
+      [output.app.output]
+
+      paging = false
+
+      '
+  is_model: true
+  example: '[app]
+
+    use_session_file = true
+
+
+    [app.app]
+
+    legacy_json_format = false
+
+    '
+- name: logging
+  description: Configuration for application logs.
+  parents: []
+  fields:
+  - name: enabled
+    description: Enable logging.
+    parents:
+    - logging
+    type: bool
+    default: 'true'
+    required: false
+    examples:
+    - true
+    is_model: false
+    parents_str: logging
+    example: '[logging]
+
+      enabled = true
+
+      '
+  - name: log_level
+    description: Log level.
+    parents:
+    - logging
+    type: str
+    default: INFO
+    required: false
+    examples:
+    - INFO
+    is_model: false
+    choices:
+    - DEBUG
+    - INFO
+    - WARN
+    - WARNING
+    - ERROR
+    - CRITICAL
+    - FATAL
+    choices_str: DEBUG, INFO, WARN, WARNING, ERROR, CRITICAL, FATAL
+    parents_str: logging
+    example: '[logging]
+
+      log_level = "INFO"
+
+      '
+  - name: log_file
+    description: File for storing logs. Can be omitted to log to stderr (**warning:**
+      NOISY).
+    parents:
+    - logging
+    type: str
+    default: /path/to/logs_dir/zabbix-cli.log
+    required: false
+    examples:
+    - /path/to/logs_dir/zabbix-cli.log
+    is_model: false
+    parents_str: logging
+    example: '[logging]
+
+      log_file = "/path/to/logs_dir/zabbix-cli.log"
+
+      '
+  is_model: true
+  example: '[logging]
+
+    enabled = true
+
+
+    [logging.logging]
+
+    log_file = "/path/to/logs_dir/zabbix-cli.log"
+
+    '
+is_model: true
+example: ''
