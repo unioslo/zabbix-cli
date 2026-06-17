@@ -2,18 +2,12 @@ from __future__ import annotations
 
 import logging
 import sys
+from importlib.metadata import EntryPoint
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING
 from typing import Protocol
-from typing import cast
 from typing import runtime_checkable
-
-if sys.version_info < (3, 10):
-    from importlib_metadata import EntryPoint
-else:
-    from importlib.metadata import EntryPoint
-
 
 from zabbix_cli.exceptions import PluginLoadError
 from zabbix_cli.exceptions import PluginPostImportError
@@ -73,27 +67,10 @@ class PluginLoader:
 
     def _load_plugins_from_metadata(self, config: Config) -> None:
         """Load plugins from Python package entry points."""
-        # Use backport for Python < 3.10
-        if sys.version_info < (3, 10):
-            from importlib_metadata import (
-                entry_points,  # pyright: ignore[reportUnknownVariableType]
-            )
-        else:
-            from importlib.metadata import entry_points
+        from importlib.metadata import entry_points
 
         discovered_plugins = entry_points(group="zabbix-cli.plugins")
 
-        # HACK: Cast Tuple[Any, ...] result to concrete type.
-        # In order to pass type checking on all Python versions,
-        # we need to pretend that we are developing on 3.9 and
-        # using the backport. The problem is that the backport
-        # does not define a generic tuple type for the result,
-        # and instead just subclasses tuple. So we need to cast
-        # the result to the correct type.
-        # This is one of the drawbacks of running in 3.9 mode, but
-        # it's necessary to ensure we don't introduce features that
-        # do not exist in our minimum supported version.
-        discovered_plugins = cast(tuple[EntryPoint], discovered_plugins)
         for plugin in discovered_plugins:
             conf = config.plugins.get(plugin.name)
             try:

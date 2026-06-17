@@ -51,7 +51,7 @@ authors = [
 version = "0.1.0"
 description = "My first Zabbix CLI plugin"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "MIT"
 dependencies = [
     "zabbix-cli@git+https://github.com/unioslo/zabbix-cli.git",
