@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- `--legacy-json` top-level option to enable the old JSON output format on the command-line without changing the config file.
 
 ### Changed
 

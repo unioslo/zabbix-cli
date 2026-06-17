@@ -120,6 +120,13 @@ def main_callback(
         case_sensitive=False,
         show_default=False,
     ),
+    legacy_json: Optional[bool] = typer.Option(
+        None,
+        "--legacy-json/--no-legacy-json",
+        help="Use legacy JSON output format from V2.",
+        case_sensitive=False,
+        show_default=False,
+    ),
     version: Optional[bool] = typer.Option(
         None,
         "--version",
@@ -151,6 +158,8 @@ def main_callback(
         state.config.app.output.format = output_format
     if bulk_mode is not None:
         state.config.app.bulk_mode = bulk_mode
+    if legacy_json is not None:
+        state.config.app.legacy_json_format = legacy_json
 
     if state.repl or state.bulk:
         return  # In REPL or bulk mode already; no need to re-configure.
