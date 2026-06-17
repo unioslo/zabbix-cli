@@ -8,15 +8,12 @@ from __future__ import annotations
 
 import inspect
 import logging
+from collections.abc import Callable
 from collections.abc import Iterable
-from types import ModuleType
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
 from typing import NamedTuple
-from typing import Optional
 from typing import Protocol
-from typing import Union
 
 import typer
 from typer.core import TyperCommand
@@ -46,7 +43,7 @@ class Example(NamedTuple):
 
     description: str
     command: str
-    return_value: Optional[str] = None
+    return_value: str | None = None
 
     def __str__(self) -> str:
         return f"  [i]{self.description}[/]\n\n    [example]{self.command}[/]"
@@ -59,7 +56,7 @@ class Example(NamedTuple):
 #       the current typer/click API
 class CommandInfo(TyperCommandInfo):
     def __init__(
-        self, *args: Any, examples: Optional[list[Example]] = None, **kwargs: Any
+        self, *args: Any, examples: list[Example] | None = None, **kwargs: Any
     ) -> None:
         super().__init__(*args, **kwargs)
         self.examples = examples or []
@@ -102,8 +99,7 @@ class StatusCallable(Protocol):
 class StatefulApp(typer.Typer):
     """A Typer app that provides access to the global state."""
 
-    parent: Optional[StatefulApp]
-    plugins: dict[str, ModuleType]
+    parent: StatefulApp | None
 
     # NOTE: might be a good idea to add a typing.Unpack definition for the kwargs?
     def __init__(self, **kwargs: Any) -> None:
@@ -154,22 +150,22 @@ class StatefulApp(typer.Typer):
 
     def command(
         self,
-        name: Optional[str] = None,
+        name: str | None = None,
         *,
-        cls: Optional[type[TyperCommand]] = None,
-        context_settings: Optional[dict[Any, Any]] = None,
-        help: Optional[str] = None,
-        epilog: Optional[str] = None,
-        short_help: Optional[str] = None,
-        options_metavar: str = "[OPTIONS]",
+        cls: type[TyperCommand] | None = None,
+        context_settings: dict[Any, Any] | None = None,
+        help: str | None = None,
+        epilog: str | None = None,
+        short_help: str | None = None,
+        options_metavar: str | None = "[OPTIONS]",
         add_help_option: bool = True,
         no_args_is_help: bool = False,
         hidden: bool = False,
         deprecated: bool = False,
         # Rich settings
-        rich_help_panel: Union[str, None] = Default(None),
+        rich_help_panel: str | None = Default(None),
         # Zabbix-cli kwargs
-        examples: Optional[list[Example]] = None,
+        examples: list[Example] | None = None,
     ) -> Callable[[CommandFunctionType], CommandFunctionType]:
         if cls is None:
             cls = TyperCommand

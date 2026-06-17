@@ -10,7 +10,6 @@ import sys
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
 
 from zabbix_cli.exceptions import ZabbixCLIError
 from zabbix_cli.exceptions import ZabbixCLIFileError
@@ -34,7 +33,7 @@ def read_file(file: Path) -> str:
 
 
 def open_directory(
-    directory: Path, command: Optional[str] = None, *, force: bool = False
+    directory: Path, command: str | None = None, *, force: bool = False
 ) -> None:
     """Open directory in file explorer.
 

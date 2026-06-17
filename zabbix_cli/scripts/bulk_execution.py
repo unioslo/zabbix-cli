@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 import typer
 
@@ -19,17 +18,17 @@ app = typer.Typer(
 @app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
-    input_file: Optional[Path] = typer.Argument(
+    input_file: Path | None = typer.Argument(
         None,
         help="File to read commands from.",
     ),
-    config_file: Optional[Path] = typer.Option(
+    config_file: Path | None = typer.Option(
         None,
         "--config",
         "-c",
         help="Alternate configuration file to use.",
     ),
-    input_file_legacy: Optional[Path] = typer.Option(
+    input_file_legacy: Path | None = typer.Option(
         None,
         "--file",
         "--input-file",

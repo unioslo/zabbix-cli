@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import ClassVar
 from typing import Generic
-from typing import Optional
-from typing import Union
 from typing import cast
 
 import rich.box
@@ -79,7 +77,7 @@ class TableRenderable(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    __title__: Optional[str] = None
+    __title__: str | None = None
     __show_lines__: bool = True
     __box__: rich.box.Box = rich.box.ROUNDED
 
@@ -103,7 +101,7 @@ class TableRenderable(BaseModel):
     """Don't print a message if table is empty when rendered as Table."""
 
     def _get_extra(self, field: str, key: MetaKey, default: T) -> T:
-        f = self.model_fields.get(field, None)
+        f = self.__class__.model_fields.get(field, None)
         if not f:
             raise ValueError(f"Field {field!r} does not exist.")
         if not f.json_schema_extra or not isinstance(f.json_schema_extra, dict):
@@ -116,13 +114,13 @@ class TableRenderable(BaseModel):
         # But that will only happen once we actually encounter such a bug.
         return cast(T, f.json_schema_extra.get(key, default))
 
-    def __all_fields__(self) -> dict[str, Union[FieldInfo, ComputedFieldInfo]]:
+    def __all_fields__(self) -> dict[str, FieldInfo | ComputedFieldInfo]:
         """Returns all fields for the model, including computed fields,
         but excluding excluded fields.
         """
-        all_fields: dict[str, Union[FieldInfo, ComputedFieldInfo]] = {
-            **self.model_fields,
-            **self.model_computed_fields,
+        all_fields: dict[str, FieldInfo | ComputedFieldInfo] = {
+            **self.__class__.model_fields,
+            **self.__class__.model_computed_fields,
         }
         return {n: f for n, f in all_fields.items() if not getattr(f, "exclude", False)}
 
@@ -263,7 +261,7 @@ class BaseResult(TableRenderable):
 class Result(BaseResult, Generic[DataT]):
     """A result wrapping a single data object."""
 
-    result: Optional[Union[DataT, list[DataT]]] = None
+    result: DataT | list[DataT] | None = None
 
     # https://docs.pydantic.dev/latest/concepts/serialization/#serialize_as_any-runtime-setting
     def model_dump(self, **kwargs: Any) -> dict[str, Any]:

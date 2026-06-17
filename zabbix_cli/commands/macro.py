@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 
 from zabbix_cli.app import Example
@@ -207,7 +205,7 @@ def show_macro_hosts(
         ),
         show_default=False,
     ),
-    limit: Optional[int] = get_limit_option(),
+    limit: int | None = get_limit_option(),
 ) -> None:
     """Find all hosts with a user macro of the given name.
 
@@ -354,7 +352,7 @@ def show_macro_templates(
         help="Name of the macro to find templates with. Automatically formatted.",
         show_default=False,
     ),
-    limit: Optional[int] = get_limit_option(),
+    limit: int | None = get_limit_option(),
 ) -> None:
     """Find all templates with a macro of the given name."""
     import itertools

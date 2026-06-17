@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 
 from zabbix_cli._v2_compat import deprecated_positional_arguments
@@ -38,7 +36,7 @@ def acknowledge_event(
         help="Close the event after acknowledging it",
     ),
     # Legacy positional args
-    args: Optional[list[str]] = deprecated_positional_arguments(2),
+    args: list[str] | None = deprecated_positional_arguments(2),
 ) -> None:
     """Acknowledge events by ID."""
     from zabbix_cli.commands.results.problem import AcknowledgeEventResult
@@ -90,7 +88,7 @@ def acknowledge_event(
 def acknowledge_trigger_last_event(
     ctx: typer.Context,
     trigger_ids: str,
-    message: Optional[str] = typer.Option(
+    message: str | None = typer.Option(
         None,
         "--message",
         help="Acknowledgement message",
@@ -102,7 +100,7 @@ def acknowledge_trigger_last_event(
         help="Close event",
     ),
     # Legacy positional args
-    args: Optional[list[str]] = deprecated_positional_arguments(2),
+    args: list[str] | None = deprecated_positional_arguments(2),
 ) -> None:
     """Acknowledge the the last event for the given triggers."""
     from zabbix_cli.commands.results.problem import AcknowledgeTriggerLastEventResult
@@ -141,18 +139,18 @@ def acknowledge_trigger_last_event(
 @app.command(name="show_alarms", rich_help_panel=HELP_PANEL)
 def show_alarms(
     ctx: typer.Context,
-    description: Optional[str] = typer.Option(
+    description: str | None = typer.Option(
         None,
         "--description",
         help="Description of alarm(s) to show.",
     ),
     # Could this be a list of priorities in V2?
-    priority: Optional[TriggerPriority] = typer.Option(
+    priority: TriggerPriority | None = typer.Option(
         None,
         "--priority",
         help="Priority of alarm(s) to show.",
     ),
-    hostgroups: Optional[str] = typer.Option(
+    hostgroups: str | None = typer.Option(
         None,
         "--hostgroup",
         help="Host group(s) to show alarms for. Comma-separated.",
@@ -162,7 +160,7 @@ def show_alarms(
         "--unack/--ack",
         help="Show only alarms whose last event is unacknowledged.",
     ),
-    args: Optional[list[str]] = deprecated_positional_arguments(4),
+    args: list[str] | None = deprecated_positional_arguments(4),
 ) -> None:
     """Show the latest events for the given triggers, hosts, and/or host groups.
 
@@ -218,17 +216,17 @@ def show_alarms(
 )
 def show_trigger_events(
     ctx: typer.Context,
-    trigger_id: Optional[str] = typer.Option(
+    trigger_id: str | None = typer.Option(
         None,
         "--trigger-id",
         help="ID of trigger(s) to show events for.",
     ),
-    hostgroups: Optional[str] = typer.Option(
+    hostgroups: str | None = typer.Option(
         None,
         "--hostgroup",
         help="Host group(s) to show events for.",
     ),
-    hosts: Optional[str] = typer.Option(
+    hosts: str | None = typer.Option(
         None,
         "--host",
         help="Host(s) to show events for.",
@@ -239,7 +237,7 @@ def show_trigger_events(
         "-l",
         help="Maximum number of events to show.",
     ),
-    args: Optional[list[str]] = deprecated_positional_arguments(2),
+    args: list[str] | None = deprecated_positional_arguments(2),
 ) -> None:
     """Show the latest events for the given triggers, hosts, and/or host groups.
 

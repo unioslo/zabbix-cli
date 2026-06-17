@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from itertools import chain
 from typing import TYPE_CHECKING
-from typing import Optional
-from typing import Union
 
 import typer
 
@@ -58,7 +56,7 @@ def add_template_to_group(
     """
     from zabbix_cli.commands.results.template import TemplateGroupResult
 
-    groups: Union[list[HostGroup], list[TemplateGroup]]
+    groups: list[HostGroup] | list[TemplateGroup]
     if app.state.client.version.release >= (6, 2, 0):
         groups = parse_templategroups_arg(app, group_names_or_ids, strict=strict)
     else:
@@ -96,11 +94,11 @@ def create_templategroup(
         help="Name of the group.",
         show_default=False,
     ),
-    rw_groups: Optional[str] = typer.Option(
+    rw_groups: str | None = typer.Option(
         None,
         help="User group(s) to give read/write permissions. Comma-separated.",
     ),
-    ro_groups: Optional[str] = typer.Option(
+    ro_groups: str | None = typer.Option(
         None,
         help="User group(s) to give read-only permissions. Comma-separated.",
     ),
@@ -203,8 +201,8 @@ def extend_templategroup(
 
     dest_arg = parse_list_arg(dest_group)
 
-    src: Union[HostGroup, TemplateGroup]
-    dest: Union[list[HostGroup], list[TemplateGroup]]
+    src: HostGroup | TemplateGroup
+    dest: list[HostGroup] | list[TemplateGroup]
     if app.state.client.version.release > (6, 2, 0):
         src = app.state.client.get_templategroup(src_group, select_templates=True)
         dest = app.state.client.get_templategroups(
@@ -256,8 +254,8 @@ def move_templates(
     """Move all templates from one group to another."""
     from zabbix_cli.commands.results.templategroup import MoveTemplatesResult
 
-    src: Union[HostGroup, TemplateGroup]
-    dest: Union[HostGroup, TemplateGroup]
+    src: HostGroup | TemplateGroup
+    dest: HostGroup | TemplateGroup
 
     if app.state.client.version.release < (6, 2, 0):
         src = app.state.client.get_hostgroup(src_group, select_templates=True)
@@ -380,7 +378,7 @@ def remove_template_from_group(
     from zabbix_cli.commands.results.template import RemoveTemplateFromGroupResult
     from zabbix_cli.models import AggregateResult
 
-    groups: Union[list[HostGroup], list[TemplateGroup]]
+    groups: list[HostGroup] | list[TemplateGroup]
     if app.state.client.version.release >= (6, 2, 0):
         groups = parse_templategroups_arg(
             app, group_names_or_ids, strict=strict, select_templates=True
@@ -468,7 +466,7 @@ def show_templategroup(
 )
 def show_templategroups(
     ctx: typer.Context,
-    name: Optional[str] = typer.Argument(
+    name: str | None = typer.Argument(
         None,
         help="Name of template group(s). Comma-separated. Supports wildcards.",
         show_default=False,
@@ -488,7 +486,7 @@ def show_templategroups(
 
     names = parse_list_arg(name)
 
-    groups: Union[list[HostGroup], list[TemplateGroup]]
+    groups: list[HostGroup] | list[TemplateGroup]
     with app.status("Fetching template groups..."):
         if app.state.client.version.release < (6, 2, 0):
             groups = app.state.client.get_hostgroups(
@@ -508,7 +506,7 @@ def show_templategroups(
             )
 
     # Sort by name before rendering
-    groups = sorted(groups, key=lambda tg: tg.name)  # type: ignore # unable to infer that type doesn't change?
+    groups = sorted(groups, key=lambda tg: tg.name)  # pyright: ignore[reportAssignmentType] # unable to infer that type doesn't change?
 
     render_result(
         AggregateResult(

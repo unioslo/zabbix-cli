@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from pydantic import BaseModel
 from pydantic import ConfigDict
 
@@ -16,19 +14,19 @@ from zabbix_cli.pyzabbix.enums import MonitoringStatus
 class HostFilterArgs(BaseModel):
     """Unified processing of old filter string and new filter options."""
 
-    active: Optional[ActiveInterface] = None
-    maintenance_status: Optional[MaintenanceStatus] = None
-    status: Optional[MonitoringStatus] = None
+    active: ActiveInterface | None = None
+    maintenance_status: MaintenanceStatus | None = None
+    status: MonitoringStatus | None = None
 
     model_config = ConfigDict(validate_assignment=True)
 
     @classmethod
     def from_command_args(
         cls,
-        filter_legacy: Optional[str],
-        active: Optional[ActiveInterface],
-        maintenance: Optional[bool],
-        monitored: Optional[bool],
+        filter_legacy: str | None,
+        active: ActiveInterface | None,
+        maintenance: bool | None,
+        monitored: bool | None,
     ) -> HostFilterArgs:
         args = cls()
         if filter_legacy:

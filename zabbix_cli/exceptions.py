@@ -4,7 +4,6 @@ import functools
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import NoReturn
-from typing import Optional
 from typing import Protocol
 from typing import runtime_checkable
 
@@ -15,6 +14,7 @@ if TYPE_CHECKING:
     from pydantic import BaseModel
     from pydantic import ValidationError
 
+    from zabbix_cli.pyzabbix.types import Json
     from zabbix_cli.pyzabbix.types import ParamsType
     from zabbix_cli.pyzabbix.types import ZabbixAPIResponse
 
@@ -118,9 +118,9 @@ class ZabbixAPIRequestError(ZabbixAPIException):
     def __init__(
         self,
         *args: Any,
-        params: Optional[ParamsType] = None,
-        api_response: Optional[ZabbixAPIResponse] = None,
-        response: Optional[HTTPResponse] = None,
+        params: ParamsType | Json | None = None,
+        api_response: ZabbixAPIResponse | None = None,
+        response: HTTPResponse | None = None,
     ) -> None:
         super().__init__(*args)
         self.params = params
@@ -141,7 +141,7 @@ class ZabbixAPIRequestError(ZabbixAPIException):
         return reason
 
 
-class ZabbixAPITokenExpiredError(ZabbixAPIRequestError, AuthError):
+class ZabbixAPITokenExpiredError(ZabbixAPIRequestError, AuthError):  # pyright: ignore[reportUnsafeMultipleInheritance]
     """Zabbix API token expired error."""
 
 
@@ -192,7 +192,7 @@ class Exiter(Protocol):
         self,
         message: str,
         code: int = ...,
-        exception: Optional[Exception] = ...,
+        exception: Exception | None = ...,
         **kwargs: Any,
     ) -> NoReturn: ...
 
@@ -209,7 +209,7 @@ class HandleFunc(Protocol):
     def __call__(self, e: Any) -> NoReturn: ...
 
 
-def get_cause_args(e: Optional[BaseException]) -> list[str]:
+def get_cause_args(e: BaseException | None) -> list[str]:
     """Retrieves all args as strings from all exceptions in the cause chain.
     Flattens the args into a single list.
     """
@@ -287,7 +287,7 @@ def handle_zabbix_api_exception(e: ZabbixAPIException) -> NoReturn:
         handle_notraceback(e)
 
 
-def get_exception_handler(type_: type[Exception]) -> Optional[HandleFunc]:
+def get_exception_handler(type_: type[Exception]) -> HandleFunc | None:
     """Returns the exception handler for the given exception type."""
     from httpx import ConnectError
     from pydantic import ValidationError

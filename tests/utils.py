@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from typing import Any
-from typing import Optional
 
 from pytest_httpserver import HTTPServer
 from werkzeug import Request
@@ -16,8 +15,8 @@ def add_zabbix_endpoint(
     *,
     params: dict[str, Any],
     response: Json,
-    auth: Optional[str] = None,
-    headers: Optional[dict[str, str]] = None,
+    auth: str | None = None,
+    headers: dict[str, str] | None = None,
     id: int = 0,
     check_id: bool = False,
 ) -> None:

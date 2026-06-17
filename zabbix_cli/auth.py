@@ -20,8 +20,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Final
 from typing import NamedTuple
-from typing import Optional
-from typing import Union
 
 from pydantic import BaseModel
 from pydantic import PrivateAttr
@@ -83,7 +81,7 @@ class SessionList(RootModel[list[SessionInfo]]):
         # Did not find existing session, add new one
         self.root.append(SessionInfo(username=username, session_id=session_id))
 
-    def get_session(self, username: str) -> Optional[SessionInfo]:
+    def get_session(self, username: str) -> SessionInfo | None:
         for session in self.root:
             if session.username == username:
                 return session
@@ -97,7 +95,7 @@ class SessionFile(RootModel[dict[str, SessionList]]):
     """
 
     root: dict[str, SessionList] = {}
-    _path: Optional[Path] = PrivateAttr(default=None)
+    _path: Path | None = PrivateAttr(default=None)
 
     def get_sessions(self, url: str) -> SessionList:
         """Get session list for a URL.
@@ -115,7 +113,7 @@ class SessionFile(RootModel[dict[str, SessionList]]):
         """Set session list for a URL."""
         self.root[url] = sessions
 
-    def get_user_session(self, url: str, username: str) -> Optional[SessionInfo]:
+    def get_user_session(self, url: str, username: str) -> SessionInfo | None:
         """Get a session given a URL and username."""
         return self.get_sessions(url).get_session(username)
 
@@ -143,9 +141,7 @@ class SessionFile(RootModel[dict[str, SessionList]]):
         except Exception as e:
             raise SessionFileError(f"Unable to load session file {file}: {e}") from e
 
-    def save(
-        self, path: Optional[Path] = None, *, allow_insecure: bool = False
-    ) -> None:
+    def save(self, path: Path | None = None, *, allow_insecure: bool = False) -> None:
         path = path or self._path
         if not path:
             raise SessionFileError("Cannot save session file without a path.")
@@ -183,11 +179,11 @@ class CredentialsSource(StrEnum):
 class Credentials(NamedTuple):
     """Credentials for logging in to the Zabbix API."""
 
-    source: Optional[CredentialsSource] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    auth_token: Optional[str] = None
-    session_id: Optional[str] = None
+    source: CredentialsSource | None = None
+    username: str | None = None
+    password: str | None = None
+    auth_token: str | None = None
+    session_id: str | None = None
 
     def __str__(self) -> str:
         if self.type and self.source:
@@ -195,7 +191,7 @@ class Credentials(NamedTuple):
         return "no credentials"
 
     @property
-    def type(self) -> Optional[CredentialsType]:
+    def type(self) -> CredentialsType | None:
         if self.auth_token:
             return CredentialsType.AUTH_TOKEN
         if self.username and self.password:
@@ -539,7 +535,7 @@ class Authenticator:
             source=CredentialsSource.CONFIG,
         )
 
-    def _get_session_file(self) -> Optional[Credentials]:
+    def _get_session_file(self) -> Credentials | None:
         """Get session ID from a file."""
         if not self.config.app.use_session_file:
             logger.debug("Not configured to use auth token file.")
@@ -560,7 +556,7 @@ class Authenticator:
                 source=CredentialsSource.FILE,
             )
 
-    def _get_auth_token_file_legacy(self) -> Optional[Credentials]:
+    def _get_auth_token_file_legacy(self) -> Credentials | None:
         """Get auth token (session ID) from a legacy auth token file.
 
         From Zabbix-CLI 3.5.0 onwards, we use a new session file.
@@ -587,7 +583,7 @@ class Authenticator:
             username=username, session_id=auth_token, source=CredentialsSource.FILE
         )
 
-    def load_session_file(self) -> Optional[SessionFile]:
+    def load_session_file(self) -> SessionFile | None:
         """Load a session file from configured path."""
         try:
             return SessionFile.load(
@@ -601,7 +597,7 @@ class Authenticator:
             logger.error("Unexpected error loading session file: %s", e)
             return None
 
-    def load_auth_token_file(self) -> Union[tuple[Path, str], tuple[None, None]]:
+    def load_auth_token_file(self) -> tuple[Path, str] | tuple[None, None]:
         """Attempts to load an auth token file."""
         paths = get_auth_token_file_paths(self.config)
         for path in paths:
@@ -614,7 +610,7 @@ class Authenticator:
         )
         return None, None
 
-    def load_auth_file(self) -> tuple[Optional[Path], Optional[str]]:
+    def load_auth_file(self) -> tuple[Path | None, str | None]:
         """Attempts to load an auth file."""
         paths = get_auth_file_paths(self.config)
         for path in paths:
@@ -626,7 +622,7 @@ class Authenticator:
         )
         return None, None
 
-    def _do_load_auth_file(self, file: Path) -> Optional[str]:
+    def _do_load_auth_file(self, file: Path) -> str | None:
         """Attempts to read the contents of an auth (token) file.
         Returns None if the file does not exist or is not secure.
         """
@@ -661,8 +657,8 @@ def logout(client: ZabbixAPI, config: Config) -> None:
 
 
 def _parse_auth_file_contents(
-    contents: Optional[str],
-) -> tuple[Optional[str], Optional[str]]:
+    contents: str | None,
+) -> tuple[str | None, str | None]:
     """Parse the contents of an auth file.
 
     We store auth files in the format `username::secret`.
@@ -676,7 +672,7 @@ def _parse_auth_file_contents(
     return None, None
 
 
-def get_auth_file_paths(config: Optional[Config] = None) -> list[Path]:
+def get_auth_file_paths(config: Config | None = None) -> list[Path]:
     """Get all possible auth token file paths."""
     paths = [
         AUTH_FILE,
@@ -687,7 +683,7 @@ def get_auth_file_paths(config: Optional[Config] = None) -> list[Path]:
     return paths
 
 
-def get_auth_token_file_paths(config: Optional[Config] = None) -> list[Path]:
+def get_auth_token_file_paths(config: Config | None = None) -> list[Path]:
     """Get all possible auth token file paths."""
     paths = [
         AUTH_TOKEN_FILE,
@@ -733,7 +729,7 @@ def write_auth_token_file(
     return file
 
 
-def clear_auth_token_file(config: Optional[Config] = None) -> None:
+def clear_auth_token_file(config: Config | None = None) -> None:
     """Clear the contents of the auth token file.
 
     Attempts to clear both the new and the old auth token file locations.

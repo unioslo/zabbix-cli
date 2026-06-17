@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 
 from zabbix_cli.app import Example
@@ -116,12 +114,12 @@ def create_hostgroup(
         help="Name of host group.",
         show_default=False,
     ),
-    rw_groups: Optional[str] = typer.Option(
+    rw_groups: str | None = typer.Option(
         None,
         "--rw-groups",
         help="User group(s) to give read/write permissions. Comma-separated.",
     ),
-    ro_groups: Optional[str] = typer.Option(
+    ro_groups: str | None = typer.Option(
         None,
         "--ro-groups",
         help="User group(s) to give read-only permissions. Comma-separated.",

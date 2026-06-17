@@ -21,8 +21,7 @@ from datetime import datetime
 from datetime import timedelta
 from typing import Annotated
 from typing import Any
-from typing import Optional
-from typing import Union
+from typing import Literal
 
 from pydantic import AliasChoices
 from pydantic import BaseModel
@@ -39,7 +38,6 @@ from pydantic import computed_field
 from pydantic import field_serializer
 from pydantic import field_validator
 from pydantic_core import PydanticCustomError
-from typing_extensions import Literal
 from typing_extensions import TypeAliasType
 from typing_extensions import TypedDict
 
@@ -101,15 +99,13 @@ def json_custom_error_validator(
 Json = TypeAliasType(
     "Json",
     Annotated[
-        Union[
-            MutableMapping[str, "Json"],
-            Sequence["Json"],
-            str,
-            int,
-            float,
-            bool,
-            None,
-        ],
+        MutableMapping[str, "Json"]
+        | Sequence["Json"]
+        | str
+        | int
+        | float
+        | bool
+        | None,
         WrapValidator(json_custom_error_validator),
     ],
 )
@@ -145,7 +141,7 @@ HostList = Annotated[
 """List of hosts that serialize as the minimal representation of a list of hosts."""
 
 
-def age_from_datetime(dt: Optional[datetime]) -> Optional[str]:
+def age_from_datetime(dt: datetime | None) -> str | None:
     """Returns the age of a datetime object as a human-readable
     string, or None if the datetime is None.
     """
@@ -157,7 +153,7 @@ def age_from_datetime(dt: Optional[datetime]) -> Optional[str]:
     return str(age - timedelta(microseconds=age.microseconds))
 
 
-def format_datetime(dt: Optional[datetime]) -> str:
+def format_datetime(dt: datetime | None) -> str:
     """Returns a formatted datetime string, or empty string if the
     datetime is None.
     """
@@ -169,7 +165,7 @@ def format_datetime(dt: Optional[datetime]) -> str:
 class ModifyHostItem(TypedDict):
     """Argument for a host ID in an API request."""
 
-    hostid: Union[str, int]
+    hostid: str | int
 
 
 ModifyHostParams = list[ModifyHostItem]
@@ -183,7 +179,7 @@ E.g. `[{"hostid": "123"}, {"hostid": "456"}]`
 class ModifyGroupItem(TypedDict):
     """Argument for a group ID in an API request."""
 
-    groupid: Union[str, int]
+    groupid: str | int
 
 
 ModifyGroupParams = list[ModifyGroupItem]
@@ -196,7 +192,7 @@ E.g. `[{"groupid": "123"}, {"groupid": "456"}]`
 class ModifyTemplateItem(TypedDict):
     """Argument for a template ID in an API request."""
 
-    templateid: Union[str, int]
+    templateid: str | int
 
 
 ModifyTemplateParams = list[ModifyTemplateItem]
@@ -211,7 +207,7 @@ class ZabbixAPIError(BaseModel):
 
     code: int
     message: str
-    data: Optional[str] = None
+    data: str | None = None
 
 
 class ZabbixAPIResponse(BaseModel):
@@ -221,7 +217,7 @@ class ZabbixAPIResponse(BaseModel):
     id: int
     result: Any = None  # can subclass this and specify types (ie. ZabbixAPIListResponse, ZabbixAPIStrResponse, etc.)
     """Result of API call, if request succeeded."""
-    error: Optional[ZabbixAPIError] = None
+    error: ZabbixAPIError | None = None
     """Error info, if request failed."""
 
 
@@ -241,7 +237,7 @@ class ZabbixAPIBaseModel(TableRenderable):
         """
         return self.model_dump(
             mode="json",
-            exclude=set(self.model_computed_fields),
+            exclude=set(self.__class__.model_computed_fields),
             exclude_none=True,
         )
 
@@ -249,7 +245,7 @@ class ZabbixAPIBaseModel(TableRenderable):
 class ZabbixRight(ZabbixAPIBaseModel):
     permission: int
     id: str
-    name: Optional[str] = None  # name of group (injected by application)
+    name: str | None = None  # name of group (injected by application)
 
     @computed_field
     @property
@@ -266,12 +262,12 @@ class ZabbixRight(ZabbixAPIBaseModel):
 class User(ZabbixAPIBaseModel):
     userid: str
     username: str = Field(..., validation_alias=AliasChoices("username", "alias"))
-    name: Optional[str] = None
-    surname: Optional[str] = None
-    url: Optional[str] = None
-    autologin: Optional[str] = None
-    autologout: Optional[str] = None
-    roleid: Optional[int] = Field(
+    name: str | None = None
+    surname: str | None = None
+    url: str | None = None
+    autologin: str | None = None
+    autologout: str | None = None
+    roleid: int | None = Field(
         default=None, validation_alias=AliasChoices("roleid", "type")
     )
     # NOTE: Not adding properties we don't use, since Zabbix has a habit of breaking
@@ -279,7 +275,7 @@ class User(ZabbixAPIBaseModel):
 
     @computed_field
     @property
-    def role(self) -> Optional[str]:
+    def role(self) -> str | None:
         """Returns the role name, if available."""
         if self.roleid:
             return UserRole.string_from_value(self.roleid)
@@ -333,8 +329,8 @@ class Usergroup(ZabbixAPIBaseModel):
     # LEGACY
     @field_serializer("gui_access")
     def _LEGACY_type_serializer(
-        self, v: Optional[int], _info: FieldSerializationInfo
-    ) -> Union[str, int, None]:
+        self, v: int | None, _info: FieldSerializationInfo
+    ) -> str | int | None:
         """Serializes the GUI access status as a formatted string in legacy JSON mode"""
         if self.legacy_json_format:
             return GUIAccess.string_from_value(v, with_code=True)
@@ -359,7 +355,7 @@ class Template(ZabbixAPIBaseModel):
     )
     """Parent templates (templates this template inherits from)."""
 
-    name: Optional[str] = None
+    name: str | None = None
     """The visible name of the template."""
 
     def __str__(self) -> str:
@@ -391,7 +387,7 @@ class HostGroup(ZabbixAPIBaseModel):
     name: str
     hosts: HostList = []
     flags: int = 0
-    internal: Optional[int] = None  # <6.2
+    internal: int | None = None  # <6.2
     templates: list[Template] = []  # <6.2
 
     def __cols_rows__(self) -> ColsRowsType:
@@ -428,7 +424,7 @@ class DictModel(ZabbixAPIBaseModel):
 class Host(ZabbixAPIBaseModel):
     hostid: str
     host: str = ""
-    description: Optional[str] = None
+    description: str | None = None
     groups: list[HostGroup] = Field(
         default_factory=list,
         # Compat for >= 6.2.0
@@ -439,30 +435,30 @@ class Host(ZabbixAPIBaseModel):
         validation_alias=AliasChoices("templates", "parentTemplates"),
     )
     inventory: DictModel = Field(default_factory=DictModel)
-    monitored_by: Optional[MonitoredBy] = None
-    proxyid: Optional[str] = Field(
+    monitored_by: MonitoredBy | None = None
+    proxyid: str | None = Field(
         default=None,
         # Compat for <7.0.0
         validation_alias=AliasChoices("proxyid", "proxy_hostid"),
     )
-    proxy_groupid: Optional[str] = None  # >= 7.0
-    maintenance_status: Optional[str] = None
+    proxy_groupid: str | None = None  # >= 7.0
+    maintenance_status: str | None = None
     # active_available is a new field in 7.0.
     # Previous versions required checking the `available` field of its first interface.
     # In zabbix-cli v2, this value was serialized as `zabbix_agent`.
-    active_available: Optional[str] = Field(
+    active_available: str | None = Field(
         default=None,
         validation_alias=AliasChoices(
             "active_available",  # >= 7.0
             "zabbix_agent",  # Zabbix-cli V2 name of this field
         ),
     )
-    status: Optional[str] = None
+    status: str | None = None
     macros: list[Macro] = Field(default_factory=list)
     interfaces: list[HostInterface] = Field(default_factory=list)
 
     # HACK: Add a field for the host's proxy that we can inject later
-    proxy: Optional[Proxy] = None
+    proxy: Proxy | None = None
 
     def __str__(self) -> str:
         return f"{self.host!r} ({self.hostid})"
@@ -498,8 +494,8 @@ class Host(ZabbixAPIBaseModel):
     # Legacy V2 JSON format compatibility
     @field_serializer("maintenance_status", when_used="json")
     def _LEGACY_maintenance_status_serializer(
-        self, v: Optional[str], _info: FieldSerializationInfo
-    ) -> Optional[str]:
+        self, v: str | None, _info: FieldSerializationInfo
+    ) -> str | None:
         """Serializes the maintenance status as a formatted string
         in legacy mode, and as-is in new mode.
         """
@@ -520,8 +516,8 @@ class Host(ZabbixAPIBaseModel):
 
     @field_serializer("status", when_used="json")
     def _LEGACY_status_serializer(
-        self, v: Optional[str], _info: FieldSerializationInfo
-    ) -> Optional[str]:
+        self, v: str | None, _info: FieldSerializationInfo
+    ) -> str | None:
         """Serializes the monitoring status as a formatted string
         in legacy mode, and as-is in new mode.
         """
@@ -539,7 +535,7 @@ class Host(ZabbixAPIBaseModel):
 
     @field_validator("proxyid", mode="after")  # TODO: add test for this
     @classmethod
-    def _proxyid_0_is_none(cls, v: str, info: ValidationInfo) -> Optional[str]:
+    def _proxyid_0_is_none(cls, v: str, info: ValidationInfo) -> str | None:
         """Zabbix API can return 0 if host has no proxy.
 
         Convert to None, so we know the proxyid can always be used to
@@ -578,15 +574,15 @@ class Host(ZabbixAPIBaseModel):
 class HostInterface(ZabbixAPIBaseModel):
     type: int
     ip: str
-    dns: Optional[str] = None
+    dns: str | None = None
     port: str
     useip: int
     main: int
     # Values not required for creation:
-    interfaceid: Optional[str] = None
-    available: Optional[int] = None
-    hostid: Optional[str] = None
-    bulk: Optional[int] = None
+    interfaceid: str | None = None
+    available: int | None = None
+    hostid: str | None = None
+    bulk: int | None = None
 
     @computed_field
     @property
@@ -621,32 +617,32 @@ class CreateHostInterfaceDetails(ZabbixAPIBaseModel):
     """Parameters for creating a host interface."""
 
     version: int
-    bulk: Optional[int] = None
-    community: Optional[str] = None
-    max_repetitions: Optional[int] = None
-    securityname: Optional[str] = None
-    securitylevel: Optional[int] = None
-    authpassphrase: Optional[str] = None
-    privpassphrase: Optional[str] = None
-    authprotocol: Optional[int] = None
-    privprotocol: Optional[int] = None
-    contextname: Optional[str] = None
+    bulk: int | None = None
+    community: str | None = None
+    max_repetitions: int | None = None
+    securityname: str | None = None
+    securitylevel: int | None = None
+    authpassphrase: str | None = None
+    privpassphrase: str | None = None
+    authprotocol: int | None = None
+    privprotocol: int | None = None
+    contextname: str | None = None
 
 
 class UpdateHostInterfaceDetails(ZabbixAPIBaseModel):
     """Parameters for updating a host interface."""
 
-    version: Optional[int] = None
-    bulk: Optional[int] = None
-    community: Optional[str] = None
-    max_repetitions: Optional[int] = None
-    securityname: Optional[str] = None
-    securitylevel: Optional[int] = None
-    authpassphrase: Optional[str] = None
-    privpassphrase: Optional[str] = None
-    authprotocol: Optional[int] = None
-    privprotocol: Optional[int] = None
-    contextname: Optional[str] = None
+    version: int | None = None
+    bulk: int | None = None
+    community: str | None = None
+    max_repetitions: int | None = None
+    securityname: str | None = None
+    securitylevel: int | None = None
+    authpassphrase: str | None = None
+    privpassphrase: str | None = None
+    authprotocol: int | None = None
+    privprotocol: int | None = None
+    contextname: str | None = None
 
 
 class Proxy(ZabbixAPIBaseModel):
@@ -655,19 +651,19 @@ class Proxy(ZabbixAPIBaseModel):
     proxyid: str
     name: str = Field(..., validation_alias=AliasChoices("host", "name"))
     hosts: HostList = Field(default_factory=list)
-    status: Optional[int] = None
-    operating_mode: Optional[int] = None
+    status: int | None = None
+    operating_mode: int | None = None
     address: str = Field(
         validation_alias=AliasChoices(
             "address",  # >=7.0.0
             "proxy_address",  # <7.0.0
         )
     )
-    proxy_groupid: Optional[str] = None  # >= 7.0
-    compatibility: Optional[int] = None  # >= 7.0
-    version: Optional[int] = None  # >= 7.0
-    local_address: Optional[str] = None  # >= 7.0
-    local_port: Optional[str] = None  # >= 7.0
+    proxy_groupid: str | None = None  # >= 7.0
+    compatibility: int | None = None  # >= 7.0
+    version: int | None = None  # >= 7.0
+    local_address: str | None = None  # >= 7.0
+    local_port: str | None = None  # >= 7.0
 
     def __hash__(self) -> str:
         return self.proxyid  # kinda hacky, but lets us use it in dicts
@@ -740,7 +736,7 @@ class ProxyGroup(ZabbixAPIBaseModel):
 
 class MacroBase(ZabbixAPIBaseModel):
     macro: str
-    value: Optional[str] = None  # Optional in case secret value
+    value: str | None = None  # Optional in case secret value
     type: int
     """Macro type. 0 - text, 1 - secret, 2 - vault secret (>=7.0)"""
     description: str
@@ -757,7 +753,7 @@ class Macro(MacroBase):
 
     hostid: str
     hostmacroid: str
-    automatic: Optional[int] = None  # >= 7.0 only. 0 = user, 1 = discovery rule
+    automatic: int | None = None  # >= 7.0 only. 0 = user, 1 = discovery rule
     hosts: HostList = Field(default_factory=list)
     templates: list[Template] = Field(default_factory=list)
 
@@ -772,19 +768,17 @@ class Item(ZabbixAPIBaseModel):
     """Zabbix Item."""
 
     itemid: str
-    delay: Optional[str] = None
-    hostid: Optional[str] = None
-    interfaceid: Optional[str] = None
-    key: Optional[str] = Field(
-        default=None, validation_alias=AliasChoices("key_", "key")
-    )
-    name: Optional[str] = None
-    type: Optional[int] = None
-    url: Optional[str] = None
-    value_type: Optional[int] = None
-    description: Optional[str] = None
-    history: Optional[str] = None
-    lastvalue: Optional[str] = None
+    delay: str | None = None
+    hostid: str | None = None
+    interfaceid: str | None = None
+    key: str | None = Field(default=None, validation_alias=AliasChoices("key_", "key"))
+    name: str | None = None
+    type: int | None = None
+    url: str | None = None
+    value_type: int | None = None
+    description: str | None = None
+    history: str | None = None
+    lastvalue: str | None = None
     hosts: HostList = []
 
     @computed_field
@@ -801,8 +795,8 @@ class Item(ZabbixAPIBaseModel):
 
     @field_serializer("type")
     def _LEGACY_type_serializer(
-        self, v: Optional[int], _info: FieldSerializationInfo
-    ) -> Union[str, int, None]:
+        self, v: int | None, _info: FieldSerializationInfo
+    ) -> str | int | None:
         """Serializes the item type as a formatted string in legacy JSON mode."""
         if self.legacy_json_format:
             return self.type_str
@@ -810,8 +804,8 @@ class Item(ZabbixAPIBaseModel):
 
     @field_serializer("value_type")
     def _LEGACY_value_type_serializer(
-        self, v: Optional[int], _info: FieldSerializationInfo
-    ) -> Union[str, int, None]:
+        self, v: int | None, _info: FieldSerializationInfo
+    ) -> str | int | None:
         """Serializes the item type as a formatted string in legacy JSON mode."""
         if self.legacy_json_format:
             return self.type_str
@@ -844,7 +838,7 @@ class MediaType(ZabbixAPIBaseModel):
     mediatypeid: str
     name: str
     type: int
-    description: Optional[str] = None
+    description: str | None = None
 
     @computed_field
     @property
@@ -878,12 +872,12 @@ class UserMedia(ZabbixAPIBaseModel):
 class TimePeriod(ZabbixAPIBaseModel):
     period: int
     timeperiod_type: int
-    start_date: Optional[datetime] = None
-    start_time: Optional[int] = None
-    every: Optional[int] = None
-    dayofweek: Optional[int] = None
-    day: Optional[int] = None
-    month: Optional[int] = None
+    start_date: datetime | None = None
+    start_time: int | None = None
+    every: int | None = None
+    dayofweek: int | None = None
+    day: int | None = None
+    month: int | None = None
 
     @computed_field
     @property
@@ -977,18 +971,18 @@ class TimePeriod(ZabbixAPIBaseModel):
 
 class ProblemTag(ZabbixAPIBaseModel):
     tag: str
-    operator: Optional[int]
-    value: Optional[str]
+    operator: int | None
+    value: str | None
 
 
 class Maintenance(ZabbixAPIBaseModel):
     maintenanceid: str
     name: str
-    active_since: Optional[datetime] = None
-    active_till: Optional[datetime] = None
-    description: Optional[str] = None
-    maintenance_type: Optional[int] = None
-    tags_evaltype: Optional[int] = None
+    active_since: datetime | None = None
+    active_till: datetime | None = None
+    description: str | None = None
+    maintenance_type: int | None = None
+    tags_evaltype: int | None = None
     timeperiods: list[TimePeriod] = []
     tags: list[ProblemTag] = []
     hosts: HostList = []
@@ -1019,9 +1013,9 @@ class Event(ZabbixAPIBaseModel):
     object: int
     objectid: str
     acknowledged: int
-    clock: Optional[datetime] = None
+    clock: datetime | None = None
     name: str
-    value: Optional[int] = None  # docs seem to imply this is optional
+    value: int | None = None  # docs seem to imply this is optional
     severity: int
     # NYI:
     # r_eventid
@@ -1035,7 +1029,7 @@ class Event(ZabbixAPIBaseModel):
 
     @computed_field
     @property
-    def age(self) -> Optional[str]:
+    def age(self) -> str | None:
         """Returns the age of the event as a formatted string."""
         return age_from_datetime(self.clock)
 
@@ -1069,8 +1063,8 @@ class Event(ZabbixAPIBaseModel):
 
     @field_serializer("value")
     def _LEGACY_value_serializer(
-        self, v: Optional[int], _info: FieldSerializationInfo
-    ) -> Union[str, int, None]:
+        self, v: int | None, _info: FieldSerializationInfo
+    ) -> str | int | None:
         """Serializes the value field as a formatted string in legacy JSON mode"""
         if self.legacy_json_format:
             return self.status_str
@@ -1079,7 +1073,7 @@ class Event(ZabbixAPIBaseModel):
     @field_serializer("acknowledged")
     def _LEGACY_acknowledged_serializer(
         self, v: int, _info: FieldSerializationInfo
-    ) -> Union[str, int]:
+    ) -> str | int:
         """Serializes the acknowledged field as a formatted string in legacy JSON mode"""
         if self.legacy_json_format:
             return self.acknowledged_str
@@ -1112,29 +1106,29 @@ class Event(ZabbixAPIBaseModel):
 class Trigger(ZabbixAPIBaseModel):
     triggerid: str
     """Required for update operations."""
-    description: Optional[str] = None
+    description: str | None = None
     """Required for create operations."""
-    expression: Optional[str] = None
+    expression: str | None = None
     """Required for create operations."""
-    event_name: Optional[str] = None
-    opdata: Optional[str] = None
-    comments: Optional[str] = None
-    error: Optional[str] = None
-    flags: Optional[int] = None
-    lastchange: Optional[datetime] = None
-    priority: Optional[int] = None
-    state: Optional[int] = None
-    templateid: Optional[str] = None
-    type: Optional[int] = None
-    url: Optional[str] = None
-    url_name: Optional[str] = None  # >6.0
-    value: Optional[int] = None
-    recovery_mode: Optional[int] = None
-    recovery_expression: Optional[str] = None
-    correlation_mode: Optional[int] = None
-    correlation_tag: Optional[str] = None
-    manual_close: Optional[int] = None
-    uuid: Optional[str] = None
+    event_name: str | None = None
+    opdata: str | None = None
+    comments: str | None = None
+    error: str | None = None
+    flags: int | None = None
+    lastchange: datetime | None = None
+    priority: int | None = None
+    state: int | None = None
+    templateid: str | None = None
+    type: int | None = None
+    url: str | None = None
+    url_name: str | None = None  # >6.0
+    value: int | None = None
+    recovery_mode: int | None = None
+    recovery_expression: str | None = None
+    correlation_mode: int | None = None
+    correlation_tag: str | None = None
+    manual_close: int | None = None
+    uuid: str | None = None
     hosts: list[Host] = []
     # NYI:
     # groups: List[HostGroup] = Field(
@@ -1148,13 +1142,13 @@ class Trigger(ZabbixAPIBaseModel):
 
     @computed_field
     @property
-    def age(self) -> Optional[str]:
+    def age(self) -> str | None:
         """Returns the age of the event as a formatted string."""
         return age_from_datetime(self.lastchange)
 
     @computed_field
     @property
-    def hostname(self) -> Optional[str]:
+    def hostname(self) -> str | None:
         """Returns the hostname of the trigger."""
         if self.hosts:
             return self.hosts[0].host
@@ -1193,7 +1187,7 @@ class Image(ZabbixAPIBaseModel):
     imagetype: int
     # NOTE: Optional so we can fetch an image without its data
     # This lets us get the IDs of all images without keeping the data in memory
-    image: Optional[str] = None
+    image: str | None = None
 
 
 class Map(ZabbixAPIBaseModel):
@@ -1201,36 +1195,36 @@ class Map(ZabbixAPIBaseModel):
     name: str
     height: int
     width: int
-    backgroundid: Optional[str] = None  # will this be an empty string instead?
+    backgroundid: str | None = None  # will this be an empty string instead?
     # Other fields are omitted. We only use this for export and import.
 
 
 class ImportRule(BaseModel):  # does not need to inherit from ZabbixAPIBaseModel
     createMissing: bool
-    updateExisting: Optional[bool] = None
-    deleteMissing: Optional[bool] = None
+    updateExisting: bool | None = None
+    deleteMissing: bool | None = None
 
 
 class ImportRules(ZabbixAPIBaseModel):
     discoveryRules: ImportRule
     graphs: ImportRule
-    groups: Optional[ImportRule] = None  # < 6.2
-    host_groups: Optional[ImportRule] = None  # >= 6.2
+    groups: ImportRule | None = None  # < 6.2
+    host_groups: ImportRule | None = None  # >= 6.2
     hosts: ImportRule
     httptests: ImportRule
     images: ImportRule
     items: ImportRule
     maps: ImportRule
     mediaTypes: ImportRule
-    template_groups: Optional[ImportRule] = None  # >= 6.2
+    template_groups: ImportRule | None = None  # >= 6.2
     templateLinkage: ImportRule
     templates: ImportRule
     templateDashboards: ImportRule
     triggers: ImportRule
     valueMaps: ImportRule
-    templateScreens: Optional[ImportRule] = None  # < 6.0
-    applications: Optional[ImportRule] = None  # < 6.0
-    screens: Optional[ImportRule] = None  # < 6.0
+    templateScreens: ImportRule | None = None  # < 6.0
+    applications: ImportRule | None = None  # < 6.0
+    screens: ImportRule | None = None  # < 6.0
 
     model_config = ConfigDict(validate_assignment=True)
 

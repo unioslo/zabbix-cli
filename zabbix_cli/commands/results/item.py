@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing import Optional
 
 from pydantic import Field
 from pydantic import computed_field
@@ -16,10 +15,10 @@ if TYPE_CHECKING:
 
 class UngroupedItem(TableRenderable):
     itemid: str
-    name: Optional[str]
-    key: Optional[str]
-    lastvalue: Optional[str]
-    host: Optional[str]
+    name: str | None
+    key: str | None
+    lastvalue: str | None
+    host: str | None
 
     @classmethod
     def from_item(cls, item: Item) -> UngroupedItem:

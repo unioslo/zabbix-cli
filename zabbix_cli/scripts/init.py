@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 import typer
 
@@ -15,20 +14,20 @@ app = typer.Typer(name="zabbix-cli-init", help="Set up Zabbix-CLI configuration"
 
 @app.callback(invoke_without_command=True)
 def main_callback(
-    zabbix_url: Optional[str] = typer.Option(
+    zabbix_url: str | None = typer.Option(
         None,
         "--url",
         "--zabbix-url",
         "-z",
         help="Zabbix API URL to use",
     ),
-    zabbix_user: Optional[str] = typer.Option(
+    zabbix_user: str | None = typer.Option(
         None,
         "--user",
         "--zabbix-user",
         help="Zabbix API username to use",
     ),
-    config_file: Optional[Path] = typer.Option(
+    config_file: Path | None = typer.Option(
         None,
         "--config-file",
         "-c",

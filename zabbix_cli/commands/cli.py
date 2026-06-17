@@ -5,7 +5,6 @@ from __future__ import annotations
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Optional
 
 import typer
 from click import Command
@@ -58,7 +57,7 @@ class DirectoryType(Enum):
         return d
 
 
-def get_directory(directory_type: DirectoryType, config: Optional[Config]) -> Path:
+def get_directory(directory_type: DirectoryType, config: Config | None) -> Path:
     if config:
         if directory_type == DirectoryType.CONFIG and config.config_path:
             return config.config_path.parent
@@ -83,7 +82,7 @@ def debug_cmd(
 @app.command("help", rich_help_panel=HELP_PANEL)
 def help(
     ctx: typer.Context,
-    command: Optional[Command] = typer.Argument(None, help="Command name"),
+    command: Command | None = typer.Argument(None, help="Command name"),
 ) -> None:
     """Show help for a commmand"""
     # TODO: patch get_help() to make it return a string instead of magically
@@ -103,15 +102,13 @@ def help(
 @app.command("init", rich_help_panel=HELP_PANEL)
 def init(
     ctx: typer.Context,
-    config_file: Optional[Path] = typer.Option(
+    config_file: Path | None = typer.Option(
         None, "--config-file", "-c", help="Location of the config file."
     ),
     overwrite: bool = typer.Option(
         False, "--overwrite", help="Overwrite existing config"
     ),
-    url: Optional[str] = typer.Option(
-        None, "--url", "-u", help="Zabbix API URL to use."
-    ),
+    url: str | None = typer.Option(None, "--url", "-u", help="Zabbix API URL to use."),
     wizard: bool = typer.Option(
         True,
         "--wizard/--no-wizard",
@@ -151,21 +148,21 @@ def init(
 @app.command(name="login", rich_help_panel=HELP_PANEL)
 def login(
     ctx: typer.Context,
-    username: Optional[str] = typer.Option(
+    username: str | None = typer.Option(
         None,
         "--username",
         "-u",
         help="Username to log in with.",
         show_default=False,
     ),
-    password: Optional[str] = typer.Option(
+    password: str | None = typer.Option(
         None,
         "--password",
         "-p",
         help="Password to log in with.",
         show_default=False,
     ),
-    token: Optional[str] = typer.Option(
+    token: str | None = typer.Option(
         None,
         "--token",
         "-t",
@@ -225,10 +222,10 @@ def login(
 @app.command("migrate_config", rich_help_panel=HELP_PANEL)
 def migrate_config(
     ctx: typer.Context,
-    source: Optional[Path] = typer.Option(
+    source: Path | None = typer.Option(
         None, "--source", "-s", help="Location of the config file to migrate."
     ),
-    destination: Optional[Path] = typer.Option(
+    destination: Path | None = typer.Option(
         None,
         "--destination",
         "-d",
@@ -302,7 +299,7 @@ def open_config_dir(
         "--path",
         help="Show path instead of opening directory.",
     ),
-    open_command: Optional[str] = typer.Option(
+    open_command: str | None = typer.Option(
         None,
         "--command",
         help="Specify command to use to use for opening.",
@@ -383,7 +380,7 @@ def show_history(
 @app.command("update_config", rich_help_panel=HELP_PANEL)
 def update_config(
     ctx: typer.Context,
-    config_file: Optional[Path] = typer.Option(
+    config_file: Path | None = typer.Option(
         None, "--config-file", "-c", help="Location of the config file to update."
     ),
     secrets: SecretMode = typer.Option(

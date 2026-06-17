@@ -29,7 +29,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -68,28 +67,28 @@ class State:
     bulk: bool = False
     """Running in bulk mode."""
 
-    _client: Optional[ZabbixAPI] = None
+    _client: ZabbixAPI | None = None
     """Zabbix API client object."""
 
-    _config: Optional[Config] = None
+    _config: Config | None = None
     """Current Config object (may have overrides)."""
 
     _config_loaded: bool = False
     """Config has been loaded from file."""
 
-    _config_repl_original: Optional[Config] = None
+    _config_repl_original: Config | None = None
     """Config object when the REPL was first launched."""
 
-    _console: Optional[Console] = None
+    _console: Console | None = None
     """Stdout Rich console object."""
 
-    _err_console: Optional[Console] = None
+    _err_console: Console | None = None
     """Stderr Rich console object."""
 
-    token: Optional[str] = None
+    token: str | None = None
     """Active Zabbix API auth token."""
 
-    _history: Optional[History] = None
+    _history: History | None = None
 
     @property
     def client(self) -> ZabbixAPI:

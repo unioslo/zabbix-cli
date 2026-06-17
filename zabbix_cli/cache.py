@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
-from typing import Optional
 
 from zabbix_cli.exceptions import ZabbixCLIError
 
@@ -70,18 +69,18 @@ class ZabbixCache:
             for templategroup in templategroups
         }
 
-    def get_hostgroup_name(self, hostgroup_id: str) -> Optional[str]:
+    def get_hostgroup_name(self, hostgroup_id: str) -> str | None:
         """Returns the name of a host group given its ID."""
         return self._hostgroup_id_cache.get(hostgroup_id)
 
-    def get_hostgroup_id(self, hostgroup_name: str) -> Optional[str]:
+    def get_hostgroup_id(self, hostgroup_name: str) -> str | None:
         """Returns the ID of a host group given its name."""
         return self._hostgroup_name_cache.get(hostgroup_name)
 
-    def get_templategroup_name(self, templategroup_id: str) -> Optional[str]:
+    def get_templategroup_name(self, templategroup_id: str) -> str | None:
         """Returns the name of a template group given its ID."""
         return self._templategroup_id_cache.get(templategroup_id)
 
-    def get_templategroup_id(self, templategroup_name: str) -> Optional[str]:
+    def get_templategroup_id(self, templategroup_name: str) -> str | None:
         """Returns the ID of a template group given its name."""
         return self._templategroup_name_cache.get(templategroup_name)

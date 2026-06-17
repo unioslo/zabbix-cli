@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing import Optional
 
 from pydantic import computed_field
 from typing_extensions import TypedDict
@@ -117,7 +116,7 @@ class HostGroupResult(TableRenderable):
     name: str
     hosts: HostList = []
     flags: int
-    internal: Optional[int] = None  # <6.2
+    internal: int | None = None  # <6.2
 
     @classmethod
     def from_hostgroup(cls, hostgroup: HostGroup) -> HostGroupResult:

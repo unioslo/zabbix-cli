@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Union
 
 from pydantic import Field
 from pydantic import computed_field
@@ -28,7 +27,7 @@ class ShowTemplateGroupResult(TableRenderable):
 
     @classmethod
     def from_result(
-        cls, group: Union[HostGroup, TemplateGroup], show_templates: bool
+        cls, group: HostGroup | TemplateGroup, show_templates: bool
     ) -> ShowTemplateGroupResult:
         return cls(
             groupid=group.groupid,
@@ -68,8 +67,8 @@ class ExtendTemplateGroupResult(TableRenderable):
     @classmethod
     def from_result(
         cls,
-        src_group: Union[HostGroup, TemplateGroup],
-        dest_group: Union[list[HostGroup], list[TemplateGroup]],
+        src_group: HostGroup | TemplateGroup,
+        dest_group: list[HostGroup] | list[TemplateGroup],
         templates: list[Template],
     ) -> ExtendTemplateGroupResult:
         return cls(
@@ -89,8 +88,8 @@ class MoveTemplatesResult(TableRenderable):
     @classmethod
     def from_result(
         cls,
-        source: Union[HostGroup, TemplateGroup],
-        destination: Union[HostGroup, TemplateGroup],
+        source: HostGroup | TemplateGroup,
+        destination: HostGroup | TemplateGroup,
     ) -> MoveTemplatesResult:
         return cls(
             source=source.name,

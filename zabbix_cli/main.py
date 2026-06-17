@@ -25,7 +25,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Optional
 
 import typer
 
@@ -86,14 +85,14 @@ def version_callback(value: bool):
 @app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
-    config_file: Optional[Path] = typer.Option(
+    config_file: Path | None = typer.Option(
         None,
         "--config",
         "-c",
         help="Alternate configuration file to use.",
         show_default=False,
     ),
-    input_file: Optional[Path] = typer.Option(
+    input_file: Path | None = typer.Option(
         None,
         "--file",
         "--input-file",  # DEPRECATED: V2 name for compatibility
@@ -102,7 +101,7 @@ def main_callback(
         rich_help_panel="Bulk Mode Options",
         show_default=False,
     ),
-    bulk_mode: Optional[BulkRunnerMode] = typer.Option(
+    bulk_mode: BulkRunnerMode | None = typer.Option(
         None,
         "--bulk-mode",
         "-b",
@@ -111,7 +110,7 @@ def main_callback(
         rich_help_panel="Bulk Mode Options",
         show_default=False,
     ),
-    output_format: Optional[OutputFormat] = typer.Option(
+    output_format: OutputFormat | None = typer.Option(
         None,
         "--format",
         "--output-format",  # DEPRECATED: V2 name for compatibility
@@ -120,14 +119,14 @@ def main_callback(
         case_sensitive=False,
         show_default=False,
     ),
-    legacy_json: Optional[bool] = typer.Option(
+    legacy_json: bool | None = typer.Option(
         None,
         "--legacy-json/--no-legacy-json",
         help="Use legacy JSON output format from V2.",
         case_sensitive=False,
         show_default=False,
     ),
-    version: Optional[bool] = typer.Option(
+    version: bool | None = typer.Option(
         None,
         "--version",
         help="Show the version of Zabbix-CLI and exit.",
@@ -135,7 +134,7 @@ def main_callback(
         callback=version_callback,
     ),
     # Deprecated option, kept for compatibility with V2
-    zabbix_command: Optional[str] = typer.Option(
+    zabbix_command: str | None = typer.Option(
         None,
         "--command",
         "-C",
@@ -216,7 +215,7 @@ def should_skip_login(ctx: typer.Context) -> bool:
     return ctx.invoked_subcommand in ["migrate_config", "update_config", "show_config"]
 
 
-def _parse_config_arg() -> Optional[Path]:
+def _parse_config_arg() -> Path | None:
     """Get a custom config file path from the command line arguments.
 
     Modifies sys.argv in place to remove the --config/-c option and its

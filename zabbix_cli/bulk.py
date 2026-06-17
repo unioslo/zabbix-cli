@@ -13,7 +13,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 import typer
 from pydantic import BaseModel
@@ -92,8 +91,8 @@ class CommandExecution:
 
     command: BulkCommand
     result: CommandResult
-    error: Optional[BaseException] = None
-    line_number: Optional[int] = None
+    error: BaseException | None = None
+    line_number: int | None = None
 
 
 class BulkRunner:
@@ -221,7 +220,7 @@ class BulkRunner:
         commands: list[BulkCommand] = []
 
         def add_skipped(
-            line: str, line_number: int, error: Optional[BaseException] = None
+            line: str, line_number: int, error: BaseException | None = None
         ) -> None:
             self.skipped.append(
                 CommandExecution(

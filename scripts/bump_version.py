@@ -15,7 +15,6 @@ from subprocess import CompletedProcess
 from typing import Any
 from typing import NamedTuple
 from typing import NoReturn
-from typing import Optional
 from typing import Protocol
 
 import typer
@@ -102,7 +101,7 @@ def check_commands() -> None:
 
 
 def exit_err(
-    msg: str, code: int = ExitCode.ERROR, style: Optional[str] = None
+    msg: str, code: int = ExitCode.ERROR, style: str | None = None
 ) -> NoReturn:
     """Print an error message and exit with the given code."""
     err_console.print(msg, style=style)

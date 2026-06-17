@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 
 from zabbix_cli._v2_compat import deprecated_positional_arguments
@@ -56,7 +54,7 @@ def create_host_interface(
         help="Name of host to create interface on.",
         show_default=False,
     ),
-    connection: Optional[InterfaceConnectionMode] = typer.Option(
+    connection: InterfaceConnectionMode | None = typer.Option(
         None,
         "--connection",
         help="Interface connection mode. Required if both --ip and --dns are specified.",
@@ -68,18 +66,18 @@ def create_host_interface(
         help="Interface type. SNMP enables --snmp-* options.",
         case_sensitive=False,
     ),
-    port: Optional[str] = typer.Option(
+    port: str | None = typer.Option(
         None,
         "--port",
         help="Interface port. Defaults to 10050 for agent, 161 for SNMP, 623 for IPMI, and 12345 for JMX.",
     ),
-    ip: Optional[str] = typer.Option(
+    ip: str | None = typer.Option(
         None,
         "--ip",
         help="IP address of interface.",
         show_default=False,
     ),
-    dns: Optional[str] = typer.Option(
+    dns: str | None = typer.Option(
         None,
         "--dns",
         help="DNS address of interface.",
@@ -113,46 +111,46 @@ def create_host_interface(
         help="Max repetitions for SNMPv{2,3} bulk requests.",
         min=1,
     ),
-    snmp_security_name: Optional[str] = typer.Option(
+    snmp_security_name: str | None = typer.Option(
         None,
         "--snmp-security-name",
         help="SNMPv3 security name.",
         show_default=False,
     ),
-    snmp_context_name: Optional[str] = typer.Option(
+    snmp_context_name: str | None = typer.Option(
         None,
         "--snmp-context-name",
         help="SNMPv3 context name.",
         show_default=False,
     ),
-    snmp_security_level: Optional[SNMPSecurityLevel] = typer.Option(
+    snmp_security_level: SNMPSecurityLevel | None = typer.Option(
         None,
         "--snmp-security-level",
         help="SNMPv3 security level.",
         show_default=False,
         case_sensitive=False,
     ),
-    snmp_auth_protocol: Optional[SNMPAuthProtocol] = typer.Option(
+    snmp_auth_protocol: SNMPAuthProtocol | None = typer.Option(
         None,
         "--snmp-auth-protocol",
         help="SNMPv3 auth protocol (authNoPriv & authPriv).",
         show_default=False,
         case_sensitive=False,
     ),
-    snmp_auth_passphrase: Optional[str] = typer.Option(
+    snmp_auth_passphrase: str | None = typer.Option(
         None,
         "--snmp-auth-passphrase",
         help="SNMPv3 auth passphrase (authNoPriv & authPriv).",
         show_default=False,
     ),
-    snmp_priv_protocol: Optional[SNMPPrivProtocol] = typer.Option(
+    snmp_priv_protocol: SNMPPrivProtocol | None = typer.Option(
         None,
         "--snmp-priv-protocol",
         help="SNMPv3 priv protocol (authPriv)",
         show_default=False,
         case_sensitive=False,
     ),
-    snmp_priv_passphrase: Optional[str] = typer.Option(
+    snmp_priv_passphrase: str | None = typer.Option(
         None,
         "--snmp-priv-passphrase",
         help="SNMPv3 priv passphrase (authPriv).",
@@ -160,7 +158,7 @@ def create_host_interface(
     ),
     # V2-style positional args (deprecated)
     # connection, type, port, ip, dns, default
-    args: Optional[list[str]] = deprecated_positional_arguments(6),
+    args: list[str] | None = deprecated_positional_arguments(6),
 ) -> None:
     """Create a host interface.
 
@@ -213,7 +211,7 @@ def create_host_interface(
         info(f"No default {type_} interface found. Setting new interface as default.")
         default = True
 
-    details: Optional[CreateHostInterfaceDetails] = None
+    details: CreateHostInterfaceDetails | None = None
     if type_ == InterfaceType.SNMP:
         details = CreateHostInterfaceDetails(
             version=snmp_version,
@@ -311,24 +309,24 @@ def update_host_interface(
         help="ID of interface to update.",
         show_default=False,
     ),
-    connection: Optional[InterfaceConnectionMode] = typer.Option(
+    connection: InterfaceConnectionMode | None = typer.Option(
         None,
         "--connection",
         help="Interface connection mode.",
         case_sensitive=False,
     ),
-    port: Optional[str] = typer.Option(
+    port: str | None = typer.Option(
         None,
         "--port",
         help="Interface port.",
     ),
-    ip: Optional[str] = typer.Option(
+    ip: str | None = typer.Option(
         None,
         "--ip",
         help="IP address of interface.",
         show_default=False,
     ),
-    dns: Optional[str] = typer.Option(
+    dns: str | None = typer.Option(
         None,
         "--dns",
         help="DNS address of interface.",
@@ -337,7 +335,7 @@ def update_host_interface(
     default: bool = typer.Option(
         True, "--default/--no-default", help="Default interface."
     ),
-    snmp_version: Optional[int] = typer.Option(
+    snmp_version: int | None = typer.Option(
         None,
         "--snmp-version",
         help="SNMP version.",
@@ -345,64 +343,64 @@ def update_host_interface(
         max=3,
         show_default=False,
     ),
-    snmp_bulk: Optional[bool] = typer.Option(
+    snmp_bulk: bool | None = typer.Option(
         None,
         "--snmp-bulk/--no-snmp-bulk",
         help="Use bulk SNMP requests.",
         show_default=False,
     ),
-    snmp_community: Optional[str] = typer.Option(
+    snmp_community: str | None = typer.Option(
         None,
         "--snmp-community",
         help="SNMPv{1,2} community.",
         show_default=False,
     ),
-    snmp_max_repetitions: Optional[int] = typer.Option(
+    snmp_max_repetitions: int | None = typer.Option(
         None,
         "--snmp-max-repetitions",
         help="Max repetitions for SNMPv{2,3} bulk requests.",
         min=1,
     ),
-    snmp_security_name: Optional[str] = typer.Option(
+    snmp_security_name: str | None = typer.Option(
         None,
         "--snmp-security-name",
         help="SNMPv3 security name.",
         show_default=False,
     ),
-    snmp_context_name: Optional[str] = typer.Option(
+    snmp_context_name: str | None = typer.Option(
         None,
         "--snmp-context-name",
         help="SNMPv3 context name.",
         show_default=False,
     ),
-    snmp_security_level: Optional[SNMPSecurityLevel] = typer.Option(
+    snmp_security_level: SNMPSecurityLevel | None = typer.Option(
         None,
         "--snmp-security-level",
         help="SNMPv3 security level.",
         show_default=False,
         case_sensitive=False,
     ),
-    snmp_auth_protocol: Optional[SNMPAuthProtocol] = typer.Option(
+    snmp_auth_protocol: SNMPAuthProtocol | None = typer.Option(
         None,
         "--snmp-auth-protocol",
         help="SNMPv3 auth protocol (authNoPriv & authPriv).",
         show_default=False,
         case_sensitive=False,
     ),
-    snmp_auth_passphrase: Optional[str] = typer.Option(
+    snmp_auth_passphrase: str | None = typer.Option(
         None,
         "--snmp-auth-passphrase",
         help="SNMPv3 auth passphrase (authNoPriv & authPriv).",
         show_default=False,
     ),
-    snmp_priv_protocol: Optional[SNMPPrivProtocol] = typer.Option(
+    snmp_priv_protocol: SNMPPrivProtocol | None = typer.Option(
         None,
         "--snmp-priv-protocol",
         help="SNMPv3 priv protocol (authPriv)",
         show_default=False,
         case_sensitive=False,
     ),
-    snmp_priv_passphrase: Optional[str] = typer.Option(
+    snmp_priv_passphrase: str | None = typer.Option(
         None,
         "--snmp-priv-passphrase",
         help="SNMPv3 priv passphrase (authPriv).",

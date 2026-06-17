@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any
-from typing import Optional
-from typing import Union
+from typing import Optional  # pyright: ignore[reportDeprecated]
+from typing import Union  # pyright: ignore[reportDeprecated]
 
 import pytest
 
-try:
-    import tomllib
-except ImportError:
+if sys.version_info >= (3, 11):
+    import tomllib  # pyright: ignore[reportUnreachable]
+else:
     import tomli as tomllib
 
 from inline_snapshot import snapshot
@@ -33,6 +34,9 @@ from zabbix_cli.config.utils import get_deprecated_fields_set
 from zabbix_cli.config.utils import replace_deprecated_fields
 from zabbix_cli.exceptions import ConfigOptionNotFound
 from zabbix_cli.exceptions import PluginConfigTypeError
+
+# Filter deprecation warnings for entire module
+pytestmark = pytest.mark.filterwarnings("ignore:deprecated")
 
 
 def test_config_default() -> None:
@@ -178,8 +182,8 @@ def test_plugin_config_get() -> None:
         assert config.get("extra2", type=str) == "2"
 
 
-def test_config_get_with_annotations() -> None:
-    """Test PluginConfig.get with more complex annotations"""
+def test_config_get_with_annotations_pre_310_style() -> None:
+    """Test PluginConfig.get with more complex annotations (pre-3.10 style)"""
     config = PluginConfig(
         module="test",
         extra1="foo",
@@ -197,6 +201,37 @@ def test_config_get_with_annotations() -> None:
     with pytest.raises(PluginConfigTypeError):
         config.get("wrong", 123, type=Optional[str])
     assert config.get("wrong", "123", type=Optional[str]) == "123"
+
+    # List type
+    assert config.get("extra4", type=list) == [1, 2, 3]
+    assert config.get("extra4", type=list[int]) == [1, 2, 3]
+    assert config.get("extra4", type=list[int]) == [1, 2, 3]
+
+    # Dict type
+    assert config.get("extra5", type=dict) == {"foo": [1, 2, 3]}
+    assert config.get("extra5", type=dict[str, list[int]]) == {"foo": [1, 2, 3]}
+    assert config.get("extra5", type=dict[str, list[int]]) == {"foo": [1, 2, 3]}
+
+
+def test_config_get_with_annotations_post_310_style() -> None:
+    """Test PluginConfig.get with more complex annotations"""
+    config = PluginConfig(
+        module="test",
+        extra1="foo",
+        extra2=2,
+        extra3=True,
+        extra4=[1, 2, 3],
+        extra5={"foo": [1, 2, 3]},
+    )
+
+    assert config.get("extra1", type=str | None) == "foo"
+    assert config.get("extra1", 123, type=str | None) == "foo"
+    assert config.get("extra1", type=str | int)
+
+    # Invalid default type
+    with pytest.raises(PluginConfigTypeError):
+        config.get("wrong", 123, type=str | None)
+    assert config.get("wrong", "123", type=str | None) == "123"
 
     # List type
     assert config.get("extra4", type=list) == [1, 2, 3]
@@ -452,8 +487,11 @@ def test_deprecated_fields_updated() -> None:
     assert conf.api.username == "System-User"
 
 
-def get_deprecated_fields(model: Union[type[BaseModel], BaseModel]) -> list[str]:
+def get_deprecated_fields(model: type[BaseModel] | BaseModel) -> list[str]:
     """Get a set of names of deprecated fields in a model and its submodels."""
+    if isinstance(model, BaseModel):
+        model = model.__class__
+
     fields: list[str] = []
     for field_name, field in model.model_fields.items():
         if field.deprecated:
@@ -462,6 +500,8 @@ def get_deprecated_fields(model: Union[type[BaseModel], BaseModel]) -> list[str]
             continue
         try:
             if issubclass(field.annotation, BaseModel):
+                # with warnings.catch_warnings():
+                # warnings.simplefilter("ignore")
                 submodel_fields = get_deprecated_fields(field.annotation)
                 fields.extend(
                     f"{field_name}.{subfield}" for subfield in submodel_fields

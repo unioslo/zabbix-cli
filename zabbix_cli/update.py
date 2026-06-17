@@ -22,7 +22,6 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Any
 from typing import NamedTuple
-from typing import Optional
 
 import httpx
 from pydantic import BaseModel
@@ -54,7 +53,7 @@ class Updater(ABC):
         self.installation_info = installation_info
 
     @abstractmethod
-    def update(self) -> Optional[UpdateInfo]:
+    def update(self) -> UpdateInfo | None:
         """Update the application to the latest version.
 
         May return information about the update, such as the new version.
@@ -73,7 +72,7 @@ class GitUpdater(Updater):
         return UpdateInfo(self.installation_info.method, "latest")
 
 
-class PypiUpdater(Updater):
+class PypiUpdater(Updater, ABC):
     """ABC Updater for packages installed via PyPI."""
 
     @property
@@ -172,7 +171,6 @@ class PipxUpdater(PypiUpdater):
         return ["pipx", "uninstall"]
 
     @property
-    @abstractmethod
     def upgrade_command(self) -> list[str]:
         """The command used to upgrade the package."""
         return ["pipx", "upgrade"]
@@ -201,7 +199,6 @@ class PipUpdater(PypiUpdater):
         return ["pip", "uninstall"]
 
     @property
-    @abstractmethod
     def upgrade_command(self) -> list[str]:
         """The command used to upgrade the package."""
         return ["pip", "install", "--upgrade"]
@@ -254,7 +251,6 @@ class UvUpdater(PypiUpdater):
         return ["uv", "tool", "uninstall"]
 
     @property
-    @abstractmethod
     def upgrade_command(self) -> list[str]:
         """The command used to upgrade the package."""
         return ["uv", "tool", "upgrade"]
@@ -347,7 +343,7 @@ class PyInstallerUpdater(Updater):
     URL_API_LATEST = "https://api.github.com/repos/unioslo/zabbix-cli/releases/latest"
     """URL for latest release info from API."""
 
-    def update(self) -> Optional[UpdateInfo]:
+    def update(self) -> UpdateInfo | None:
         """Update the application to the latest version."""
         if not self.installation_info.bindir:
             raise UpdateError("Unable to determine PyInstaller binary directory")
@@ -483,12 +479,12 @@ class InstallationInfo(NamedTuple):
     """Information about the installation method of the application."""
 
     method: InstallationMethod
-    package: Optional[str] = None
-    executable: Optional[Path] = None
-    bindir: Optional[Path] = None
+    package: str | None = None
+    executable: Path | None = None
+    bindir: Path | None = None
 
 
-def to_path(p: str) -> Optional[Path]:
+def to_path(p: str) -> Path | None:
     """Convert a string to a Path, returning None if the path is invalid."""
     try:
         return Path(p).expanduser().resolve()
@@ -542,7 +538,7 @@ class InstallationMethodDetector:
                 return info
         raise NotImplementedError("No detection methods succeeded")
 
-    def detect_git(self) -> Optional[InstallationInfo]:
+    def detect_git(self) -> InstallationInfo | None:
         """Get app installation via a local Git repository."""
         f = Path(__file__).resolve()
         package_dir = f.parent.parent
@@ -554,7 +550,7 @@ class InstallationMethodDetector:
         return InstallationInfo(method=InstallationMethod.GIT, bindir=package_dir)
 
     @staticmethod
-    def get_pipx_bin_dir() -> Optional[Path]:
+    def get_pipx_bin_dir() -> Path | None:
         """Detect the pipx bin directory."""
         if (bd := os.environ.get("PIPX_BIN_DIR")) and (bindir := to_path(bd)):
             return bindir
@@ -569,7 +565,7 @@ class InstallationMethodDetector:
             return  # pipx not installed
         return to_path(t)
 
-    def detect_pipx(self) -> Optional[InstallationInfo]:
+    def detect_pipx(self) -> InstallationInfo | None:
         """Detect app installation via pipx."""
         if not cmd_exists("pipx"):
             return
@@ -589,7 +585,7 @@ class InstallationMethodDetector:
             return False
         return True
 
-    def detect_pip(self) -> Optional[InstallationInfo]:
+    def detect_pip(self) -> InstallationInfo | None:
         """Detect app installation via pip."""
         if not cmd_exists("pip"):
             return
@@ -597,7 +593,7 @@ class InstallationMethodDetector:
             if self.has_pip_package(pkg):
                 return InstallationInfo(method=InstallationMethod.PIP, package=pkg)
 
-    def detect_pyinstaller(self) -> Optional[InstallationInfo]:
+    def detect_pyinstaller(self) -> InstallationInfo | None:
         """Detect app installation via pyinstaller."""
         if not hasattr(sys, "_MEIPASS"):
             return
@@ -609,7 +605,7 @@ class InstallationMethodDetector:
         )
 
     @staticmethod
-    def get_uv_bin_dir() -> Optional[Path]:
+    def get_uv_bin_dir() -> Path | None:
         """Detect the uv bin directory."""
         try:
             t = subprocess.check_output(["uv", "tool", "dir"], text=True)
@@ -620,7 +616,7 @@ class InstallationMethodDetector:
         return to_path(t)
 
     @staticmethod
-    def get_uv_pkg_name() -> Optional[str]:
+    def get_uv_pkg_name() -> str | None:
         """Detect the installed uv package name."""
         for pkg in ZCLI_PACKAGES:
             try:
@@ -629,7 +625,7 @@ class InstallationMethodDetector:
                 continue
             return pkg
 
-    def detect_uv(self) -> Optional[InstallationInfo]:
+    def detect_uv(self) -> InstallationInfo | None:
         """Detect app installation via uv."""
         if not cmd_exists("uv"):
             return
@@ -655,7 +651,7 @@ class UpdateInfo(NamedTuple):
 
     method: InstallationMethod
     version: str
-    path: Optional[Path] = None
+    path: Path | None = None
 
 
 def get_updater(method: InstallationMethod) -> type[Updater]:
@@ -666,7 +662,7 @@ def get_updater(method: InstallationMethod) -> type[Updater]:
     return updater
 
 
-def update(update_method: Optional[InstallationMethod] = None) -> Optional[UpdateInfo]:
+def update(update_method: InstallationMethod | None = None) -> UpdateInfo | None:
     """Update the application to the latest version.
 
     Args:

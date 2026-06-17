@@ -24,9 +24,7 @@ import functools
 import logging
 from pathlib import Path
 from typing import Any
-from typing import Optional
 from typing import TypeVar
-from typing import Union
 from typing import overload
 
 from pydantic import AliasChoices
@@ -101,13 +99,13 @@ class APIConfig(BaseModel):
         description="API auth token.",
         examples=["API_TOKEN_123"],
     )
-    verify_ssl: Union[bool, Path] = Field(
+    verify_ssl: bool | Path = Field(
         default=True,
         # Changed in V3: cert_verify -> verify_ssl
         validation_alias=AliasChoices("verify_ssl", "cert_verify"),
         description="Verify SSL certificate of the Zabbix API host. Can also be a path to a CA bundle.",
     )
-    timeout: Optional[int] = Field(
+    timeout: int | None = Field(
         default=0,
         description="API request timeout in seconds.",
     )
@@ -120,7 +118,7 @@ class APIConfig(BaseModel):
         return self
 
     @field_serializer("timeout", when_used="json")
-    def _serialize_timeout(self, timeout: Optional[int]) -> int:
+    def _serialize_timeout(self, timeout: int | None) -> int:
         """Represent None timeout as 0 in serialized output."""
         return timeout if timeout is not None else 0
 
@@ -416,7 +414,7 @@ class LoggingConfig(BaseModel):
         default="INFO",
         description="Log level.",
     )
-    log_file: Optional[Path] = Field(
+    log_file: Path | None = Field(
         # TODO: define this default path elsewhere
         default=LOG_FILE,
         description=(
@@ -503,24 +501,24 @@ class PluginConfig(BaseModel):
         self,
         key: str,
         *,
-        type: Optional[type[T]],
-    ) -> Optional[T]: ...
+        type: type[T] | None,
+    ) -> T | None: ...
 
     # Union type with default
     @overload
     def get(
         self,
         key: str,
-        default: Optional[T],
-        type: Optional[type[T]],
-    ) -> Optional[T]: ...
+        default: T | None,
+        type: type[T] | None,
+    ) -> T | None: ...
 
     def get(
         self,
         key: str,
-        default: Union[T, Any] = NotSet,
-        type: Optional[type[T]] = object,
-    ) -> Union[T, Optional[T], Any]:
+        default: T | Any = NotSet,
+        type: type[T] | None = object,
+    ) -> T | T | None | Any:
         """Get a plugin configuration value by key.
 
         Optionally validate the value as a specific type.
@@ -551,7 +549,7 @@ class PluginConfig(BaseModel):
 class PluginsConfig(RootModel[dict[str, PluginConfig]]):
     root: dict[str, PluginConfig] = Field(default_factory=dict)
 
-    def get(self, key: str, *, strict: bool = False) -> Optional[PluginConfig]:
+    def get(self, key: str, *, strict: bool = False) -> PluginConfig | None:
         """Get a plugin configuration by name."""
         conf = self.root.get(key)
         if conf is None and strict:
@@ -575,7 +573,7 @@ class Config(BaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     plugins: PluginsConfig = Field(default_factory=PluginsConfig)
 
-    config_path: Optional[Path] = Field(default=None, exclude=True)
+    config_path: Path | None = Field(default=None, exclude=True)
 
     _deprecated_fields_migrated: bool = PrivateAttr(default=False)
 
@@ -617,9 +615,7 @@ class Config(BaseModel):
         return cls()
 
     @classmethod
-    def from_file(
-        cls, filename: Optional[Path] = None, *, init: bool = False
-    ) -> Config:
+    def from_file(cls, filename: Path | None = None, *, init: bool = False) -> Config:
         """Load configuration from a file.
 
         Attempts to find a config file to load if none is specified.
@@ -747,7 +743,7 @@ class Config(BaseModel):
             "  For more information, see the documentation."
         )
 
-    def dump_updated_config(self, config_file: Optional[Path] = None) -> None:
+    def dump_updated_config(self, config_file: Path | None = None) -> None:
         """Update deprecated fields in the configuration to their new location.
 
         Uses the current config values to update the config file on disk.

@@ -3,12 +3,11 @@ from __future__ import annotations
 import logging
 import math
 import os
+from collections.abc import Callable
 from functools import cache
 from functools import wraps
 from pathlib import Path
 from typing import Any
-from typing import Callable
-from typing import Optional
 from typing import overload
 
 from rich.prompt import Confirm
@@ -48,7 +47,7 @@ def no_headless(f: Callable[P, T]) -> Callable[P, T]:
             default = kwargs.get("default")
             if "default" in kwargs and default is not ...:
                 logger.debug("Returning default value from %s(%s, %s)", f, args, kwargs)
-                return default  # type: ignore # bit of a hack
+                return default  # pyright: ignore[reportReturnType] # bit of a hack
             # Assume first arg is the prompt:
             prompt = args[0] if args else kwargs.get("prompt", "")
             exit_err(
@@ -104,7 +103,7 @@ def str_prompt(
     *,
     default: str | None = None,  # pyright: ignore[reportArgumentType] # rich uses ... to signify no default
     password: bool = False,
-    choices: Optional[list[str]] = None,
+    choices: list[str] | None = None,
     show_default: bool = True,
     show_choices: bool = True,
     empty_ok: bool = False,
@@ -184,7 +183,7 @@ def str_prompt_optional(
     default: str = "",
     password: bool = False,
     show_default: bool = False,
-    choices: Optional[list[str]] = None,
+    choices: list[str] | None = None,
     strip: bool = True,
 ) -> str:
     prompt = f"{prompt} [i](optional)[/]"

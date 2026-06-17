@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 import typer
 
@@ -17,7 +16,7 @@ class RunMode(str, Enum):
 
 def main(
     arg: RunMode = typer.Argument(RunMode.DEFAULTS, case_sensitive=False),
-    filename: Optional[Path] = None,
+    filename: Path | None = None,
 ):
     """Print current or default config to stdout."""
     from zabbix_cli.logs import configure_logging

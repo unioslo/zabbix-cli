@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Any
-from typing import Optional
 
 import click
 import typer
@@ -12,7 +11,7 @@ from zabbix_cli.logs import logger
 
 
 def get_limit_option(
-    limit: Optional[int] = 0,
+    limit: int | None = 0,
     resource: str = "results",
     long_option: str = "--limit",
     short_option: str = "-n",
@@ -48,7 +47,7 @@ class CommandParam(ParamType):
     name = "command"
 
     def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+        self, value: str, param: click.Parameter | None, ctx: click.Context | None
     ) -> click.Command:
         if not value:
             self.fail("Missing command.", param, ctx)

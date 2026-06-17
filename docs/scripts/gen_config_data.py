@@ -8,7 +8,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 from typing import Literal
-from typing import Optional
 from typing import Union
 from typing import get_args
 from typing import get_origin
@@ -60,7 +59,7 @@ def get_field_info(info: ValidationInfo) -> FieldInfo:
 class ConfigBase(BaseModel):
     """Common fields shared by config tables and options."""
 
-    field: Optional[FieldInfo] = Field(default=None, exclude=True)
+    field: FieldInfo | None = Field(default=None, exclude=True)
 
     name: str
     description: str = ""
@@ -87,7 +86,7 @@ class ConfigOption(ConfigBase):
     type: str
     default: Any = None
     required: bool = False
-    examples: Optional[list[Any]] = None
+    examples: list[Any] | None = None
 
     @computed_field()
     def is_model(self) -> bool:
@@ -95,7 +94,7 @@ class ConfigOption(ConfigBase):
 
     @computed_field()
     @property
-    def choices(self) -> Optional[list[Any]]:
+    def choices(self) -> list[Any] | None:
         # Handle common choice types
         if not self.field or self.field.annotation is None:
             return None
@@ -108,7 +107,7 @@ class ConfigOption(ConfigBase):
 
     @computed_field()
     @property
-    def choices_str(self) -> Optional[str]:
+    def choices_str(self) -> str | None:
         if not self.choices:
             return None
         return ", ".join(str(choice) for choice in self.choices)
@@ -167,7 +166,7 @@ class ConfigOption(ConfigBase):
 
     @field_validator("default", mode="before")
     @classmethod
-    def validate_default(cls, value: Any) -> Optional[Any]:
+    def validate_default(cls, value: Any) -> Any | None:
         if value is PydanticUndefined:
             return None
         if isinstance(value, SecretStr):
@@ -223,7 +222,7 @@ class ConfigOption(ConfigBase):
     @field_validator("examples", mode="before")
     @classmethod
     def validate_examples(
-        cls, value: Optional[list[Any]], info: ValidationInfo
+        cls, value: list[Any] | None, info: ValidationInfo
     ) -> list[Any]:
         if value:
             return value
@@ -241,7 +240,7 @@ class ConfigTable(ConfigBase):
     # ConfigOption by adding `fields` to the ConfigOption model?
     # That way we could have a consistent interface regardless of
     # whether we're dealing with a submodel or a field.
-    fields: list[Union[ConfigTable, ConfigOption]]
+    fields: list[ConfigTable | ConfigOption]
 
     @classmethod
     def from_field_info(
@@ -288,7 +287,7 @@ class ConfigTable(ConfigBase):
         return tomli_w.dumps(ex_jsonable)
 
 
-def lenient_issubclass(cls: type, class_or_tuple: Union[type, tuple[type]]) -> bool:
+def lenient_issubclass(cls: type, class_or_tuple: type | tuple[type]) -> bool:
     try:
         return issubclass(cls, class_or_tuple)
     except TypeError:
@@ -296,12 +295,12 @@ def lenient_issubclass(cls: type, class_or_tuple: Union[type, tuple[type]]) -> b
 
 
 def get_config_options(
-    type_: type[BaseModel], current_name: str = "", parents: Optional[list[str]] = None
-) -> list[Union[ConfigTable, ConfigOption]]:
+    type_: type[BaseModel], current_name: str = "", parents: list[str] | None = None
+) -> list[ConfigTable | ConfigOption]:
     """Recursively extract the configuration options from a Pydantic model."""
     if parents is None:
         parents = []
-    options: list[Union[ConfigTable, ConfigOption]] = []
+    options: list[ConfigTable | ConfigOption] = []
     for field_name, field in type_.model_fields.items():
         if field.exclude:
             continue

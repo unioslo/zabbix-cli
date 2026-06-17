@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any
-from typing import Optional
+from typing import Literal
 
 from pydantic import Field
 from pydantic import computed_field
 from pydantic import field_validator
-from typing_extensions import Literal
 
 from zabbix_cli.models import ColsRowsType
 from zabbix_cli.models import TableRenderable
@@ -34,9 +33,9 @@ class ShowMaintenanceDefinitionsResult(TableRenderable):
 
     maintenanceid: str
     name: str
-    type: Optional[int]
+    type: int | None
     active_till: datetime
-    description: Optional[str]
+    description: str | None
     hosts: list[str]
     groups: list[str]
 

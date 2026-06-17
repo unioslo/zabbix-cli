@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Generator
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Optional
 from unittest.mock import patch
 
 import pytest
@@ -59,6 +58,7 @@ def test_get_auth_file_paths_override(tmp_path: Path, config: Config) -> None:
     ]
 
 
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_get_auth_token_file_paths_defafult(config: Config) -> None:
     """Test the default auth token file paths."""
     # Path from config is not present (same as default AUTH_TOKEN_FILE)
@@ -68,6 +68,7 @@ def test_get_auth_token_file_paths_defafult(config: Config) -> None:
     ]
 
 
+@pytest.mark.filterwarnings("ignore:deprecated")
 def test_get_auth_token_file_paths_override(tmp_path: Path, config: Config) -> None:
     """Override the default auth token file path in the config."""
     auth_file = tmp_path / "auth_token"
@@ -288,7 +289,7 @@ def test_authenticator_login_with_any(
 
     # REASON: Falls back on default auth token file path (which might exist on test user's system)
     # We want to ensure that the function only finds the test file we created
-    def mock_get_auth_token_file_paths(config: Optional[Config] = None) -> list[Path]:
+    def mock_get_auth_token_file_paths(config: Config | None = None) -> list[Path]:
         return [auth_token_file]
 
     monkeypatch.setattr(
@@ -296,7 +297,7 @@ def test_authenticator_login_with_any(
     )
 
     # REASON: Same as above
-    def mock_get_auth_file_paths(config: Optional[Config] = None) -> list[Path]:
+    def mock_get_auth_file_paths(config: Config | None = None) -> list[Path]:
         return [auth_file]
 
     monkeypatch.setattr(auth, "get_auth_file_paths", mock_get_auth_file_paths)
@@ -431,7 +432,7 @@ def test_sessionid_list_set_session() -> None:
     ],
 )
 def test_sessionid_list_get_session(
-    initial_sessions: list[dict[str, str]], username: str, expected: Optional[str]
+    initial_sessions: list[dict[str, str]], username: str, expected: str | None
 ):
     """Test retrieving sessions from SessionList."""
     session_list = SessionList(root=[SessionInfo(**s) for s in initial_sessions])
@@ -452,7 +453,7 @@ def test_sessionid_list_get_session(
     ],
 )
 def test_sessionid_file_get_user_session(
-    url: str, username: str, expected_session: Optional[str]
+    url: str, username: str, expected_session: str | None
 ):
     """Test retrieving user sessions from SessionFile."""
     session_file = SessionFile(
