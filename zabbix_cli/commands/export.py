@@ -13,7 +13,7 @@ from typing import Protocol
 import typer
 from strenum import StrEnum
 
-from zabbix_cli._v2_compat import ARGS_POSITIONAL
+from zabbix_cli._v2_compat import deprecated_positional_arguments
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
 from zabbix_cli.config.constants import OutputFormat
@@ -407,7 +407,7 @@ def export_configuration(
     ),
     # TODO: add --ignore-errors option
     # Legacy positional args
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = deprecated_positional_arguments(3),
 ) -> None:
     r"""Export Zabbix configuration for one or more components.
 
@@ -432,8 +432,6 @@ def export_configuration(
     from zabbix_cli.models import Result
 
     if args:
-        if not len(args) == 3:
-            exit_err("Invalid number of arguments. Use options instead.")
         directory = parse_path_arg(args[0])
         types = parse_export_types(parse_list_arg(args[1]))
         names = args[2]
@@ -585,7 +583,7 @@ def import_configuration(
         help="Enable best-effort importing. Print errors from failed imports but continue importing.",
     ),
     # Legacy positional args
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = deprecated_positional_arguments(2),
 ) -> None:
     """Import Zabbix configuration from file, directory or glob pattern.
 
@@ -601,8 +599,6 @@ def import_configuration(
     from zabbix_cli.models import ReturnCode
 
     if args:
-        if not len(args) == 2:
-            exit_err("Invalid number of positional arguments. Use options instead.")
         to_import = args[0]
         dry_run = parse_bool_arg(args[1])
 

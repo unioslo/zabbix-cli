@@ -4,11 +4,10 @@ from typing import Optional
 
 import typer
 
-from zabbix_cli._v2_compat import ARGS_POSITIONAL
+from zabbix_cli._v2_compat import deprecated_positional_arguments
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
 from zabbix_cli.commands.common.args import OPTION_LIMIT
-from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.render import render_result
 from zabbix_cli.utils.args import parse_list_arg
 
@@ -41,7 +40,7 @@ def show_last_values(
         False, "--group", help="Group items with the same value."
     ),
     limit: Optional[int] = OPTION_LIMIT,
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = deprecated_positional_arguments(1),
 ) -> None:
     """Show the last values of given items of monitored hosts."""
     from zabbix_cli.commands.results.item import ItemResult
@@ -49,8 +48,6 @@ def show_last_values(
     from zabbix_cli.models import AggregateResult
 
     if args:
-        if not len(args) == 1:
-            exit_err("Invalid number of positional arguments. Use options instead.")
         group = args[0] == "1"
         # No format arg in V2...
 

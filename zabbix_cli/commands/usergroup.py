@@ -11,7 +11,7 @@ from typing import TypeVar
 import typer
 from strenum import StrEnum
 
-from zabbix_cli._v2_compat import ARGS_POSITIONAL
+from zabbix_cli._v2_compat import deprecated_positional_arguments
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
 from zabbix_cli.commands.common.args import OPTION_LIMIT
@@ -19,7 +19,6 @@ from zabbix_cli.exceptions import ZabbixAPIException
 from zabbix_cli.exceptions import ZabbixNotFoundError
 from zabbix_cli.output.console import exit_err
 from zabbix_cli.output.console import success
-from zabbix_cli.output.console import warning
 from zabbix_cli.output.formatting.grammar import pluralize as p
 from zabbix_cli.output.render import render_result
 from zabbix_cli.pyzabbix.enums import GUIAccess
@@ -143,7 +142,7 @@ def add_usergroup_permissions(
         case_sensitive=False,
     ),
     # Legacy V2 args
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = deprecated_positional_arguments(2),
 ) -> None:
     """Give a user group permissions to host/template groups.
 
@@ -155,11 +154,6 @@ def add_usergroup_permissions(
     # Legacy positional args: <usergroup> <hostgroups> <permission>
     # We already have usergroup as positional arg, so we are left with 2 args.
     if args:
-        warning("Positional arguments are deprecated. Please use options instead.")
-        if len(args) != 2:
-            exit_err(
-                "Invalid number of positional arguments. Please use options instead."
-            )
         hostgroups = hostgroups or args[0]
         permission = permission or UsergroupPermission(args[1])
 
@@ -214,15 +208,11 @@ def create_usergroup(
         help="Create the user group in a disabled state.",
     ),
     # V2 legacy args
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = deprecated_positional_arguments(1),
 ) -> None:
     """Create a user group."""
     # We already have name and GUI access, so we expect 1 more arg at most
     if args:
-        if len(args) != 1:
-            exit_err(
-                "Invalid number of positional arguments. Please use options instead."
-            )
         disabled = parse_bool_arg(args[0])
 
     with suppress(ZabbixNotFoundError):

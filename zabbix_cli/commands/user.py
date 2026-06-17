@@ -9,7 +9,7 @@ from typing import TypeVar
 import typer
 from strenum import StrEnum
 
-from zabbix_cli._v2_compat import ARGS_POSITIONAL
+from zabbix_cli._v2_compat import deprecated_positional_arguments
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
 from zabbix_cli.exceptions import ZabbixNotFoundError
@@ -114,7 +114,7 @@ def create_user(
         show_default=True,
     ),
     # Legacy V2 positional args
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = deprecated_positional_arguments(7),
 ) -> None:
     """Create a user."""
     from zabbix_cli.models import Result
@@ -127,14 +127,6 @@ def create_user(
         pass
 
     if args:
-        # Old args format: <username>  <first_name> <last_name> <password> <type> <autologin> <autologout> <usergroups>
-        # We already have username, so we are left with 7 args.
-        # In V2, we either expected NO positional args or ALL of them.
-        # So we just match that behavior here.
-        if len(args) != 7:
-            exit_err(
-                "Invalid number of positional arguments. Please use options instead."
-            )
         first_name = args[0]
         last_name = args[1]
         password = args[2]
@@ -221,7 +213,9 @@ def create_notification_user(
         help="Do not create the user, just show what would be done.",
     ),
     # Legacy V2 args
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    # Old args format: <sendto> <mediatype> <remarks>
+    # We already have sendto and mediatype, so we are left with 1 arg.
+    args: Optional[list[str]] = deprecated_positional_arguments(1),
 ) -> None:
     # TODO: Improve phrasing of this help text. "Defining media for usergroup"???
     """Create a notification user.
@@ -246,12 +240,6 @@ def create_notification_user(
     from zabbix_cli.pyzabbix.types import UserMedia
 
     if args:
-        # Old args format: <sendto> <mediatype> <remarks>
-        # We already have sendto and mediatype, so we are left with 1 arg.
-        if len(args) != 1:
-            exit_err(
-                "Invalid number of positional arguments. Please use options instead."
-            )
         remarks = args[0]
     remarks = remarks or ""
 
@@ -491,8 +479,6 @@ def update_user(
         None,
         help="User session lifetime in seconds. Set to 0 to never expire. Can be a time unit with suffix (0s, 15m, 1h, 1d, etc.)",
     ),
-    # Legacy V2 positional args
-    args: Optional[list[str]] = ARGS_POSITIONAL,
 ) -> None:
     """Update a user.
 
