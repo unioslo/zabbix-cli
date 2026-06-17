@@ -1,0 +1,61 @@
+[api]
+url = "https:/zabbix.example.com"
+username = "Admin"
+password = ""
+auth_token = ""
+verify_ssl = true
+
+[app]
+use_session_file = true
+session_file = "/path/to/data_dir/.zabbix-cli_session.json"
+auth_token_file = "/path/to/data_dir/.zabbix-cli_auth_token"
+use_auth_file = true
+auth_file = "/path/to/data_dir/.zabbix-cli_auth"
+allow_insecure_auth_file = true
+history = true
+history_file = "/path/to/data_dir/history"
+bulk_mode = "strict"
+legacy_json_format = false
+
+[app.config_auto_update]
+enabled = true
+backup = true
+
+[app.commands.create_host]
+create_interface = true
+hostgroups = []
+
+[app.commands.create_group]
+ro_groups = []
+rw_groups = []
+
+[app.commands.create_hostgroup]
+ro_groups = []
+rw_groups = []
+
+[app.commands.create_templategroup]
+ro_groups = []
+rw_groups = []
+
+[app.commands.create_user]
+usergroups = []
+
+[app.commands.create_notification_user]
+usergroups = []
+
+[app.commands.export]
+directory = "/path/to/data_dir/exports"
+format = "json"
+timestamps = false
+
+[app.output]
+format = "table"
+color = true
+paging = false
+
+[logging]
+enabled = true
+log_level = "INFO"
+log_file = "/path/to/logs_dir/zabbix-cli.log"
+
+[plugins]
