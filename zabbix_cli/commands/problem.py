@@ -4,7 +4,7 @@ from typing import Optional
 
 import typer
 
-from zabbix_cli._v2_compat import ARGS_POSITIONAL
+from zabbix_cli._v2_compat import deprecated_positional_arguments
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
 from zabbix_cli.output.console import err_console
@@ -38,7 +38,7 @@ def acknowledge_event(
         help="Close the event after acknowledging it",
     ),
     # Legacy positional args
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = deprecated_positional_arguments(2),
 ) -> None:
     """Acknowledge events by ID."""
     from zabbix_cli.commands.results.problem import AcknowledgeEventResult
@@ -49,8 +49,6 @@ def acknowledge_event(
         exit_err("No event IDs specified.")
 
     if args:
-        if len(args) != 2:
-            exit_err("Invalid number of positional arguments.")
         message = args[0]
         close = parse_bool_arg(args[1])
     # Don't prompt for missing message. It's optional.
@@ -104,7 +102,7 @@ def acknowledge_trigger_last_event(
         help="Close event",
     ),
     # Legacy positional args
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = deprecated_positional_arguments(2),
 ) -> None:
     """Acknowledge the the last event for the given triggers."""
     from zabbix_cli.commands.results.problem import AcknowledgeTriggerLastEventResult
@@ -114,8 +112,6 @@ def acknowledge_trigger_last_event(
     if not tids:
         exit_err("No trigger IDs specified.")
     if args:
-        if len(args) != 2:
-            exit_err("Invalid number of positional arguments.")
         message = args[0]
         close = parse_bool_arg(args[1])
 
@@ -166,7 +162,7 @@ def show_alarms(
         "--unack/--ack",
         help="Show only alarms whose last event is unacknowledged.",
     ),
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = deprecated_positional_arguments(4),
 ) -> None:
     """Show the latest events for the given triggers, hosts, and/or host groups.
 
@@ -175,8 +171,6 @@ def show_alarms(
     from zabbix_cli.models import AggregateResult
 
     if args:
-        if len(args) != 4:
-            exit_err("Invalid number of positional arguments.")
         description = args[0]
         priority = TriggerPriority(args[1])
         hostgroups = args[2]
@@ -245,7 +239,7 @@ def show_trigger_events(
         "-l",
         help="Maximum number of events to show.",
     ),
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = deprecated_positional_arguments(2),
 ) -> None:
     """Show the latest events for the given triggers, hosts, and/or host groups.
 
@@ -254,8 +248,6 @@ def show_trigger_events(
     from zabbix_cli.models import AggregateResult
 
     if args:
-        if len(args) != 2:
-            exit_err("Invalid number of positional arguments.")
         trigger_id = args[0]
         limit = parse_int_arg(args[1])
 

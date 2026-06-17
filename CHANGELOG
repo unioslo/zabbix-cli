@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## Unreleased -->
+## Unreleased
+
+
+### Changed
+
+- Legacy positional arguments now show the number of expected arguments in the error if the number of provided arguments is incorrect.
 
 ## [3.6.3](https://github.com/unioslo/zabbix-cli/tree/3.6.3) - 2026-03-17
 

@@ -4,7 +4,7 @@ from typing import Optional
 
 import typer
 
-from zabbix_cli._v2_compat import ARGS_POSITIONAL
+from zabbix_cli._v2_compat import deprecated_positional_arguments
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
 from zabbix_cli.output.console import exit_err
@@ -159,7 +159,8 @@ def create_host_interface(
         show_default=False,
     ),
     # V2-style positional args (deprecated)
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    # connection, type, port, ip, dns, default
+    args: Optional[list[str]] = deprecated_positional_arguments(6),
 ) -> None:
     """Create a host interface.
 
@@ -174,11 +175,6 @@ def create_host_interface(
 
     # Handle V2 positional args (deprecated)
     if args:
-        if len(args) != 6:  # 7 - 1 (hostname)
-            exit_err(
-                "create_host_interface takes exactly 6 positional arguments (deprecated)."
-            )
-
         connection = InterfaceConnectionMode(args[0])
         type_ = InterfaceType(args[1])
         port = args[2]

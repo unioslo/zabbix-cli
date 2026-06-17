@@ -5,7 +5,7 @@ from typing import Optional
 
 import typer
 
-from zabbix_cli._v2_compat import ARGS_POSITIONAL
+from zabbix_cli._v2_compat import deprecated_positional_arguments
 from zabbix_cli.app import Example
 from zabbix_cli.app import app
 from zabbix_cli.commands.common.args import OPTION_LIMIT
@@ -68,7 +68,7 @@ def create_host(
         help="Do not create an interface for the host.",
     ),
     # LEGACY: V2-style positional args
-    args: Optional[list[str]] = ARGS_POSITIONAL,
+    args: Optional[list[str]] = deprecated_positional_arguments(4),
 ) -> None:
     """Create a host.
 
@@ -88,9 +88,6 @@ def create_host(
     from zabbix_cli.pyzabbix.utils import get_random_proxy
 
     if args:
-        if len(args) != 3:
-            # Hostname + legacy args = 4
-            exit_err("create_host takes exactly 4 positional arguments.")
         hostgroups = args[0]
         proxy = args[1]
         status = MonitoringStatus(args[2])
