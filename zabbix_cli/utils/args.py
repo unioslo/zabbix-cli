@@ -39,7 +39,7 @@ def is_set(ctx: typer.Context, option: str) -> bool:
     # for a field with a None default and `Optiona[List[str]]` type
     # will cause the parameter to be set to a non-default value,
     # and thus be considered "set" by Click. That is wrong.
-    # This is only relevant because of `zabbix_cli._v2_compat.ARGS_POSITIONAL`.
+    # This is only relevant because of deprecated args from `zabbix_cli._v2_compat`.
     # It might be better to check for that specific case instead of this
     # general check, which might catch other cases that are not bugs (?)
     if ctx.params.get(option) == [] and option == "args":

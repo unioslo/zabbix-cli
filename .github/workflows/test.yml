@@ -1,13 +1,12 @@
 on:
   push:
     paths-ignore:
-      - 'docs/**'
-      - 'debian/**'
-      - 'rpm/**'
-      - 'README.md'
+      - "docs/**"
+      - "debian/**"
+      - "rpm/**"
+      - "README.md"
 
   pull_request:
-
 
 env:
   UV_FROZEN: 1
@@ -20,11 +19,11 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - '3.9'
-          - '3.10'
-          - '3.11'
-          - '3.12'
-          - '3.13'
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
     steps:
       - name: Checkout
         uses: actions/checkout@v4

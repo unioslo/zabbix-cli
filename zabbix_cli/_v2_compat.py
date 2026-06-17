@@ -9,11 +9,13 @@ from __future__ import annotations
 import os
 import shlex
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 import typer
 from click.core import CommandCollection
 from click.core import Group
+
+from zabbix_cli.output.console import exit_err
 
 CONFIG_FILENAME = "zabbix-cli.conf"
 CONFIG_FIXED_NAME = "zabbix-cli.fixed.conf"
@@ -73,30 +75,56 @@ def run_command_from_option(ctx: typer.Context, command: str) -> None:
         raise
 
 
-def args_callback(
-    ctx: typer.Context, value: Optional[list[str]]
-) -> Optional[list[str]]:
-    if ctx.resilient_parsing:
-        return  # for auto-completion
-    if value:
-        from zabbix_cli.output.console import warning
+def _args_callback_factory(n: int) -> Any:  # TODO: Can we type this better?
+    """Factory for callbacks that parse a fixed number of positional arguments."""
 
-        warning(
-            f"Detected deprecated positional arguments {value}. Use options instead."
-        )
-    # NOTE: Must NEVER return None. The "fix" in Typer 0.10.0 for None defaults
-    # somehow broke the parsing of callback values by causing values returned by
-    # callbacks to be passed to the internal converter, which then fails
-    # because it expects a list but gets None.
-    # https://github.com/tiangolo/typer/pull/664
-    # https://github.com/tiangolo/typer/blob/142422a14ca4c6a8ad579e9bd0fd0728364d86e3/typer/main.py#L639
-    return value or []
+    def callback(ctx: typer.Context, value: Any) -> Any:
+        if ctx.resilient_parsing:
+            return  # for auto-completion
+        if value:
+            from zabbix_cli.output.console import warning
+
+            # Ensure we can check len of value
+            if not isinstance(value, list):
+                exit_err(
+                    f"Legacy positional args is misconfigured on {ctx.command.name}. Open an issue."
+                )
+
+            # Check if command has any non-legacy positional args, i.e. real
+            # arguments other than the legacy catch-all "args".
+            has_extra_positionals = any(
+                p.param_type_name == "argument" and p.nargs != -1
+                for p in ctx.command.params
+            )
+            qualifier = "extra " if has_extra_positionals else ""
+
+            args_str = ", ".join(f"{arg!r}" for arg in value)  # pyright: ignore[reportUnknownVariableType]
+            if (obj_len := len(value)) != n:  # pyright: ignore[reportUnknownArgumentType]
+                exit_err(
+                    f"Expected {n} {qualifier}positional arguments, got {obj_len}. Got: {args_str}"
+                )
+            else:
+                warning(
+                    f"Detected deprecated positional arguments: {args_str}. Use options instead."
+                )
+
+        # NOTE: Must NEVER return None. The "fix" in Typer 0.10.0 for None defaults
+        # somehow broke the parsing of callback values by causing values returned by
+        # callbacks to be passed to the internal converter, which then fails
+        # because it expects a list but gets None.
+        # https://github.com/tiangolo/typer/pull/664
+        # https://github.com/tiangolo/typer/blob/142422a14ca4c6a8ad579e9bd0fd0728364d86e3/typer/main.py#L639
+        return value or []  # pyright: ignore[reportUnknownVariableType]
+
+    return callback
 
 
-ARGS_POSITIONAL = typer.Argument(
-    None,
-    help="DEPRECATED: V2-style positional arguments.",
-    show_default=False,
-    hidden=True,
-    callback=args_callback,
-)
+def deprecated_positional_arguments(n: int, default: Any = None) -> Any:
+    """Create a deprecated positional argument for a fixed number of arguments."""
+    return typer.Argument(
+        default,
+        help=f"DEPRECATED: V2-style positional arguments. {n} values expected.",
+        show_default=False,
+        hidden=True,
+        callback=_args_callback_factory(n),
+    )
