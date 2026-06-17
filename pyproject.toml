@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 description = "ZABBIX-CLI - Zabbix terminal client"
 name = "zabbix-cli-uio"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "GPL-3.0-or-later"
 keywords = []
 maintainers = [{ name = "Peder Hovdan Andresen", email = "pederhan@uio.no" }]
@@ -26,11 +26,11 @@ classifiers = [
   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
@@ -45,7 +45,6 @@ dependencies = [
   "platformdirs>=2.5.4",
   "strenum>=0.4.15",
   "typing-extensions>=4.8.0",
-  "importlib-metadata>=8.5.0; python_version < '3.10'",
   "shellingham>=1.5.4",
 ]
 dynamic = ["version"]
