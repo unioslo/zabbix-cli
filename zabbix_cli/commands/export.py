@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import NamedTuple
-from typing import Optional
 from typing import Protocol
 
 import typer
@@ -85,7 +84,7 @@ class ExportType(StrEnum):
 
 
 class ExporterFunc(Protocol):
-    def __call__(self) -> Iterator[Optional[Path]]: ...
+    def __call__(self) -> Iterator[Path | None]: ...
 
 
 class Exporter(NamedTuple):
@@ -210,13 +209,13 @@ class ZabbixExporter:
     # so we can't just wrap the call of the export method in a try/except
     # Each method needs to guard the export call of each object in a try/except
     # and that will be extremely verbose and repetitive.
-    def export_host_groups(self) -> Iterator[Optional[Path]]:
+    def export_host_groups(self) -> Iterator[Path | None]:
         hostgroups = self.client.get_hostgroups(*self.names, search=True)
         for hg in hostgroups:
             filename = self.get_filename(hg.name, hg.groupid, ExportType.HOST_GROUPS)
             yield self.do_run_export(filename, host_groups=[hg])
 
-    def export_template_groups(self) -> Iterator[Optional[Path]]:
+    def export_template_groups(self) -> Iterator[Path | None]:
         template_groups = self.client.get_templategroups(*self.names, search=True)
         for tg in template_groups:
             filename = self.get_filename(
@@ -224,25 +223,25 @@ class ZabbixExporter:
             )
             yield self.do_run_export(filename, template_groups=[tg])
 
-    def export_hosts(self) -> Iterator[Optional[Path]]:
+    def export_hosts(self) -> Iterator[Path | None]:
         hosts = self.client.get_hosts(*self.names)
         for host in hosts:
             filename = self.get_filename(host.host, host.hostid, ExportType.HOSTS)
             yield self.do_run_export(filename, hosts=[host])
 
-    def export_images(self) -> Iterator[Optional[Path]]:
+    def export_images(self) -> Iterator[Path | None]:
         images = self.client.get_images(*self.names, select_image=False)
         for image in images:
             filename = self.get_filename(image.name, image.imageid, ExportType.IMAGES)
             yield self.do_run_export(filename, images=[image])
 
-    def export_maps(self) -> Iterator[Optional[Path]]:
+    def export_maps(self) -> Iterator[Path | None]:
         maps = self.client.get_maps(*self.names)
         for m in maps:
             filename = self.get_filename(m.name, m.sysmapid, ExportType.MAPS)
             yield self.do_run_export(filename, maps=[m])
 
-    def export_media_types(self) -> Iterator[Optional[Path]]:
+    def export_media_types(self) -> Iterator[Path | None]:
         media_types = self.client.get_media_types(*self.names)
         for mt in media_types:
             filename = self.get_filename(
@@ -250,7 +249,7 @@ class ZabbixExporter:
             )
             yield self.do_run_export(filename, media_types=[mt])
 
-    def export_templates(self) -> Iterator[Optional[Path]]:
+    def export_templates(self) -> Iterator[Path | None]:
         templates = self.client.get_templates(*self.names)
         for template in templates:
             filename = self.get_filename(
@@ -260,7 +259,7 @@ class ZabbixExporter:
 
     def do_run_export(
         self, filename: Path, **kwargs: Unpack[ExportKwargs]
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """Runs the export process."""
         try:
             exported = self.client.export_configuration(
@@ -356,7 +355,7 @@ def parse_export_types_callback(
 )
 def export_configuration(
     ctx: typer.Context,
-    directory: Optional[Path] = typer.Option(
+    directory: Path | None = typer.Option(
         None,
         "--directory",
         help="Directory to export configuration to. Overrides directory in config.",
@@ -371,15 +370,15 @@ def export_configuration(
         help="Type(s) of objects to export. Can be specified multiple times. Defaults to all object types.",
         callback=parse_export_types_callback,
     ),
-    names: Optional[str] = typer.Option(
+    names: str | None = typer.Option(
         None, "--name", help="Name(s) of objects to export. Comma-separated list."
     ),
-    format: Optional[ExportFormat] = typer.Option(
+    format: ExportFormat | None = typer.Option(
         None,
         "--format",
         help="Format to export to. Overrides export format in config.",
     ),
-    timestamps: Optional[bool] = typer.Option(
+    timestamps: bool | None = typer.Option(
         None,
         "--timestamps",
         help="Add timestamps to exported filenames. Overrides config option.",
@@ -407,7 +406,7 @@ def export_configuration(
     ),
     # TODO: add --ignore-errors option
     # Legacy positional args
-    args: Optional[list[str]] = deprecated_positional_arguments(3),
+    args: list[str] | None = deprecated_positional_arguments(3),
 ) -> None:
     r"""Export Zabbix configuration for one or more components.
 
@@ -563,7 +562,7 @@ def filter_valid_imports(files: list[Path]) -> list[Path]:
 @app.command(name="import_configuration", rich_help_panel=HELP_PANEL)
 def import_configuration(
     ctx: typer.Context,
-    to_import: Optional[str] = typer.Argument(
+    to_import: str | None = typer.Argument(
         None,
         help="Path to file or directory to import configuration from. Accepts glob pattern. Uses default export directory if not specified.",
     ),
@@ -583,7 +582,7 @@ def import_configuration(
         help="Enable best-effort importing. Print errors from failed imports but continue importing.",
     ),
     # Legacy positional args
-    args: Optional[list[str]] = deprecated_positional_arguments(2),
+    args: list[str] | None = deprecated_positional_arguments(2),
 ) -> None:
     """Import Zabbix configuration from file, directory or glob pattern.
 

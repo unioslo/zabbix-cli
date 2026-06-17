@@ -7,14 +7,13 @@ Will probably break for some version of Typer at some point.
 from __future__ import annotations
 
 import inspect
+from collections.abc import Callable
 from collections.abc import Iterable
+from collections.abc import MutableMapping
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
-from typing import Union
 from typing import cast
 from uuid import UUID
 
@@ -27,9 +26,6 @@ from typer.models import ParameterInfo
 from zabbix_cli._patches.common import get_patcher
 from zabbix_cli.commands.common.args import CommandParam
 from zabbix_cli.pyzabbix.enums import APIStrEnum
-
-if TYPE_CHECKING:
-    from rich.style import Style
 
 patcher = get_patcher(f"Typer version: {typer.__version__}")
 
@@ -63,9 +59,9 @@ def patch_help_text_spacing() -> None:
     @group()
     def _get_help_text(
         *,
-        obj: Union[click.Command, click.Group],
+        obj: click.Command | click.Group,
         markup_mode: MarkupModeStrict,
-    ) -> Iterable[Union[Markdown, Text]]:
+    ) -> Iterable[Markdown | Text]:
         """Build primary help text for a click command or group.
 
         Returns the prose help text for a command or group, rendered either as a
@@ -266,6 +262,7 @@ def patch_get_click_type() -> None:
 
 def patch__get_rich_console() -> None:
     from rich.console import Console
+    from rich.style import Style
     from rich.theme import Theme
     from typer.rich_utils import COLOR_SYSTEM
     from typer.rich_utils import FORCE_TERMINAL
@@ -281,7 +278,9 @@ def patch__get_rich_console() -> None:
 
     from zabbix_cli.output.style import RICH_THEME
 
-    styles: dict[str, Union[str, Style]] = RICH_THEME.styles.copy()
+    styles = RICH_THEME.styles.copy()
+    # Convince typer checker that we can add str styles (Theme converts to Style in constructor)
+    styles = cast(MutableMapping[str, Style | str], styles)
     styles.update(
         {
             "option": STYLE_OPTION,

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 
 from zabbix_cli._v2_compat import deprecated_positional_arguments
@@ -39,8 +37,8 @@ def show_last_values(
     group: bool = typer.Option(
         False, "--group", help="Group items with the same value."
     ),
-    limit: Optional[int] = OPTION_LIMIT,
-    args: Optional[list[str]] = deprecated_positional_arguments(1),
+    limit: int | None = OPTION_LIMIT,
+    args: list[str] | None = deprecated_positional_arguments(1),
 ) -> None:
     """Show the last values of given items of monitored hosts."""
     from zabbix_cli.commands.results.item import ItemResult

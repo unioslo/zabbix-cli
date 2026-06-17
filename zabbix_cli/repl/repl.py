@@ -6,13 +6,12 @@ import os
 import shlex
 import sys
 from collections import defaultdict
+from collections.abc import Callable
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
 from typing import NamedTuple
 from typing import NoReturn
-from typing import Optional
 
 import click
 from click.exceptions import Exit as ClickExit
@@ -60,8 +59,8 @@ def _register_internal_command(
 
 
 def _get_registered_target(
-    name: str, default: Optional[CommandCallable] = None
-) -> Optional[CommandCallable]:
+    name: str, default: CommandCallable | None = None
+) -> CommandCallable | None:
     target_info = _internal_commands.get(name)
     if target_info:
         return target_info[0]
@@ -102,7 +101,7 @@ _register_internal_command(
 
 
 def bootstrap_prompt(
-    prompt_kwargs: Optional[dict[str, Any]],
+    prompt_kwargs: dict[str, Any] | None,
     group: click.Group,
     ctx: click.Context,
     *,
@@ -169,7 +168,7 @@ def handle_internal_commands(command: str) -> Any:
 def repl(  # noqa: C901
     old_ctx: Context,
     app: StatefulApp,
-    prompt_kwargs: Optional[dict[str, Any]] = None,
+    prompt_kwargs: dict[str, Any] | None = None,
     *,
     allow_system_commands: bool = True,
     allow_internal_commands: bool = True,

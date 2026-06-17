@@ -4,7 +4,6 @@ from collections.abc import Mapping
 from enum import Enum
 from typing import Any
 from typing import Generic
-from typing import Optional
 from typing import TypeVar
 
 from strenum import StrEnum
@@ -30,7 +29,7 @@ class APIStr(str, Generic[T]):
         cls,
         s: str,
         api_value: T = None,
-        metadata: Optional[Mapping[str, Any]] = None,
+        metadata: Mapping[str, Any] | None = None,
         *,
         hidden: bool = False,
     ) -> APIStr[T]:
@@ -110,8 +109,8 @@ class Choice(Enum):
     @classmethod
     def from_prompt(
         cls: type[MixinType],
-        prompt: Optional[str] = None,
-        default: Optional[MixinType] = None,
+        prompt: str | None = None,
+        default: MixinType | None = None,
     ) -> MixinType:
         """Prompt the user to select a choice from the enum.
 

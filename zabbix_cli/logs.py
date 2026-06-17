@@ -58,12 +58,12 @@ def remove_markup(text: str) -> str:
 class ContextFilter(logging.Filter):
     """Log filter that adds a static field to a record."""
 
-    def __init__(self, field: str, value: Any) -> None:
-        self.field = field
+    def __init__(self, name: str, value: Any) -> None:
+        super().__init__(name)
         self.value = value
 
     def filter(self, record: logging.LogRecord) -> Literal[True]:
-        setattr(record, self.field, self.value)
+        setattr(record, self.name, self.value)
         return True
 
 
@@ -71,6 +71,17 @@ class SafeRecord(logging.LogRecord):
     """A LogRecord wrapper that returns None for unset fields."""
 
     def __init__(self, record: logging.LogRecord):
+        super().__init__(
+            record.name,
+            record.levelno,
+            record.pathname,
+            record.lineno,
+            record.msg,
+            record.args,
+            record.exc_info,
+            record.funcName,
+            record.stack_info,
+        )
         self.__dict__ = collections.defaultdict(lambda: None, record.__dict__)
 
 
@@ -116,7 +127,7 @@ def add_log_context(field: str, value: Any) -> None:
     for handler in root_logger.handlers:
         # Modify existing filter if exists, otherwise add a new one
         for filter_ in handler.filters:
-            if isinstance(filter_, ContextFilter) and filter_.field == field:
+            if isinstance(filter_, ContextFilter) and filter_.name == field:
                 filter_.value = value
                 break
         else:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Optional
 
 import typer
 
@@ -173,7 +172,7 @@ def show_template(
 @app.command("show_templates", rich_help_panel=HELP_PANEL)
 def show_templates(
     ctx: typer.Context,
-    templates: Optional[str] = typer.Argument(
+    templates: str | None = typer.Argument(
         None,
         help="Template name(s) or ID(s). Comma-separated. Supports wildcards.",
         show_default=False,

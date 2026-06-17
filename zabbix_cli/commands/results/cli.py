@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Optional
 
 from packaging.version import Version
 from pydantic import ConfigDict
@@ -40,11 +39,11 @@ class PythonInfo(TypedDict):
 
 
 class DebugInfo(TableRenderable):
-    config_path: Optional[Path] = None
-    api_version: Optional[Version] = None
-    url: Optional[str] = None
-    user: Optional[str] = None
-    auth_token: Optional[str] = None
+    config_path: Path | None = None
+    api_version: Version | None = None
+    url: str | None = None
+    user: str | None = None
+    auth_token: str | None = None
     connected_to_zabbix: bool = False
     python: PythonInfo
 

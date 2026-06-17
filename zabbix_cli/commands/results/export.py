@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Optional
 
 from pydantic import field_serializer
 
@@ -33,7 +32,7 @@ class ImportResult(TableRenderable):
     dryrun: bool = False
     imported: list[Path] = []
     failed: list[Path] = []
-    duration: Optional[float] = None
+    duration: float | None = None
     """Duration it took to import files in seconds. Is None if import failed."""
 
     @field_serializer("imported", "failed", when_used="json")

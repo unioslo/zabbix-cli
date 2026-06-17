@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from contextlib import suppress
 from typing import TYPE_CHECKING
-from typing import Optional
 from typing import TypeVar
 
 import typer
@@ -125,24 +124,24 @@ def add_usergroup_permissions(
         help="User group to give permissions to.",
         show_default=False,
     ),
-    hostgroups: Optional[str] = typer.Option(
+    hostgroups: str | None = typer.Option(
         None,
         "--hostgroup",
         help="Comma-separated list of host group names.",
     ),
-    templategroups: Optional[str] = typer.Option(
+    templategroups: str | None = typer.Option(
         None,
         "--templategroup",
         help="Comma-separated list of template group names.",
     ),
-    permission: Optional[UsergroupPermission] = typer.Option(
+    permission: UsergroupPermission | None = typer.Option(
         None,
         "--permission",
         help="Permission to give to the user group.",
         case_sensitive=False,
     ),
     # Legacy V2 args
-    args: Optional[list[str]] = deprecated_positional_arguments(2),
+    args: list[str] | None = deprecated_positional_arguments(2),
 ) -> None:
     """Give a user group permissions to host/template groups.
 
@@ -208,7 +207,7 @@ def create_usergroup(
         help="Create the user group in a disabled state.",
     ),
     # V2 legacy args
-    args: Optional[list[str]] = deprecated_positional_arguments(1),
+    args: list[str] | None = deprecated_positional_arguments(1),
 ) -> None:
     """Create a user group."""
     # We already have name and GUI access, so we expect 1 more arg at most
@@ -397,13 +396,13 @@ def show_usergroup(
 )
 def show_usergroups(
     ctx: typer.Context,
-    usergroup: Optional[str] = typer.Argument(
+    usergroup: str | None = typer.Argument(
         None,
         help="Name or ID of the user group(s) to show. Comma-separated. Supports wildcards.",
         show_default=False,
     ),
     sort: UsergroupSorting = OPTION_SORT_UGROUPS,
-    limit: Optional[int] = OPTION_LIMIT,
+    limit: int | None = OPTION_LIMIT,
 ) -> None:
     """Show all suser groups.
 
@@ -413,9 +412,9 @@ def show_usergroups(
 
 
 def _do_show_usergroups(
-    usergroup: Optional[str],
+    usergroup: str | None,
     sort: UsergroupSorting,
-    limit: Optional[int] = None,
+    limit: int | None = None,
 ) -> None:
     from zabbix_cli.commands.results.usergroup import ShowUsergroupResult
     from zabbix_cli.models import AggregateResult

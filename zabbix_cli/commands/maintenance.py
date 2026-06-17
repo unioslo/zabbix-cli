@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 
 from zabbix_cli.app import Example
@@ -41,17 +39,17 @@ def create_maintenance_definition(
         help="Maintenance name.",
         show_default=False,
     ),
-    description: Optional[str] = typer.Option(
+    description: str | None = typer.Option(
         None,
         "--description",
         help="Description.",
     ),
-    hosts: Optional[str] = typer.Option(
+    hosts: str | None = typer.Option(
         None,
         "--host",
         help="Host(s). Comma-separated.",
     ),
-    hostgroups: Optional[str] = typer.Option(
+    hostgroups: str | None = typer.Option(
         None,
         "--hostgroup",
         help="Host group(s). Comma-separated.",
@@ -135,13 +133,13 @@ def remove_maintenance_definition(
 @app.command(name="show_maintenance_definitions", rich_help_panel=HELP_PANEL)
 def show_maintenance_definitions(
     ctx: typer.Context,
-    maintenance_id: Optional[str] = typer.Option(
+    maintenance_id: str | None = typer.Option(
         None, "--maintenance-id", help="Maintenance IDs. Comma-separated."
     ),
-    hostgroup: Optional[str] = typer.Option(
+    hostgroup: str | None = typer.Option(
         None, "--hostgroup", help="Host group names. Comma-separated."
     ),
-    host: Optional[str] = typer.Option(
+    host: str | None = typer.Option(
         None, "--host", help="Host names. Comma-separated."
     ),
 ) -> None:
@@ -188,7 +186,7 @@ def show_maintenance_definitions(
                     maintenanceid=m.maintenanceid,
                     name=m.name,
                     type=m.maintenance_type,
-                    active_till=m.active_till,  # type: ignore # validator handles None
+                    active_till=m.active_till,  # pyright: ignore[reportArgumentType] # validator handles None
                     hosts=[h.host for h in m.hosts],
                     groups=[hg.name for hg in m.hostgroups],
                     description=m.description,
@@ -202,7 +200,7 @@ def show_maintenance_definitions(
 @app.command(name="show_maintenance_periods", rich_help_panel=HELP_PANEL)
 def show_maintenance_periods(
     ctx: typer.Context,
-    maintenance_id: Optional[str] = typer.Argument(
+    maintenance_id: str | None = typer.Argument(
         None,
         help="Maintenance IDs. Comma-separated. Supports wildcards.",
         show_default=False,

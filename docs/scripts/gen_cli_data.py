@@ -12,7 +12,6 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import NamedTuple
-from typing import Optional
 from typing import Protocol
 
 try:
@@ -41,7 +40,7 @@ class CommandCallback(Protocol):
 class Command(NamedTuple):
     command: list[str]
     filename: str
-    callback: Optional[CommandCallback] = None
+    callback: CommandCallback | None = None
 
 
 def add_config_bogus_defaults(output: str) -> str:

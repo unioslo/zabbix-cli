@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import pytest
 import typer
@@ -406,15 +405,15 @@ only_options -O "str" -S "Optional[str]" -I 42 -N 42
     def mixed_command(
         ctx: typer.Context,
         reqarg: str = typer.Argument(),
-        optarg: Optional[str] = typer.Argument(None),
-        opt: Optional[str] = typer.Option(None, "--opt", "-O"),
+        optarg: str | None = typer.Argument(None),
+        opt: str | None = typer.Option(None, "--opt", "-O"),
         reqopt: int = typer.Option(
             ...,  # type: ignore
             "--reqopt",
             "-R",
         ),
         flag: bool = typer.Option(False, "--flag", "-F"),
-        boolopt: Optional[bool] = typer.Option(
+        boolopt: bool | None = typer.Option(
             False,
             # Not specifying anything here should generate the options
             # --boolopt / --no-boolopt
@@ -428,7 +427,7 @@ only_options -O "str" -S "Optional[str]" -I 42 -N 42
         ctx: typer.Context,
         arg1: str = typer.Argument(),
         arg2: str = typer.Argument("default value"),
-        arg3: Optional[str] = typer.Argument(None),
+        arg3: str | None = typer.Argument(None),
     ) -> None:
         exit_ok("Running only_args")
 
@@ -436,9 +435,9 @@ only_options -O "str" -S "Optional[str]" -I 42 -N 42
     def only_options(
         ctx: typer.Context,
         opt1: str = typer.Option(..., "--opt1", "-O"),
-        opt2: Optional[str] = typer.Option(None, "--opt2", "-S"),
+        opt2: str | None = typer.Option(None, "--opt2", "-S"),
         opt3: int = typer.Option(..., "--opt3", "-I"),
-        opt4: Optional[int] = typer.Option(None, "--opt4", "-N"),
+        opt4: int | None = typer.Option(None, "--opt4", "-N"),
     ) -> None:
         exit_ok("Running only_options")
 

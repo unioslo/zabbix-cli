@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import NamedTuple
-from typing import Optional
 
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 
 def load_config_toml(filename: Path) -> dict[str, Any]:
     """Load a TOML configuration file."""
-    try:
+    if sys.version_info >= (3, 11):
         import tomllib
-    except ImportError:
+    else:
         import tomli as tomllib
 
     try:
@@ -50,9 +50,9 @@ def load_config_conf(filename: Path) -> dict[str, Any]:
 
 
 def find_config(
-    filename: Optional[Path] = None,
+    filename: Path | None = None,
     priority: tuple[Path, ...] = CONFIG_PRIORITY,
-) -> Optional[Path]:
+) -> Path | None:
     """Find all available configuration files.
 
     :param filename: An optional user supplied file to throw into the mix
@@ -71,7 +71,7 @@ def find_config(
     return None
 
 
-def get_config(filename: Optional[Path] = None, *, init: bool = False) -> Config:
+def get_config(filename: Path | None = None, *, init: bool = False) -> Config:
     """Get a configuration object.
 
     Args:
@@ -106,7 +106,7 @@ def check_deprecated_fields(model: BaseModel) -> None:
     """Check for deprecated fields in a model and log a warning."""
     # Sort for reproducibility + readability
     for field_name in sorted(model.model_fields_set):
-        f = model.model_fields.get(field_name)
+        f = model.__class__.model_fields.get(field_name)
         if not f:
             continue
         if f.deprecated:
@@ -122,13 +122,13 @@ def check_deprecated_fields(model: BaseModel) -> None:
 
 
 def get_deprecated_fields_set(
-    model: BaseModel, parent: Optional[str] = None
+    model: BaseModel, parent: str | None = None
 ) -> list[DeprecatedField]:
     """Get a list of deprecated fields set on a model and all its submodels."""
     fields: list[DeprecatedField] = []
     # Sort for reproducibility + readability
     for field_name in sorted(model.model_fields_set):
-        field = model.model_fields.get(field_name)
+        field = model.__class__.model_fields.get(field_name)
         if not field:
             continue
 
@@ -225,13 +225,13 @@ class DeprecatedField(NamedTuple):
 
 
 def init_config(
-    config: Optional[Config] = None,
-    config_file: Optional[Path] = None,
+    config: Config | None = None,
+    config_file: Path | None = None,
     *,
     overwrite: bool = False,
     # Compatibility with V2 zabbix-cli-init args
-    url: Optional[str] = None,
-    username: Optional[str] = None,
+    url: str | None = None,
+    username: str | None = None,
 ) -> Config:
     """Creates required directories and boostraps config with
     options required to connect to the Zabbix API.

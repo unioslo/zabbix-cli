@@ -7,7 +7,6 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Optional
 
 import typer
 
@@ -56,7 +55,7 @@ def parse_int_arg(arg: str) -> int:
         raise ZabbixCLIError(f"Invalid integer value: {arg}") from e
 
 
-def parse_list_arg(arg: Optional[str], *, keep_empty: bool = False) -> list[str]:
+def parse_list_arg(arg: str | None, *, keep_empty: bool = False) -> list[str]:
     """Convert comma-separated string to list."""
     try:
         args = arg.strip().split(",") if arg else []
@@ -81,7 +80,7 @@ def parse_int_list_arg(arg: str) -> list[int]:
 
 def parse_hostgroups_arg(
     app: StatefulApp,
-    hgroup_names_or_ids: Optional[str],
+    hgroup_names_or_ids: str | None,
     *,
     strict: bool = False,
     select_hosts: bool = False,
@@ -113,7 +112,7 @@ def parse_hostgroups_arg(
 
 def parse_hosts_arg(
     app: StatefulApp,
-    hostnames_or_ids: Optional[str],
+    hostnames_or_ids: str | None,
     *,
     strict: bool = False,
 ) -> list[Host]:
@@ -138,7 +137,7 @@ def parse_hosts_arg(
 
 def parse_templates_arg(
     app: StatefulApp,
-    template_names_or_ids: Optional[str],
+    template_names_or_ids: str | None,
     *,
     strict: bool = False,
     select_hosts: bool = False,

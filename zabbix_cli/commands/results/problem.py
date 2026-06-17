@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from zabbix_cli.models import TableRenderable
 
 
@@ -10,7 +8,7 @@ class AcknowledgeEventResult(TableRenderable):
 
     event_ids: list[str] = []
     close: bool = False
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class AcknowledgeTriggerLastEventResult(AcknowledgeEventResult):

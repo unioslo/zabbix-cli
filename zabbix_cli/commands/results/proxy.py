@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import Field
@@ -40,8 +39,8 @@ class UpdateHostProxyResult(BaseHostProxyResult):
     def from_result(
         cls,
         hosts: list[Host],
-        source_proxy: Optional[Proxy],
-        dest_proxy: Optional[Proxy],
+        source_proxy: Proxy | None,
+        dest_proxy: Proxy | None,
     ) -> Self:
         return cls(
             source=source_proxy.name if source_proxy else "",
@@ -57,7 +56,7 @@ class ClearHostProxyResult(BaseHostProxyResult):
     def from_result(
         cls,
         hosts: list[Host],
-        source_proxy: Optional[Proxy],
+        source_proxy: Proxy | None,
     ) -> Self:
         return cls(
             source=source_proxy.name if source_proxy else "",
@@ -68,9 +67,9 @@ class ClearHostProxyResult(BaseHostProxyResult):
 class MoveProxyHostsResult(TableRenderable):
     """Result type for `move_proxy_hosts` command."""
 
-    source: Optional[str] = None
+    source: str | None = None
     """ID of the source (old) proxy."""
-    destination: Optional[str] = None
+    destination: str | None = None
     """ID of the destination (new) proxy."""
     hosts: list[str] = []
 

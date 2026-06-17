@@ -5,20 +5,18 @@ from __future__ import annotations
 import ast
 import inspect
 import logging
-import sys
 import textwrap
-from collections.abc import Iterable
+from collections.abc import Callable
 from dataclasses import dataclass
 from dataclasses import field
 from enum import Enum
 from enum import EnumMeta
+from itertools import pairwise
 from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
 from typing import Generic
-from typing import Optional
 from typing import TypeVar
 from typing import Union
 from typing import get_args
@@ -44,18 +42,6 @@ if TYPE_CHECKING:
     # this import outside of annotations. I don't like it, but
     # we really want to avoid defining the Pydantic models on startup
     from zabbix_cli.config.model import Config
-
-if sys.version_info >= (3, 10):
-    from itertools import pairwise
-else:
-    # source: https://docs.python.org/3.12/library/itertools.html#itertools.pairwise
-    def pairwise(iterable: Iterable[Any]) -> Iterable[tuple[Any, Any]]:
-        # pairwise('ABCDEFG') → AB BC CD DE EF FG
-        iterator = iter(iterable)
-        a = next(iterator, None)
-        for b in iterator:
-            yield a, b
-            a = b
 
 
 logger = logging.getLogger(__name__)
@@ -197,8 +183,8 @@ class ConfigOption(Generic[T]):
     attr: str
     type: type[T]
     empty_ok: bool = True
-    message: Optional[str] = None
-    depends_on: Union[AnySet[str], AllSet[str]] = field(default_factory=AnySet)
+    message: str | None = None
+    depends_on: AnySet[str] | AllSet[str] = field(default_factory=AnySet)
 
     def get_value(self, config: Config) -> T:
         return attrgetter(self.attr)(config)
@@ -255,10 +241,10 @@ def bool_path_prompt(
     message: str,
     attr: str,
     *,
-    default: Union[bool, Path] = True,
+    default: bool | Path = True,
     show_default: bool = False,
     empty_ok: bool = False,
-) -> Union[bool, Path]:
+) -> bool | Path:
     """Prompt for a boolean or path input."""
     default_val = str(default) if isinstance(default, Path) else "y" if default else "n"
     inp = str_prompt(
@@ -305,7 +291,7 @@ _CONFIG_OPTIONS: dict[str, list[ConfigOption[Any]]] = {
             name="Verify SSL",
             message="Verify SSL certificates? (y/n or path to custom CA bundle)",
             attr="api.verify_ssl",
-            type=Union[bool, Path],  # pyright: ignore[reportArgumentType] # TODO: fix union types
+            type=Union[bool, Path],  # pyright: ignore[reportArgumentType] # TODO: fix union types  # noqa: UP007
         ),
     ],
     "Application Settings": [

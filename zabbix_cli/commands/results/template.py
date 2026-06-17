@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Literal
-from typing import Union
 
 from zabbix_cli.models import TableRenderable
 from zabbix_cli.pyzabbix.types import Host
@@ -91,7 +90,7 @@ class TemplateGroupResult(TableRenderable):
     def from_result(
         cls,
         templates: list[Template],
-        groups: Union[list[TemplateGroup], list[HostGroup]],
+        groups: list[TemplateGroup] | list[HostGroup],
     ) -> TemplateGroupResult:
         return cls(
             templates=[t.host for t in templates],
@@ -107,7 +106,7 @@ class RemoveTemplateFromGroupResult(TableRenderable):
     def from_result(
         cls,
         templates: list[Template],
-        group: Union[TemplateGroup, HostGroup],
+        group: TemplateGroup | HostGroup,
     ) -> RemoveTemplateFromGroupResult:
         to_remove: set[str] = set()
         for template in group.templates:

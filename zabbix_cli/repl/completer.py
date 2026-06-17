@@ -7,7 +7,6 @@ import shlex
 from collections.abc import Generator
 from glob import iglob
 from typing import Any
-from typing import Optional
 
 import click
 from prompt_toolkit.completion import CompleteEvent
@@ -76,7 +75,7 @@ def _resolve_context(args: list[Any], ctx: click.Context) -> click.Context:
     while args:
         command = ctx.command
 
-        if isinstance(command, click.MultiCommand):
+        if isinstance(command, click.Group):
             if not command.chain:
                 name, cmd, args = command.resolve_command(ctx, args)
 
@@ -297,7 +296,7 @@ class ClickCompleter(Completer):
         return choices
 
     def get_completions(
-        self, document: Document, complete_event: Optional[CompleteEvent] = None
+        self, document: Document, complete_event: CompleteEvent | None = None
     ) -> Generator[Completion, Any, None]:
         """Generator of completions for the current input.
 
@@ -347,7 +346,7 @@ class ClickCompleter(Completer):
                 )
             )
 
-            if isinstance(self.ctx_command, click.MultiCommand):
+            if isinstance(self.ctx_command, click.Group):
                 incomplete_lower = incomplete.lower()
 
                 for name in self.ctx_command.list_commands(self.parsed_ctx):

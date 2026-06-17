@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from functools import cache
 from typing import Any
-from typing import Optional
-from typing import Union
 from typing import cast
 
 import click
@@ -31,35 +29,35 @@ def get(param: Any, attr: str) -> Any:
 class ParamSummary(BaseModel):
     """Serializable representation of a click.Parameter."""
 
-    allow_from_autoenv: Optional[bool] = None
-    confirmation_prompt: Optional[bool] = None
-    choices: Optional[list[str]] = None
-    count: Optional[bool] = None
-    default: Optional[Any] = None
-    envvar: Optional[str]
+    allow_from_autoenv: bool | None = None
+    confirmation_prompt: bool | None = None
+    choices: list[str] | None = None
+    count: bool | None = None
+    default: Any | None = None
+    envvar: str | None
     expose_value: bool
-    flag_value: Optional[Any] = None
+    flag_value: Any | None = None
     help: str
-    hidden: Optional[bool] = None
+    hidden: bool | None = None
     human_readable_name: str
     is_argument: bool
     is_eager: bool = False
-    is_bool_flag: Optional[bool] = None
-    is_option: Optional[bool]
-    max: Optional[int] = None
-    min: Optional[int] = None
-    metavar: Optional[str]
+    is_bool_flag: bool | None = None
+    is_option: bool | None
+    max: int | None = None
+    min: int | None = None
+    metavar: str | None
     multiple: bool
-    name: Optional[str]
+    name: str | None
     nargs: int
     opts: list[str]
-    prompt: Optional[str] = None
-    prompt_required: Optional[bool] = None
+    prompt: str | None = None
+    prompt_required: bool | None = None
     required: bool
     secondary_opts: list[str] = []
-    show_choices: Optional[bool] = None
-    show_default: Optional[bool] = None
-    show_envvar: Optional[bool] = None
+    show_choices: bool | None = None
+    show_default: bool | None = None
+    show_envvar: bool | None = None
     type: str
 
     @classmethod
@@ -143,16 +141,16 @@ class ParamSummary(BaseModel):
 class CommandSummary(BaseModel):
     """Convenience class for accessing information about a command."""
 
-    category: Optional[str] = None  # not part of TyperCommand
+    category: str | None = None  # not part of TyperCommand
     deprecated: bool
-    epilog: Optional[str]
+    epilog: str | None
     help: str
     hidden: bool
     name: str
     options_metavar: str
     params: list[ParamSummary] = Field([], exclude=True)
     score: int = 0  # match score (not part of TyperCommand)
-    short_help: Optional[str]
+    short_help: str | None
 
     @model_validator(mode="before")
     @classmethod
@@ -292,7 +290,7 @@ def _get_app_commands(
     # NOTE: incorrect type annotation for get_command() here:
     # The function can return either a TyperGroup or click.Command
     cmd = typer.main.get_command(app)
-    cmd = cast(Union[TyperGroup, click.Command], cmd)
+    cmd = cast(TyperGroup | click.Command, cmd)
 
     groups: dict[str, TyperCommand] = {}
     try:

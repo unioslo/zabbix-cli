@@ -11,15 +11,17 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.14.9
+    rev: v0.15.17
     hooks:
       # Run the linter.
       - id: ruff
         args: [--fix]
+        exclude: ^(tests)/
       # Run the formatter.
       - id: ruff-format
-  - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.407
+  - repo: https://github.com/DetachHead/basedpyright-prek-mirror
+    rev: 1.38.2
     hooks:
-    - id: pyright
-      exclude: ^(tests|scripts|docs)/
+        - id: basedpyright
+          args: ["--level", "error"]
+          exclude: ^(tests|scripts|docs)/

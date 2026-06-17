@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Optional
 
 from pydantic import Field
 from pydantic import model_serializer
@@ -20,11 +19,11 @@ if TYPE_CHECKING:
 class ShowHostUserMacrosResult(TableRenderable):
     hostmacroid: str
     macro: str
-    value: Optional[str] = None
+    value: str | None = None
     type: str
-    description: Optional[str] = None
+    description: str | None = None
     hostid: str
-    automatic: Optional[int] = None
+    automatic: int | None = None
 
     @classmethod
     def from_result(cls, macro: Macro) -> Self:
@@ -100,12 +99,12 @@ class GlobalMacroResult(TableRenderable):
 
     globalmacroid: str = Field(json_schema_extra={"header": "Global Macro ID"})
     macro: str
-    value: Optional[str] = None  # for usermacro.get calls
+    value: str | None = None  # for usermacro.get calls
 
 
 class ShowUsermacroTemplateListResult(TableRenderable):
     macro: str
-    value: Optional[str] = None
+    value: str | None = None
     templateid: str
     template: str
 

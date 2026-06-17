@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from typing import Optional
 from typing import TypeVar
 
 import typer
@@ -74,13 +73,13 @@ def create_user(
         help="Username of the user to create.",
         show_default=False,
     ),
-    first_name: Optional[str] = typer.Option(
+    first_name: str | None = typer.Option(
         None, "--firstname", help="First name of the user to create."
     ),
-    last_name: Optional[str] = typer.Option(
+    last_name: str | None = typer.Option(
         None, "--lastname", "--surname", help="Last name of the user to create."
     ),
-    password: Optional[str] = typer.Option(
+    password: str | None = typer.Option(
         None,
         "--passwd",
         "--password",
@@ -97,7 +96,7 @@ def create_user(
         "86400",
         help="User session lifetime in seconds. Set to 0 to never expire. Can be a time unit with suffix (0s, 15m, 1h, 1d, etc.)",
     ),
-    groups: Optional[str] = typer.Option(
+    groups: str | None = typer.Option(
         None,
         "--groups",
         "--usergroups",
@@ -114,7 +113,7 @@ def create_user(
         show_default=True,
     ),
     # Legacy V2 positional args
-    args: Optional[list[str]] = deprecated_positional_arguments(7),
+    args: list[str] | None = deprecated_positional_arguments(7),
 ) -> None:
     """Create a user."""
     from zabbix_cli.models import Result
@@ -184,17 +183,17 @@ def create_notification_user(
         help="A media type name or ID defined in Zabbix. Case-sensitive.",
         show_default=False,
     ),
-    remarks: Optional[str] = typer.Option(
+    remarks: str | None = typer.Option(
         None,
         "--remarks",
         help="Remarks about the notification user to include in username (max 20 chars).",
     ),
-    username: Optional[str] = typer.Option(
+    username: str | None = typer.Option(
         None,
         "--username",
         help="Override generated username. Ignores --remarks.",
     ),
-    usergroups: Optional[str] = typer.Option(
+    usergroups: str | None = typer.Option(
         None,
         "--usergroups",
         help="Comma-separated list of usergroups to add the user to. Overrides user groups in config file.",
@@ -215,7 +214,7 @@ def create_notification_user(
     # Legacy V2 args
     # Old args format: <sendto> <mediatype> <remarks>
     # We already have sendto and mediatype, so we are left with 1 arg.
-    args: Optional[list[str]] = deprecated_positional_arguments(1),
+    args: list[str] | None = deprecated_positional_arguments(1),
 ) -> None:
     # TODO: Improve phrasing of this help text. "Defining media for usergroup"???
     """Create a notification user.
@@ -352,21 +351,21 @@ class UserSorting(StrEnum):
 @app.command("show_users", rich_help_panel=HELP_PANEL)
 def show_users(
     ctx: typer.Context,
-    username_or_id: Optional[str] = typer.Argument(
+    username_or_id: str | None = typer.Argument(
         None,
         help="Filter by username or ID. Supports wildcards.",
         show_default=False,
     ),
-    role: Optional[UserRole] = typer.Option(
+    role: UserRole | None = typer.Option(
         None,
         "--role",
         help="Filter by role.",
         case_sensitive=False,
     ),
-    limit: Optional[int] = typer.Option(
+    limit: int | None = typer.Option(
         None, "--limit", help="Limit the number of users shown."
     ),
-    sort: Optional[UserSorting] = typer.Option(
+    sort: UserSorting | None = typer.Option(
         UserSorting.NAME,
         "--sort",
         help="Sort by field.",
@@ -402,7 +401,7 @@ def show_users(
 
 
 def get_notification_user_username(
-    username: Optional[str], sendto: str, remarks: str
+    username: str | None, sendto: str, remarks: str
 ) -> str:
     """Generate a username for a notification user."""
     username = username.strip().replace(" ", "_") if username else ""
@@ -448,34 +447,32 @@ def update_user(
         help="Username of the user to update",
         show_default=False,
     ),
-    first_name: Optional[str] = typer.Option(
-        None, "--firstname", help="New first name."
-    ),
-    last_name: Optional[str] = typer.Option(None, "--lastname", help="New last name."),
-    new_password: Optional[str] = typer.Option(
+    first_name: str | None = typer.Option(None, "--firstname", help="New first name."),
+    last_name: str | None = typer.Option(None, "--lastname", help="New last name."),
+    new_password: str | None = typer.Option(
         None,
         "--passwd",
         "--new-passwd",
         help="New password for user. Set to '-' to prompt for password, '?' to generate a random password.",
     ),
-    old_password: Optional[str] = typer.Option(
+    old_password: str | None = typer.Option(
         None,
         "--old-passwd",
         help="Existing password, required if --passwd is used. Set to '-' to prompt for password.",
     ),
-    role: Optional[UserRole] = typer.Option(
+    role: UserRole | None = typer.Option(
         None,
         "--role",
         help="User role.",
         case_sensitive=False,
     ),
-    autologin: Optional[bool] = typer.Option(
+    autologin: bool | None = typer.Option(
         None,
         "--autologin/--no-autologin",
         help="Enable/disable auto-login",
         show_default=False,
     ),
-    autologout: Optional[str] = typer.Option(
+    autologout: str | None = typer.Option(
         None,
         help="User session lifetime in seconds. Set to 0 to never expire. Can be a time unit with suffix (0s, 15m, 1h, 1d, etc.)",
     ),

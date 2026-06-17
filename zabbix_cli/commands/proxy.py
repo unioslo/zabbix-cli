@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 from typing import NamedTuple
-from typing import Optional
 
 import typer
 
@@ -34,7 +33,7 @@ HELP_PANEL_GROUP = "Proxy Group"
 
 class PrevProxyHosts(NamedTuple):
     hosts: list[Host]
-    proxy: Optional[Proxy] = None
+    proxy: Proxy | None = None
 
 
 def ensure_proxy_group_support() -> None:
@@ -163,7 +162,7 @@ def load_balance_proxy_hosts(
         metavar="<proxy1,proxy2,...>",
         show_default=False,
     ),
-    weight: Optional[str] = typer.Argument(
+    weight: str | None = typer.Argument(
         None,
         help="Weights for each proxy. Comma-separated. Defaults to equal weights.",
         metavar="[weight1,weight2,...]",
@@ -208,8 +207,10 @@ def load_balance_proxy_hosts(
     logger.debug("Found %d hosts to load balance.", len(all_hosts))
 
     lb_proxies = {
-        p.proxyid: LBProxy(proxy=p, weight=w) for p, w in zip(proxies, weights)
+        p.proxyid: LBProxy(proxy=p, weight=w)
+        for p, w in zip(proxies, weights, strict=False)
     }
+
     for host in all_hosts:
         p = random.choices(proxies, weights=weights, k=1)[0]
         lb_proxies[p.proxyid].hosts.append(host)
@@ -268,11 +269,11 @@ def move_proxy_hosts(
         show_default=False,
     ),
     # Prefer --filter over positional arg
-    host_filter: Optional[str] = typer.Option(
+    host_filter: str | None = typer.Option(
         None, "--filter", help="Regex pattern of hosts to move."
     ),
     # LEGACY: matches old command signature (deprecated)
-    host_filter_arg: Optional[str] = typer.Argument(
+    host_filter_arg: str | None = typer.Argument(
         None, help="Filter hosts to move.", hidden=True
     ),
 ) -> None:
@@ -316,7 +317,7 @@ def move_proxy_hosts(
 @app.command(name="show_proxies", rich_help_panel=HELP_PANEL)
 def show_proxies(
     ctx: typer.Context,
-    name_or_id: Optional[str] = typer.Argument(
+    name_or_id: str | None = typer.Argument(
         None,
         help="Filter by proxy name or ID. Comma-separated. Supports wildcards.",
         show_default=False,
@@ -497,12 +498,12 @@ def add_proxy_to_group(
         help="Name or ID of proxy group to add proxy to.",
         show_default=False,
     ),
-    local_address: Optional[str] = typer.Argument(
+    local_address: str | None = typer.Argument(
         None,
         help="Address for active agents.",
         show_default=False,
     ),
-    local_port: Optional[str] = typer.Argument(
+    local_port: str | None = typer.Argument(
         None,
         help="Address for active agents.",
         show_default=False,
@@ -571,12 +572,12 @@ def remove_proxy_from_group(
 )
 def show_proxy_groups(
     ctx: typer.Context,
-    name_or_id: Optional[str] = typer.Argument(
+    name_or_id: str | None = typer.Argument(
         None,
         help="Filter by proxy name or ID. Comma-separated. Supports wildcards.",
         show_default=False,
     ),
-    proxies: Optional[str] = typer.Option(
+    proxies: str | None = typer.Option(
         None,
         "--proxy",
         help="Show only groups containing these proxies. Comma-separated.",

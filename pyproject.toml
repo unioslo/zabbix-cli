@@ -34,7 +34,8 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-  "typer>=0.23.0",
+  "typer>=0.23.0,<0.26.0",
+  "click>=8.2.0",                          # click.core.MultiCommand removed in 8.2.0
   "rich>=13.3.1",
   "prompt_toolkit>=3.0.47",
   "httpx[socks]>=0.28.1",
@@ -141,13 +142,17 @@ omit = ["zabbix_cli/__about__.py"]
 [tool.coverage.report]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
-[tool.pyright]
+[tool.basedpyright]
 pythonVersion = "3.10"
-venvPath = "."
-venv = ".venv"
+# venvPath = "."
+# venv = ".venv"
 ignore = ["zabbix_cli/commands/_dev.py"]
-typeCheckingMode = "strict"
-strictGenericNarrowing = true
+typeCheckingMode = "recommended"
+reportUnannotatedClassAttribute = "hint"
+reportUnusedCallResult = "hint"
+reportImplicitOverride = "hint"
+reportImportCycles = "hint"
+# strictGenericNarrowing = true
 
 [tool.ruff]
 src = ["zabbix_cli"]

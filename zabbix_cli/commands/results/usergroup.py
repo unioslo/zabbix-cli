@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Union
 
 import rich
 import rich.box
@@ -117,7 +116,7 @@ class GroupRights(TableRenderable):
 
     __box__ = rich.box.MINIMAL
 
-    groups: Union[dict[str, HostGroup], dict[str, TemplateGroup]] = Field(
+    groups: dict[str, HostGroup] | dict[str, TemplateGroup] = Field(
         default_factory=dict,
     )
 
@@ -177,7 +176,7 @@ class ShowUsergroupPermissionsResult(TableRenderable):
         r: list[str] = []
 
         def permission_str(
-            right: ZabbixRight, groups: Mapping[str, Union[HostGroup, TemplateGroup]]
+            right: ZabbixRight, groups: Mapping[str, HostGroup | TemplateGroup]
         ) -> str:
             group = groups.get(right.id, None)
             if group:

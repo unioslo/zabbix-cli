@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import NoReturn
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -118,7 +117,7 @@ def print_help(ctx: typer.Context) -> None:
     err_console.print(ctx.get_help())
 
 
-def exit_ok(message: Optional[str] = None, code: int = 0, **kwargs: Any) -> NoReturn:
+def exit_ok(message: str | None = None, code: int = 0, **kwargs: Any) -> NoReturn:
     """Logs a message with INFO level and exits with the given code (default: 0)
 
     Parameters
@@ -136,7 +135,7 @@ def exit_ok(message: Optional[str] = None, code: int = 0, **kwargs: Any) -> NoRe
 
 
 def exit_err(
-    message: str, code: int = 1, exception: Optional[Exception] = None, **kwargs: Any
+    message: str, code: int = 1, exception: Exception | None = None, **kwargs: Any
 ) -> NoReturn:
     """Logs a message with ERROR level and exits with the given
     code (default: 1).

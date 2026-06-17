@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ipaddress
-from typing import Optional
 
 import typer
 
@@ -31,12 +30,12 @@ def create_host(
         help="Hostname or IP",
         show_default=False,
     ),
-    hostgroups: Optional[str] = typer.Option(
+    hostgroups: str | None = typer.Option(
         None,
         "--hostgroup",
         help="Hostgroup name(s) or ID(s). Comma-separated.",
     ),
-    proxy: Optional[str] = typer.Option(
+    proxy: str | None = typer.Option(
         ".+",
         "--proxy",
         help="Proxy server used to monitor the host. Supports regular expressions.",
@@ -52,23 +51,23 @@ def create_host(
         "--default-hostgroups/--no-default-hostgroups",
         help="Add host to default host groups defined in config.",
     ),
-    name: Optional[str] = typer.Option(
+    name: str | None = typer.Option(
         None,
         "--name",
         help="Visible name of the host. Uses hostname or IP if omitted.",
     ),
-    description: Optional[str] = typer.Option(
+    description: str | None = typer.Option(
         None,
         "--description",
         help="Description of the host.",
     ),
-    create_interface: Optional[bool] = typer.Option(
+    create_interface: bool | None = typer.Option(
         None,
         "--create-interface/--no-create-interface",
         help="Do not create an interface for the host.",
     ),
     # LEGACY: V2-style positional args
-    args: Optional[list[str]] = deprecated_positional_arguments(4),
+    args: list[str] | None = deprecated_positional_arguments(4),
 ) -> None:
     """Create a host.
 
@@ -183,26 +182,26 @@ def show_host(
         help="Hostname or ID.",
         show_default=False,
     ),
-    active: Optional[ActiveInterface] = typer.Option(
+    active: ActiveInterface | None = typer.Option(
         None,
         "--active",
         help="Active interface availability.",
         case_sensitive=False,
     ),
-    maintenance: Optional[bool] = typer.Option(
+    maintenance: bool | None = typer.Option(
         None,
         "--maintenance/--no-maintenance",
         help="Maintenance status.",
         show_default=False,
     ),
-    monitored: Optional[bool] = typer.Option(
+    monitored: bool | None = typer.Option(
         None,
         "--monitored/--no-monitored",
         help="Monitoring status.",
         show_default=False,
     ),
     # This is the legacy filter argument from V2
-    filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
+    filter_legacy: str | None = typer.Argument(None, hidden=True),
 ) -> None:
     """Show a specific host."""
     from zabbix_cli.commands.results.host import HostFilterArgs
@@ -261,29 +260,29 @@ def show_host(
 )
 def show_hosts(
     ctx: typer.Context,
-    hostname_or_id: Optional[str] = typer.Argument(
+    hostname_or_id: str | None = typer.Argument(
         None,
         help="Hostname pattern or ID to filter by. Comma-separated. Supports wildcards.",
         show_default=False,
     ),
-    hostgroup: Optional[str] = typer.Option(
+    hostgroup: str | None = typer.Option(
         None,
         "--hostgroup",
         help="Hostgroup name(s) or ID(s). Comma-separated.",
     ),
-    active: Optional[ActiveInterface] = typer.Option(
+    active: ActiveInterface | None = typer.Option(
         None,
         "--active",
         help="Active interface availability.",
         case_sensitive=False,
     ),
-    maintenance: Optional[bool] = typer.Option(
+    maintenance: bool | None = typer.Option(
         None,
         "--maintenance/--no-maintenance",
         help="Maintenance status.",
         show_default=False,
     ),
-    monitored: Optional[bool] = typer.Option(
+    monitored: bool | None = typer.Option(
         None,
         "--monitored/--unmonitored",
         help="Monitoring status.",
@@ -291,7 +290,7 @@ def show_hosts(
     ),
     limit: int = OPTION_LIMIT,
     # V2 Legacy filter argument
-    filter_legacy: Optional[str] = typer.Argument(None, hidden=True),
+    filter_legacy: str | None = typer.Argument(None, hidden=True),
     # TODO: add sorting mode?
 ) -> None:
     """Show all hosts.
@@ -345,12 +344,12 @@ def update_host(
         help="Hostname or IP",
         show_default=False,
     ),
-    name: Optional[str] = typer.Option(
+    name: str | None = typer.Option(
         None,
         "--name",
         help="Visible name of the host.",
     ),
-    description: Optional[str] = typer.Option(
+    description: str | None = typer.Option(
         None,
         "--description",
         help="Description of the host.",
