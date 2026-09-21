@@ -14,6 +14,12 @@ MARK_FAIL = pytest.mark.xfail(raises=ZabbixCLIError, strict=True)
         pytest.param("MY_MACRO", "{$MY_MACRO}"),
         pytest.param("mY_maCrO", "{$MY_MACRO}"),
         pytest.param("foo123", "{$FOO123}"),
+        pytest.param(
+            'vfs.fs.pused.max.crit:"/var/Log"', '{$VFS.FS.PUSED.MAX.CRIT:"/var/Log"}'
+        ),
+        pytest.param('{$my_macro:"Context"}', '{$MY_MACRO:"Context"}'),
+        pytest.param("my_macro:Context", "{$MY_MACRO:Context}"),
+        pytest.param('my_macro:regex:"^/Data"', '{$MY_MACRO:regex:"^/Data"}'),
         pytest.param(" ", "", marks=MARK_FAIL),
         pytest.param("", "", marks=MARK_FAIL),
         pytest.param("{$}", "", marks=MARK_FAIL),

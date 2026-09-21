@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## Unreleased -->
+## Unreleased
+
+### Fixed
+
+- Macro commands uppercasing the context of context macros, e.g. `{$MACRO:"/var/log"}` becoming `{$MACRO:"/VAR/LOG"}`.
 
 ## [3.7.0](https://github.com/unioslo/zabbix-cli/tree/3.7.0) - 2026-06-17
 

@@ -18,13 +18,17 @@ HELP_PANEL_GLOBAL = "Macro (Global)"
 
 
 def fmt_macro_name(macro: str) -> str:
-    """Format macro name for use in a query."""
+    """Format macro name for use in a query.
+
+    Only the name is uppercased. The context of a context macro
+    (e.g. `{$MACRO:"context"}`) is case-sensitive and kept as-is.
+    """
     macro = macro.strip()
     if not macro:
         # TODO: More specific exception class
         raise ZabbixCLIError("Macro name cannot be empty.")
-    if not macro.isupper():
-        macro = macro.upper()
+    name, sep, context = macro.partition(":")
+    macro = name.upper() + sep + context
     if not macro.startswith("{"):
         macro = "{" + macro
     if not macro.endswith("}"):
