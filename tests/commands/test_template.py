@@ -17,11 +17,7 @@ TEMPLATE = Template(templateid="123", host="Apache by HTTP", hosts=[HOST])
 def invoke_unlink(
     state: State, monkeypatch: pytest.MonkeyPatch, flags: list[str]
 ) -> Mock:
-    """Invoke `unlink_template_from_host` and return the mocked API request.
-
-    Only the transport is mocked, so the test covers the path from the
-    command through `ZabbixAPI.unlink_templates_from_hosts` to the API call.
-    """
+    """Run `unlink_template_from_host` and return the mocked `do_request`."""
     do_request = Mock()
     monkeypatch.setattr(state.client, "do_request", do_request)
     monkeypatch.setattr(template, "parse_templates_arg", lambda *a, **kw: [TEMPLATE])
