@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- released start -->
 
-<!-- ## Unreleased -->
+## Unreleased
+
+### Fixed
+
+- `unlink_template_from_host --no-clear` clearing items and triggers from hosts instead of only unlinking the templates.
 
 ## [3.7.0](https://github.com/unioslo/zabbix-cli/tree/3.7.0) - 2026-06-17
 

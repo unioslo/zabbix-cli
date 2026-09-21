@@ -286,7 +286,7 @@ def unlink_template_from_host(
     action = "Unlink and clear" if clear else "Unlink"
     if not dryrun:
         with app.state.console.status("Unlinking templates..."):
-            app.state.client.unlink_templates_from_hosts(templates, hosts)
+            app.state.client.unlink_templates_from_hosts(templates, hosts, clear=clear)
 
     # Only show hosts with matching templates to unlink
     result: list[UnlinkTemplateFromHostResult] = []
