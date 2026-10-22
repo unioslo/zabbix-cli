@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Macro commands uppercasing the context of context macros, e.g. `{$MACRO:"/var/log"}` becoming `{$MACRO:"/VAR/LOG"}`.
+- `unlink_template_from_host --no-clear` clearing items and triggers from hosts instead of only unlinking the templates.
+- Dependencies affected by compromised eMudhra/emSign certificates.
+- Other vulnerable dependencies not related to eMudhra/emSign certificates.
 
 ## [3.7.0](https://github.com/unioslo/zabbix-cli/tree/3.7.0) - 2026-06-17
 
