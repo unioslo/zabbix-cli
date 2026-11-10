@@ -280,7 +280,8 @@ def download_file(url: str, destination: Path) -> None:
                 raise UpdateError(
                     f"Unable to download file {url}, status code {response.status_code}"
                 )
-            total = int(response.headers["Content-Length"])
+            content_length = response.headers.get("Content-Length")
+            total = int(content_length) if content_length is not None else None
             task = progress.add_task("[red]Downloading...[/red]", total=total)
             with open(destination, "wb") as file:
                 for data in response.iter_bytes():

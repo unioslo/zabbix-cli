@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
-from zabbix_cli.update import PyInstallerUpdater
+from zabbix_cli.update import PyInstallerUpdater, download_file
 
 
 @pytest.mark.parametrize(
@@ -25,3 +27,31 @@ def test_pyinstaller_updater_get_url(
 
     url = PyInstallerUpdater.get_url(os, arch, version)
     assert url == expect_url
+
+
+def test_download_file_without_content_length(monkeypatch, tmp_path: Path):
+    """Downloads using chunked encoding (no Content-Length) must not crash."""
+
+    class FakeResponse:
+        status_code = 200
+        headers: dict = {}
+
+        def iter_bytes(self):
+            yield b"data"
+
+    class FakeStream:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def __enter__(self):
+            return FakeResponse()
+
+        def __exit__(self, *args):
+            return False
+
+    import zabbix_cli.update as update_module
+
+    monkeypatch.setattr(update_module.httpx, "stream", FakeStream)
+    dest = tmp_path / "zabbix-cli"
+    download_file("https://example.com/zabbix-cli", dest)
+    assert dest.read_bytes() == b"data"
